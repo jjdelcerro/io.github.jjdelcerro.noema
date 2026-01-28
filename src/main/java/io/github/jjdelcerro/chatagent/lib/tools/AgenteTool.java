@@ -9,6 +9,8 @@ public interface AgenteTool {
     
     public static final int MODE_READ = 1;
     public static final int MODE_WRITE = 2;
+    public static final int MODE_WEB = 3;
+    public static final int MODE_EXECUTION = 4;
     
     // Devuelve la especificación para OpenAI
     ToolSpecification getSpecification();
