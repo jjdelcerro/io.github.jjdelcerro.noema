@@ -12,9 +12,13 @@ import io.github.jjdelcerro.chatagent.lib.impl.tools.file.FilePatchTool;
 import io.github.jjdelcerro.chatagent.lib.impl.tools.file.FileReadTool;
 import io.github.jjdelcerro.chatagent.lib.impl.tools.file.FileSearchAndReplaceTool;
 import io.github.jjdelcerro.chatagent.lib.impl.tools.file.FileWriteTool;
+import io.github.jjdelcerro.chatagent.lib.impl.tools.mail.EmailService;
 import io.github.jjdelcerro.chatagent.lib.persistence.SourceOfTruth;
 import io.github.jjdelcerro.chatagent.lib.impl.tools.memory.LookupTurnTool;
 import io.github.jjdelcerro.chatagent.lib.impl.tools.memory.SearchFullHistoryTool;
+import io.github.jjdelcerro.chatagent.lib.impl.tools.telegram.TelegramTool;
+import io.github.jjdelcerro.chatagent.lib.impl.tools.web.WebGetTikaTool;
+import io.github.jjdelcerro.chatagent.lib.impl.tools.web.WebSearchTool;
 import io.github.jjdelcerro.chatagent.lib.impl.utils.ConsoleOutputImpl;
 import io.github.jjdelcerro.chatagent.lib.utils.ConsoleOutput;
 import org.jline.reader.EndOfFileException;
@@ -30,6 +34,8 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.time.Duration;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 
 public class Main {
 
@@ -43,6 +49,8 @@ public class Main {
     private static final String MODEL_NAME_LLAMA_3_3_70B = "meta-llama/llama-3.3-70b-instruct:free";
     private static final String MODEL_NAME_HERMES_3_LLAMA_3_1_405B = "nousresearch/hermes-3-llama-3.1-405b:free";
     private static final String MODEL_NAME_GLM_4_5_AIR = "z-ai/glm-4.5-air:free";
+    private static final String MODEL_NAME_GLM_4_7 = "z-ai/glm-4.7";
+    
     private static final String MODEL_NAME_DEVSTRAL_2512 = "mistralai/devstral-2512:free";
     private static final String MODEL_NAME_DEEPSEEK_R1T2 = "tngtech/deepseek-r1t2-chimera:free";
     private static final String MODEL_NAME_GPT_OSS_120B = "openai/gpt-oss-120b:free";
@@ -108,10 +116,11 @@ public class Main {
                     .modelName(CONVERSATION_AGENT_MODEL_NAME) 
                     .temperature(0.7)
                     .timeout(Duration.ofSeconds(180))
-                    .logRequests(false)  // Útil para ver qué se envía en el PoC
+                    .logRequests(false)  // Util para ver que se envia en el PoC
                     .logResponses(false)
                     .build(),
-                console
+                console,
+                Paths.get(DATA_FOLDER)
             );
 
             // 6. Configurar Herramientas
@@ -121,12 +130,56 @@ public class Main {
             agent.addTool(new FileFindTool());
             agent.addTool(new FileGrepTool());
             agent.addTool(new FileReadTool());            
-//            agent.addTool(new FileWriteTool());
-//            agent.addTool(new FileSearchAndReplaceTool());
-//            agent.addTool(new FilePatchTool());
-//            agent.addTool(new FileExtractTextTool());
-//            agent.addTool(new FileMkdirTool());
+            agent.addTool(new FileWriteTool());
+            agent.addTool(new FileSearchAndReplaceTool());
+            agent.addTool(new FilePatchTool());
+            agent.addTool(new FileMkdirTool());
 
+            console.println("File tools installed");
+            
+            agent.addTool(new FileExtractTextTool());
+
+            console.println("Extract text tools installed");
+
+            agent.addTool(new WebGetTikaTool());
+            
+            console.println("Web access tools installed");
+
+            String braveApiKey = System.getenv("BRAVE_SEARCH_API_KEY");
+            if( StringUtils.isNotBlank(braveApiKey) ) {
+                agent.addTool(new WebSearchTool(braveApiKey));
+                console.println("Web search tools installed");
+            } else {
+                console.println("Web search tools NOT installed");
+            }
+
+            String telegramApiKey = System.getenv("TELEGRAM_API_KEY");
+            long telegramAuthorizedChatId = NumberUtils.toLong(System.getenv("TELEGRAM_CHAT_ID"),0);
+            if( StringUtils.isNotBlank(telegramApiKey) && telegramAuthorizedChatId>0 ) {
+                agent.addTool(TelegramTool.create(telegramApiKey, telegramAuthorizedChatId, agent));            
+                console.println("Telegram tools installed");
+            } else {
+                console.println("Telegram tools NOT installed");
+            }
+            
+            String emailUser = System.getenv("EMAIL_USER");
+            String emailPass = System.getenv("EMAIL_PASS");
+            String myEmail = "joaquin@miempresa.com"; // FIXME: leerlo de algun lado
+            if (StringUtils.isNotBlank(emailUser)) {
+                EmailService.install(
+                    agent,
+                    "imap.gmail.com", // FIXME: leerlo de algun lado
+                    "smtp.gmail.com", // FIXME: leerlo de algun lado
+                    emailUser, 
+                    emailPass, 
+                    myEmail
+                );
+                console.println("EMail tools installed");
+            } else {
+                console.println("EMail tools NOT installed");
+            }
+            
+            
             console.println("MemoryManager LLM "+MEMORY_MANAGER_MODEL_NAME);
             console.println("ConversationAgent LLM "+CONVERSATION_AGENT_MODEL_NAME);
             console.println("Sistema listo. Escribe '/quit' para terminar.");

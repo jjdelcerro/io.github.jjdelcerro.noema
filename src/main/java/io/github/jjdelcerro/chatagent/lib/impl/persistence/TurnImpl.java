@@ -63,47 +63,12 @@ public class TurnImpl implements Turn {
     }
 
     /**
-     * Convierte el Turno al formato de mensaje de LangChain4j. Nota: Esta
-     * conversión es básica. Si se requiere soportar ToolExecutionResultMessage,
-     * se debería expandir la lógica según el 'contenttype'.
-     */
-    @Override
-    public ChatMessage toChatMessage() {
-        if (textUser != null && !textUser.isBlank()) {
-            return UserMessage.from(textUser);
-        }
-        // Asumimos que si no es usuario, es modelo (o tool result interpretado como input para el modelo)
-        // Se concatena el pensamiento si existe, para que el contexto sea completo,
-        // o se devuelve solo el texto final según preferencia. Aquí devolvemos el texto visible.
-        return AiMessage.from(textModel != null ? textModel : "");
-        
-        
-/*
-        FIXME: Ajuste en TurnImpl.toChatMessage()
-
-He visto esto en tu código:
-   
-public ChatMessage toChatMessage() {
-    if (textUser != null && !textUser.isBlank()) {
-        return UserMessage.from(textUser);
-    }
-    return AiMessage.from(textModel != null ? textModel : "");
-}
-
-Para Devstral, es muy importante que no haya mensajes vacíos y que se respeten los roles. Si un turno fue una ejecución de herramienta, LangChain4j prefiere que uses ToolExecutionResultMessage.
-
-Si envías un AiMessage vacío (porque solo hubo una toolCall), algunos modelos Open Source (como Devstral o Qwen) pueden dar error de "invalid message sequence". Te recomiendo que si textModel es nulo pero hay toolCall, devuelvas un mensaje que indique la acción.        
-*/        
-        
-        
-    }
-
-    /**
      * Genera una línea CSV formateada y escapada para el protocolo de
      * compactación.
      */
     @Override
     public String toCSVLine() {
+        // FIXME: probablemente habria que comprobar si es un turno de tipo TYPE_MEMORY y ver de generar varias lineas con los turnos recuperados de la toolResult
         return Stream.of(
                 "ID-" + id,
                 String.valueOf(timestamp),

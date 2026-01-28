@@ -1,14 +1,13 @@
 package io.github.jjdelcerro.chatagent.lib.impl.agent;
 
+import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatLanguageModel;
-import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.output.Response;
 import io.github.jjdelcerro.chatagent.lib.impl.tools.memory.LookupTurnTool;
 import io.github.jjdelcerro.chatagent.lib.impl.tools.memory.SearchFullHistoryTool;
@@ -18,6 +17,7 @@ import io.github.jjdelcerro.chatagent.lib.persistence.Turn;
 import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
 import io.github.jjdelcerro.chatagent.lib.utils.ConsoleOutput;
 
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -28,41 +28,74 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Queue;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Orquestador principal del sistema.
- * Gestiona el bucle de razonamiento, la ejecución de herramientas y la interacción con el LLM.
+ * Gestiona el bucle de razonamiento, la ejecucion de herramientas y la interaccion con el LLM.
  */
 public class ConversationAgent {
-    // Umbral de compactación (Hardcoded para el ejemplo, podría ser configurable)
-    private static final int COMPACTION_THRESHOLD = 20;
 
+    private static class Event {
+        final String channel;
+        final String priority;
+        final String contents;
+        
+        public Event(String channel, String priority,  String contents) {
+            this.channel = channel;
+            this.priority = priority;
+            this.contents = contents;                    
+        }
+
+        @Override
+        public String toString() {
+            return "[channel:"+this.channel+",priority:"+this.priority+",text:"+StringUtils.abbreviate(StringUtils.replace(contents,"\n"," "),40)+"]";
+        }
+        
+        public String toJson() { 
+            Gson gson = new Gson();
+            return gson.toJson(Map.of(
+                    "channel", channel,
+                    "priority", priority,
+                    "contents", contents
+            ));
+        }
+    }
+    
     private final SourceOfTruth sourceOfTruth;
     private final MemoryManager memoryManager;
     private final ChatLanguageModel model;
     private final ConsoleOutput console;
+    private final Session session;
 
-    private List<Turn> activeMemory = new ArrayList<>();
     private CheckPoint activeCheckPoint;
 
     // Registro de herramientas
     private final Map<String, AgenteTool> toolDispatcher = new HashMap<>();
     private final List<ToolSpecification> toolSpecifications = new ArrayList<>();
 
+    private final Queue<Event> pendingEvents = new ConcurrentLinkedQueue<>();
+    private final AtomicBoolean isBusy = new AtomicBoolean(false);
+    
     /**
-     * Constructor con inyección de dependencias y configuración.
+     * Constructor con inyeccion de dependencias y configuracion.
      */
     public ConversationAgent(SourceOfTruth sourceOfTruth,
                              MemoryManager memoryManager,
                              ChatLanguageModel model,
-                             ConsoleOutput console) {
+                             ConsoleOutput console,
+                             Path dataFolder) {
         this.sourceOfTruth = sourceOfTruth;
         this.memoryManager = memoryManager;
         this.console = console;
         this.model = model;
+        this.session = new Session(dataFolder);
 
         try {
-            this.activeMemory.addAll(sourceOfTruth.getUnconsolidatedTurns());
             this.activeCheckPoint = sourceOfTruth.getLatestCheckPoint();
         } catch (Exception e) {
             e.printStackTrace();
@@ -74,73 +107,115 @@ public class ConversationAgent {
         this.toolSpecifications.add(tool.getSpecification());
     }
 
-    /**
-     * Procesa una entrada del usuario ejecutando el bucle de razonamiento.
-     */
-    public String processTurn(String textUser) {
-        //FIXME: Aqui habria que hacer algo como guardarse en una lista local al metodo y no hacer el addTurn con ellos hasta que termine el turno, justo antes de la compactacion (por si petan las cosas no dejarlo a medias).
+    public synchronized void putEvent(String channel, String priority, String eventText) {
+        pendingEvents.offer(new Event(channel, priority, eventText));
+
+        // Si el agente no está trabajando en un turno, lanzamos el procesador de cola
+        if (!isBusy.get()) {
+            processPendingEvents();
+        }
+    }
+    
+    private synchronized void processPendingEvents() {
+        while (!pendingEvents.isEmpty()) {
+            Event event = pendingEvents.poll();
+            this.console.println("Evento: " + event.toString());
+            ToolExecutionRequest request = ToolExecutionRequest.builder()
+                    .name("pool_event")
+                    .id("pool_event_"+(UUID.randomUUID().toString().replace("-", "")))
+                    .build();
+            ToolExecutionResultMessage result = ToolExecutionResultMessage.from(request, event.toJson());
+            this.executeReasoningLoop(result);
+        }
+    }    
+    
+    public synchronized String processTurn(String textUser) {
+        String value = this.executeReasoningLoop(UserMessage.from(textUser));
+        processPendingEvents();
+        return value;
         
-        // Variable "volátil" para el texto del usuario.
-        // Se consumirá en el primer Turno que se genere (ya sea tool o respuesta final)
-        // para no repetirlo en cada paso del bucle.
-        String pendingUserText = textUser;
+    }   
+
+    private synchronized String executeReasoningLoop(ChatMessage inputMessage) {
         StringBuilder llmResponse = new StringBuilder();
         
         try {
-            // 1. CONSTRUCCIÓN DE MENSAJES (Prompt)
-            List<ChatMessage> messages = buildContextMessages(this.activeCheckPoint, this.activeMemory);
+            // 1. INYECTAR INPUT 
+            String textUser = null;
+            if( inputMessage instanceof ToolExecutionResultMessage ) {
+                ToolExecutionResultMessage result = (ToolExecutionResultMessage) inputMessage;
+                ToolExecutionRequest request = ToolExecutionRequest.builder()
+                    .name(result.id())
+                    .id(result.toolName())
+                    .build();
+                String contentType = "tool_execution";
+                Turn toolTurn = this.sourceOfTruth.createTurn(
+                        Timestamp.from(Instant.now()),
+                        contentType,
+                        null,
+                        null,
+                        null,
+                        request.toString(),
+                        result.toString(),
+                        null
+                );
+                // FIXME: CRITICO!! Aqui creo que faltaria insertar la llamada a la herramienta.
+                this.session.add(result);
+                this.sourceOfTruth.add(toolTurn);
+                this.session.consolideTurn(toolTurn);
+            } else {
+                this.session.add(inputMessage);
+                textUser = ((UserMessage)inputMessage).singleText();
+            }
             
-            // Añadimos el input actual al historial de la sesión LLM
-            messages.add(UserMessage.from(textUser));
-
-            // 2. BUCLE DE INTERACCIÓN (Reasoning Loop)
+            // 2. BUCLE DE INTERACCION (Reasoning Loop)
             boolean turnFinished = false;
 
             while (!turnFinished) {
+                // Recuperar contexto actualizado (System + Historial Sesion)
+                List<ChatMessage> messages = this.session.getContextMessages(this.activeCheckPoint, getBaseSystemPrompt());
+
                 // Llamada al Modelo
                 Response<AiMessage> response = model.generate(messages, toolSpecifications);
                 AiMessage aiMessage = response.content();
 
-                // Añadimos la respuesta del modelo al contexto en memoria para la siguiente vuelta
-                messages.add(aiMessage);
+                // Anadir respuesta al historial
+                this.session.add(aiMessage);
 
                 if (aiMessage.hasToolExecutionRequests()) {
                     // --- MODO HERRAMIENTA ---
-                    // El modelo puede pedir ejecutar una o varias herramientas
                     for (ToolExecutionRequest request : aiMessage.toolExecutionRequests()) {
                         
-                        // A. Ejecución
+                        // A. Ejecucion
                         String result = executeToolLogic(request);
 
-                        // B. Determinación del Tipo de Contenido (Para el MemoryManager)
-                        // Si es una tool de memoria, usamos un tipo especial para los "Flashbacks"
+                        // B. Tipo de contenido
                         String contentType = "tool_execution";
                         if (isMemoryTool(request.name())) {
                             contentType = "lookup_turn";
                         }
 
-                        // C. Persistencia del Turno (Uno por herramienta ejecutada)
+                        // C. Persistencia del Turno (Archivo)
                         Turn toolTurn = this.sourceOfTruth.createTurn(
                                 Timestamp.from(Instant.now()),
                                 contentType,
-                                pendingUserText, // Se asigna solo la primera vez (si aplica)
-                                null, // Thinking (no soportado explícitamente por OpenAI API standard hoy)
-                                null, // textModel (vacío, es una acción)
-                                request.toString(), // toolCall (Intención)
-                                result, // toolResult (Resultado)
-                                null // Embedding (se calculará en SourceOfTruth)
+                                null, // User text is managed by Session/Messages now
+                                null, 
+                                null, 
+                                request.toString(), 
+                                result, 
+                                null
                         );
                         
-                        this.addTurn(toolTurn);
+                        this.sourceOfTruth.add(toolTurn);
 
-                        // D. Feedback al LLM
-                        // Inyectamos el resultado para que el modelo lo vea en la siguiente iteración
-                        messages.add(ToolExecutionResultMessage.from(request, result));
-
-                        // Consumimos el texto del usuario si se usó
-                        pendingUserText = null;
+                        // D. Feedback al LLM (Protocolo)
+                        this.session.add(ToolExecutionResultMessage.from(request, result));
+                        
+                        // E. Consolidar el turno en la sesion
+                        this.session.consolideTurn(toolTurn);
                     }
-                    // El bucle continúa...
+                    // El bucle continua... 
 
                 } else {
                     // --- MODO RESPUESTA FINAL ---
@@ -148,7 +223,7 @@ public class ConversationAgent {
                     Turn responseTurn = this.sourceOfTruth.createTurn(
                             Timestamp.from(Instant.now()),
                             "chat",
-                            pendingUserText, // Si no hubo tools, aquí va el input original. Si hubo, es null.
+                            textUser, // Guardamos el user text original en el turno final para referencia historica
                             null,
                             aiText,
                             null,
@@ -157,30 +232,26 @@ public class ConversationAgent {
                     );
                     llmResponse.append(aiText);
                     
-                    this.addTurn(responseTurn);
+                    this.sourceOfTruth.add(responseTurn);
+                    this.session.consolideTurn(responseTurn);
+                    
                     turnFinished = true;
                 }
             }
 
-            // 3. GESTIÓN DE COMPACTACIÓN
-            // Verificamos si el volumen de turnos no consolidados ha superado el límite
-            if (this.activeMemory.size() >= COMPACTION_THRESHOLD) {
+            // 3. GESTION DE COMPACTACION
+            if (this.session.needCompaction()) {
                 performCompaction();
             }
 
         } catch (SQLException e) {
-            this.console.printerrorln("Error crítico de base de datos en processTurn: " + e.getMessage());
+            this.console.printerrorln("Error critico de base de datos en processTurn: " + e.getMessage());
             e.printStackTrace();
         } catch (Exception e) {
             this.console.printerrorln("Error inesperado en processTurn: " + e.getMessage());
             e.printStackTrace();
         }
         return llmResponse.toString();
-    }
-
-    private void addTurn(Turn turn) {
-        this.sourceOfTruth.add(turn);
-        this.activeMemory.add(turn);
     }
 
     private String getBaseSystemPrompt() {
@@ -199,14 +270,14 @@ Eres el componente de razonamiento inmediato en un sistema con memoria conversac
 ## 2. Herramientas de acceso a la memoria detallada:
 
 ### `""");
-        systemPrompt.append(LookupTurnTool.NAME);        
+systemPrompt.append(LookupTurnTool.NAME);
         systemPrompt.append("` - Acceso preciso por referencia");
         systemPrompt.append("""
 - **Úsala cuando:** En el relato narrativo encuentres una referencia `{cite:ID-123}` y necesites recuperar exactamente lo que se dijo en ese momento, junto con su contexto inmediato (qué vino justo antes y después).
 - **Ejemplo mental:** "La referencia {cite:ID-87} menciona una decisión sobre bases de datos. Necesito ver los argumentos exactos que se dieron entonces."
 
 ### `""");
-        systemPrompt.append(SearchFullHistoryTool.NAME);        
+        systemPrompt.append(SearchFullHistoryTool.NAME);
         systemPrompt.append("` - Búsqueda por significado");
         systemPrompt.append("""
 - **Úsala cuando:** Detectes que falta información en tu contexto para responder adecuadamente. Busca en todo el historial conversacional (desde hace minutos hasta años) por similitud semántica.
@@ -246,35 +317,6 @@ Antes de responder o actuar, determina el tipo de solicitud del usuario:
         return systemPrompt.toString();
     }
     
-    private List<ChatMessage> buildContextMessages(CheckPoint checkpoint, List<Turn> turns) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, HH:mm", new Locale("es", "ES"));
-        
-        List<ChatMessage> messages = new ArrayList<>();
-
-        // A. System Prompt Base
-        StringBuilder systemPrompt = new StringBuilder();
-        
-        systemPrompt.append(this.getBaseSystemPrompt());
-
-        // B. Inyección del Punto de Guardado (Memoria a Largo Plazo)
-        if (checkpoint != null) {
-            systemPrompt.append("\n\n## Contexto consolidado de la conversacion\n");
-            systemPrompt.append("La siguiente sección contiene un resumen y relato narrativo de la conversacion");
-            systemPrompt.append("consolidado y actualizado hasta ").append(checkpoint.getTimestamp().toLocalDateTime().format(formatter)).append(".\n\n");
-            systemPrompt.append("--- INICIO DEL RELATO RESUMEN Y RELATO NARRATIVO DE LA CONVERSACION ---\n");
-            systemPrompt.append(checkpoint.getText()).append("\n\n");            
-            systemPrompt.append("--- FIN DEL RELATO RESUMEN Y RELATO NARRATIVO DE LA CONVERSACION ---\n");
-        }
-        messages.add(SystemMessage.from(systemPrompt.toString()));
-
-        // C. Historial Reciente (Memoria de Trabajo)
-        for (Turn t : turns) {
-            messages.add(t.toChatMessage());
-        }
-
-        return messages;
-    }
-
     private String executeToolLogic(ToolExecutionRequest request) {
         String toolName = request.name();
         String args = request.arguments();
@@ -282,7 +324,7 @@ Antes de responder o actuar, determina el tipo de solicitud del usuario:
         AgenteTool tool = toolDispatcher.get(toolName);
         
         if (tool != null) {
-            if( tool.getMode() == AgenteTool.MODE_WRITE ) {
+            if (tool.getMode() != AgenteTool.MODE_READ ) {
                 boolean authorized = this.console.confirm(
                     String.format("El agente quiere ejecutar la herramienta: %s\nArgumentos: %s\n¿Autorizar?", toolName, args)
                 );
@@ -313,19 +355,33 @@ Antes de responder o actuar, determina el tipo de solicitud del usuario:
     private void performCompaction() throws SQLException {
         this.console.println("Iniciando proceso de compactación de memoria...");
         
-        int n = this.activeMemory.size() / 2;
-        ArrayList<Turn> remainingTurns = new ArrayList<>();
-        remainingTurns.addAll(this.activeMemory.subList(n, this.activeMemory.size()));
-        List<Turn> compactTurns = this.activeMemory.subList(0, n);
+        // 1. Obtener marcas de sesion
+        Session.SessionMark mark1 = this.session.getOldestMark();
+        Session.SessionMark mark2 = this.session.getCompactMark();
         
-        // 1. MemoryManager crea el CheckPoint (Factoría transitoria, devuelve objeto listo pero no persistido)
+        if (mark1 == null || mark2 == null) {
+            this.console.println("Advertencia: No hay suficientes datos consolidados para compactar.");
+            return;
+        }
+
+        // 2. Recuperar turnos de la DB usando el rango de IDs de las marcas
+        List<Turn> compactTurns = this.sourceOfTruth.getTurnsByIds(mark1.getTurnId(), mark2.getTurnId());
+        
+        if (compactTurns.isEmpty()) {
+            this.console.println("Advertencia: Rango de compactación vacío.");
+            return;
+        }
+
+        // 3. MemoryManager crea el CheckPoint
         CheckPoint newCheckPoint = memoryManager.compact(this.activeCheckPoint, compactTurns);
         
-        // 2. SourceOfTruth persiste metadatos, asigna ID real y guarda fichero físico
+        // 4. SourceOfTruth persiste
         sourceOfTruth.add(newCheckPoint);
         
-        this.activeMemory.clear();
-        this.activeMemory.addAll(remainingTurns);
+        // 5. Limpieza de Sesion (Borrar mensajes ya compactados)
+        this.session.remove(mark1, mark2);
+        
+        // 6. Actualizar punteros del Agente
         this.activeCheckPoint = newCheckPoint;
         
         this.console.println("Memoria compactada con éxito. Nuevo CheckPoint ID: " + newCheckPoint.getId());

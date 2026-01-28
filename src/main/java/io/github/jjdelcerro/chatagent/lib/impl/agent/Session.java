@@ -18,20 +18,24 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
- * Agregado que gobierna el estado de la sesión activa de conversación.
- * Gestiona la lista de mensajes (Protocolo) y su sincronización con los Turnos (Archivo).
+ * Agregado que gobierna el estado de la sesion activa de conversacion.
+ * Gestiona la lista de mensajes (Protocolo) y su sincronizacion con los Turnos (Archivo).
  */
 public class Session {
+
+    private static final int COMPACTION_THRESHOLD = 20;
 
     private final Path sessionPath;
     private final Path tempPath;
 
     // ESTADO INTERNO
     private final List<ChatMessage> messages = new ArrayList<>();
-    // Key: Índice en 'messages', Value: ID del Turno
+    // Key: Indice en 'messages', Value: ID del Turno
     private Map<Integer, Integer> turnOfMessage = new HashMap<>();
 
-    // Interfaz pública para marcas de compactación
+    /**
+     * Interfaz publica para marcas de compactacion.
+     */
     public interface SessionMark {
         int getTurnId();
         ChatMessage getMessage();
@@ -47,7 +51,7 @@ public class Session {
     }
 
     // =================================================================================
-    // API GESTIÓN DE CONVERSACIÓN
+    // API GESTION DE CONVERSACION
     // =================================================================================
 
     public void add(ChatMessage message) {
@@ -55,19 +59,16 @@ public class Session {
         this.save();
     }
     
-    public void addAll(List<ChatMessage> newMessages) {
-        this.messages.addAll(newMessages);
-        this.save();
-    }
-
     public void consolideTurn(Turn turn) {
-        if (messages.isEmpty()) return;
+        if (messages.isEmpty()) {
+            return;
+        }
         
-        // Backfill: Asignar ID a todos los mensajes recientes que aún no lo tienen
-        // Iteramos hacia atrás hasta encontrar uno que ya tenga dueño o llegar al principio.
+        // Backfill: Asignar ID a todos los mensajes recientes que aun no lo tienen.
+        // Se recorre hacia atras hasta encontrar un mensaje ya consolidado.
         for (int i = messages.size() - 1; i >= 0; i--) {
             if (this.turnOfMessage.containsKey(i)) {
-                break; // Stop, zona consolidada alcanzada
+                break; 
             }
             this.turnOfMessage.put(i, turn.getId());
         }
@@ -80,24 +81,24 @@ public class Session {
 
         // 1. Construir System Prompt compuesto
         StringBuilder sb = new StringBuilder();
-        if (systemPrompt != null && !systemPrompt.isBlank()) {
+        if (systemPrompt != null && !systemPrompt.isEmpty()) {
             sb.append(systemPrompt);
         }
 
         if (checkpoint != null) {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, HH:mm", new Locale("es", "ES"));
-            sb.append("\n\n## Contexto consolidado de la conversación\n");
+            sb.append("\n\n## Contexto consolidado de la conversacion\n");
             sb.append("Resumen actualizado hasta: ").append(checkpoint.getTimestamp().toLocalDateTime().format(formatter)).append(".\n\n");
-            sb.append("--- INICIO DEL RELATO ---\n");
+            sb.append("--- INICIO DEL RELATO ---\\n");
             sb.append(checkpoint.getText()).append("\n");
-            sb.append("--- FIN DEL RELATO ---\n");
+            sb.append("--- FIN DEL RELATO ---\\n");
         }
 
         if (sb.length() > 0) {
             context.add(SystemMessage.from(sb.toString()));
         }
 
-        // 2. Añadir mensajes activos
+        // 2. Anadir mensajes activos
         context.addAll(this.messages);
 
         return context;
@@ -109,81 +110,113 @@ public class Session {
         this.save();
     }
 
+    /**
+     * Indica si la sesion ha acumulado suficientes turnos para requerir compactacion.
+     * 
+     * @return true si el numero de turnos unicos consolidados supera el umbral.
+     */
+    public boolean needCompaction() {
+        if (turnOfMessage.isEmpty()) {
+            return false;
+        }
+        // Contamos cuantos IDs de turnos unicos tenemos en la sesion
+        Set<Integer> uniqueTurns = new HashSet<>(turnOfMessage.values());
+        return uniqueTurns.size() >= COMPACTION_THRESHOLD;
+    }
+
     // =================================================================================
-    // API COMPACTACIÓN (SessionMark)
+    // API COMPACTACION (SessionMark)
     // =================================================================================
 
     public SessionMark getOldestMark() {
-        if (messages.isEmpty()) return null;
-        if (!turnOfMessage.containsKey(0)) return null; // No hay nada consolidado al principio
+        if (messages.isEmpty()) {
+            return null;
+        }
+        // Gracias al backfill, si hay alguna consolidacion, el indice 0 tiene ID.
+        if (!turnOfMessage.containsKey(0)) {
+            return null; 
+        }
 
-        // Gracias al backfill, si hay consolidación, el mensaje 0 tiene ID.
         return new SessionMarkImpl(0, turnOfMessage.get(0), messages.get(0));
     }
 
     public SessionMark getCompactMark() {
-        // Encontrar la mediana de los mensajes consolidados iterando la lista
-        int consolidatedCount = 0;
-        
-        // Contamos cuántos mensajes tienen ID
-        for (int i = 0; i < messages.size(); i++) {
-            if (turnOfMessage.containsKey(i)) {
-                consolidatedCount++;
-            }
+        if (turnOfMessage.isEmpty()) {
+            return null;
         }
-        
-        if (consolidatedCount == 0) return null;
 
-        // El target es la mitad de los consolidados
-        int targetOrdinal = consolidatedCount / 2;
-        int foundOrdinal = 0;
+        // Punto de partida: la mitad de los mensajes
+        int mid = messages.size() / 2;
         
-        for (int i = 0; i < messages.size(); i++) {
-            if (turnOfMessage.containsKey(i)) {
-                if (foundOrdinal == targetOrdinal) {
-                    return new SessionMarkImpl(i, turnOfMessage.get(i), messages.get(i));
-                }
-                foundOrdinal++;
-            }
+        // Ajustar hacia atras hasta encontrar un mensaje consolidado
+        while (mid >= 0 && !turnOfMessage.containsKey(mid)) {
+            mid--;
         }
-        return null;
+        
+        if (mid < 0) {
+            return null;
+        }
+
+        int currentTurnId = turnOfMessage.get(mid);
+        
+        // Avanzar hasta el final del bloque del mismo turno para no romper la secuencia.
+        int candidate = mid;
+        while (candidate + 1 < messages.size()) {
+            if (!turnOfMessage.containsKey(candidate + 1)) {
+                break;
+            }
+            if (turnOfMessage.get(candidate + 1) != currentTurnId) {
+                break;
+            }
+            candidate++;
+        }
+        
+        return new SessionMarkImpl(candidate, currentTurnId, messages.get(candidate));
     }
 
     public void remove(SessionMark mark1, SessionMark mark2) {
         if (!(mark1 instanceof SessionMarkImpl) || !(mark2 instanceof SessionMarkImpl)) {
-            throw new IllegalArgumentException("Marcas inválidas");
+            throw new IllegalArgumentException("Marcas invalidas");
         }
         
-        // Asumimos mark1 siempre es index 0 en la práctica de compactación estándar,
-        // pero usaremos los índices reales por robustez.
-        int idx1 = ((SessionMarkImpl) mark1).index;
-        int idx2 = ((SessionMarkImpl) mark2).index;
+        SessionMarkImpl m1 = (SessionMarkImpl) mark1;
+        SessionMarkImpl m2 = (SessionMarkImpl) mark2;
         
-        if (idx1 > idx2) { int t = idx1; idx1 = idx2; idx2 = t; }
-        if (idx2 >= messages.size()) idx2 = messages.size() - 1;
+        int idx1 = m1.index;
+        int idx2 = m2.index;
+        
+        // Ordenar indices por seguridad
+        if (idx1 > idx2) { 
+            int t = idx1; 
+            idx1 = idx2; 
+            idx2 = t; 
+        }
+        
+        if (idx2 >= messages.size()) {
+            idx2 = messages.size() - 1;
+        }
         
         int offset = idx2 - idx1 + 1;
         Map<Integer, Integer> newMap = new HashMap<>();
         
-        // 1. Preservar lo anterior al corte (si mark1 > 0)
+        // 1. Preservar lo anterior al corte (indices menores a idx1)
         for (int i = 0; i < idx1; i++) {
             if (turnOfMessage.containsKey(i)) {
                 newMap.put(i, turnOfMessage.get(i));
             }
         }
         
-        // 2. Preservar lo posterior al corte (desplazado)
-        // Iteramos sobre los mensajes supervivientes
+        // 2. Preservar y re-indexar lo posterior al corte (indices mayores a idx2)
         for (int i = idx2 + 1; i < messages.size(); i++) {
             if (turnOfMessage.containsKey(i)) {
                 newMap.put(i - offset, turnOfMessage.get(i));
             }
         }
         
-        // 3. Ejecutar borrado físico
+        // 3. Borrado fisico en la lista
         this.messages.subList(idx1, idx2 + 1).clear();
         
-        // 4. Swap map
+        // 4. Actualizar mapa
         this.turnOfMessage = newMap;
         
         this.save();
@@ -197,21 +230,31 @@ public class Session {
         List<ChatMessage> messages;
         Map<Integer, Integer> turnOfMessage;
         
-        SessionState(List<ChatMessage> m, Map<Integer, Integer> t) { this.messages = m; this.turnOfMessage = t; }
-        SessionState(){}
+        SessionState(List<ChatMessage> m, Map<Integer, Integer> t) { 
+            this.messages = m; 
+            this.turnOfMessage = t; 
+        }
+        SessionState() {
+        }
     }
 
     private void load() {
-        if (!Files.exists(sessionPath)) return;
+        if (!Files.exists(sessionPath)) {
+            return;
+        }
         Gson gson = createGson();
         try (Reader reader = Files.newBufferedReader(sessionPath, StandardCharsets.UTF_8)) {
             SessionState state = gson.fromJson(reader, SessionState.class);
             if (state != null) {
-                if (state.messages != null) this.messages.addAll(state.messages);
-                if (state.turnOfMessage != null) this.turnOfMessage.putAll(state.turnOfMessage);
+                if (state.messages != null) {
+                    this.messages.addAll(state.messages);
+                }
+                if (state.turnOfMessage != null) {
+                    this.turnOfMessage.putAll(state.turnOfMessage);
+                }
             }
         } catch (Exception e) {
-            System.err.println("Error recuperando sesión: " + e.getMessage());
+            System.err.println("Error recuperando sesion: " + e.getMessage());
         }
     }
 
@@ -225,7 +268,7 @@ public class Session {
             }
             Files.move(tempPath, sessionPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
         } catch (IOException e) {
-            throw new RuntimeException("Error guardando sesión: " + e.getMessage(), e);
+            throw new RuntimeException("Error guardando sesion: " + e.getMessage(), e);
         }
     }
 
@@ -254,10 +297,14 @@ public class Session {
         }
 
         @Override
-        public int getTurnId() { return turnId; }
+        public int getTurnId() { 
+            return turnId; 
+        }
 
         @Override
-        public ChatMessage getMessage() { return message; }
+        public ChatMessage getMessage() { 
+            return message; 
+        }
     }
 
     // =================================================================================

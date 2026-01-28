@@ -39,11 +39,4 @@ public interface Turn {
      */
     String toCSVLine();
 
-    /**
-     * Convierte el Turno al formato de mensaje de LangChain4j. Nota: Esta
-     * conversión es básica. Si se requiere soportar ToolExecutionResultMessage,
-     * se debería expandir la lógica según el 'contenttype'.
-     */
-    ChatMessage toChatMessage();
-
 }
