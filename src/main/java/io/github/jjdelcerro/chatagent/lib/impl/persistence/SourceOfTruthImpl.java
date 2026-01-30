@@ -8,10 +8,16 @@ import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.embedding.onnx.allminilml6v2.AllMiniLmL6V2EmbeddingModel;
 import io.github.jjdelcerro.chatagent.lib.persistence.CheckPoint;
 import io.github.jjdelcerro.chatagent.lib.persistence.Turn;
+import io.github.jjdelcerro.chatagent.lib.utils.ConsoleOutput;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -33,19 +39,30 @@ import java.util.PriorityQueue;
 public class SourceOfTruthImpl implements SourceOfTruth {
 
     private static final int MAX_DB_TEXT_SIZE = 2048; // 2KB
+    
+    private static final String CHECKPOINTS_FOLDER = "checkpoints";
+    private static final String CSVLOG_FILE = "turns.csv";
 
     private final Connection conn;
-    private final File cpFolder;
+    private final File dataFolder;
     private final Counter turnCounter;
     private final Counter checkpointCounter;
     private final EmbeddingModel embeddingModel;
+    private final ConsoleOutput console;
 
     // Constructor privado
-    private SourceOfTruthImpl(Connection conn, File cpFolder, Counter turnCounter, Counter cpCounter) {
+    private SourceOfTruthImpl(Connection conn, File dataFolder, Counter turnCounter, Counter checkpointCounter, ConsoleOutput console) {
         this.conn = conn;
-        this.cpFolder = cpFolder;
+        this.dataFolder = dataFolder;
         this.turnCounter = turnCounter;
-        this.checkpointCounter = cpCounter;
+        this.checkpointCounter = checkpointCounter;
+        this.console = console;
+
+        try {
+            Files.createDirectories(Paths.get(this.dataFolder.getAbsolutePath(), CHECKPOINTS_FOLDER));
+        } catch (IOException ex) {
+            throw new RuntimeException("Can't create checkpoints folder", ex);
+        }
 
         // Inicialización del modelo local (ONNX)
         // Esto carga el modelo en memoria RAM (aprox 30-50MB)
@@ -56,11 +73,11 @@ public class SourceOfTruthImpl implements SourceOfTruth {
     /**
      * Factoría de inicialización. Crea las tablas si no existen.
      */
-    public static SourceOfTruth from(Connection conn, File cpFolder) throws SQLException {
+    public static SourceOfTruth from(Connection conn, File dataFolder, ConsoleOutput console) throws SQLException {
         createTables(conn);
-        Counter tCounter = Counter.from(conn, "turnos");
-        Counter cpCounter = Counter.from(conn, "checkpoints");
-        return new SourceOfTruthImpl(conn, cpFolder, tCounter, cpCounter);
+        Counter turnCounter = Counter.from(conn, "turnos");
+        Counter checkpointCounter = Counter.from(conn, "checkpoints");
+        return new SourceOfTruthImpl(conn, dataFolder, turnCounter, checkpointCounter, console);
     }
 
     private static void createTables(Connection conn) throws SQLException {
@@ -103,7 +120,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
      * automáticamente (si hay texto). - Si ya existe, se respeta.
      */
     @Override
-    public void add(Turn turn) {
+    public synchronized void add(Turn turn) {
         try {
             // 1. Gestión del ID (igual que antes)
             if (turn.getId() < 0) {
@@ -151,8 +168,25 @@ public class SourceOfTruthImpl implements SourceOfTruth {
                 ps.setBytes(9, blobBytes);
                 ps.executeUpdate();
             }
+            
+            // 4. Log CSV
+            log2csv(turn);
+            
         } catch (Exception ex) {
             throw new TurnException("Can't add turn", ex);
+        }
+    }
+
+    private void log2csv(Turn turn) {
+        File csvFile = new File(dataFolder, CSVLOG_FILE);
+        boolean exists = csvFile.exists();
+        try (PrintWriter pw = new PrintWriter(new FileWriter(csvFile, true))) {
+            if (!exists) {
+                pw.println("code,timestamp,contenttype,text_user,text_model_thinking,text_model,tool_call,tool_result");
+            }
+            pw.println(turn.toCSVLine());
+        } catch (IOException e) {
+            console.printerrorln("Error escribiendo en CSV log: " + e.getMessage());
         }
     }
 
@@ -181,7 +215,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
      * contador interno.
      */
     @Override
-    public void add(CheckPoint checkpoint) {
+    public synchronized void add(CheckPoint checkpoint) {
         try {
             // 1. Gestión del ID
             int checkpointid = checkpoint.getId();
@@ -206,7 +240,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
     }
 
     @Override
-    public Turn getTurnById(int id) {
+    public synchronized Turn getTurnById(int id) {
         try {
             String sql = "SELECT * FROM turnos WHERE id = ?";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -224,7 +258,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
     }
 
     @Override
-    public CheckPoint getCheckPointById(int id) {
+    public synchronized CheckPoint getCheckPointById(int id) {
         try {
             String sql = "SELECT * FROM checkpoints WHERE id = ?";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -243,7 +277,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
     }
 
     @Override
-    public CheckPoint getLatestCheckPoint() {
+    public synchronized CheckPoint getLatestCheckPoint() {
         try {
             String sql = "SELECT * FROM checkpoints ORDER BY id DESC LIMIT 1";
             try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
@@ -263,7 +297,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
      * CP.last_turn_id.
      */
     @Override
-    public List<Turn> getUnconsolidatedTurns() {
+    public synchronized List<Turn> getUnconsolidatedTurns() {
         try {
             CheckPoint lastCp = getLatestCheckPoint();
             int thresholdId = (lastCp != null) ? lastCp.getTurnLast() : 0;
@@ -286,7 +320,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
     }
 
     @Override
-    public List<Turn> getTurnsByIds(int first, int last) {
+    public synchronized List<Turn> getTurnsByIds(int first, int last) {
         try {
             List<Turn> result = new ArrayList<>();
             String sql = "SELECT * FROM turnos WHERE id BETWEEN ? AND ? ORDER BY id ASC";
@@ -307,7 +341,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
     }
 
     @Override
-    public List<Turn> getTurnsByText(String query, int maxResults) {
+    public synchronized List<Turn> getTurnsByText(String query, int maxResults) {
         try {
             // 1. Vectorizar la query
             Embedding queryEmb = embeddingModel.embed(query).content();
@@ -385,7 +419,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
                 rs.getInt("cp_first"),
                 rs.getInt("cp_last"),
                 rs.getTimestamp("timestamp"),
-                this.cpFolder // Inyectamos la dependencia de carpeta
+                new File(this.dataFolder,CHECKPOINTS_FOLDER)
         );
     }
 
@@ -422,13 +456,13 @@ public class SourceOfTruthImpl implements SourceOfTruth {
     }
 
     @Override
-    public CheckPoint createCheckPoint(int turnFirst, int turnLast, Timestamp timestamp, String text) {
-        CheckPoint cp = CheckPointImpl.create(-1, turnFirst, turnLast, timestamp, text, cpFolder);
+    public synchronized CheckPoint createCheckPoint(int turnFirst, int turnLast, Timestamp timestamp, String text) {
+        CheckPoint cp = CheckPointImpl.create(-1, turnFirst, turnLast, timestamp, text, new File(dataFolder,CHECKPOINTS_FOLDER));
         return cp;
     }
 
     @Override
-    public Turn createTurn(Timestamp timestamp, String contenttype,
+    public synchronized Turn createTurn(Timestamp timestamp, String contenttype,
             String textUser, String textModelThinking, String textModel,
             String toolCall, String toolResult, float[] embedding) {
         return TurnImpl.from(timestamp, contenttype, textUser, textModelThinking,

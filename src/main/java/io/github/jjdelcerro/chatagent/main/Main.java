@@ -42,7 +42,6 @@ public class Main {
     // Configuración de rutas
     private static final String DATA_FOLDER = "./data";
     private static final String DB_PATH = DATA_FOLDER + "/memoria"; // H2 añade .mv.db
-    private static final String CP_FOLDER = DATA_FOLDER + "/checkpoints";
 
     private static final String API_URL = "https://openrouter.ai/api/v1";
     
@@ -51,13 +50,19 @@ public class Main {
     private static final String MODEL_NAME_GLM_4_5_AIR = "z-ai/glm-4.5-air:free";
     private static final String MODEL_NAME_GLM_4_7 = "z-ai/glm-4.7";
     
-    private static final String MODEL_NAME_DEVSTRAL_2512 = "mistralai/devstral-2512:free";
+    private static final String MODEL_NAME_MISTRAL_SMALL_3_1_24B = "mistralai/mistral-small-3.1-24b-instruct:free";
     private static final String MODEL_NAME_DEEPSEEK_R1T2 = "tngtech/deepseek-r1t2-chimera:free";
     private static final String MODEL_NAME_GPT_OSS_120B = "openai/gpt-oss-120b:free";
+    private static final String MODEL_NAME_GPT_OSS_20B = "openai/gpt-oss-20b:free";
     private static final String MODEL_NAME_QWEN3_CODER = "qwen/qwen3-coder:free";
+    private static final String MODEL_NAME_QWEN3_4B = "qwen/qwen3-4b:free";
+    
+//    private static final String MODEL_NAME_DEVSTRAL_2512 = "mistralai/devstral-2512:free";
+//    private static final String MODEL_NAME_GEMINI_2_0_FLASH = "google/gemini-2.0-flash-exp:free";
+    
     
     private static final String MEMORY_MANAGER_MODEL_NAME = MODEL_NAME_DEEPSEEK_R1T2;
-    private static final String CONVERSATION_AGENT_MODEL_NAME = MODEL_NAME_DEVSTRAL_2512;
+    private static final String CONVERSATION_AGENT_MODEL_NAME = MODEL_NAME_GLM_4_5_AIR;
     
     public static void main(String[] args) {
         System.out.println(">>> Iniciando Agente de Memoria Híbrida Determinista...");
@@ -82,7 +87,7 @@ public class Main {
             ConsoleOutput console = ConsoleOutputImpl.create(terminal, lineReader);
 
             // 2. Preparar Directorios
-            Files.createDirectories(Paths.get(CP_FOLDER));
+            Files.createDirectories(Paths.get(DATA_FOLDER));
             
 
             // 3. Conexión a Base de Datos (H2)
@@ -90,7 +95,7 @@ public class Main {
             console.println("Conectado a Base de Conocimiento: " + DB_PATH);
 
             // 4. Inicializar Componentes de Persistencia
-            SourceOfTruth sourceOfTruth = SourceOfTruthImpl.from(conn, new File(CP_FOLDER));
+            SourceOfTruth sourceOfTruth = SourceOfTruthImpl.from(conn, new File(DATA_FOLDER), console);
 
             // 5. Inicializar Componentes Cognitivos
             MemoryManager memoryManager = new MemoryManager(
