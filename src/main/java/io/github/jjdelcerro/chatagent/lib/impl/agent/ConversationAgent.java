@@ -144,10 +144,18 @@ public class ConversationAgent {
             String textUser = null;
             if( inputMessage instanceof ToolExecutionResultMessage ) {
                 ToolExecutionResultMessage result = (ToolExecutionResultMessage) inputMessage;
+
+                // Reconstruimos la petición original para mantener la coherencia del historial
                 ToolExecutionRequest request = ToolExecutionRequest.builder()
-                    .name(result.id())
-                    .id(result.toolName())
+                    .id(result.id())
+                    .name(result.toolName())
+                    .arguments("{}")
                     .build();
+
+                // Inyectamos la "intención" simulada del asistente antes del resultado
+                this.session.add(AiMessage.from(request));
+                this.session.add(result);
+
                 String contentType = "tool_execution";
                 Turn toolTurn = this.sourceOfTruth.createTurn(
                         Timestamp.from(Instant.now()),
@@ -159,8 +167,7 @@ public class ConversationAgent {
                         result.toString(),
                         null
                 );
-                // FIXME: CRITICO!! Aqui creo que faltaria insertar la llamada a la herramienta.
-                this.session.add(result);
+                
                 this.sourceOfTruth.add(toolTurn);
                 this.session.consolideTurn(toolTurn);
             } else {

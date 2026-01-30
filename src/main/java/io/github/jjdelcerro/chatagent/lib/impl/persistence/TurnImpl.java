@@ -78,7 +78,7 @@ public class TurnImpl implements Turn {
                 textModel,
                 toolCall,
                 toolResult
-        ).map(this::escapeCsv).collect(Collectors.joining(","));
+        ).map(this::escapeCsv).collect(Collectors.joining(",")).replace("\n","\\n");
     }
 
     /**
