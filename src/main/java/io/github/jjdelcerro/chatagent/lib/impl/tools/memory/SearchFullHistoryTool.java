@@ -3,6 +3,7 @@ package io.github.jjdelcerro.chatagent.lib.impl.tools.memory;
 import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
+import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.persistence.SourceOfTruth;
 import io.github.jjdelcerro.chatagent.lib.persistence.Turn;
 import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
@@ -15,11 +16,11 @@ import java.util.Map;
 public class SearchFullHistoryTool implements AgenteTool {
     public static final String NAME = "search_full_history";
 
-    private final SourceOfTruth sourceOfTruth;
+    private final Agent agent;
     private final Gson gson;
 
-    public SearchFullHistoryTool(SourceOfTruth sourceOfTruth) {
-        this.sourceOfTruth = sourceOfTruth;
+    public SearchFullHistoryTool(Agent agent) {
+        this.agent = agent;
         this.gson = new Gson();
     }
 
@@ -60,7 +61,7 @@ Par\u00e1metros:
             SearchArgs args = gson.fromJson(jsonArguments, SearchArgs.class);
             int safeLimit = Math.min(args.limit > 0 ? args.limit : 10, 50);
 
-            List<Turn> turns = sourceOfTruth.getTurnsByText(args.query, safeLimit);
+            List<Turn> turns = this.agent.getSourceOfTruth().getTurnsByText(args.query, safeLimit);
 
             // Mapeamos a una estructura ligera para devolver al LLM
             List<Map<String, Object>> results = new ArrayList<>();

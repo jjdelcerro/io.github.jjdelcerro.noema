@@ -8,7 +8,6 @@ import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.embedding.onnx.allminilml6v2.AllMiniLmL6V2EmbeddingModel;
 import io.github.jjdelcerro.chatagent.lib.persistence.CheckPoint;
 import io.github.jjdelcerro.chatagent.lib.persistence.Turn;
-import io.github.jjdelcerro.chatagent.lib.utils.ConsoleOutput;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -31,6 +30,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
+import io.github.jjdelcerro.chatagent.lib.AgentConsole;
 
 /**
  * Repositorio central que gestiona la persistencia (H2) y la indexación
@@ -48,10 +48,10 @@ public class SourceOfTruthImpl implements SourceOfTruth {
     private final Counter turnCounter;
     private final Counter checkpointCounter;
     private final EmbeddingModel embeddingModel;
-    private final ConsoleOutput console;
+    private final AgentConsole console;
 
     // Constructor privado
-    private SourceOfTruthImpl(Connection conn, File dataFolder, Counter turnCounter, Counter checkpointCounter, ConsoleOutput console) {
+    private SourceOfTruthImpl(Connection conn, File dataFolder, Counter turnCounter, Counter checkpointCounter, AgentConsole console) {
         this.conn = conn;
         this.dataFolder = dataFolder;
         this.turnCounter = turnCounter;
@@ -73,7 +73,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
     /**
      * Factoría de inicialización. Crea las tablas si no existen.
      */
-    public static SourceOfTruth from(Connection conn, File dataFolder, ConsoleOutput console) throws SQLException {
+    public static SourceOfTruth from(Connection conn, File dataFolder, AgentConsole console) throws SQLException {
         createTables(conn);
         Counter turnCounter = Counter.from(conn, "turnos");
         Counter checkpointCounter = Counter.from(conn, "checkpoints");

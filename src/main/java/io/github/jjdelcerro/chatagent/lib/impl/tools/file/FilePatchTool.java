@@ -8,6 +8,7 @@ import com.github.difflib.patch.PatchFailedException;
 import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
+import io.github.jjdelcerro.chatagent.lib.Agent;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -47,6 +48,12 @@ Si ves que **Devstral** te da errores de parseo, podemos añadir una pequeña l�
     private final Path rootPath = Paths.get(".").toAbsolutePath().normalize();
     private final Gson gson = new Gson();
 
+    private final Agent agent;
+    
+    public FilePatchTool(Agent agent) {
+      this.agent = agent;
+    }
+    
     @Override
     public ToolSpecification getSpecification() {
         return ToolSpecification.builder()

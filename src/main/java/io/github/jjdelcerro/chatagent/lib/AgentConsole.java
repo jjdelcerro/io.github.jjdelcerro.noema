@@ -1,10 +1,10 @@
-package io.github.jjdelcerro.chatagent.lib.utils;
+package io.github.jjdelcerro.chatagent.lib;
 
 /**
  *
  * @author jjdelcerro
  */
-public interface ConsoleOutput {
+public interface AgentConsole {
 
     boolean confirm(String message);
             

@@ -3,6 +3,7 @@ package io.github.jjdelcerro.chatagent.lib.impl.tools.file;
 import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
+import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,6 +26,12 @@ public class FileExtractTextTool implements AgenteTool {
     private final Gson gson = new Gson();
     private final Tika tika = new Tika(); // Tika centraliza la lógica de extracción
 
+    private final Agent agent;
+    
+    public FileExtractTextTool(Agent agent) {
+      this.agent = agent;
+    }
+    
     @Override
     public ToolSpecification getSpecification() {
         return ToolSpecification.builder()

@@ -6,6 +6,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
+import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
 
 import java.net.URI;
@@ -21,8 +22,11 @@ public class WebSearchTool implements AgenteTool {
     private final HttpClient httpClient;
     private final Gson gson = new Gson();
 
-    public WebSearchTool(String apiKey) {
-        this.apiKey = apiKey;
+    private final Agent agent;
+    
+    public WebSearchTool(Agent agent) {
+        this.agent = agent;
+        this.apiKey = agent.getSettings().getProperty("BRAVE_SEARCH_API_KEY");
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();

@@ -3,7 +3,7 @@ package io.github.jjdelcerro.chatagent.lib.impl.tools.memory;
 import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
-import io.github.jjdelcerro.chatagent.lib.persistence.SourceOfTruth;
+import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.persistence.Turn;
 import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
 
@@ -16,11 +16,11 @@ public class LookupTurnTool implements AgenteTool {
 
     public static final String NAME = "lookup_turn";
     
-    private final SourceOfTruth sourceOfTruth;
+    private final Agent agent;
     private final Gson gson;
 
-    public LookupTurnTool(SourceOfTruth sourceOfTruth) {
-        this.sourceOfTruth = sourceOfTruth;
+    public LookupTurnTool(Agent agent) {
+        this.agent = agent;
         this.gson = new Gson();
     }
 
@@ -65,7 +65,7 @@ Par\u00e1metros:
             int first = centerId - safeWindow;
             int last = centerId + safeWindow;
 
-            List<Turn> turns = sourceOfTruth.getTurnsByIds(first, last);
+            List<Turn> turns = agent.getSourceOfTruth().getTurnsByIds(first, last);
 
             List<Map<String, Object>> results = new ArrayList<>();
             for (Turn t : turns) {
