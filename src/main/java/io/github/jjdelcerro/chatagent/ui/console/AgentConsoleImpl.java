@@ -1,8 +1,8 @@
-package io.github.jjdelcerro.chatagent.lib.impl.utils;
+package io.github.jjdelcerro.chatagent.ui.console;
 
-import io.github.jjdelcerro.chatagent.lib.utils.ConsoleOutput;
 import org.jline.reader.LineReader;
 import org.jline.terminal.Terminal;
+import io.github.jjdelcerro.chatagent.lib.AgentConsole;
 
 /**
  * Implementación de ConsoleOutput basada en JLine3.
@@ -10,21 +10,22 @@ import org.jline.terminal.Terminal;
  * 
  * @author jjdelcerro
  */
-public class ConsoleOutputImpl implements ConsoleOutput {
+public class AgentConsoleImpl implements AgentConsole {
     
     private final Terminal terminal;
     private final LineReader lineReader;
 
-    private ConsoleOutputImpl(Terminal terminal, LineReader lineReader) {
+    public AgentConsoleImpl(Terminal terminal, LineReader lineReader) {
         this.terminal = terminal;
         this.lineReader = lineReader;
     }
 
-    /**
-     * Factoría que requiere los componentes de JLine inicializados.
-     */
-    public static ConsoleOutput create(Terminal terminal, LineReader lineReader) {
-        return new ConsoleOutputImpl(terminal, lineReader);
+    public Terminal getTerminal() {
+        return terminal;
+    }
+
+    public LineReader getLineReader() {
+        return lineReader;
     }
 
     @Override

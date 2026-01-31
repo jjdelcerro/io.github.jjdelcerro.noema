@@ -1,7 +1,7 @@
 package io.github.jjdelcerro.chatagent.lib.impl.tools.mail;
 
 import com.google.gson.Gson;
-import io.github.jjdelcerro.chatagent.lib.impl.agent.ConversationAgent;
+import io.github.jjdelcerro.chatagent.lib.impl.ConversationManagerImpl;
 import jakarta.mail.*;
 import jakarta.mail.internet.*;
 import org.apache.tika.Tika;
@@ -74,7 +74,7 @@ public class EmailService {
     }
 
     // --- Percepción Proactiva (IDLE) ---
-    public void startListener(ConversationAgent agent) {
+    public void startListener(ConversationManagerImpl agent) {
         Thread t = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
@@ -127,7 +127,7 @@ public class EmailService {
     @FunctionalInterface private interface FolderAction<T> { T run(Folder f) throws Exception; }
 
 
-    public static void install(ConversationAgent agent, String imap, String smtp, String user, String pass, String boss) {
+    public static void install(ConversationManagerImpl agent, String imap, String smtp, String user, String pass, String boss) {
         EmailService service = new EmailService(imap, smtp, user, pass, boss);
         
         // Instalamos las herramientas para que el agente pueda ACTUAR

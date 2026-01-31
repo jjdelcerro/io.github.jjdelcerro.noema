@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.chatagent.lib.impl.agent;
+package io.github.jjdelcerro.chatagent.lib.impl;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;

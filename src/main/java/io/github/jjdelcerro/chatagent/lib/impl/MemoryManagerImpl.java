@@ -1,28 +1,35 @@
-package io.github.jjdelcerro.chatagent.lib.impl.agent;
+package io.github.jjdelcerro.chatagent.lib.impl;
 
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.persistence.CheckPoint;
 import io.github.jjdelcerro.chatagent.lib.persistence.SourceOfTruth;
 import io.github.jjdelcerro.chatagent.lib.persistence.Turn;
-import io.github.jjdelcerro.chatagent.lib.utils.ConsoleOutput;
 
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
+import io.github.jjdelcerro.chatagent.lib.AgentConsole;
+import io.github.jjdelcerro.chatagent.lib.AgentSettings;
+import static io.github.jjdelcerro.chatagent.lib.AgentSettings.MEMORY_MODEL_ID;
+import static io.github.jjdelcerro.chatagent.lib.AgentSettings.MEMORY_PROVIDER_API_KEY;
+import static io.github.jjdelcerro.chatagent.lib.AgentSettings.MEMORY_PROVIDER_URL;
+import java.time.Duration;
 
 /**
  * Componente cognitivo encargado de la consolidación de la memoria. Ejecuta el
  * "Protocolo de Generación de Puntos de Guardado" utilizando un LLM.
  */
-public class MemoryManager {
+public class MemoryManagerImpl {
 
-    private final ChatLanguageModel model;
+    private final Agent agent;
     private final SourceOfTruth sourceOfTruth;
-    private final ConsoleOutput console;
+    private final AgentConsole console;
+    private ChatLanguageModel model;
 
     // Protocolo v4 definido en la especificación
     private static final String SYSTEM_PROMPT = """
@@ -255,15 +262,28 @@ Cuando se incluyan elementos recuperados del **punto de guardado anterior** se i
 
     /**
      * Constructor.
-     *
-     * @param apiKey Clave de API de OpenAI.
+   * @param agent
      */
-    public MemoryManager(SourceOfTruth sourceOfTruth, ChatLanguageModel model, ConsoleOutput console) {
-        this.console = console;
-        this.model = model;
-        this.sourceOfTruth = sourceOfTruth;
+    public MemoryManagerImpl(Agent agent) {
+        this.agent = agent;
+        this.sourceOfTruth = agent.getSourceOfTruth();
+        this.console = agent.getConsole();
+        this.createChatLanguageModel(this.agent.getSettings());
     }
 
+  public final boolean createChatLanguageModel(AgentSettings settings) {
+        this.model = OpenAiChatModel.builder()
+              .baseUrl(settings.getProperty(MEMORY_PROVIDER_URL))
+              .apiKey(settings.getProperty(MEMORY_PROVIDER_API_KEY))
+              .modelName(settings.getProperty(MEMORY_MODEL_ID))
+              .temperature(0.0)
+              .timeout(Duration.ofSeconds(180))
+              .logRequests(false)  // Útil para ver qué se envía en el PoC
+              .logResponses(false)
+              .build();
+        return true;
+    }
+    
     /**
      * Ejecuta el proceso de compactación.
      *

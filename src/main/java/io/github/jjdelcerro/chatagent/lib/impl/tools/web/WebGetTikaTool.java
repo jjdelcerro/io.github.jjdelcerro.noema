@@ -3,10 +3,10 @@ package io.github.jjdelcerro.chatagent.lib.impl.tools.web;
 import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
+import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
 import org.apache.tika.Tika;
 
-import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -21,7 +21,10 @@ public class WebGetTikaTool implements AgenteTool { // FIXME: alguna forma de pa
     private final Gson gson = new Gson();
     private static final int MAX_CHARS = 10000; // Tu política de recorte
 
-    public WebGetTikaTool() {
+    private final Agent agent;
+    
+    public WebGetTikaTool(Agent agent) {
+        this.agent = agent;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(15))
                 .followRedirects(HttpClient.Redirect.NORMAL)

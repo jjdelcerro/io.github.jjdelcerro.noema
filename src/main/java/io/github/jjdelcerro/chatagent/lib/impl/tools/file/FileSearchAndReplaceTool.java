@@ -3,6 +3,7 @@ package io.github.jjdelcerro.chatagent.lib.impl.tools.file;
 import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
+import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
 
 import java.nio.charset.StandardCharsets;
@@ -20,6 +21,12 @@ TODO: Para que el modelo no se frustre (porque a veces fallan por un espacio o u
     private final Path rootPath = Paths.get(".").toAbsolutePath().normalize();
     private final Gson gson = new Gson();
 
+    private final Agent agent;
+    
+    public FileSearchAndReplaceTool(Agent agent) {
+      this.agent = agent;
+    }
+    
     @Override
     public ToolSpecification getSpecification() {
         return ToolSpecification.builder()

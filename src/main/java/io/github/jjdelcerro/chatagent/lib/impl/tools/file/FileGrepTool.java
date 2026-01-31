@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import static dev.langchain4j.agent.tool.JsonSchemaProperty.description;
 import static dev.langchain4j.agent.tool.JsonSchemaProperty.type;
 import dev.langchain4j.agent.tool.ToolSpecification;
+import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -19,6 +20,12 @@ public class FileGrepTool implements AgenteTool {
     private final Path rootPath = Paths.get(".").toAbsolutePath().normalize();
     private final Gson gson = new Gson();
 
+    private final Agent agent;
+    
+    public FileGrepTool(Agent agent) {
+      this.agent = agent;
+    }
+    
     @Override
     public ToolSpecification getSpecification() {
         return ToolSpecification.builder()

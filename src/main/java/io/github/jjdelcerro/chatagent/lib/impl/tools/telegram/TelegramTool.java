@@ -7,7 +7,7 @@ import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
-import io.github.jjdelcerro.chatagent.lib.impl.agent.ConversationAgent;
+import io.github.jjdelcerro.chatagent.lib.impl.ConversationManagerImpl;
 import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
 import java.util.Map;
 
@@ -48,7 +48,7 @@ public class TelegramTool implements AgenteTool {
         return sr.isOk() ? "{\"status\":\"sent\"}" : "{\"status\":\"error\",\"msg\":\"" + sr.description() + "\"}";
     }
 
-    public static TelegramTool create(String apiKeyTelegram, long authorizedChatId, ConversationAgent agent) {
+    public static TelegramTool create(String apiKeyTelegram, long authorizedChatId, ConversationManagerImpl agent) {
         TelegramBot bot = new TelegramBot(apiKeyTelegram);
 
         bot.setUpdatesListener(updates -> {
