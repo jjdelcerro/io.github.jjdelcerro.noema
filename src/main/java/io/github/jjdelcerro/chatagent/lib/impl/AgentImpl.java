@@ -24,6 +24,9 @@ import io.github.jjdelcerro.chatagent.lib.impl.tools.file.FileSearchAndReplaceTo
 import io.github.jjdelcerro.chatagent.lib.impl.tools.file.FileWriteTool;
 import io.github.jjdelcerro.chatagent.lib.impl.tools.memory.LookupTurnTool;
 import io.github.jjdelcerro.chatagent.lib.impl.tools.memory.SearchFullHistoryTool;
+import io.github.jjdelcerro.chatagent.lib.impl.tools.web.LocationTool;
+import io.github.jjdelcerro.chatagent.lib.impl.tools.web.TimeTool;
+import io.github.jjdelcerro.chatagent.lib.impl.tools.web.WeatherTool;
 import io.github.jjdelcerro.chatagent.lib.impl.tools.web.WebGetTikaTool;
 import io.github.jjdelcerro.chatagent.lib.impl.tools.web.WebSearchTool;
 import io.github.jjdelcerro.chatagent.lib.persistence.SourceOfTruth;
@@ -88,9 +91,18 @@ public class AgentImpl implements Agent {
     console.println("Extract text tools installed");
 
     conversationManager.addTool(new WebGetTikaTool(this));
-
     console.println("Web access tools installed");
+    
+    conversationManager.addTool(new WeatherTool(this));
+    console.println("Weather tools installed");
 
+    conversationManager.addTool(new LocationTool(this));
+    console.println("Location tools installed");
+    
+    conversationManager.addTool(new TimeTool(this));
+    console.println("Time tools installed");
+    
+    
     String braveApiKey = this.settings.getProperty(BRAVE_SEARCH_API_KEY);
     if( StringUtils.isNotBlank(braveApiKey) ) {
         conversationManager.addTool(new WebSearchTool(this));
