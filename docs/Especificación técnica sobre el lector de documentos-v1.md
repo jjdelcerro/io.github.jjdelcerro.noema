@@ -1,7 +1,7 @@
 
 # Especificación Técnica: El Lector de Documentos
 
-El **Lector** es un proceso desacoplado del `ConversationAgent` cuya misión es transformar un documento extenso y no estructurado en un **Mapa de Conocimiento Jerárquico** persistido en un formato binario de acceso aleatorio.
+El **Lector** es un proceso desacoplado del `ConversationManager` cuya misión es transformar un documento extenso y no estructurado en un **Mapa de Conocimiento Jerárquico** persistido en un formato binario de acceso aleatorio.
 
 ## 1. El Flujo de Procesamiento (Las tres pasadas)
 
@@ -29,7 +29,7 @@ Para superar las limitaciones de contexto y garantizar la coherencia, el Lector 
 
 ## 2. Almacenamiento: El Fichero de Conocimiento (`.ckf`)
 
-El resultado no se guarda como un JSON masivo, sino como un fichero binario optimizado para el acceso aleatorio desde el `ConversationAgent`.
+El resultado no se guarda como un JSON masivo, sino como un fichero binario optimizado para el acceso aleatorio desde el `ConversationManager`.
 
 ### Estructura del Fichero:
 1.  **Cabecera (Header):**
@@ -46,7 +46,7 @@ El resultado no se guarda como un JSON masivo, sino como un fichero binario opti
 
 ## 3. Integración con el Agente Conversacional
 
-El `ConversationAgent` interactúa con el documento mediante un modelo de "percepción y herramientas":
+El `ConversationManager` interactúa con el documento mediante un modelo de "percepción y herramientas":
 
 *   **Notificación Proactiva:** Al terminar la lectura, el Lector inyecta un evento en el sistema (`putEvent`). El Agente percibe: *"Nuevo documento disponible: 'Manual de Topografía' [ID:DOC-001]"*.
 *   **Navegación Determinista:** El Agente dispone de herramientas para "tocar" el libro sin leerlo entero:

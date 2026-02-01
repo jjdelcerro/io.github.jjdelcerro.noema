@@ -12,6 +12,7 @@ import io.github.jjdelcerro.chatagent.lib.AgentSettings;
 import static io.github.jjdelcerro.chatagent.lib.AgentSettings.BRAVE_SEARCH_API_KEY;
 import static io.github.jjdelcerro.chatagent.lib.AgentSettings.CONVERSATION_MODEL_ID;
 import static io.github.jjdelcerro.chatagent.lib.AgentSettings.MEMORY_MODEL_ID;
+import io.github.jjdelcerro.chatagent.lib.PathAccessControl;
 import io.github.jjdelcerro.chatagent.lib.impl.persistence.SourceOfTruthImpl;
 import io.github.jjdelcerro.chatagent.lib.impl.tools.file.FileExtractTextTool;
 import io.github.jjdelcerro.chatagent.lib.impl.tools.file.FileFindTool;
@@ -27,8 +28,11 @@ import io.github.jjdelcerro.chatagent.lib.impl.tools.web.WebGetTikaTool;
 import io.github.jjdelcerro.chatagent.lib.impl.tools.web.WebSearchTool;
 import io.github.jjdelcerro.chatagent.lib.persistence.SourceOfTruth;
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -45,10 +49,14 @@ public class AgentImpl implements Agent {
   private final ConversationManagerImpl conversationManager;
   private final MemoryManagerImpl memoryManager;
 
+  private final PathAccessControl pathAccessControl;
+
   public AgentImpl(Connection conn, File dataFolder, AgentSettings settings, AgentConsole console) {
     this.dataFolder = dataFolder;
     this.settings = settings;
     this.console = console;
+
+    this.pathAccessControl = new PathAccessControlImpl(Paths.get(".").toAbsolutePath().normalize());
     
     this.actions = AgentLocator.getAgentManager().createActions();
     
@@ -165,5 +173,10 @@ public class AgentImpl implements Agent {
   public void putEvent(String channel, String priority, String eventText) {
     this.conversationManager.putEvent(channel, priority, eventText);
   }
-  
+
+  @Override
+  public PathAccessControl getPathAccessControl() {
+    return this.pathAccessControl;
+  }
+
 }

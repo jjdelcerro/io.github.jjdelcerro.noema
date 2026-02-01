@@ -59,6 +59,7 @@ public class Main {
       File dataFolder = new File(DATA_FOLDER);
       Files.createDirectories(dataFolder.toPath());
       
+      initSettings(dataFolder);
       initSettingsUI(dataFolder);
 
       // Inicializar la consola del agente
@@ -177,4 +178,22 @@ public class Main {
       System.err.println(">>> [ERR] Error al inicializar settingsui.json: " + e.getMessage());
     }
   }
+  
+  private static void initSettings(File dataFolder) {
+    File settingsFile = new File(dataFolder, "settings.properties");
+    if (settingsFile.exists()) {
+      return;
+    }
+    try (java.io.InputStream is = Main.class.getResourceAsStream("settings.json")) {
+      if (is == null) {
+        System.err.println(">>> [WARN] No se pudo encontrar el recurso settingsui.json");
+        return;
+      }
+      Files.copy(is, settingsFile.toPath());
+      System.out.println(">>> Configuración de UI inicializada en: " + settingsFile.getAbsolutePath());
+    } catch (Exception e) {
+      System.err.println(">>> [ERR] Error al inicializar settingsui.json: " + e.getMessage());
+    }
+  }
+  
 }

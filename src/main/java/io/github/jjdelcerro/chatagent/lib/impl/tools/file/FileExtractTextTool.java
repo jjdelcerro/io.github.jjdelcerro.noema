@@ -4,10 +4,9 @@ import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.chatagent.lib.Agent;
+import static io.github.jjdelcerro.chatagent.lib.PathAccessControl.AccessMode.PATH_ACCESS_READ;
 import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 import org.apache.tika.Tika;
 //import org.apache.tika.Tika;
@@ -22,7 +21,6 @@ public class FileExtractTextTool implements AgenteTool {
     TODO: Implementar esto cuando se introduzca Tika (paginacion?)
 */
     
-    private final Path rootPath = Paths.get(".").toAbsolutePath().normalize();
     private final Gson gson = new Gson();
     private final Tika tika = new Tika(); // Tika centraliza la lógica de extracción
 
@@ -47,10 +45,9 @@ public class FileExtractTextTool implements AgenteTool {
         try {
             Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
             String relativePath = args.get("path");
-            Path filePath = rootPath.resolve(relativePath).normalize();
 
-            // Seguridad
-            if (!filePath.startsWith(rootPath) || !Files.exists(filePath)) {
+            Path filePath = this.agent.getPathAccessControl().resolvePathOrNull(relativePath,PATH_ACCESS_READ);
+            if (filePath == null) {
                 return gson.toJson(Map.of("status", "error", "message", "Archivo no encontrado o acceso denegado."));
             }
 
