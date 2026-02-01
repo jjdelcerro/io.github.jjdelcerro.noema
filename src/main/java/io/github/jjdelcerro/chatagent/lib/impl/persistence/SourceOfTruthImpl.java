@@ -342,6 +342,11 @@ public class SourceOfTruthImpl implements SourceOfTruth {
 
     @Override
     public synchronized List<Turn> getTurnsByText(String query, int maxResults) {
+      /* 
+        La idea seria tener una implementacion de este metodo para utilizar con H2 en
+        entornos personales, y para entornos con cargas mas altas ir sustituir H2 por
+        PostgreSQL con el soporte de pgvector.
+      */
         try {
             // 1. Vectorizar la query
             Embedding queryEmb = embeddingModel.embed(query).content();

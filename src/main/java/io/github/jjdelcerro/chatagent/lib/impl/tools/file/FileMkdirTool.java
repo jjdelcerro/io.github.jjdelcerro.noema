@@ -4,74 +4,71 @@ import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.chatagent.lib.Agent;
+import static io.github.jjdelcerro.chatagent.lib.PathAccessControl.AccessMode.PATH_ACCESS_WRITE;
 import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 
 public class FileMkdirTool implements AgenteTool {
 
-    private final Path rootPath = Paths.get(".").toAbsolutePath().normalize();
-    private final Gson gson = new Gson();
+  private final Gson gson = new Gson();
 
-    private final Agent agent;
-    
-    public FileMkdirTool(Agent agent) {
-      this.agent = agent;
-    }
-    
-    @Override
-    public ToolSpecification getSpecification() {
-        return ToolSpecification.builder()
-                .name("file_mkdir")
-                .description("Crea un nuevo directorio o una ruta de directorios completa.")
-                .addParameter("path", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Ruta relativa del directorio a crear (ej: 'src/main/resources/data')"))
-                .build();
-    }
+  private final Agent agent;
 
-    @Override
-    public int getMode() {
-        return AgenteTool.MODE_WRITE;
-    }
-    
-    @Override
-    public String execute(String jsonArguments) {
-        try {
-            Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
-            String relativePath = args.get("path");
+  public FileMkdirTool(Agent agent) {
+    this.agent = agent;
+  }
 
-            if (relativePath == null || relativePath.isBlank()) {
-                return gson.toJson(Map.of("status", "error", "message", "El parámetro 'path' es obligatorio."));
-            }
+  @Override
+  public ToolSpecification getSpecification() {
+    return ToolSpecification.builder()
+            .name("file_mkdir")
+            .description("Crea un nuevo directorio o una ruta de directorios completa.")
+            .addParameter("path", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Ruta relativa del directorio a crear (ej: 'src/main/resources/data')"))
+            .build();
+  }
 
-            Path dirPath = rootPath.resolve(relativePath).normalize();
+  @Override
+  public int getMode() {
+    return AgenteTool.MODE_WRITE;
+  }
 
-            // SEGURIDAD: Impedir creación de carpetas fuera del proyecto
-            if (!dirPath.startsWith(rootPath)) {
-                return gson.toJson(Map.of("status", "error", "message", "Acceso denegado: No se puede crear directorios fuera de la raíz del proyecto."));
-            }
+  @Override
+  public String execute(String jsonArguments) {
+    try {
+      Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
+      String relativePath = args.get("path");
 
-            if (Files.exists(dirPath)) {
-                if (Files.isDirectory(dirPath)) {
-                    return gson.toJson(Map.of("status", "success", "message", "El directorio ya existe."));
-                } else {
-                    return gson.toJson(Map.of("status", "error", "message", "Ya existe un archivo con ese nombre."));
-                }
-            }
+      if (relativePath == null || relativePath.isBlank()) {
+        return gson.toJson(Map.of("status", "error", "message", "El parámetro 'path' es obligatorio."));
+      }
 
-            // Creación recursiva (mkdir -p)
-            Files.createDirectories(dirPath);
+      Path dirPath = this.agent.getPathAccessControl().resolvePathOrNull(relativePath,PATH_ACCESS_WRITE);
+      if (dirPath == null) {
+        return gson.toJson(Map.of("status", "error", "message", "Acceso denegado: No se puede crear directorios fuera de la raíz del proyecto."));
+      }
 
-            return gson.toJson(Map.of(
-                    "status", "success",
-                    "path", relativePath,
-                    "message", "Directorio creado correctamente."
-            ));
-
-        } catch (Exception e) {
-            return gson.toJson(Map.of("status", "error", "message", e.getMessage()));
+      if (Files.exists(dirPath)) {
+        if (Files.isDirectory(dirPath)) {
+          return gson.toJson(Map.of("status", "success", "message", "El directorio ya existe."));
+        } else {
+          return gson.toJson(Map.of("status", "error", "message", "Ya existe un archivo con ese nombre."));
         }
+      }
+
+      // Creación recursiva (mkdir -p)
+      Files.createDirectories(dirPath);
+
+      return gson.toJson(Map.of(
+              "status", "success",
+              "path", relativePath,
+              "message", "Directorio creado correctamente."
+      ));
+
+    } catch (Exception e) {
+      return gson.toJson(Map.of("status", "error", "message", e.getMessage()));
     }
+  }
 }

@@ -1,8 +1,4 @@
 
-# GEMINI.md - Contexto del Proyecto: ChatAgent de Memoria Híbrida
-
-Este documento proporciona el contexto arquitectónico y técnico para el proyecto `io.github.jjdelcerro.chatagent`, un sistema de agente conversacional diseñado para mantener una memoria coherente a largo plazo sin degradación cognitiva.
-
 # Análisis del Proyecto: io.github.jjdelcerro.chatagent
 
 ## 1. Visión General

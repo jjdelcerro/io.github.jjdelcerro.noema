@@ -8,7 +8,7 @@
       "childs": [
         {
           "type": "inputstring",
-          "label": "URL del proveedor para el modelo del ConversationManager",
+          "label": "URL del proveedor para el modelo del ConversationManager o LOCAL para modelos locales",
           "variableName": "CONVERSATION_PROVIDER_URL",
           "actionName": "CHANGE_CONVERSATION_PROVIDER"
         },
@@ -32,7 +32,8 @@
             { "type": "value", "label": "GPT OSS 120b", "value": "openai/gpt-oss-120b:free" },
             { "type": "value", "label": "GPT OSS 20b", "value": "openai/gpt-oss-20b:free" },
             { "type": "value", "label": "Qwen 3 coder", "value": "qwen/qwen3-coder:free" },
-            { "type": "value", "label": "Qwen 3 4b", "value": "qwen/qwen3-4b:free" }
+            { "type": "value", "label": "Qwen 3 4b", "value": "qwen/qwen3-4b:free" },
+            { "type": "value", "label": "Qwen 3 4b en local", "value": "models/Qwen_Qwen3-4B-Q4_K_M.gguf" }
           ]
         }
       ]
