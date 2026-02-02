@@ -1,22 +1,23 @@
 package io.github.jjdelcerro.chatagent.lib.impl;
 
-import io.github.jjdelcerro.chatagent.lib.PathAccessControl;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import io.github.jjdelcerro.chatagent.lib.AgentAccessControl;
+import java.net.URI;
 
 /**
  * Gestiona el acceso seguro al sistema de ficheros (Sandbox).
  */
-public class PathAccessControlImpl implements PathAccessControl {
+public class AgentAccessControlImpl implements AgentAccessControl {
 
     private final Path rootPath;
     // Lista de rutas adicionales permitidas fuera del root (ej: carpetas temporales)
     private final List<Path> allowedExternalPaths = new ArrayList<>();
     private final List<Path> nomWritablePaths = new ArrayList<>();
 
-    public PathAccessControlImpl(Path rootPath) {
+    public AgentAccessControlImpl(Path rootPath) {
         this.rootPath = rootPath.toAbsolutePath().normalize();
     }
 
@@ -109,7 +110,7 @@ public class PathAccessControlImpl implements PathAccessControl {
     }
 
   @Override
-  public boolean isPathAccessible(Path path, AccessMode mode) {
+  public boolean isAccessible(Path path, AccessMode mode) {
     return isPathAccessible(path.toString(), mode);
   }
 
@@ -121,6 +122,13 @@ public class PathAccessControlImpl implements PathAccessControl {
   @Override
   public Path resolvePathOrNull(Path path, AccessMode mode) {
     return resolvePathOrNull(path.toString(), mode);
+  }
+
+  @Override
+  public boolean isAccessible(URI url) { // FIXME: habria que afinar esto, probablemente usando AgentSettings
+    // habria que ver si es intersante restringir el protocolo.
+    String lower = url.toString().toLowerCase();
+    return lower.contains("localhost") || lower.contains("127.0.0.1") || lower.contains("192.168.");
   }
     
 }

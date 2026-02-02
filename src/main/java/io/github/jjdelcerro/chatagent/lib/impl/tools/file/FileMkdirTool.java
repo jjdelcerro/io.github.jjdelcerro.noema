@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.chatagent.lib.Agent;
-import static io.github.jjdelcerro.chatagent.lib.PathAccessControl.AccessMode.PATH_ACCESS_WRITE;
+import static io.github.jjdelcerro.chatagent.lib.AgentAccessControl.AccessMode.PATH_ACCESS_WRITE;
 import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
 
 import java.nio.file.Files;
@@ -45,7 +45,7 @@ public class FileMkdirTool implements AgenteTool {
         return gson.toJson(Map.of("status", "error", "message", "El parámetro 'path' es obligatorio."));
       }
 
-      Path dirPath = this.agent.getPathAccessControl().resolvePathOrNull(relativePath,PATH_ACCESS_WRITE);
+      Path dirPath = this.agent.getAccessControl().resolvePathOrNull(relativePath,PATH_ACCESS_WRITE);
       if (dirPath == null) {
         return gson.toJson(Map.of("status", "error", "message", "Acceso denegado: No se puede crear directorios fuera de la raíz del proyecto."));
       }

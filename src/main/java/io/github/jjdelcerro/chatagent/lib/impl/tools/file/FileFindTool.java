@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.chatagent.lib.Agent;
-import static io.github.jjdelcerro.chatagent.lib.PathAccessControl.AccessMode.PATH_ACCESS_READ;
+import static io.github.jjdelcerro.chatagent.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
 import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
 
 import java.io.IOException;
@@ -43,7 +43,7 @@ public class FileFindTool implements AgenteTool {
             final PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + pattern);
             List<Map<String, Object>> results = new ArrayList<>();
 
-            Path rootPath = this.agent.getPathAccessControl().resolvePathOrNull(",",PATH_ACCESS_READ);
+            Path rootPath = this.agent.getAccessControl().resolvePathOrNull(",",PATH_ACCESS_READ);
             Files.walkFileTree(rootPath, new SimpleFileVisitor<>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {

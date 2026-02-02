@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.chatagent.lib.Agent;
+import io.github.jjdelcerro.chatagent.lib.AgentAccessControl;
 import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
 import org.apache.tika.Tika;
 
@@ -44,10 +45,13 @@ public class WebGetTikaTool implements AgenteTool { // FIXME: alguna forma de pa
   public String execute(String jsonArguments) {
     try {
       Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
-      String url = args.get("url");
+      URI url = URI.create(args.get("url"));
 
+      if( !this.agent.getAccessControl().isAccessible(url) ) {
+        return "{\"status\": \"error\", \"code\": 403}";
+      }
       HttpRequest request = HttpRequest.newBuilder()
-              .uri(URI.create(url))
+              .uri(url)
               .header("User-Agent", "ChatAgent-Bot/1.0")
               .GET()
               .build();

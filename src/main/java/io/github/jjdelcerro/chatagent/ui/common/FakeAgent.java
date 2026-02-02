@@ -5,10 +5,10 @@ import io.github.jjdelcerro.chatagent.lib.AgentActions;
 import io.github.jjdelcerro.chatagent.lib.AgentConsole;
 import io.github.jjdelcerro.chatagent.lib.AgentLocator;
 import io.github.jjdelcerro.chatagent.lib.AgentSettings;
-import io.github.jjdelcerro.chatagent.lib.PathAccessControl;
 import io.github.jjdelcerro.chatagent.lib.persistence.SourceOfTruth;
 import java.io.File;
 import java.nio.file.Path;
+import io.github.jjdelcerro.chatagent.lib.AgentAccessControl;
 
 /**
  * Mínima implementación de Agent para permitir la configuración inicial
@@ -66,7 +66,7 @@ public class FakeAgent implements Agent {
     }
 
     @Override
-    public PathAccessControl getPathAccessControl() {
+    public AgentAccessControl getAccessControl() {
       throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 

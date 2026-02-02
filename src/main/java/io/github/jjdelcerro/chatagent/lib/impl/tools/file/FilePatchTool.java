@@ -9,7 +9,7 @@ import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.chatagent.lib.Agent;
-import static io.github.jjdelcerro.chatagent.lib.PathAccessControl.AccessMode.PATH_ACCESS_WRITE;
+import static io.github.jjdelcerro.chatagent.lib.AgentAccessControl.AccessMode.PATH_ACCESS_WRITE;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -75,7 +75,7 @@ Si ves que **Devstral** te da errores de parseo, podemos añadir una pequeña l�
             String relativePath = args.get("path");
             String patchString = args.get("patch");
 
-            Path filePath = this.agent.getPathAccessControl().resolvePathOrNull(relativePath,PATH_ACCESS_WRITE);
+            Path filePath = this.agent.getAccessControl().resolvePathOrNull(relativePath,PATH_ACCESS_WRITE);
             if (filePath == null) {
                 return gson.toJson(Map.of("status", "error", "message", "Archivo no encontrado o acceso denegado."));
             }            

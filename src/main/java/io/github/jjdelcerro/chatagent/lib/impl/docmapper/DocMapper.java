@@ -13,7 +13,34 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
+ * Esta clase esta EN CONSTRUCCION.
+ * 
+ * El DocMapper implementa el "Lector de documentos". Es un proceso desacoplado 
+ * del `ConversationManager` cuya misión es transformar un documento extenso y 
+ * no estructurado en un "Mapa de Conocimiento Jerárquico" persistido en un 
+ * formato binario de acceso aleatorio.
+ * 
+ * Para superar las limitaciones de contexto y garantizar la coherencia, el Lector 
+ * opera en tres fases secuenciales:
+ * - Pasada 1: Descubrimiento de Estructura (Serial)
+ * - Pasada 2: Digestión de Contenido (Paralelizable)
+ * - Pasada 3: Categorización y Síntesis Global
+ * 
+ * El resultado no se guarda como un JSON masivo, sino como un fichero 
+ * optimizado para el acceso aleatorio desde el `ConversationManager`.
+ * 
+ * El `ConversationManager` interactúa con el documento mediante un 
+ * modelo de "percepción y herramientas":
+ * - Notificación Proactiva: Al terminar la lectura, el Lector inyecta 
+ *   un evento en el sistema (`putEvent`). El Agente percibe: 
+ *   *"Nuevo documento disponible: 'Manual de Topografía' [ID:DOC-001]"*.
+ * 
+ * - Navegación Determinista: El Agente dispone de herramientas para 
+ *   "tocar" el libro sin leerlo entero:
+ *   - `doc_explorer`: Para ver el esquema y resúmenes de nivel superior.
+ *   - `doc_search`: Para buscar por significado en la sección de embeddings del fichero binario.
+ *   - `doc_read_leaf`: Para recuperar el texto bruto de una sección específica usando los punteros del binario.
+ * 
  * @author jjdelcerro
  */
 public class DocMapper {
