@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.chatagent.lib.Agent;
-import static io.github.jjdelcerro.chatagent.lib.PathAccessControl.AccessMode.PATH_ACCESS_WRITE;
+import static io.github.jjdelcerro.chatagent.lib.AgentAccessControl.AccessMode.PATH_ACCESS_WRITE;
 import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
 
 import java.nio.charset.StandardCharsets;
@@ -67,7 +67,7 @@ De esta forma, el `MemoryManager` (DeepSeek R1) podrá narrar en "El Viaje": *"E
       if (relativePath == null || content == null) {
         return gson.toJson(Map.of("status", "error", "message", "Faltan parámetros: path o content"));
       }
-      Path filePath = this.agent.getPathAccessControl().resolvePathOrNull(relativePath,PATH_ACCESS_WRITE);
+      Path filePath = this.agent.getAccessControl().resolvePathOrNull(relativePath,PATH_ACCESS_WRITE);
       if (filePath == null) {
         return gson.toJson(Map.of("status", "error", "message", "Acceso denegado: No se permite escribir fuera del directorio del proyecto."));
       }

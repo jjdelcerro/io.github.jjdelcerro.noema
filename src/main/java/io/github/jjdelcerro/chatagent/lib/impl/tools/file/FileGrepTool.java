@@ -5,7 +5,7 @@ import static dev.langchain4j.agent.tool.JsonSchemaProperty.description;
 import static dev.langchain4j.agent.tool.JsonSchemaProperty.type;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.chatagent.lib.Agent;
-import static io.github.jjdelcerro.chatagent.lib.PathAccessControl.AccessMode.PATH_ACCESS_READ;
+import static io.github.jjdelcerro.chatagent.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
 import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -44,7 +44,7 @@ public class FileGrepTool implements AgenteTool {
             String filePattern = args.getOrDefault("filePattern", "**/*");
             PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + filePattern);
 
-            Path rootPath = this.agent.getPathAccessControl().resolvePathOrNull(".",PATH_ACCESS_READ);
+            Path rootPath = this.agent.getAccessControl().resolvePathOrNull(".",PATH_ACCESS_READ);
 
             List<Map<String, String>> results = new ArrayList<>();
             Files.walk(rootPath)

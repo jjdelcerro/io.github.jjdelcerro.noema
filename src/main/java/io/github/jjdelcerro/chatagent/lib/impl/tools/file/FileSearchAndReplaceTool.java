@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.chatagent.lib.Agent;
-import static io.github.jjdelcerro.chatagent.lib.PathAccessControl.AccessMode.PATH_ACCESS_WRITE;
+import static io.github.jjdelcerro.chatagent.lib.AgentAccessControl.AccessMode.PATH_ACCESS_WRITE;
 import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
 
 import java.nio.charset.StandardCharsets;
@@ -49,7 +49,7 @@ TODO: Para que el modelo no se frustre (porque a veces fallan por un espacio o u
       Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
       String oldText = args.get("oldText");
       String newText = args.get("newText");
-      Path filePath = this.agent.getPathAccessControl().resolvePathOrNull(args.get("path"),PATH_ACCESS_WRITE);
+      Path filePath = this.agent.getAccessControl().resolvePathOrNull(args.get("path"),PATH_ACCESS_WRITE);
       if (filePath == null) {
         return gson.toJson(Map.of("status", "error", "message", "Acceso denegado."));
       }

@@ -1,12 +1,13 @@
 package io.github.jjdelcerro.chatagent.lib;
 
+import java.net.URI;
 import java.nio.file.Path;
 
 /**
  *
  * @author jjdelcerro
  */
-public interface PathAccessControl {
+public interface AgentAccessControl {
 
   public enum AccessMode {
     PATH_ACCESS_READ,
@@ -24,8 +25,10 @@ public interface PathAccessControl {
    */
   boolean isPathAccessible(String rawPath, AccessMode mode);
 
-  boolean isPathAccessible(Path path, AccessMode mode);
+  boolean isAccessible(Path path, AccessMode mode);
   
+  public boolean isAccessible(URI url);
+
   /**
    * Resuelve una ruta relativa contra el root y verifica la seguridad.Lanza
    * excepción si el acceso es denegado.

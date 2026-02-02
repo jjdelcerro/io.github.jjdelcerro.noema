@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.chatagent.lib.Agent;
-import static io.github.jjdelcerro.chatagent.lib.PathAccessControl.AccessMode.PATH_ACCESS_READ;
+import static io.github.jjdelcerro.chatagent.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
 import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
 
 import java.io.IOException;
@@ -67,7 +67,7 @@ public class FileReadSelectorsTool implements AgenteTool {
           sb.append("\n--- [AVISO: Límite de tamaño alcanzado, resto de archivos omitidos] ---\n");
           break;
         }
-        Path relPath = this.agent.getPathAccessControl().resolvePathOrNull(path,PATH_ACCESS_READ);
+        Path relPath = this.agent.getAccessControl().resolvePathOrNull(path,PATH_ACCESS_READ);
         if( relPath==null ) {
           continue;
         }
@@ -112,7 +112,7 @@ public class FileReadSelectorsTool implements AgenteTool {
       if (selector.contains("*") || selector.contains("?")) {
         // Es un patrón Glob
         final PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + selector);
-        Path rootPath = this.agent.getPathAccessControl().resolvePathOrNull(".",PATH_ACCESS_READ);
+        Path rootPath = this.agent.getAccessControl().resolvePathOrNull(".",PATH_ACCESS_READ);
         if( rootPath!=null ) {
           Files.walkFileTree(rootPath, new SimpleFileVisitor<>() {
             @Override
@@ -136,7 +136,7 @@ public class FileReadSelectorsTool implements AgenteTool {
         }
       } else {
         // Es una ruta directa
-        Path p = this.agent.getPathAccessControl().resolvePathOrNull(selector,PATH_ACCESS_READ);
+        Path p = this.agent.getAccessControl().resolvePathOrNull(selector,PATH_ACCESS_READ);
         if (p!=null && Files.exists(p) && Files.isRegularFile(p) ) {
           resolved.add(p);
         }

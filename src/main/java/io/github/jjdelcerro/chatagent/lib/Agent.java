@@ -69,7 +69,7 @@ public interface Agent {
    */
   public void putEvent(String channel, String priority, String eventText);
 
-  public PathAccessControl getPathAccessControl();
+  public AgentAccessControl getAccessControl();
 
   public void setConsole(AgentConsole console);
 }

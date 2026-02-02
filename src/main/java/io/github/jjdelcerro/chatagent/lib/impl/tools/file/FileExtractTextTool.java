@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.chatagent.lib.Agent;
-import static io.github.jjdelcerro.chatagent.lib.PathAccessControl.AccessMode.PATH_ACCESS_READ;
+import static io.github.jjdelcerro.chatagent.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
 import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
 import java.nio.file.Path;
 import java.util.Map;
@@ -46,7 +46,7 @@ public class FileExtractTextTool implements AgenteTool {
             Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
             String relativePath = args.get("path");
 
-            Path filePath = this.agent.getPathAccessControl().resolvePathOrNull(relativePath,PATH_ACCESS_READ);
+            Path filePath = this.agent.getAccessControl().resolvePathOrNull(relativePath,PATH_ACCESS_READ);
             if (filePath == null) {
                 return gson.toJson(Map.of("status", "error", "message", "Archivo no encontrado o acceso denegado."));
             }

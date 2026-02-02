@@ -3,6 +3,7 @@ package io.github.jjdelcerro.chatagent.lib.impl.tools.web;
 import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
+import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.tools.AgenteTool;
 
 import java.net.URI;
@@ -18,8 +19,10 @@ public class WebGetTool implements AgenteTool {
   private final HttpClient httpClient;
   private final Gson gson = new Gson();
   private static final int MAX_CHARS = 10000; // Límite razonable para no saturar el contexto
+  private final Agent agent;
 
-  public WebGetTool() {
+  public WebGetTool(Agent agent) {
+    this.agent = agent;
     this.httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(15))
             .followRedirects(HttpClient.Redirect.NORMAL)
@@ -39,15 +42,13 @@ public class WebGetTool implements AgenteTool {
   public String execute(String jsonArguments) {
     try {
       Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
-      String url = args.get("url");
+      URI url = URI.create(args.get("url"));
 
-      // SEGURIDAD BÁSICA: Evitar acceso a red local (Opcional pero recomendado)
-      if (isInternalAddress(url)) {
-        return "{\"status\": \"error\", \"message\": \"Acceso denegado a direcciones internas.\"}";
+      if( !this.agent.getAccessControl().isAccessible(url) ) {
+        return "{\"status\": \"error\", \"code\": 403, \"message\": \"Acceso denegado.\"}";
       }
-
       HttpRequest request = HttpRequest.newBuilder()
-              .uri(URI.create(url))
+              .uri(url)
               .header("User-Agent", "ChatAgent-Bot/1.0 (Pragmatic Architecture Experiment)")
               .GET()
               .build();
@@ -76,11 +77,6 @@ public class WebGetTool implements AgenteTool {
     } catch (Exception e) {
       return "{\"status\": \"error\", \"message\": \"" + e.getMessage() + "\"}";
     }
-  }
-
-  private boolean isInternalAddress(String url) {
-    String lower = url.toLowerCase();
-    return lower.contains("localhost") || lower.contains("127.0.0.1") || lower.contains("192.168.");
   }
 
   /**
