@@ -12,8 +12,8 @@ import io.github.jjdelcerro.chatagent.lib.AgentSettings;
 import static io.github.jjdelcerro.chatagent.lib.AgentSettings.BRAVE_SEARCH_API_KEY;
 import static io.github.jjdelcerro.chatagent.lib.AgentSettings.CONVERSATION_MODEL_ID;
 import static io.github.jjdelcerro.chatagent.lib.AgentSettings.MEMORY_MODEL_ID;
-import io.github.jjdelcerro.chatagent.lib.PathAccessControl;
 import io.github.jjdelcerro.chatagent.lib.impl.persistence.SourceOfTruthImpl;
+import io.github.jjdelcerro.chatagent.lib.impl.tools.events.PoolEventTool;
 import io.github.jjdelcerro.chatagent.lib.impl.tools.file.FileExtractTextTool;
 import io.github.jjdelcerro.chatagent.lib.impl.tools.file.FileFindTool;
 import io.github.jjdelcerro.chatagent.lib.impl.tools.file.FileGrepTool;
@@ -37,6 +37,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
+import io.github.jjdelcerro.chatagent.lib.AgentAccessControl;
 
 /**
  *
@@ -52,14 +53,14 @@ public class AgentImpl implements Agent {
   private final ConversationManagerImpl conversationManager;
   private final MemoryManagerImpl memoryManager;
 
-  private final PathAccessControl pathAccessControl;
+  private final AgentAccessControl pathAccessControl;
 
   public AgentImpl(Connection conn, File dataFolder, AgentSettings settings, AgentConsole console) {
     this.dataFolder = dataFolder;
     this.settings = settings;
     this.console = console;
 
-    this.pathAccessControl = new PathAccessControlImpl(Paths.get(".").toAbsolutePath().normalize());
+    this.pathAccessControl = new AgentAccessControlImpl(Paths.get(".").toAbsolutePath().normalize());
     
     this.actions = AgentLocator.getAgentManager().createActions();
     
@@ -72,7 +73,9 @@ public class AgentImpl implements Agent {
     memoryManager = new MemoryManagerImpl(this);
 
     conversationManager = new ConversationManagerImpl(this);
-
+    
+    conversationManager.addTool(new PoolEventTool(this));
+    
     conversationManager.addTool(new SearchFullHistoryTool(this));
     conversationManager.addTool(new LookupTurnTool(this));  
 
@@ -187,7 +190,7 @@ public class AgentImpl implements Agent {
   }
 
   @Override
-  public PathAccessControl getPathAccessControl() {
+  public AgentAccessControl getAccessControl() {
     return this.pathAccessControl;
   }
 
