@@ -36,6 +36,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTextField;
 import javax.swing.JTree;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 
 public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
@@ -79,10 +80,11 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
     if (item != null) {
       JComponent comp = item.getComponent();
       if (comp != null) {
+        // Usamos CENTER para que el componente interno decida cómo crecer
         detailPanel.add(comp, BorderLayout.NORTH);
       } else {
         JLabel lbl = new JLabel("Seleccione una sub-opción para: " + item.getLabel());
-        lbl.setBorder(BorderFactory.createEmptyBorder(20, 20, 0, 0));
+        lbl.setHorizontalAlignment(SwingConstants.CENTER);
         detailPanel.add(lbl, BorderLayout.NORTH);
       }
     }
@@ -105,7 +107,7 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
 
   private DefaultMutableTreeNode buildTreeNodes(AgentSettingsItem item) {
     DefaultMutableTreeNode node = new DefaultMutableTreeNode(item);
-    if ("menu".equalsIgnoreCase(item.getType())) { 
+    if ("menu".equalsIgnoreCase(item.getType())) {
       List<AgentSettingsItem> childs = item.getChilds();
       if (childs != null) {
         for (AgentSettingsItem child : childs) {
@@ -139,12 +141,14 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
   // INTERFAZ Y CLASES ESTÁTICAS DE ITEMS
   // =========================================================================
   public interface AgentSettingsItemSwing extends AgentSettingsItem {
+
     JComponent getComponent();
+
     boolean isLeaf();
   }
 
-  private static abstract class AbstractAgentSettingsItemSwing 
-          extends AbstractAgentSettingsItem 
+  private static abstract class AbstractAgentSettingsItemSwing
+          extends AbstractAgentSettingsItem
           implements AgentSettingsItemSwing {
 
     public AbstractAgentSettingsItemSwing(AgentSettingsItem parent, Agent agent, JsonObject json) {
@@ -155,7 +159,7 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
     public boolean isLeaf() {
       return getChilds() == null || getChilds().isEmpty();
     }
-    
+
     protected AgentSettingsItem createItem(AgentSettingsItem parent, Agent agent, JsonObject json) {
       String type = json.get("type").getAsString().toLowerCase();
       return switch (type) {
@@ -195,11 +199,13 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
     public JComponent getComponent() {
       JPanel p = new JPanel(new GridBagLayout());
       p.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-      GridBagConstraints gbc = new GridBagConstraints();
-      gbc.gridx = 0;
+      GridBagConstraints gbc = new GridBagConstraints();        
+      gbc.gridx = 0; 
       gbc.gridy = 0;
-      gbc.anchor = GridBagConstraints.WEST;
-
+      gbc.weightx = 1.0; // Ocupa todo el ancho
+      gbc.fill = GridBagConstraints.HORIZONTAL;
+      gbc.anchor = GridBagConstraints.NORTHWEST;
+        
       p.add(new JLabel("<html><b>" + getLabel() + "</b></html>"), gbc);
 
       String current = agent.getSettings().getProperty(getVariableName());
@@ -237,6 +243,12 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
       gbc.insets = new Insets(10, 0, 0, 0);
       p.add(field, gbc);
 
+      // EL TRUCO: Un panel vacío con weighty = 1.0 que empuja todo hacia arriba
+      gbc.gridy = 2;
+      gbc.weighty = 1.0;
+      gbc.fill = GridBagConstraints.BOTH;
+      p.add(new JPanel(), gbc);
+
       return p;
     }
   }
@@ -252,7 +264,6 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
       JPanel p = new JPanel(new BorderLayout(10, 10));
       p.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
       p.add(new JLabel("<html><b>" + getLabel() + "</b></html>"), BorderLayout.NORTH);
-
       DefaultListModel<AgentSettingsItem> model = new DefaultListModel<>();
       for (AgentSettingsItem child : getChilds()) {
         model.addElement(child);
