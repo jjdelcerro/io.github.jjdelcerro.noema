@@ -17,7 +17,6 @@ El proyecto destaca por evitar frameworks pesados, optando por una arquitectura 
 *   **Interfaz de Usuario:** **JLine 3** para una CLI interactiva rica con soporte multilínea.
 *   **Comunicación:** APIs de **Telegram** y **Jakarta Mail**.
 
----
 
 ## 3. Estructura de Paquetes y Diseño
 El proyecto sigue un patrón de separación clara entre contrato e implementación:
@@ -28,7 +27,6 @@ El proyecto sigue un patrón de separación clara entre contrato e implementaci�
 *   **`lib.impl.tools`:** Organizado por dominios (file, mail, memory, telegram, web).
 *   **`ui.console`:** Implementación específica de la interfaz para terminales.
 
----
 
 ## 4. Arquitectura y Mecanismos Principales
 
@@ -53,7 +51,6 @@ La clase `PathAccessControlImpl` actúa como un cortafuegos para el sistema de a
 *   **Jailbreak Prevention:** Resuelve las rutas y verifica que siempre estén bajo el directorio raíz del proyecto o rutas permitidas explícitamente.
 *   **Modos de Acceso:** Diferencia entre lectura y escritura, bloqueando escrituras en directorios críticos como `.git`.
 
----
 
 ## 5. Herramientas del Agente (Tools)
 El agente posee un set de capacidades muy orientado al desarrollo de software y la gestión de información:
@@ -63,19 +60,18 @@ El agente posee un set de capacidades muy orientado al desarrollo de software y 
 *   **Memoria:** Herramientas específicas para navegar por su propia historia.
 *   **Comunicación:** Envío y lectura de correos y mensajes de Telegram.
 
----
 
 ## 6. Construcción y Despliegue
 *   **Maven:** Gestiona las dependencias.
 *   **Shade Plugin:** Genera un **Fat JAR** (Uber-JAR).
 *   **Detalle Crítico:** Se utiliza `ServicesResourceTransformer` en el pom.xml. Esto es vital para que las librerías que usan SPI (como LangChain4j o Tika) no pierdan sus definiciones al combinar los JARs.
 
----
 
 ## 7. Conclusión
 Este proyecto representa una pieza de ingeniería de software robusta y bien pensada. No se limita a ser una interfaz de chat; es una implementación práctica de **RAG Narrativo**. 
 
 **Puntos Fuertes:**
+
 *   **Determinismo:** Obliga al modelo a citar fuentes, reduciendo alucinaciones.
 *   **Privacidad:** Embeddings y base de datos locales.
 *   **Extensibilidad:** Es muy fácil añadir nuevas herramientas siguiendo la interfaz `AgenteTool`.

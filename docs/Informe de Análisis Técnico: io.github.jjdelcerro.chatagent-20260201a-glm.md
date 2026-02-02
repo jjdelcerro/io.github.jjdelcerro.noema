@@ -91,6 +91,7 @@ Este es el mecanismo más sofisticado del proyecto. La memoria no es un simple h
 ### 4.2. Gestión de Eventos (Sensores Asíncronos)
 
 El agente es reactivo y proactivo.
+
 *   Los servicios externos (**Telegram** y **Email**) actúan como sensores.
 *   Cuando llega un mensaje, no se procesa inmediatamente como si fuera el usuario en la consola. En su lugar, se inyecta en una cola concurrente vía `putEvent`.
 *   El `ConversationManager` (orquestador) tiene un mecanismo `pool_event` que simula que el evento es una "respuesta de herramienta" dentro del flujo de chat.
@@ -99,6 +100,7 @@ El agente es reactivo y proactivo.
 ### 4.3. Seguridad (Sandboxing)
 
 La seguridad es crítica, especialmente al dar al agente acceso al sistema de archivos.
+
 *   **`PathAccessControlImpl` (Inferido):** Actúa como un cortafuegos.
 *   **Prevención de Jailbreak:** Resuelve rutas canónicas y verifica que todo acceso esté dentro del directorio raíz del proyecto o rutas explícitamente permitidas.
 *   **Control de Escritura:** Bloquea escrituras en directorios sensibles como `.git`.
@@ -155,12 +157,14 @@ El agente cuenta con un arsenal modular implementado en `lib.impl.tools`:
 El proyecto `io.github.jjdelcerro.chatagent` es una implementación de referencia de cómo construir un agente de IA **serio, persistente y seguro**.
 
 **Puntos Fuertes:**
+
 1.  **Memoria a Prueba de Fallos:** La combinación de base de datos SQL + archivos CSV + checkpoints narrativos asegura que la información no se pierda y que el contexto se gestione eficientemente a largo plazo.
 2.  **Privacidad por Diseño:** La vectorización local elimina la necesidad de enviar datos privados a APIs de terceros para el proceso de indexación.
 3.  **Determinismo:** La obligación de citar fuentes mediante IDs (`{cite:ID}`) reduce significativamente las alucinaciones típicas de los LLM.
 4.  **Eficiencia:** El uso de Java 21, hilos virtuales (implícitos en el diseño moderno) y una base de datos ligera como H2 lo hace ideal para ejecutarse en equipos de desarrollo local o servidores modestos.
 
 **Detalles Técnicos Destacados:**
+
 *   La implementación manual de búsqueda vectorial (`SourceOfTruthImpl.getTurnsByText`) sobre H2 demuestra un nivel de control técnico bajo, evitando dependencias de bases vectoriales complejas para prototipos, aunque esto podría ser un cuello de botella si la escala de turnos supera los miles/millones sin paginación optimizada (actualmente carga todos los BLOBs en memoria para calcular el score).
 *   La arquitectura de seguridad basada en `PathAccessControl` es robusta frente a intentos de escape del sandbox.
 

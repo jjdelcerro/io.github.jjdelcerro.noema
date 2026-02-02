@@ -44,7 +44,7 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class AgentImpl implements Agent {
 
-  private final AgentConsole console;
+  private AgentConsole console;
   private final AgentSettings settings;
   private AgentActions actions;
   private final File dataFolder;
@@ -191,4 +191,9 @@ public class AgentImpl implements Agent {
     return this.pathAccessControl;
   }
 
+  @Override
+  public void setConsole(AgentConsole console) {
+    this.console = console;
+  }
+  
 }

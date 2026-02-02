@@ -1,0 +1,78 @@
+{
+  "type": "menu",
+  "label": "Configuracion del Agente",
+  "childs": [
+    {
+      "type": "menu",
+      "label": "Configuracion para el modelo del ConversationManager",
+      "childs": [
+        {
+          "type": "inputstring",
+          "label": "URL del proveedor para el modelo del ConversationManager o LOCAL para modelos locales",
+          "variableName": "CONVERSATION_PROVIDER_URL",
+          "actionName": "CHANGE_CONVERSATION_PROVIDER"
+        },
+        {
+          "type": "inputstring",
+          "label": "API Key para el modelo del ConversationManager",
+          "variableName": "CONVERSATION_PROVIDER_API_KEY",
+          "actionName": "CHANGE_CONVERSATION_PROVIDER"
+        },
+        {
+          "type": "selectoption",
+          "label": "Seleccionar Modelo para el modelo del ConversationManager",
+          "variableName": "CONVERSATION_MODEL_ID",
+          "actionName": "CHANGE_CONVERSATION_MODEL",
+          "childs": [
+            { "type": "value", "label": "GLM-4.5-Air", "value": "z-ai/glm-4.5-air:free" },
+            { "type": "value", "label": "Llama 3.3 70B", "value": "meta-llama/llama-3.3-70b-instruct:free" },
+            { "type": "value", "label": "DeepSeek R1", "value": "tngtech/deepseek-r1t2-chimera:free" },
+            { "type": "value", "label": "Hermes 3 405b", "value": "nousresearch/hermes-3-llama-3.1-405b:free" },
+            { "type": "value", "label": "Mistral small 3.1 24b instruct", "value": "mistralai/mistral-small-3.1-24b-instruct:free" },
+            { "type": "value", "label": "GPT OSS 120b", "value": "openai/gpt-oss-120b:free" },
+            { "type": "value", "label": "GPT OSS 20b", "value": "openai/gpt-oss-20b:free" },
+            { "type": "value", "label": "Qwen 3 coder", "value": "qwen/qwen3-coder:free" },
+            { "type": "value", "label": "Qwen 3 4b", "value": "qwen/qwen3-4b:free" },
+            { "type": "value", "label": "Qwen 3 4b en local", "value": "models/Qwen_Qwen3-4B-Q4_K_M.gguf" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "menu",
+      "label": "Configuracion para el modelo del MemoryManager",
+      "childs": [
+        {
+          "type": "inputstring",
+          "label": "URL del proveedor para el modelo del MemoryManager",
+          "variableName": "MEMORY_PROVIDER_URL",
+          "actionName": "CHANGE_MEMORY_PROVIDER"
+        },
+        {
+          "type": "inputstring",
+          "label": "API Key para el modelo del MemoryManager",
+          "variableName": "MEMORY_PROVIDER_API_KEY",
+          "actionName": "CHANGE_MEMORY_PROVIDER"
+        },
+        {
+          "type": "selectoption",
+          "label": "Seleccionar Modelo para el modelo del MemoryManager",
+          "variableName": "MEMORY_MODEL_ID",
+          "actionName": "CHANGE_MEMORY_MODEL",
+          "childs": [
+            { "type": "value", "label": "DeepSeek R1", "value": "tngtech/deepseek-r1t2-chimera:free" },
+            { "type": "value", "label": "GLM-4.5-Air", "value": "z-ai/glm-4.5-air:free" },
+            { "type": "value", "label": "Mistral small 3.1 24b instruct", "value": "mistralai/mistral-small-3.1-24b-instruct:free" },
+            { "type": "value", "label": "GPT OSS 120b", "value": "openai/gpt-oss-120b:free" },
+            { "type": "value", "label": "Hermes 3 405b", "value": "nousresearch/hermes-3-llama-3.1-405b:free" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "inputstring",
+      "label": "Brave Search API Key",
+      "variableName": "BRAVE_SEARCH_API_KEY"
+    }
+  ]
+}

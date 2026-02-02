@@ -37,7 +37,6 @@ import io.github.jjdelcerro.chatagent.lib.AgentSettings;
 import static io.github.jjdelcerro.chatagent.lib.AgentSettings.CONVERSATION_MODEL_ID;
 import static io.github.jjdelcerro.chatagent.lib.AgentSettings.CONVERSATION_PROVIDER_API_KEY;
 import static io.github.jjdelcerro.chatagent.lib.AgentSettings.CONVERSATION_PROVIDER_URL;
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -79,7 +78,7 @@ public class ConversationManagerImpl {
   private final AgentImpl agent;
   private final SourceOfTruth sourceOfTruth;
   private final MemoryManagerImpl memoryManager;
-  private final AgentConsole console;
+  private AgentConsole console;
   private final Session session;
   private ChatLanguageModel model;
 
@@ -107,7 +106,7 @@ public class ConversationManagerImpl {
   }
 
   public final boolean createChatLanguageModel(AgentSettings settings) {
-    
+
 //    if ("LOCAL".equals(settings.getProperty("CONVERSATION_PROVIDER_URL"))) {
 //        File f = new File(this.agent.getDataFolder(),settings.getProperty("CONVERSATION_MODEL_ID"));
 //        this.model = LlamaCppChatModel.builder()
@@ -115,15 +114,15 @@ public class ConversationManagerImpl {
 //                .contextSize(32768) 
 //                .build();
 //    }  else {  
-      this.model = OpenAiChatModel.builder()
-              .baseUrl(settings.getProperty(CONVERSATION_PROVIDER_URL))
-              .apiKey(settings.getProperty(CONVERSATION_PROVIDER_API_KEY))
-              .modelName(settings.getProperty(CONVERSATION_MODEL_ID))
-              .temperature(0.7)
-              .timeout(Duration.ofSeconds(180))
-              .logRequests(false) // Util para ver que se envia en el PoC
-              .logResponses(false)
-              .build();
+    this.model = OpenAiChatModel.builder()
+            .baseUrl(settings.getProperty(CONVERSATION_PROVIDER_URL))
+            .apiKey(settings.getProperty(CONVERSATION_PROVIDER_API_KEY))
+            .modelName(settings.getProperty(CONVERSATION_MODEL_ID))
+            .temperature(0.7)
+            .timeout(Duration.ofSeconds(180))
+            .logRequests(false) // Util para ver que se envia en el PoC
+            .logResponses(false)
+            .build();
 //    }
     return true;
   }
@@ -289,21 +288,21 @@ public class ConversationManagerImpl {
 
   private String getBaseSystemPrompt() {
     try {
-      DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, HH:mm", new Locale("es", "ES"));    
+      DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, HH:mm", new Locale("es", "ES"));
       String systemPrompt = IOUtils.resourceToString(
-          "/io/github/jjdelcerro/chatagent/lib/impl/prompt-system-conversationmanager.md",
-          StandardCharsets.UTF_8, 
-          this.getClass().getClassLoader()
+              "io/github/jjdelcerro/chatagent/lib/impl/prompt-system-conversationmanager.md",
+              StandardCharsets.UTF_8,
+              this.getClass().getClassLoader()
       );
       systemPrompt = StringUtils.replace(systemPrompt, "{NOW}", LocalDateTime.now().format(formatter));
       systemPrompt = StringUtils.replace(systemPrompt, "{LOOKUPTURN}", LookupTurnTool.NAME);
-      systemPrompt = StringUtils.replace(systemPrompt, "{SEARCHFULLHISTORY}", SearchFullHistoryTool.NAME);    
+      systemPrompt = StringUtils.replace(systemPrompt, "{SEARCHFULLHISTORY}", SearchFullHistoryTool.NAME);
       return systemPrompt;
-    } catch(IOException ex) {
+    } catch (IOException ex) {
       throw new RuntimeException("Can't load system prompt for conversation manager", ex);
     }
   }
-    
+
   private String executeToolLogic(ToolExecutionRequest request) {
     String toolName = request.name();
     String args = request.arguments();
@@ -373,4 +372,9 @@ public class ConversationManagerImpl {
 
     this.console.println("Memoria compactada con éxito. Nuevo CheckPoint ID: " + newCheckPoint.getId());
   }
+
+  public void setConsole(AgentConsole console) {
+    this.console = console;
+  }
+
 }
