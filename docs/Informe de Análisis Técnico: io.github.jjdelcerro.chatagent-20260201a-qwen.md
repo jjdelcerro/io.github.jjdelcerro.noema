@@ -112,6 +112,7 @@ El sistema implementa una arquitectura de memoria en tres capas interconectadas:
 #### 1. Turnos (Turns) - Memoria Atómica e Inmutable
 - **Definición**: Unidad mínima de información persistida en H2 con garantía de inmutabilidad.
 - **Estructura (`TurnImpl`)**:
+
   ```java
   public interface Turn {
       int getId();                          // Identificador único e inmutable
@@ -147,6 +148,7 @@ El sistema implementa una arquitectura de memoria en tres capas interconectadas:
   - *Metadatos en BD*: `id`, `turn_first`, `turn_last`, `timestamp` (tabla `checkpoints`)
   - *Contenido en disco*: Archivo Markdown en `checkpoints/checkpoint-{id}-{first}-{last}.md`
 - **Formato del Contenido**:
+
   ```markdown
   ## Resumen
   [Resumen ejecutivo factual con decisiones clave, estado actual y próximos pasos]
@@ -158,6 +160,7 @@ El sistema implementa una arquitectura de memoria en tres capas interconectadas:
 
 #### 4. Proceso de Compactación: La Máquina del Tiempo
 Cuando la sesión supera el umbral:
+
 1. **Identificación de Marcas Inteligentes**:
    - `getOldestMark()`: Primer turno consolidado en la sesión (índice 0 si existe)
    - `getCompactMark()`: Punto medio ajustado al final de un bloque de turnos del mismo ID (evita romper secuencias lógicas)
@@ -189,6 +192,7 @@ El agente implementa un sistema sofisticado de **estímulos externos asíncronos
    - `contents`: Contenido del evento
 
 2. **Inyección de Eventos**:
+
    ```java
    public synchronized void putEvent(String channel, String priority, String eventText) {
        pendingEvents.offer(new Event(channel, priority, eventText));
@@ -211,6 +215,7 @@ El agente implementa un sistema sofisticado de **estímulos externos asíncronos
 `PathAccessControlImpl` implementa un sistema de seguridad multicapa para el sistema de archivos:
 
 1. **Prevención de Path Traversal**:
+
    ```java
    Path target = inputPath.isAbsolute() ? inputPath : rootPath.resolve(inputPath);
    target = target.normalize(); // Elimina ".." y "."
@@ -441,6 +446,7 @@ Este proyecto representa una implementación práctica y madura de **RAG Narrati
 
 ### Detalle Arquitectónico Sobresaliente: El Protocolo de Compactación
 El prompt `prompt-compact-memorymanager.md` es una obra de ingeniería cognitiva que define:
+
 - **Principio de la Espiral de Contexto**: La memoria no es lineal sino espiral; cada compactación integra pasado y presente en una nueva capa de significado.
 - **Verificación de Calidad Triple**:
   - *Balance Conceptual*: ¿Los conceptos fundamentales del pasado siguen visibles como base para el presente?

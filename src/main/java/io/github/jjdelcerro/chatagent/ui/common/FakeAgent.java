@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.chatagent.ui.console;
+package io.github.jjdelcerro.chatagent.ui.common;
 
 import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.AgentActions;
@@ -20,7 +20,7 @@ public class FakeAgent implements Agent {
 
     private final File dataFolder;
     private final AgentSettings settings;
-    private final AgentConsole console;
+    private AgentConsole console;
     private final AgentActions actions = new FakeActions();
 
     public FakeAgent(File settingsFile, AgentConsole console) {
@@ -69,6 +69,11 @@ public class FakeAgent implements Agent {
     public PathAccessControl getPathAccessControl() {
       throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
+
+  @Override
+  public void setConsole(AgentConsole console) {
+    this.console = console;
+  }
 
     private static class FakeActions implements AgentActions {
         @Override

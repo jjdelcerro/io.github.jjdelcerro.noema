@@ -1,6 +1,7 @@
 package io.github.jjdelcerro.chatagent.lib;
 
 import io.github.jjdelcerro.chatagent.lib.persistence.SourceOfTruth;
+import io.github.jjdelcerro.chatagent.ui.swing.AgentSwingConsoleController;
 import java.io.File;
 import java.nio.file.Path;
 
@@ -69,4 +70,6 @@ public interface Agent {
   public void putEvent(String channel, String priority, String eventText);
 
   public PathAccessControl getPathAccessControl();
+
+  public void setConsole(AgentConsole console);
 }

@@ -6,6 +6,6 @@ package io.github.jjdelcerro.chatagent.ui;
  */
 public interface AgentUISettings {
   
-  public void show();
+  public void showWindow();
   
 }
