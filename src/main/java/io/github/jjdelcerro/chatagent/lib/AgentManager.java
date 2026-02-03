@@ -9,7 +9,7 @@ import java.sql.Connection;
  */
 public interface AgentManager {
   
-  public Agent createAgent(Connection conn, File dataFolder, AgentSettings settings, AgentConsole console);
+  public Agent createAgent(Connection knowledgeDatabase, Connection servicesDatabase, File dataFolder, AgentSettings settings, AgentConsole console);
   
   public AgentActions createActions();
   

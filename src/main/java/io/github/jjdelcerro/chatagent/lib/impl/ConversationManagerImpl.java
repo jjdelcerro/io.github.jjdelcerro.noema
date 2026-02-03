@@ -101,29 +101,12 @@ public class ConversationManagerImpl {
     try {
       this.activeCheckPoint = sourceOfTruth.getLatestCheckPoint();
     } catch (Exception e) {
-      e.printStackTrace();
+      e.printStackTrace(); // FIXME: log
     }
   }
 
   public final boolean createChatLanguageModel(AgentSettings settings) {
-
-//    if ("LOCAL".equals(settings.getProperty("CONVERSATION_PROVIDER_URL"))) {
-//        File f = new File(this.agent.getDataFolder(),settings.getProperty("CONVERSATION_MODEL_ID"));
-//        this.model = LlamaCppChatModel.builder()
-//                .modelPath(f.getAbsolutePath())
-//                .contextSize(32768) 
-//                .build();
-//    }  else {  
-    this.model = OpenAiChatModel.builder()
-            .baseUrl(settings.getProperty(CONVERSATION_PROVIDER_URL))
-            .apiKey(settings.getProperty(CONVERSATION_PROVIDER_API_KEY))
-            .modelName(settings.getProperty(CONVERSATION_MODEL_ID))
-            .temperature(0.7)
-            .timeout(Duration.ofSeconds(180))
-            .logRequests(false) // Util para ver que se envia en el PoC
-            .logResponses(false)
-            .build();
-//    }
+    this.model = this.agent.createChatModel("CONVERSATION", 0.7);
     return true;
   }
 
@@ -278,10 +261,10 @@ public class ConversationManagerImpl {
 
     } catch (SQLException e) {
       this.console.printerrorln("Error critico de base de datos en processTurn: " + e.getMessage());
-      e.printStackTrace();
+      e.printStackTrace(); // FIXME: log
     } catch (Exception e) {
       this.console.printerrorln("Error inesperado en processTurn: " + e.getMessage());
-      e.printStackTrace();
+      e.printStackTrace(); // FIXME: log
     }
     return llmResponse.toString();
   }

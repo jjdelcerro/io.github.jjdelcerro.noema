@@ -70,12 +70,17 @@ public class MainConsole {
       settings.load(settingsFile);
 
       // Conexión a Base de Datos (H2)
-      File dbfile = new File(dataFolder, "memory");
-      Connection conn = DriverManager.getConnection("jdbc:h2:" + dbfile.getAbsolutePath(), "sa", "");
-      console.println("Conectado a Base de Conocimiento: " + dbfile.getAbsolutePath());
+      File fileKnowledge = new File(dataFolder, "memory");
+      Connection knowledgeDatabase = DriverManager.getConnection("jdbc:h2:" + fileKnowledge.getAbsolutePath(), "sa", "");
+      console.println("Conectado a Base de Conocimiento: " + fileKnowledge.getAbsolutePath());
+
+      File fileService = new File(dataFolder, "service");
+      Connection servicesDatabase = DriverManager.getConnection("jdbc:h2:" + fileService.getAbsolutePath(), "sa", "");
+      console.println("Conectado a Base de datos de servicio: " + fileService.getAbsolutePath());
 
       Agent agent = AgentLocator.getAgentManager().createAgent(
-              conn,
+              knowledgeDatabase,
+              servicesDatabase,
               new File(DATA_FOLDER),
               settings,
               console

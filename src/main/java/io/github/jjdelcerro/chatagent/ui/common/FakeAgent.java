@@ -9,6 +9,8 @@ import io.github.jjdelcerro.chatagent.lib.persistence.SourceOfTruth;
 import java.io.File;
 import java.nio.file.Path;
 import io.github.jjdelcerro.chatagent.lib.AgentAccessControl;
+import io.github.jjdelcerro.chatagent.lib.SchedulerService;
+import java.sql.Connection;
 
 /**
  * Mínima implementación de Agent para permitir la configuración inicial
@@ -73,6 +75,16 @@ public class FakeAgent implements Agent {
   @Override
   public void setConsole(AgentConsole console) {
     this.console = console;
+  }
+
+  @Override
+  public Connection getServicesDatabase() {
+    throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+  }
+
+  @Override
+  public SchedulerService getSchedulerService() {
+    throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
   }
 
     private static class FakeActions implements AgentActions {
