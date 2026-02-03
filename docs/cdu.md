@@ -1,0 +1,152 @@
+# Esquema de Clasificación CDU para Clasificación de Documentos
+
+## 0 - CIENCIA Y CONOCIMIENTO. ORGANIZACIÓN. INFORMÁTICA. INFORMACIÓN. DOCUMENTACIÓN. BIBLIOTECONOMÍA. INSTITUCIONES. PUBLICACIONES
+- 00 - Prolegómenos. Fundamentos del conocimiento y la cultura. Propedéutica
+- 001 - Ciencia y conocimiento en general. Organización del trabajo intelectual
+  - 001.1 - Conceptos de ciencia y conocimiento
+  - 001.18 - Futuro del conocimiento
+  - 001.32 - Sociedades científicas. Academias
+  - 001.8 - Metodología
+  - 001.89 - Organización de la ciencia y el trabajo científico
+  - 001.9 - Difusión de ideas
+- 002 - Documentación. Libros. Escritos. Autoría
+- 003 - Sistemas de escritura y escrituras
+  - 003.01/.09 - Subdivisión auxiliar especial para sistemas de escritura y escrituras
+  - 003.01 - Orígenes, precursores de las escrituras. Formas tempranas de las escrituras
+  - 003.02 - Surgimiento de la escritura
+  - 003.03 - Expresión gráfica del lenguaje
+  - 003.05 - Medios para producir signos y escrituras
+  - 003.07 - Usos y estilos de escritura
+  - 003.08 - Características de la escritura
+  - 003.09 - Técnicas y métodos de descifrado de escrituras
+  - 003.2 - Sistemas de escritura. Representaciones gráficas de conceptos
+  - 003.21/.23 - Sistemas de escritura convencionales utilizados para fines generales de comunidades de lenguaje alfabetizadas. Ortografías
+  - 003.21 - Escritura pictográfica
+  - 003.22 - Sistemas de escritura silábica
+  - 003.23 - Sistemas de escritura alfabética
+  - 003.3 - Escrituras
+  - 003.5 - Materiales y equipos de escritura
+  - 003.6 - Otros tipos de representación gráfica del pensamiento
+- 004 - Informática y tecnología. Computación. Procesamiento de datos
+  - 004.01/.08 - Subdivisión auxiliar especial para computación
+  - 004.01 - Documentación
+  - 004.02 - Métodos de resolución de problemas
+  - 004.03 - Tipos y características de sistemas
+  - 004.04 - Orientación del procesamiento
+  - 004.05 - Calidad del sistema y software
+  - 004.07 - Características de la memoria
+  - 004.08 - Medios de entrada, salida y almacenamiento
+  - 004.2 - Arquitectura de computadoras
+  - 004.22 - Representación de datos
+  - 004.23 - Arquitectura del conjunto de instrucciones
+  - 004.25 - Sistema de memoria
+  - 004.27 - Arquitecturas avanzadas. Arquitecturas no Von Neumann
+  - 004.3 - Hardware de computadoras
+  - 004.3`1/`2 - Subdivisión auxiliar especial para hardware
+  - 004.3`1 - Producción de computadoras
+  - 004.3`2 - Instalaciones de computadoras
+  - 004.31 - Unidades de procesamiento. Circuitos de procesamiento
+  - 004.32 - Vías de computadoras
+  - 004.33 - Unidades de memoria. Unidades de almacenamiento
+  - 004.35 - Periféricos. Unidades de entrada-salida
+  - 004.38 - Computadoras. Tipos de computadoras
+  - 004.4 - Software
+  - 004.4`2/`6 - Subdivisión auxiliar especial para software
+  - 004.4`2 - Herramientas de desarrollo de software
+  - 004.4`4 - Traducción de lenguajes de programación
+  - 004.4`6 - Entorno de ejecución
+  - 004.41 - Ingeniería de software
+  - 004.42 - Programación de computadoras. Programas de computadoras
+  - 004.43 - Lenguajes de computadoras
+  - 004.45 - Software de sistema
+  - 004.49 - Infecciones informáticas
+  - 004.5 - Interacción humano-computadora. Interfaz hombre-máquina. Interfaz de usuario. Entorno de usuario
+  - 004.51 - Interfaz de visualización
+  - 004.52 - Interfaz de sonido
+  - 004.55 - Hipermedia. Hipertexto
+  - 004.58 - Ayuda al usuario
+  - 004.6 - Datos
+  - 004.62 - Manejo de datos
+  - 004.63 - Archivos
+  - 004.65 - Bases de datos y sus estructuras
+  - 004.67 - Sistemas para datos numéricos
+  - 004.7 - Comunicación por computadora. Redes de computadoras
+  - 004.71 - Hardware de comunicación por computadora
+  - 004.72 - Arquitectura de red
+  - 004.73 - Redes según el área cubierta
+  - 004.738 - Interconexión de redes. Interconexión
+  - 004.75 - Sistemas de procesamiento distribuido
+  - 004.77 - Aplicaciones y servicios generales de redes
+  - 004.78 - Sistemas informáticos en línea para uso específico
+  - 004.8 - Inteligencia artificial
+  - 004.9 - Técnicas informáticas orientadas a aplicaciones
+  - 004.91 - Procesamiento y producción de documentos
+  - 004.92 - Gráficos por computadora
+  - 004.93 - Procesamiento de información de patrones
+  - 004.94 - Simulación
+- 005 - Gestión
+  - 005.1 - Teoría de la gestión
+  - 005.2 - Agentes de gestión. Mecanismos. Medidas
+  - 005.3 - Actividades de gestión
+  - 005.31 - Investigación operativa (IO)
+  - 005.32 - Comportamiento organizacional. Psicología de la gestión
+  - 005.33 - Condiciones de gestión. Factores
+  - 005.4 - Procesos en la gestión
+  - 005.5 - Operaciones de gestión. Dirección
+  - 005.6 - Gestión de calidad. Gestión de calidad total (TQM)
+  - 005.7 - Gestión organizacional (GO)
+  - 005.9 - Campos de la gestión
+  - 005.91 - Gestión administrativa. Secretaría
+  - 005.92 - Gestión de documentos
+  - 005.93 - Gestión de plantas. Gestión de recursos físicos
+  - 005.94 - Gestión del conocimiento
+  - 005.95/.96 - Gestión de personal. Gestión de Recursos Humanos
+- 006 - Normalización de productos, operaciones, pesos, medidas y tiempo
+  - 006.3/.8 - Normas
+  - 006.91 - Metrología. Pesas y medidas en general
+  - 006.92 - Horología. Determinación y normalización del tiempo
+- 007 - Actividad y organización. Teoría de la comunicación y el control en general (cibernética). 'Ingeniería humana'
+  - 007.5 - Sistemas autoactuantes
+- 008 - Civilización. Cultura. Progreso
+- 01 - Bibliografía y bibliografías. Catálogos
+  - 011 - Bibliografías universales y generales
+  - 012 - Bibliografías de autor. Bibliografías individuales
+  - 013 - Bibliografías colectivas
+  - 014 - Bibliografías de obras de características particulares
+  - 015 - Bibliografías de lugar
+  - 016 - Bibliografías temáticas especiales
+  - 017/019 - Catálogos
+  - 017 - Catálogos en general. Catálogos temáticos
+  - 018 - Catálogos de nombres
+  - 019 - Catálogos diccionario
+- 02 - Biblioteconomía
+  - 021 - Función, valor, utilidad, creación, desarrollo de bibliotecas
+  - 022 - Ubicación, edificio, instalaciones de la biblioteca. Equipamiento
+  - 023 - Administración de bibliotecas. Personal
+  - 024 - Relaciones con el público. Normativa de uso de la biblioteca
+  - 025 - Departamentos administrativos de bibliotecas
+  - 026 - Bibliotecas especializadas
+  - 027 - Bibliotecas generales
+  - 027.6 - Bibliotecas para clases especiales de usuarios
+  - 027.7 - Bibliotecas de instituciones de educación superior
+  - 027.8 - Bibliotecas de instituciones de educación primaria y secundaria
+- 030 - Obras de referencia generales (como materia)
+- 050 - Publicaciones seriadas, periódicos (como materia)
+- 06 - Organizaciones de carácter general
+  - 06.01/.05 - Subdivisión auxiliar especial para organizaciones y asociaciones
+  - 06.01 - Derechos y obligaciones de los miembros
+  - 06.05 - Premios. Honores. Galardones. Distribución de premios, galardones
+  - 061 - Organizaciones y otros tipos de cooperación
+  - 061.1 - Organizaciones y cooperación gubernamentales
+  - 061.2 - Organizaciones y cooperación no gubernamentales
+  - 061.23 - Organizaciones con fines humanitarios, filantrópicos
+  - 061.25 - Organizaciones y movimientos secretos o semisecretos
+  - 061.27 - Fundaciones. Dotaciones. Instituciones
+- 069 - Museos. Exposiciones permanentes
+- 070 - Periódicos. La Prensa. Periodismo
+- 08 - Poligrafías. Obras colectivas
+  - 082 - Poligrafía colectiva
+  - 084 - Material pictórico
+  - 086 - Documentos de forma particular
+  - 087 - Documentos de origen o destino particular
+- 09 - Manuscritos

@@ -8,7 +8,6 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatLanguageModel;
-import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.output.Response;
 import io.github.jjdelcerro.chatagent.lib.impl.tools.memory.LookupTurnTool;
 import io.github.jjdelcerro.chatagent.lib.impl.tools.memory.SearchFullHistoryTool;
@@ -34,13 +33,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.lang3.StringUtils;
 import io.github.jjdelcerro.chatagent.lib.AgentConsole;
 import io.github.jjdelcerro.chatagent.lib.AgentSettings;
-import static io.github.jjdelcerro.chatagent.lib.AgentSettings.CONVERSATION_MODEL_ID;
-import static io.github.jjdelcerro.chatagent.lib.AgentSettings.CONVERSATION_PROVIDER_API_KEY;
-import static io.github.jjdelcerro.chatagent.lib.AgentSettings.CONVERSATION_PROVIDER_URL;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import org.apache.commons.io.IOUtils;
 
 /**
  * Orquestador principal del sistema. Gestiona el bucle de razonamiento, la
@@ -270,20 +262,17 @@ public class ConversationManagerImpl {
   }
 
   private String getBaseSystemPrompt() {
-    try {
-      DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, HH:mm", new Locale("es", "ES"));
-      String systemPrompt = IOUtils.resourceToString(
-              "io/github/jjdelcerro/chatagent/lib/impl/prompt-system-conversationmanager.md",
-              StandardCharsets.UTF_8,
-              this.getClass().getClassLoader()
-      );
-      systemPrompt = StringUtils.replace(systemPrompt, "{NOW}", LocalDateTime.now().format(formatter));
-      systemPrompt = StringUtils.replace(systemPrompt, "{LOOKUPTURN}", LookupTurnTool.NAME);
-      systemPrompt = StringUtils.replace(systemPrompt, "{SEARCHFULLHISTORY}", SearchFullHistoryTool.NAME);
-      return systemPrompt;
-    } catch (IOException ex) {
-      throw new RuntimeException("Can't load system prompt for conversation manager", ex);
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, HH:mm", new Locale("es", "ES"));
+
+    String systemPrompt = agent.getResourceAsString("prompts/prompt-system-conversationmanager.md");
+
+    if (systemPrompt.isEmpty()) {
+      throw new RuntimeException("Can't load system prompt from data folder");
     }
+    systemPrompt = StringUtils.replace(systemPrompt, "{NOW}", LocalDateTime.now().format(formatter));
+    systemPrompt = StringUtils.replace(systemPrompt, "{LOOKUPTURN}", LookupTurnTool.NAME);
+    systemPrompt = StringUtils.replace(systemPrompt, "{SEARCHFULLHISTORY}", SearchFullHistoryTool.NAME);
+    return systemPrompt;
   }
 
   private String executeToolLogic(ToolExecutionRequest request) {
