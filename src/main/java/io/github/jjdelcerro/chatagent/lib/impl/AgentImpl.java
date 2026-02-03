@@ -1,5 +1,7 @@
 package io.github.jjdelcerro.chatagent.lib.impl;
 
+import com.google.gson.JsonObject;
+import dev.langchain4j.model.openai.OpenAiChatModel;
 import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.AgentActions;
 import static io.github.jjdelcerro.chatagent.lib.AgentActions.CHANGE_CONVERSATION_MODEL;
@@ -10,7 +12,6 @@ import io.github.jjdelcerro.chatagent.lib.AgentConsole;
 import io.github.jjdelcerro.chatagent.lib.AgentLocator;
 import io.github.jjdelcerro.chatagent.lib.AgentSettings;
 import static io.github.jjdelcerro.chatagent.lib.AgentSettings.BRAVE_SEARCH_API_KEY;
-import static io.github.jjdelcerro.chatagent.lib.AgentSettings.CONVERSATION_MODEL_ID;
 import static io.github.jjdelcerro.chatagent.lib.AgentSettings.MEMORY_MODEL_ID;
 import io.github.jjdelcerro.chatagent.lib.impl.persistence.SourceOfTruthImpl;
 import io.github.jjdelcerro.chatagent.lib.impl.tools.events.PoolEventTool;
@@ -31,13 +32,25 @@ import io.github.jjdelcerro.chatagent.lib.impl.tools.web.WebGetTikaTool;
 import io.github.jjdelcerro.chatagent.lib.impl.tools.web.WebSearchTool;
 import io.github.jjdelcerro.chatagent.lib.persistence.SourceOfTruth;
 import java.io.File;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import io.github.jjdelcerro.chatagent.lib.AgentAccessControl;
+import static io.github.jjdelcerro.chatagent.lib.AgentSettings.CONVERSATION_MODEL_ID;
+import static io.github.jjdelcerro.chatagent.lib.AgentSettings.CONVERSATION_PROVIDER_API_KEY;
+import static io.github.jjdelcerro.chatagent.lib.AgentSettings.CONVERSATION_PROVIDER_URL;
+import static io.github.jjdelcerro.chatagent.lib.AgentSettings.DOCMAPPER_BASIC_MODEL_ID;
+import static io.github.jjdelcerro.chatagent.lib.AgentSettings.DOCMAPPER_BASIC_PROVIDER_API_KEY;
+import static io.github.jjdelcerro.chatagent.lib.AgentSettings.DOCMAPPER_BASIC_PROVIDER_URL;
+import static io.github.jjdelcerro.chatagent.lib.AgentSettings.DOCMAPPER_REASONING_MODEL_ID;
+import static io.github.jjdelcerro.chatagent.lib.AgentSettings.DOCMAPPER_REASONING_PROVIDER_API_KEY;
+import static io.github.jjdelcerro.chatagent.lib.AgentSettings.DOCMAPPER_REASONING_PROVIDER_URL;
+import static io.github.jjdelcerro.chatagent.lib.AgentSettings.MEMORY_PROVIDER_API_KEY;
+import static io.github.jjdelcerro.chatagent.lib.AgentSettings.MEMORY_PROVIDER_URL;
+import io.github.jjdelcerro.chatagent.lib.SchedulerService;
+import io.github.jjdelcerro.chatagent.lib.impl.tools.time.ScheduleAlarmTool;
+import java.time.Duration;
 
 /**
  *
@@ -54,8 +67,10 @@ public class AgentImpl implements Agent {
   private final MemoryManagerImpl memoryManager;
 
   private final AgentAccessControl pathAccessControl;
+  private final Connection connServices;
+  private final SchedulerServiceImpl schedulerService;
 
-  public AgentImpl(Connection conn, File dataFolder, AgentSettings settings, AgentConsole console) {
+  public AgentImpl(Connection knowledgeDatabase, Connection servicesDatabase, File dataFolder, AgentSettings settings, AgentConsole console) {
     this.dataFolder = dataFolder;
     this.settings = settings;
     this.console = console;
@@ -63,12 +78,14 @@ public class AgentImpl implements Agent {
     this.pathAccessControl = new AgentAccessControlImpl(Paths.get(".").toAbsolutePath().normalize());
     
     this.actions = AgentLocator.getAgentManager().createActions();
-    
+    this.connServices = servicesDatabase;
     try {
-      this.sourceOfTruth = SourceOfTruthImpl.from(conn, this.dataFolder, this.console);
+      this.sourceOfTruth = SourceOfTruthImpl.from(knowledgeDatabase, this.dataFolder, this.console);
     } catch (SQLException ex) {
       throw new RuntimeException("Can't open database", ex);
     }
+    
+    this.schedulerService = new SchedulerServiceImpl(this);
 
     memoryManager = new MemoryManagerImpl(this);
 
@@ -79,6 +96,8 @@ public class AgentImpl implements Agent {
     conversationManager.addTool(new SearchFullHistoryTool(this));
     conversationManager.addTool(new LookupTurnTool(this));  
 
+    conversationManager.addTool(new ScheduleAlarmTool(this));
+    
     conversationManager.addTool(new FileFindTool(this));
     conversationManager.addTool(new FileGrepTool(this));
     conversationManager.addTool(new FileReadTool(this));            
@@ -145,6 +164,8 @@ public class AgentImpl implements Agent {
     this.actions.addAction(CHANGE_CONVERSATION_PROVIDER, (AgentSettings s) -> conversationManager.createChatLanguageModel(s));
     this.actions.addAction(CHANGE_CONVERSATION_MODEL, (AgentSettings s) -> conversationManager.createChatLanguageModel(s));
 
+    this.schedulerService.start();
+    
     console.println("MemoryManager "+settings.getProperty(MEMORY_MODEL_ID));
     console.println("ConversationManager "+settings.getProperty(CONVERSATION_MODEL_ID));
 
@@ -198,5 +219,66 @@ public class AgentImpl implements Agent {
   public void setConsole(AgentConsole console) {
     this.console = console;
   }
-  
+
+  @Override
+  public Connection getServicesDatabase() {
+    return this.connServices;
+  }
+
+  @Override
+  public SchedulerService getSchedulerService() {
+    return schedulerService;
+  }
+
+  public JsonObject callChatModelAsJson(String llmid, String systemPrompt, String message, double temperature) {
+    OpenAiChatModel model = this.createChatModel(llmid, temperature);
+    // TODO: falta implementar, tendra que delegar en call_llm.
+    return null;
+  }
+
+  public String callChatModel(String llmid, String systemPrompt, String message, double temperature) {
+    OpenAiChatModel model = this.createChatModel(llmid, temperature);
+    // TODO: falta implementar
+    return null;
+  }
+
+  public OpenAiChatModel createChatModel(String llmid, double temperature) {
+    llmid = llmid.toUpperCase();
+    String provider_url = null;
+    String provider_apikey = null;
+    String modelid = null;
+    
+    switch(llmid) {
+      case "DOCMAPPER_REASONING":
+          provider_url = DOCMAPPER_REASONING_PROVIDER_URL;
+          provider_apikey = DOCMAPPER_REASONING_PROVIDER_API_KEY;
+          modelid = DOCMAPPER_REASONING_MODEL_ID;
+          break;
+      case "DOCMAPPER_BASIC":
+          provider_url = DOCMAPPER_BASIC_PROVIDER_URL;
+          provider_apikey = DOCMAPPER_BASIC_PROVIDER_API_KEY;
+          modelid = DOCMAPPER_BASIC_MODEL_ID;
+          break;
+      case "CONVERSATION":
+          provider_url = CONVERSATION_PROVIDER_URL;
+          provider_apikey = CONVERSATION_PROVIDER_API_KEY;
+          modelid = CONVERSATION_MODEL_ID;
+          break;
+      case "MEMORY":
+          provider_url = MEMORY_PROVIDER_URL;
+          provider_apikey = MEMORY_PROVIDER_API_KEY;
+          modelid = MEMORY_MODEL_ID;
+          break;
+    }
+    OpenAiChatModel model = OpenAiChatModel.builder()
+            .baseUrl(settings.getProperty(provider_url))
+            .apiKey(settings.getProperty(provider_apikey))
+            .modelName(settings.getProperty(modelid))
+            .temperature(temperature)
+            .timeout(Duration.ofSeconds(180))
+            .logRequests(false)
+            .logResponses(false)
+            .build();  
+    return model;
+  }
 }

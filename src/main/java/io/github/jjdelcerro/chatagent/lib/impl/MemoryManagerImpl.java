@@ -4,8 +4,6 @@ import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatLanguageModel;
-import dev.langchain4j.model.openai.OpenAiChatModel;
-import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.persistence.CheckPoint;
 import io.github.jjdelcerro.chatagent.lib.persistence.SourceOfTruth;
 import io.github.jjdelcerro.chatagent.lib.persistence.Turn;
@@ -15,12 +13,8 @@ import java.time.Instant;
 import java.util.List;
 import io.github.jjdelcerro.chatagent.lib.AgentConsole;
 import io.github.jjdelcerro.chatagent.lib.AgentSettings;
-import static io.github.jjdelcerro.chatagent.lib.AgentSettings.MEMORY_MODEL_ID;
-import static io.github.jjdelcerro.chatagent.lib.AgentSettings.MEMORY_PROVIDER_API_KEY;
-import static io.github.jjdelcerro.chatagent.lib.AgentSettings.MEMORY_PROVIDER_URL;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import org.apache.commons.io.IOUtils;
 
 /**
@@ -29,7 +23,7 @@ import org.apache.commons.io.IOUtils;
  */
 public class MemoryManagerImpl {
 
-  private final Agent agent;
+  private final AgentImpl agent;
   private final SourceOfTruth sourceOfTruth;
   private AgentConsole console;
   private ChatLanguageModel model;
@@ -40,7 +34,7 @@ public class MemoryManagerImpl {
    *
    * @param agent
    */
-  public MemoryManagerImpl(Agent agent) {
+  public MemoryManagerImpl(AgentImpl agent) {
     this.agent = agent;
     this.sourceOfTruth = agent.getSourceOfTruth();
     this.console = agent.getConsole();
@@ -49,18 +43,10 @@ public class MemoryManagerImpl {
   }
 
   public final boolean createChatLanguageModel(AgentSettings settings) {
-    this.model = OpenAiChatModel.builder()
-            .baseUrl(settings.getProperty(MEMORY_PROVIDER_URL))
-            .apiKey(settings.getProperty(MEMORY_PROVIDER_API_KEY))
-            .modelName(settings.getProperty(MEMORY_MODEL_ID))
-            .temperature(0.0)
-            .timeout(Duration.ofSeconds(180))
-            .logRequests(false) // Útil para ver qué se envía en el PoC
-            .logResponses(false)
-            .build();
+    this.model = this.agent.createChatModel("MEMORY", 0.0);
     return true;
   }
-
+  
   private void loadSystemPrompt() {
     try {
       this.systemPrompt = IOUtils.resourceToString(

@@ -29,8 +29,8 @@ public class AgentManagerImpl implements AgentManager {
   }
 
   @Override
-  public Agent createAgent(Connection conn, File dataFolder, AgentSettings settings, AgentConsole console) {
-    Agent agent = new AgentImpl(conn, dataFolder, settings, console);
+  public Agent createAgent(Connection knowledgeDatabase, Connection servicesDatabase, File dataFolder, AgentSettings settings, AgentConsole console) {
+    Agent agent = new AgentImpl(knowledgeDatabase, servicesDatabase, dataFolder, settings, console);
     return agent;
   }
 

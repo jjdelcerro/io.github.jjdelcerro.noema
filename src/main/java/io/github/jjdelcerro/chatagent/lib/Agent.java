@@ -4,6 +4,7 @@ import io.github.jjdelcerro.chatagent.lib.persistence.SourceOfTruth;
 import io.github.jjdelcerro.chatagent.ui.swing.AgentSwingConsoleController;
 import java.io.File;
 import java.nio.file.Path;
+import java.sql.Connection;
 
 /**
  *
@@ -72,4 +73,8 @@ public interface Agent {
   public AgentAccessControl getAccessControl();
 
   public void setConsole(AgentConsole console);
+  
+  public Connection getServicesDatabase();
+  
+  public SchedulerService getSchedulerService();
 }
