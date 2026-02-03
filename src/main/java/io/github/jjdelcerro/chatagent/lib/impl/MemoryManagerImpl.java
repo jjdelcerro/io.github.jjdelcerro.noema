@@ -13,9 +13,6 @@ import java.time.Instant;
 import java.util.List;
 import io.github.jjdelcerro.chatagent.lib.AgentConsole;
 import io.github.jjdelcerro.chatagent.lib.AgentSettings;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import org.apache.commons.io.IOUtils;
 
 /**
  * Componente cognitivo encargado de la consolidación de la memoria. Ejecuta el
@@ -46,16 +43,11 @@ public class MemoryManagerImpl {
     this.model = this.agent.createChatModel("MEMORY", 0.0);
     return true;
   }
-  
+
   private void loadSystemPrompt() {
-    try {
-      this.systemPrompt = IOUtils.resourceToString(
-              "io/github/jjdelcerro/chatagent/lib/impl/prompt-compact-memorymanager.md",
-              StandardCharsets.UTF_8,
-              this.getClass().getClassLoader()
-      );
-    } catch (IOException ex) {
-      throw new RuntimeException("Can't load system prompt", ex);
+    this.systemPrompt = agent.getResourceAsString("prompts/prompt-compact-memorymanager.md");
+    if (this.systemPrompt.isEmpty()) {
+      throw new RuntimeException("No se pudo cargar el prompt del MemoryManager");
     }
   }
 

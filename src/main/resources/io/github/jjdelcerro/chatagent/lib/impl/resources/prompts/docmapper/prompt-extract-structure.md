@@ -15,12 +15,12 @@ Recibirás un CSV con el formato: `LINE,CONTENT`.
 - RANGO: El `lineStart` debe ser el valor exacto de la columna `LINE`.
 - Continuidad de Títulos: Si un título se corta en dos líneas, únelas en el campo "title" y usa el `lineNumber` de la primera línea.
 
-# EJEMPLO DE SALIDA ESPERADA
-{
-  "newNodes": [
-    { "title": "Abstract", "level": 1, "lineStart": 45, "parentTitle": null },
-    { "title": "1 Introduction", "level": 1, "lineStart": 230, "parentTitle": null }
-  ],
-  "currentStatus": { "activeHierarchy": ["1 Introduction"] }
-}
+# FORMATO DE SALIDA
+
+Devuelve la estructura en formato CSV con las columnas: linestart, level, title, parentTitle. Asegúrate de que cada línea de datos comience con el número de línea.
+
+Ejemplo:
+linestart, level, title, parentTitle
+45,1,"Abstract",,
+230,1,"1 Introduccion",,
 
