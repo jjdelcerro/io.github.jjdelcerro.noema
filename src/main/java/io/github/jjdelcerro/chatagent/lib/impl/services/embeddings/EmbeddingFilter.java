@@ -18,9 +18,9 @@ public interface EmbeddingFilter<T> {
    * @param vector El vector del elemento recuperado de BBDD.
    * @param data El objeto de dominio construido (ej. Turn).
    */
-  void add(float[] vector, T data);
+  double add(float[] vector, T data);
 
-  void add(byte[] vector, T data);
+  double add(byte[] vector, T data);
   
   /**
    * Retorna la lista final ordenada de mayor a menor relevancia (Descendente).

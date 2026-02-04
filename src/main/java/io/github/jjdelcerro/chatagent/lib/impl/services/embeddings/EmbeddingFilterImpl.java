@@ -54,11 +54,11 @@ public class EmbeddingFilterImpl<T> implements EmbeddingFilter<T> {
     return embeddingService.fromBytes(blob);
   }
 
-  public void add(byte[] bytes, T data) {
+  public double add(byte[] bytes, T data) {
     if (bytes == null) {
-      return;
+      return -1;
     }
-    this.add(this.toFloat(bytes),data);
+    return this.add(this.toFloat(bytes),data);
   }
   
   /**
@@ -68,9 +68,9 @@ public class EmbeddingFilterImpl<T> implements EmbeddingFilter<T> {
    * @param data El objeto de dominio construido (ej. Turn).
    */
   @Override
-  public void add(float[] vector, T data) {
+  public double add(float[] vector, T data) {
     if (vector == null) {
-      return;
+      return -1;
     }
 
     // Calculamos similitud
@@ -89,6 +89,7 @@ public class EmbeddingFilterImpl<T> implements EmbeddingFilter<T> {
         }
       }
     }
+    return score;
   }
 
   /**
