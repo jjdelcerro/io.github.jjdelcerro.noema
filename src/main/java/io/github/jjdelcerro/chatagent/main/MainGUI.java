@@ -76,6 +76,7 @@ public class MainGUI {
             settings,
             console
     );
+    agent.start();
 
     // 6. Lanzar Interfaz Principal
     // El MainChatPanel se encargará de:

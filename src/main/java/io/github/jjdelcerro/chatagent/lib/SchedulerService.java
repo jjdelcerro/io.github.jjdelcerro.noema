@@ -6,10 +6,10 @@ import java.time.LocalDateTime;
  *
  * @author jjdelcerro
  */
-public interface SchedulerService {
+public interface SchedulerService extends AgentService {
 
-  void schedule(LocalDateTime when, String reason);
-
-  void start();
+  public static final String NAME = "Scheduler";
+  
+  String schedule(LocalDateTime when, String reason);
   
 }

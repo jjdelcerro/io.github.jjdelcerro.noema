@@ -2,6 +2,8 @@ Sí, tu intuición es **absolutamente correcta y totalmente viable**. De hecho, 
 
 Sin embargo, hay un matiz fundamental respecto a tu idea de "lista cerrada" que es crucial para que funcione bien con un sistema jerárquico como la CDU.
 
+url del tesauro de la unesco: https://vocabularies.unesco.org/browser/thesaurus/es/
+
 ### El Problema de la "Lista Plana"
 Si le das a un LLM una lista "plana" y cerrada como esta:
 ```

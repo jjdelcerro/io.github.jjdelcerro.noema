@@ -1,9 +1,9 @@
 package io.github.jjdelcerro.chatagent.lib;
 
+import dev.langchain4j.data.message.ToolExecutionResultMessage;
+import dev.langchain4j.model.openai.OpenAiChatModel;
 import io.github.jjdelcerro.chatagent.lib.persistence.SourceOfTruth;
-import io.github.jjdelcerro.chatagent.ui.swing.AgentSwingConsoleController;
 import java.io.File;
-import java.nio.file.Path;
 import java.sql.Connection;
 
 /**
@@ -12,6 +12,13 @@ import java.sql.Connection;
  */
 public interface Agent {
 
+  public record ModelParameters(
+        String providerUrl, 
+        String providerApiKey,
+        String modelId,
+        double temperature
+  ) { }
+  
   public File getDataFolder();
 
   public AgentActions getActions();
@@ -75,6 +82,15 @@ public interface Agent {
   public void setConsole(AgentConsole console);
   
   public Connection getServicesDatabase();
+
+  public AgentService getService(String name);
   
-  public SchedulerService getSchedulerService();
+  public void start();
+  
+  public String getResourceAsString(String resname);
+  
+  public OpenAiChatModel createChatModel(String name);
+  
+  public ModelParameters getModelParameters(String name);
+  
 }

@@ -66,6 +66,53 @@
     },
     {
       "type": "menu",
+      "label": "Configuración de Telegram (Sensor)",
+      "childs": [
+        {
+          "type": "inputstring",
+          "label": "Telegram API Key",
+          "variableName": "TELEGRAM_API_KEY"
+        },
+        {
+          "type": "inputstring",
+          "label": "ID de Chat Autorizado (User ID)",
+          "variableName": "TELEGRAM_CHAT_ID"
+        }
+      ]
+    },
+    {
+      "type": "menu",
+      "label": "Configuración de Email (Secretaría)",
+      "childs": [
+        {
+          "type": "inputstring",
+          "label": "Servidor IMAP (Entrada)",
+          "variableName": "EMAIL_IMAP_HOST"
+        },
+        {
+          "type": "inputstring",
+          "label": "Servidor SMTP (Salida)",
+          "variableName": "EMAIL_SMTP_HOST"
+        },
+        {
+          "type": "inputstring",
+          "label": "Usuario / Email",
+          "variableName": "EMAIL_USER"
+        },
+        {
+          "type": "inputstring",
+          "label": "Contraseña",
+          "variableName": "EMAIL_PASSWORD"
+        },
+        {
+          "type": "inputstring",
+          "label": "Email del Dueño (Remitente Autorizado)",
+          "variableName": "EMAIL_AUTHORIZED_SENDER"
+        }
+      ]
+    },
+    {
+      "type": "menu",
       "label": "Configuracion para el DocMapper",
       "childs": [
         {
@@ -87,7 +134,7 @@
               "label": "Seleccionar Modelo (Reasoning)",
               "variableName": "DOCMAPPER_REASONING_MODEL_ID",
               "childs": [
-                { "type": "value", "label": "DeepSeek R1 (Recomendado)", "value": "tngtech/deepseek-r1t2-chimera:free" },
+                { "type": "value", "label": "DeepSeek R1", "value": "tngtech/deepseek-r1t2-chimera:free" },
                 { "type": "value", "label": "Llama 3.3 70B", "value": "meta-llama/llama-3.3-70b-instruct:free" },
                 { "type": "value", "label": "GLM-4.5-Air", "value": "z-ai/glm-4.5-air:free" }
               ]
@@ -113,9 +160,8 @@
               "label": "Seleccionar Modelo (Basic)",
               "variableName": "DOCMAPPER_BASIC_MODEL_ID",
               "childs": [
-                { "type": "value", "label": "GLM-4.5-Air (Rápido)", "value": "z-ai/glm-4.5-air:free" },
-                { "type": "value", "label": "Mistral Small 3.1", "value": "mistralai/mistral-small-3.1-24b-instruct:free" },
-                { "type": "value", "label": "GPT OSS 20b", "value": "openai/gpt-oss-20b:free" }
+                { "type": "value", "label": "GLM-4.5-Air", "value": "z-ai/glm-4.5-air:free" },
+                { "type": "value", "label": "Mistral Small 3.1", "value": "mistralai/mistral-small-3.1-24b-instruct:free" }
               ]
             }
           ]

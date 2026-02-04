@@ -85,7 +85,8 @@ public class MainConsole {
               settings,
               console
       );
-
+      agent.start();
+      
       console.println("Sistema listo. Escribe '/quit' para terminar.");
 
       // Bucle de Chat (REPL con JLine)
