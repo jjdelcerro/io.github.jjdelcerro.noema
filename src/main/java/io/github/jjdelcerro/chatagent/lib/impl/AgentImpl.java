@@ -1,8 +1,6 @@
 package io.github.jjdelcerro.chatagent.lib.impl;
 
-import io.github.jjdelcerro.chatagent.lib.impl.services.memory.MemoryService;
 import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.ConversationService;
-import io.github.jjdelcerro.chatagent.lib.impl.services.scheduler.SchedulerServiceFactory;
 import com.google.gson.JsonObject;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import io.github.jjdelcerro.chatagent.lib.Agent;
@@ -22,12 +20,7 @@ import io.github.jjdelcerro.chatagent.lib.AgentService;
 import io.github.jjdelcerro.chatagent.lib.AgentServiceFactory;
 import io.github.jjdelcerro.chatagent.lib.AgentTool;
 import static io.github.jjdelcerro.chatagent.lib.impl.services.conversation.ConversationService.CONVERSATION_MODEL_ID;
-import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.ConversationServiceFactory;
-import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.DocumentsServiceFactory;
-import io.github.jjdelcerro.chatagent.lib.impl.services.email.EmailServiceFactory;
 import static io.github.jjdelcerro.chatagent.lib.impl.services.memory.MemoryService.MEMORY_MODEL_ID;
-import io.github.jjdelcerro.chatagent.lib.impl.services.memory.MemoryServiceFactory;
-import io.github.jjdelcerro.chatagent.lib.impl.services.telegram.TelegramServiceFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -65,11 +58,7 @@ public class AgentImpl implements Agent {
     this.accessControl = new AgentAccessControlImpl(Paths.get(".").toAbsolutePath().normalize());
     this.actions = AgentLocator.getAgentManager().createActions();
     this.connServices = servicesDatabase;
-    try {
-      this.sourceOfTruth = SourceOfTruthImpl.from(knowledgeDatabase, this.dataFolder, this.console);
-    } catch (SQLException ex) {
-      throw new RuntimeException("Can't open database", ex);
-    }
+    this.sourceOfTruth = SourceOfTruthImpl.from(this);
   }
 
   public void start() {

@@ -6,10 +6,10 @@ import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.AgentAccessControl;
 import io.github.jjdelcerro.chatagent.lib.impl.AgentImpl;
-import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.DocumentMapper;
 import java.nio.file.Path;
 import java.util.Map;
 import io.github.jjdelcerro.chatagent.lib.AgentTool;
+import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.DocumentsService;
 
 /**
  * Herramienta para indexar y procesar documentos nuevos. Activa el DocMapper
@@ -42,6 +42,8 @@ public class DocumentIndexTool implements AgentTool {
   @Override
   public String execute(String jsonArguments) {
     try {
+      DocumentsService service = (DocumentsService) this.agent.getService(DocumentsService.NAME);
+
       Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
       String relativePath = args.get("path");
 
@@ -51,10 +53,7 @@ public class DocumentIndexTool implements AgentTool {
         return "{\"status\": \"error\", \"message\": \"Acceso denegado o archivo no encontrado.\"}";
       }
 
-      // 2. Disparar el DocMapper
-      // Nota: DocMapper debería gestionar su propio hilo interno para no bloquear al agente
-      DocumentMapper mapper = new DocumentMapper(agent);
-      mapper.processDocument(docPath);
+      service.indexDocument(docPath);
 
       return "{\"status\": \"success\", \"message\": \"Procesamiento de '" + relativePath + "' iniciado. Te notificaré cuando haya terminado de mapear su estructura.\"}";
     } catch (Exception e) {
