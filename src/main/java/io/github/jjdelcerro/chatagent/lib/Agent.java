@@ -1,5 +1,6 @@
 package io.github.jjdelcerro.chatagent.lib;
 
+import com.google.gson.JsonObject;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import io.github.jjdelcerro.chatagent.lib.persistence.SourceOfTruth;
@@ -93,4 +94,8 @@ public interface Agent {
   
   public ModelParameters getModelParameters(String name);
   
+  public String callChatModel(String docmapper_reasoning_llm, String extractStructureSystemPrompt, String doc_csv);
+
+  public JsonObject callChatModelAsJson(String docmapper_basic_llm, String summaryAndCategorizeSystemPrompt, String contents);
+
 }

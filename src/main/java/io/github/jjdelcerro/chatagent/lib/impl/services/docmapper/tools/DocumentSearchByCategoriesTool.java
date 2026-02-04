@@ -10,6 +10,7 @@ import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.DocumentsServi
 import java.util.List;
 import java.util.Map;
 import io.github.jjdelcerro.chatagent.lib.AgentTool;
+import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.DocumentsService;
 
 public class DocumentSearchByCategoriesTool implements AgentTool {
 
@@ -33,7 +34,7 @@ public class DocumentSearchByCategoriesTool implements AgentTool {
   @Override
   public String execute(String jsonArguments) {
     try {
-      DocumentsServiceImpl service = (DocumentsServiceImpl) this.agent.getService(DocumentsServiceImpl.NAME);
+      DocumentsService service = (DocumentsService) this.agent.getService(DocumentsService.NAME);
 
       Map<String, Object> args = gson.fromJson(jsonArguments, Map.class);
       List<String> categories = (List<String>) args.get("categories");

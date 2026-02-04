@@ -3,7 +3,7 @@ package io.github.jjdelcerro.chatagent.lib.impl.services.docmapper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import io.github.jjdelcerro.chatagent.lib.impl.AgentImpl;
+import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.DocumentStructure.DocumentStructureEntry;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -17,13 +17,13 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class DocumentMapper {
 
-  private final AgentImpl agent;
+  private final Agent agent;
 
   public DocumentMapper() { // Para lanzar main de pruebas.
     this.agent = null;
   }
 
-  public DocumentMapper(AgentImpl agent) {
+  public DocumentMapper(Agent agent) {
     this.agent = agent;
   }
 

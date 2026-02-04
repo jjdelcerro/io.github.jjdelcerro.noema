@@ -4,12 +4,12 @@ import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.AgentActions;
 import io.github.jjdelcerro.chatagent.lib.AgentConsole;
 import io.github.jjdelcerro.chatagent.lib.AgentManager;
-import io.github.jjdelcerro.chatagent.lib.AgentService;
 import io.github.jjdelcerro.chatagent.lib.AgentServiceFactory;
 import io.github.jjdelcerro.chatagent.lib.AgentSettings;
 import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.ConversationServiceFactory;
 import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.DocumentsServiceFactory;
 import io.github.jjdelcerro.chatagent.lib.impl.services.email.EmailServiceFactory;
+import io.github.jjdelcerro.chatagent.lib.impl.services.embeddings.EmbeddingsServiceFactory;
 import io.github.jjdelcerro.chatagent.lib.impl.services.memory.MemoryServiceFactory;
 import io.github.jjdelcerro.chatagent.lib.impl.services.scheduler.SchedulerServiceFactory;
 import io.github.jjdelcerro.chatagent.lib.impl.services.telegram.TelegramServiceFactory;
@@ -30,6 +30,7 @@ public class AgentManagerImpl implements AgentManager {
   public AgentManagerImpl() {
     this.serviceFactories = new LinkedHashMap<>();
     
+    this.registerService(new EmbeddingsServiceFactory());
     this.registerService(new MemoryServiceFactory());
     this.registerService(new ConversationServiceFactory());
     this.registerService(new SchedulerServiceFactory());

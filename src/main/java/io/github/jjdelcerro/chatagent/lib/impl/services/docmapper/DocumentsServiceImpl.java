@@ -1,7 +1,5 @@
 package io.github.jjdelcerro.chatagent.lib.impl.services.docmapper;
 
-import dev.langchain4j.model.embedding.EmbeddingModel;
-import dev.langchain4j.model.embedding.onnx.allminilml6v2.AllMiniLmL6V2EmbeddingModel;
 import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.Agent.ModelParameters;
 import io.github.jjdelcerro.chatagent.lib.AgentService;
@@ -14,14 +12,14 @@ import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.tools.Document
 import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.tools.DocumentSearchTool;
 import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.tools.GetDocumentStructureTool;
 import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.tools.GetPartialDocumentTool;
-import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
+import io.github.jjdelcerro.chatagent.lib.impl.services.embeddings.EmbeddingFilter;
+import io.github.jjdelcerro.chatagent.lib.impl.services.embeddings.EmbeddingsService;
+import io.github.jjdelcerro.chatagent.lib.persistence.Turn;
 import java.nio.file.Path;
 import java.sql.*;
 import java.time.Instant;
 import java.util.*;
 import java.util.AbstractMap.SimpleEntry;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Servicio central para la gestión de documentos. Combina persistencia en base
@@ -73,7 +71,6 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
 
   private final Agent agent;
   private Counter counter;
-  private EmbeddingModel embeddingModel;
   private boolean running;
   private final AgentServiceFactory factory;
 
@@ -103,8 +100,6 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
     if (!this.canStart()) {
       return;
     }
-    // Cargamos el mismo modelo local de los turnos para consistencia
-    this.embeddingModel = new AllMiniLmL6V2EmbeddingModel();
     try {
       Connection conn = this.agent.getServicesDatabase();
       this.createTables(conn);
@@ -138,6 +133,7 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
   public void insertOrReplace(DocumentStructure structure, Path docPath) {
     try {
       Connection conn = this.agent.getServicesDatabase();
+      EmbeddingsService embedding = (EmbeddingsService) agent.getService(EmbeddingsService.NAME);
 
       // 1. Gestionar ID
       if (structure.getId() < 0) {
@@ -145,11 +141,8 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
       }
 
       // 2. Vectorizar el resumen (Summary)
-      float[] vector = null;
       String textToEmbed = structure.getSummary();
-      if (textToEmbed != null && !textToEmbed.isBlank()) {
-        vector = embeddingModel.embed(textToEmbed).content().vector();
-      }
+      float[] vector = embedding.embed(textToEmbed);
 
       // 3. Serializar categorías con el truco de las comas: ,cat1,cat2,
       String categoriesStr = serializeCategories(structure.getCategories());
@@ -167,7 +160,7 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
         ps.setString(4, structure.getTitle());
         ps.setString(5, structure.getSummary());
         ps.setString(6, categoriesStr);
-        ps.setBytes(7, toBytes(vector));
+        ps.setBytes(7, embedding.toBytes(vector));
         ps.executeUpdate();
       }
 
@@ -196,11 +189,10 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
    */
   @Override
   public List<DocumentResult> search(List<String> categories, String query, int maxResults) {
-    List<DocumentResult> results = new ArrayList<>();
+    EmbeddingsService embedding = (EmbeddingsService) agent.getService(EmbeddingsService.NAME);
+    EmbeddingFilter<DocumentResult> search = embedding.createEmbeddingFilter(query, maxResults);
     try {
       Connection conn = this.agent.getServicesDatabase();
-
-      // 1. Construir la consulta base
       StringBuilder sql = new StringBuilder("SELECT * FROM DOCUMENTS WHERE 1=1");
       if (categories != null && !categories.isEmpty()) {
         for (String cat : categories) {
@@ -209,48 +201,18 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
                   .append(",%'");
         }
       }
-
-      // 2. Ejecutar y realizar ranking vectorial si hay query
-      float[] queryVec = (query != null && !query.isBlank())
-              ? embeddingModel.embed(query).content().vector()
-              : null;
-
-      PriorityQueue<Map.Entry<Double, DocumentResult>> topK = new PriorityQueue<>(
-              Comparator.comparingDouble(Map.Entry::getKey)
-      );
-
       try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql.toString())) {
         while (rs.next()) {
           DocumentResultImpl doc = mapResultSetToDocument(rs);
-          double score = 1.0;
-
-          if (queryVec != null) {
-            float[] dbVec = fromBytes(rs.getBytes("summary_embedding"));
-            score = (dbVec != null) ? cosineSimilarity(queryVec, dbVec) : 0.0;
-          }
-
-          doc.score = score;
-
-          // Lógica Top-K
-          topK.add(new SimpleEntry<>(score, doc));
-          if (topK.size() > maxResults) {
-            topK.poll();
-          }
+          search.add(rs.getBytes("summary_embedding"), doc);
         }
       }
-
-      while (!topK.isEmpty()) {
-        results.add(topK.poll().getValue());
-      }
-      Collections.reverse(results);
-
     } catch (SQLException ex) {
       agent.getConsole().printerrorln("Error en búsqueda de documentos: " + ex.getMessage());
     }
-    return results;
+    return search.get();
   }
 
-  // --- MÉTODOS DE ACCESO A ESTRUCTURA ---
   @Override
   public String getDocumentStructureXML(String docIdStr) {
     int id = parseDocId(docIdStr);
@@ -340,36 +302,6 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
     }
   }
 
-  // --- MATEMÁTICAS Y CONVERSIÓN (Igual que en SourceOfTruth) ---
-  private static byte[] toBytes(float[] vector) {
-    if (vector == null) {
-      return null;
-    }
-    ByteBuffer buffer = ByteBuffer.allocate(vector.length * 4);
-    buffer.asFloatBuffer().put(vector);
-    return buffer.array();
-  }
-
-  private static float[] fromBytes(byte[] bytes) {
-    if (bytes == null) {
-      return null;
-    }
-    FloatBuffer buffer = ByteBuffer.wrap(bytes).asFloatBuffer();
-    float[] vector = new float[buffer.remaining()];
-    buffer.get(vector);
-    return vector;
-  }
-
-  private static double cosineSimilarity(float[] vA, float[] vB) {
-    double dot = 0.0, nA = 0.0, nB = 0.0;
-    for (int i = 0; i < vA.length; i++) {
-      dot += vA[i] * vB[i];
-      nA += vA[i] * vA[i];
-      nB += vB[i] * vB[i];
-    }
-    return (nA == 0 || nB == 0) ? 0.0 : dot / (Math.sqrt(nA) * Math.sqrt(nB));
-  }
-
   @Override
   public ModelParameters getModelParameters(String name) {
     AgentSettings settings = this.agent.getSettings();
@@ -407,6 +339,12 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
       new GetPartialDocumentTool(this.agent)
     };
     return Arrays.asList(tools);
+  }
+
+  @Override
+  public void indexDocument(Path docPath) {
+      DocumentMapper mapper = new DocumentMapper(agent);
+      mapper.processDocument(docPath);
   }
 
 }

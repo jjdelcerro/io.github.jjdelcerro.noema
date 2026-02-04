@@ -59,4 +59,7 @@ public interface DocumentsService extends AgentService {
 
   List<DocumentResult> searchBySummaries(String query, int maxResults);
 
+  public void indexDocument(Path docPath);
+
+
 }
