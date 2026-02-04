@@ -1,162 +1,187 @@
 
 # GEMINI.md - Contexto del Proyecto: ChatAgent de Memoria Híbrida
 
-Este documento proporciona el contexto arquitectónico y técnico para el proyecto `io.github.jjdelcerro.chatagent`, un sistema de agente conversacional diseñado para mantener una memoria coherente a largo plazo sin degradación cognitiva.
+Este documento proporciona el contexto arquitectónico y técnico para el proyecto `io.github.jjdelcerro.chatagent`, un 
+sistema de agente conversacional diseñado para mantener una memoria coherente a largo plazo sin degradación cognitiva.
 
 # Análisis del Proyecto: io.github.jjdelcerro.chatagent
 
 ## 1. Visión General
-El proyecto `io.github.jjdelcerro.chatagent` implementa un **Agente Conversacional Autónomo** diseñado para operar en entornos locales con un enfoque prioritario en la **persistencia de memoria a largo plazo** y la **capacidad operativa sobre el sistema de archivos**.
+El proyecto implementa un **Agente Conversacional Autónomo** diseñado para ejecutarse en entornos 
+locales (On-Premise/Localhost). Su principal propuesta de valor es una arquitectura de memoria persistente 
+y determinista que permite al agente mantener el contexto en proyectos de larga duración (días o semanas) 
+sin sufrir la degradación habitual de la ventana de contexto de los LLMs.
 
-A diferencia de los chats stateless convencionales, este sistema implementa una arquitectura de "Memoria Híbrida Determinista". Esto significa que el agente no solo "recuerda" vectores semánticos, sino que mantiene una narrativa histórica auditada y citada (determinismo), permitiéndole trabajar en proyectos de larga duración (días o semanas) sin perder el contexto de las decisiones tomadas anteriormente.
+El sistema no es un simple chatbot; es un **Asistente de Desarrollo y Operaciones** con capacidad de 
+agencia ("Agency"). Puede leer/escribir ficheros, gestionar correos, conectarse a Telegram, navegar por 
+la web e ingerir documentación técnica, todo orquestado mediante un bucle de razonamiento ReAct (Reason + Act).
 
-El sistema es modular, permitiendo el intercambio de proveedores de LLM (OpenRouter, OpenAI, Local via Ollama) y cuenta con interfaces duales (Consola y Swing).
+Destaca por su independencia de servicios en la nube para el almacenamiento (usa H2 embebido) y su capacidad 
+de cambiar dinámicamente entre proveedores de LLM (OpenRouter, Ollama, OpenAI).
 
 ## 2. Stack Tecnológico
 
-El proyecto está construido sobre tecnologías modernas del ecosistema Java, evitando frameworks pesados de inyección de dependencias (como Spring) en favor de una arquitectura ligera y controlada manualmente.
+El proyecto utiliza **Java 21** como base, aprovechando características modernas como los 
+Virtual Threads* (Project Loom) para la concurrencia.
 
-*   **Lenguaje:** **Java 21**. Hace uso intensivo de **Virtual Threads** (Project Loom) para operaciones de I/O bloqueantes (lectura de archivos, llamadas HTTP, indexado), lo que garantiza alta concurrencia con bajo consumo de recursos.
-*   **Orquestación de IA:** **LangChain4j (0.35.0)**. Se utiliza como capa de abstracción para los modelos de chat y embedding.
-*   **Base de Datos:** **H2 Database**. Base de datos SQL embebida. Se utiliza de forma híbrida:
-    *   Relacional: Para metadatos de turnos, checkpoints y documentos.
-    *   Vectorial: Almacena los embeddings como `BLOB` y realiza búsquedas vectoriales mediante implementación propia de similitud del coseno en memoria (evitando depender de bases de datos vectoriales externas).
-*   **Motor de Embeddings:** **ONNX Runtime** con el modelo `all-minilm-l6-v2` ejecutándose localmente (CPU).
-*   **Interfaz de Usuario:**
-    *   **JLine 3:** Para la interfaz de consola avanzada (autocompletado, historial).
+*   **Core:** Java 21 (OpenJDK).
+*   **Orquestación LLM:** LangChain4j (v0.35.0).
+*   **Base de Datos:** H2 Database (v2.2.224). Se usa en modo embebido mixto:
+    *   Relacional para metadatos y logs.
+    *   Almacenamiento de vectores (Embeddings) como BLOBs.
+*   **Búsqueda Vectorial:** Implementación propia de Similitud del Coseno en memoria (evitando bases de datos vectoriales externas).
+*   **Embeddings:** ONNX Runtime con el modelo `all-minilm-l6-v2` ejecutándose en CPU local.
+*   **UI/UX:**
     *   **Swing:** Para la interfaz gráfica de escritorio.
-*   **Procesamiento de Documentos:** **Apache Tika** (extracción de texto) y **Natty** (parseo de fechas en lenguaje natural).
-*   **Herramientas Auxiliares:** `java-diff-utils` (para aplicar parches de código), `Gson` (JSON), `Jakarta Mail` (Email) y `Telegram Bot API`.
-*   **Build System:** Maven, utilizando `maven-shade-plugin` para generar un "Fat JAR" autónomo.
+    *   **JLine 3:** Para la interfaz de consola interactiva.
+*   **Procesamiento de Documentos:** Apache Tika (extracción de texto) y Natty (parseo de fechas).
+*   **Utilidades:** `java-diff-utils` (para aplicar parches de código), Gson (JSON), Jakarta Mail.
+*   **Build:** Maven con `maven-shade-plugin` para generar "Fat JARs".
 
 ## 3. Estructura y Diseño Arquitectónico
 
-El proyecto sigue una arquitectura hexagonal simplificada (Puertos y Adaptadores), separando claramente las interfaces del núcleo (`lib`) de sus implementaciones (`lib.impl`).
+El proyecto evita frameworks de Inyección de Dependencias pesados (como Spring Boot) en favor de 
+una arquitectura modular con inyección manual y patrón *Service Locator*.
 
-### Estructura de Paquetes
-*   `io.github.jjdelcerro.chatagent.lib`: Define los contratos (Interfaces) del sistema (`Agent`, `SourceOfTruth`, `MemoryManager`, `AgentConsole`).
-*   `io.github.jjdelcerro.chatagent.lib.persistence`: Entidades de dominio (`Turn`, `CheckPoint`) y excepciones.
-*   `io.github.jjdelcerro.chatagent.lib.impl`: Implementación de la lógica de negocio.
-    *   `persistence`: Implementación sobre H2 y sistema de archivos.
-    *   `docmapper`: Lógica de ingestión y estructurado de documentos.
-    *   `tools`: Implementaciones de las herramientas (organizadas por dominio: `file`, `web`, `memory`, `mail`, etc.).
-*   `io.github.jjdelcerro.chatagent.ui`: Abstracción de la interfaz de usuario.
-*   `io.github.jjdelcerro.chatagent.main`: Puntos de entrada (`Main`, `MainConsole`, `MainGUI`) y bootstrap.
+### Organización de Paquetes
+*   `io.github.jjdelcerro.chatagent.lib`: **API Pública**. Contiene las interfaces (`Agent`, `SourceOfTruth`, `AgentService`).
+*   `io.github.jjdelcerro.chatagent.lib.impl`: **Núcleo Lógico**. Implementaciones de los servicios y persistencia.
+    *   `persistence`: Acceso a datos (H2 + FileSystem).
+    *   `services`: Dividido por dominios (`conversation`, `memory`, `docmapper`, `email`, `telegram`, `scheduler`).
+*   `io.github.jjdelcerro.chatagent.ui`: Abstracción de la interfaz de usuario (`AgentConsole`, `AgentUIManager`).
+*   `io.github.jjdelcerro.chatagent.main`: Puntos de entrada y *Bootstrap*.
 
-### Patrones de Diseño
-*   **Source of Truth (Repositorio):** Centraliza el acceso a datos. Garantiza que la BD y el sistema de archivos estén sincronizados.
-*   **ReAct (Reason + Act):** Implementado manualmente en `ConversationManagerImpl`. El bucle `executeReasoningLoop` gestiona la interacción cíclica: Pensamiento -> Llamada a Herramienta -> Resultado -> Pensamiento.
-*   **Inyección de Dependencias Manual:** No hay contenedores IoC. Las dependencias se inyectan vía constructores, orquestadas por `AgentImpl` y `AgentLocator`.
-*   **Strategy:** Usado en las herramientas (`AgenteTool`), permitiendo que el agente seleccione dinámicamente qué ejecutar.
-*   **Memento/Snapshot:** Implementado en la gestión de `Session` y `CheckPoint` para guardar estados de la conversación.
+### Patrones de Diseño Identificados
+1.  **Service Locator:** `AgentLocator` centraliza el acceso al `AgentManager`, desacoplando la creación de agentes de su uso.
+2.  **Hexagonal / Ports & Adapters:** Separación clara entre el dominio (Turnos, CheckPoints) y la infraestructura (H2, Files).
+3.  **Strategy:** Usado intensivamente en `AgentTool`. El agente selecciona qué herramienta ejecutar basándose en la especificación semántica.
+4.  **Memento:** La clase `Session` gestiona el estado volátil de la conversación y permite "viajar" o compactar el estado.
+5.  **Inversión de Control Simulada:** Para gestionar eventos asíncronos (Email/Telegram) dentro de un bucle síncrono de LLM.
 
 ## 4. Análisis Detallado de Mecanismos Principales
 
-### A. Gestión de Memoria (El Núcleo del Sistema)
-El sistema implementa una **Memoria Híbrida** dividida en tres capas temporales:
+### A. Gestión de Memoria (Arquitectura Híbrida)
+El sistema resuelve el problema del "olvido catastrófico" mediante tres capas de persistencia:
 
 1.  **Memoria a Corto Plazo (Session):**
-    *   Clase: `Session.java`.
-    *   Persistencia: Archivo `active_session.json`.
-    *   Funcionamiento: Mantiene los `ChatMessage` en RAM para el contexto inmediato del LLM. Gestiona la correlación entre los mensajes del chat y los IDs de la base de datos.
-    *   **Consolidación:** Cuando se completa un turno (User -> AI -> Tools -> Final Answer), se marca como consolidado y se persiste en la BD.
+    *   Mantiene los mensajes (`ChatMessage`) en RAM para el contexto inmediato.
+    *   Persiste en disco (`active_session.json`) para recuperar la sesión tras reinicios.
+    *   Implementa un mecanismo de "backfill" para asociar mensajes en memoria con IDs de turnos en base de datos.
 
-2.  **Memoria a Largo Plazo Atómica (Turns):**
-    *   Clase: `TurnImpl` / `SourceOfTruthImpl`.
-    *   Persistencia: Tabla `turnos` en H2 + Vectores (BLOB).
-    *   **Política de Almacenamiento:** Si el resultado de una herramienta es muy grande (>2KB), se trunca en la base de datos (guardando un JSON con metadatos del tamaño) pero se mantiene completo en el historial de sesión inmediato. Esto evita "bloat" en la BD.
-    *   **Búsqueda:** Permite recuperación vectorial (`SearchFullHistoryTool`) o por ID directo (`LookupTurnTool`).
+2.  **Memoria Histórica Atómica (Turns):**
+    *   Cada interacción (Usuario -> AI -> Herramienta) se guarda como un `Turn` en la tabla `turnos` de H2.
+    *   **Vectorización:** Se calcula el embedding del contenido textual y se guarda como BLOB.
+    *   **Política de Truncado:** Si el resultado de una herramienta excede 2KB, se trunca en la BD (guardando metadatos JSON) pero se mantiene completo en la sesión activa. Esto evita que la BD crezca descontroladamente con volcados de archivos grandes.
 
-3.  **Memoria Narrativa Consolidada (CheckPoints):**
-    *   Clase: `MemoryManagerImpl` / `CheckPointImpl`.
-    *   **Mecanismo de Compactación:** Cuando la sesión supera un umbral (~20 turnos), se activa el `MemoryManager`.
-    *   **Proceso:**
-        1.  Toma el CheckPoint anterior (Resumen + "El Viaje").
-        2.  Toma los nuevos turnos en formato CSV.
-        3.  Invoca a un LLM específico ("MEMORY_MODEL") con el prompt `prompt-compact-memorymanager.md`.
-        4.  **Resultado:** Genera un nuevo documento Markdown que actualiza la narrativa ("El Viaje"), integrando los nuevos eventos y citando las fuentes (`{cite:ID}`).
-    *   **Determinismo:** El prompt fuerza al modelo a citar los IDs de los turnos, permitiendo auditoría y evitando alucinaciones sobre el pasado.
+3.  **Memoria Narrativa (CheckPoints):**
+    *   Cuando la sesión supera un umbral (~20 turnos), el `MemoryManager` compacta la historia.
+    *   Usa un LLM para generar un documento Markdown ("El Viaje") que resume lo ocurrido, citando explícitamente los IDs de los turnos (`{cite:ID}`).
+    *   Esto permite al agente "recordar" hechos pasados leyendo un resumen narrativo y, si necesita detalles, usar la herramienta `LookupTurnTool` para recuperar el dato crudo exacto usando el ID citado.
 
-### B. Gestión de Eventos (Asincronía en un modelo Síncrono)
-Los LLMs son pasivos (Request-Response). Para dotar al agente de "sentidos" (Email, Telegram, Alarmas), se implementa un patrón de **Inversión de Control Simulada**:
+### B. Gestión de Eventos (Asincronía)
+El agente posee "sentidos" pasivos (Email, Telegram, Scheduler). Dado que el LLM solo actúa cuando se le invoca:
 
-1.  **Sensores:** Hilos independientes (ej. `EmailService` con IMAP IDLE o `TelegramTool` con Long-Polling) escuchan el mundo exterior.
-2.  **Cola de Eventos:** Al detectar algo, inyectan un evento en `ConversationManagerImpl.pendingEvents` mediante `putEvent()`.
-3.  **Inyección en el Flujo:**
-    *   Si el agente está ocioso, se despierta el bucle principal.
-    *   **El Truco:** Se construye un mensaje artificial de tipo `ToolExecutionResultMessage` asociado a una herramienta ficticia llamada `pool_event`.
-    *   Esto "engaña" al LLM haciéndole creer que *él* solicitó consultar los eventos, integrando el estímulo externo en el historial de chat de forma coherente y permitiéndole reaccionar (ej. responder un mail) inmediatamente.
+1.  Hilos demonio independientes escuchan eventos (ej. IMAP IDLE).
+2.  Al detectar un evento, lo inyectan en una cola concurrente `pendingEvents`.
+3.  Si el agente está ocioso, se despierta el bucle principal.
+4.  Se inyecta un mensaje artificial `ToolExecutionResultMessage` de una herramienta virtual llamada `pool_event`.
+5.  Esto engaña al LLM haciéndole creer que acaba de consultar sus notificaciones, permitiéndole reaccionar proactivamente.
 
 ### C. Document Mapper (Ingestión de Conocimiento)
-El sistema `DocMapper` convierte documentos no estructurados en conocimiento estructurado consultable.
+Implementa un sistema RAG (Retrieval-Augmented Generation) avanzado para documentos grandes:
 
-1.  **Indexado (Proceso Asíncrono):**
-    *   Clase: `DocumentMapper`. Usa `TextContent` para leer línea a línea.
-    *   **Paso 1 (Estructura):** Usa un **Reasoning LLM** (ej. DeepSeek R1) con el prompt `prompt-extract-structure.md` para analizar el CSV crudo de líneas y generar una Tabla de Contenidos (JSON) con jerarquía, títulos y rangos de líneas.
-    *   **Paso 2 (Semántica):** Itera sobre las secciones detectadas y usa un **Basic LLM** (ej. GLM-4) para generar resúmenes y categorías (`prompt-sumary-and-categorize.md`).
-    *   **Persistencia:** Guarda metadatos y embeddings de los resúmenes en la tabla `DOCUMENTS` y la estructura completa en un archivo `.struct` (JSON).
-
-2.  **Recuperación:**
-    *   Ofrece herramientas para buscar por categorías (SQL), por significado en resúmenes (Vectorial) o recuperar la estructura XML completa para que el agente decida qué leer (`GetPartialDocumentTool`).
+1.  **Indexado Estructural:** Usa un LLM de razonamiento (ej. DeepSeek R1) para analizar el CSV crudo del documento y generar una Tabla de Contenidos (JSON) jerárquica.
+2.  **Resumen Semántico:** Itera sobre las secciones detectadas y usa un LLM básico para generar resúmenes y categorías.
+3.  **Recuperación Híbrida:**
+    *   Permite búsquedas SQL por categorías (`DocumentSearchByCategoriesTool`).
+    *   Permite búsqueda vectorial sobre los resúmenes (`DocumentSearchBySumariesTool`).
+    *   Permite leer solo secciones específicas (`GetPartialDocumentTool`), ahorrando tokens.
 
 ### D. Seguridad (Sandbox)
-La seguridad es crítica dado que el agente tiene herramientas de escritura en disco (`FileWriteTool`, `FilePatchTool`).
+El control de acceso (`AgentAccessControlImpl`) es crítico ya que el agente puede escribir en disco:
 
-*   Clase: `AgentAccessControlImpl`.
-*   **Path Traversal Prevention:** Resuelve todas las rutas contra el directorio raíz del proyecto. Si `target.startsWith(rootPath)` es falso, lanza una `SecurityException`.
-*   **Listas Negras:** Bloquea explícitamente la escritura en directorios sensibles como `.git`.
-*   **Confirmación Humana:** Herramientas críticas (escritura, ejecución de comandos) pueden requerir confirmación interactiva en consola (`console.confirm()`), interceptada en `ConversationManagerImpl`.
+*   **Path Traversal:** Resuelve todas las rutas contra el directorio raíz. Bloquea cualquier intento de acceder a `../` fuera del proyecto.
+*   **Confirmación Humana:** El `ConversationService` intercepta las llamadas a herramientas de escritura (`MODE_WRITE`) y solicita confirmación interactiva al usuario (`console.confirm()`) antes de ejecutar.
+*   **Protección de Metadatos:** Reglas hardcodeadas impiden escribir en carpetas sensibles como `.git`.
 
-### E. Flujo del Conversation Manager
-Es el cerebro orquestador (`ConversationManagerImpl`):
-
-1.  **Entrada:** Recibe texto de usuario o resultado de herramienta.
-2.  **Construcción de Contexto:** Combina:
-    *   System Prompt (con fecha/hora actual).
-    *   CheckPoint activo (Resumen + Narrativa).
-    *   Historial de Sesión reciente.
-3.  **Inferencia:** Llama al LLM (`model.generate`).
-4.  **Despacho de Herramientas:**
-    *   Si el LLM pide ejecutar herramienta (`ToolExecutionRequest`), busca la implementación en `toolDispatcher`.
-    *   Ejecuta la herramienta (verificando seguridad).
-    *   Crea un `Turn` de tipo `tool_execution` y lo guarda en H2.
-    *   Añade el resultado al historial y **repite el bucle** (Recursión/Bucle ReAct).
-5.  **Respuesta Final:** Si el LLM genera texto, se guarda el turno y se devuelve al usuario.
-6.  **Mantenimiento:** Verifica `session.needCompaction()` para disparar la compactación de memoria en segundo plano si es necesario.
+### E. Conversation Manager (Flujo ReAct)
+Es el cerebro del sistema:
+1.  Construye el contexto: System Prompt + CheckPoint Activo (Narrativa) + Historial Reciente.
+2.  Invoca al LLM.
+3.  Si el LLM pide ejecutar herramienta -> Ejecuta -> Guarda `Turn` -> Añade resultado al historial -> **Repite el bucle**.
+4.  Si el LLM responde texto final -> Muestra al usuario -> Guarda `Turn`.
+5.  Verifica si es necesaria la compactación de memoria.
 
 ## 5. Herramientas del Agente
 
-El set de herramientas es muy completo y orientado a un "Developer Assistant":
+El agente dispone de un arsenal exhaustivo de herramientas (`AgentTool`), organizadas por dominio:
 
-*   **Sistema de Archivos:**
-    *   `FilePatchTool`: Aplica parches `diff` unificados. Vital para refactorizaciones de código.
-    *   `FileSearchAndReplaceTool`: Para cambios simples y precisos.
-    *   `FileReadSelectorsTool`: Lectura inteligente de múltiples archivos vía Globs.
-    *   `FileExtractTextTool`: Usa Apache Tika para leer PDFs, DOCX, etc.
-*   **Web & Entorno:**
-    *   `WebSearchTool`: Usa Brave Search API.
-    *   `WebGetTikaTool`: Descarga y limpia HTML a texto plano.
-    *   `WeatherTool` / `LocationTool` / `TimeTool`: Contexto ambiental.
-*   **Memoria:**
-    *   `LookupTurnTool`: "Viaje en el tiempo" para recordar un evento exacto por ID.
-    *   `SearchFullHistoryTool`: Búsqueda semántica en toda la base de datos.
-*   **Comunicación:**
-    *   `TelegramTool`: Envío proactivo de mensajes.
-    *   `EmailSendTool` / `EmailReadTool`: Gestión de correo.
+### Sistema de Archivos
+1.  **`file_read`**: Lee un archivo completo.
+2.  **`file_write`**: Escribe/Sobrescribe archivo (crea directorios padre automáticamente).
+3.  **`file_patch`**: Aplica parches *Unified Diff*. Vital para refactorización de código segura.
+4.  **`file_search_and_replace`**: Reemplazo exacto de cadenas de texto.
+5.  **`file_find`**: Búsqueda de archivos por patrón GLOB (ej. `**/*.java`).
+6.  **`file_grep`**: Búsqueda de contenido dentro de archivos (grep simple).
+7.  **`file_mkdir`**: Creación de directorios.
+8.  **`file_read_selectors`**: Lectura masiva de múltiples archivos mediante lista de patrones.
+9.  **`file_extract_text`**: Usa Apache Tika para extraer texto de binarios (PDF, DOCX).
+
+### Web y Conectividad
+10. **`web_search`**: Búsqueda en internet usando Brave Search API.
+11. **`web_get_content`**: Descarga y limpieza de HTML a texto (versión simple y versión Tika).
+12. **`get_weather`**: Consulta clima (Open-Meteo).
+13. **`get_current_location`**: Geolocalización por IP.
+14. **`get_current_time`**: Fecha y hora actual.
+
+### Memoria y Cognición
+15. **`lookup_turn`**: Recupera un turno pasado por su ID (Time Travel).
+16. **`search_full_history`**: Búsqueda semántica en toda la base de datos de turnos.
+
+### Documentación (RAG)
+17. **`document_index`**: Inicia el proceso de ingestión de un fichero.
+18. **`document_search`**: Búsqueda híbrida (categoría + semántica).
+19. **`get_document_structure`**: Obtiene el índice XML de un documento procesado.
+20. **`get_partial_document`**: Recupera el texto completo de secciones específicas.
+21. **`document_search_by_categories`**: Filtrado SQL.
+22. **`document_search_by_sumaries`**: Búsqueda vectorial en resúmenes.
+
+### Comunicación y Eventos
+23. **`telegram_send`**: Envía mensajes proactivos al usuario.
+24. **`email_list_inbox`**: Lista cabeceras de correos recientes.
+25. **`email_read`**: Lee el cuerpo de un correo por UID.
+26. **`email_send`**: Envía correos SMTP.
+27. **`schedule_alarm`**: Programa recordatorios en lenguaje natural (Natty).
+28. **`pool_event`**: Herramienta interna para consultar la cola de eventos.
 
 ## 6. Construcción y Despliegue
 
-*   **Gestión de Dependencias:** Maven estándar.
-*   **Shadowing:** El `pom.xml` utiliza `maven-shade-plugin` configurado con `ServicesResourceTransformer`. Esto es **crítico** porque librerías como LangChain4j y Tika usan SPI (Service Provider Interface) en `META-INF/services`. Si no se fusionan estos archivos al crear el Uber-JAR, las implementaciones no se cargarían.
-*   **Ejecución:** Detecta flags (`-c`) para arrancar en modo consola o GUI (`MainGUI`).
+*   **Configuración:** Usa `settings.properties` y `settingsui.json` para definir URLs de proveedores, API Keys y modelos. La UI permite modificar esto en tiempo de ejecución.
+*   **Empaquetado:** El `pom.xml` configura `maven-shade-plugin` con `ServicesResourceTransformer`. Esto es **fundamental** para fusionar los ficheros `META-INF/services`, ya que LangChain4j y Tika usan SPI (Service Provider Interface) para cargar sus módulos. Sin esto, el JAR ejecutable fallaría.
+*   **Ejecución:**
+    *   Clase `Main`: Detecta argumentos.
+    *   `-c`: Lanza `MainConsole` (JLine).
+    *   Defecto: Lanza `MainGUI` (Swing).
 
 ## 7. Conclusión
 
-El proyecto `io.github.jjdelcerro.chatagent` es una implementación **robusta y sofisticada** de un agente RAG (Retrieval-Augmented Generation) avanzado.
+El proyecto `io.github.jjdelcerro.chatagent` es una implementación **avanzada y pragmática** de un agente autónomo.
 
 **Puntos Fuertes:**
-1.  **Independencia y Privacidad:** Al usar H2 local, embeddings ONNX locales y permitir modelos locales (Ollama) o vía API estándar, elimina el vendor lock-in de plataformas como OpenAI Assistants API o bases de datos vectoriales en la nube (Pinecone).
-2.  **Memoria Determinista:** La arquitectura de "El Viaje" (CheckPoints narrativos con citas) soluciona el problema de la "pérdida de contexto" en conversaciones largas de forma mucho más efectiva que el simple truncado de ventana o RAG ingenuo.
-3.  **Capacidad de "Agencia":** No es un chatbot pasivo. El sistema de eventos y la integración profunda con el sistema de archivos (parches, lectura recursiva) lo convierten en un verdadero asistente de trabajo autónomo.
-4.  **Ingeniería de Software Sólida:** Uso correcto de Virtual Threads, gestión de errores, separación de responsabilidades y patrones de diseño claros.
 
+1.  **Arquitectura de Memoria:** La combinación de "Narrativa Determinista" (CheckPoints) + "Evidencia Cruda" 
+    (Turns/Vectors) es superior a los enfoques RAG ingenuos para mantener la coherencia a largo plazo.
+2.  **Autonomía Local:** Al no depender de bases de datos vectoriales en la nube ni orquestadores externos, 
+    ofrece privacidad y baja latencia (excepto por la llamada al LLM, que es configurable).
+3.  **Capacidad Operativa:** Las herramientas de parcheado (`file_patch`) y lectura inteligente de 
+    documentos (`docmapper`) lo posicionan como una herramienta real de ingeniería asistida, no solo un chat.
+4.  **Diseño Robusto:** El uso de Virtual Threads para I/O y la separación de capas demuestra madurez técnica.
+
+**Áreas de Atención:**
+
+1.  **Escalabilidad de Vectores:** La búsqueda por coseno se hace iterando en memoria (`SourceOfTruthImpl`). 
+    Para historiales masivos (>100k turnos), esto podría degradar el rendimiento, requiriendo migrar a H2 
+    con soporte vectorial o una BD externa.
+2.  **Dependencia del Prompt:** La calidad de la memoria depende fuertemente de que el modelo siga el 
+    protocolo de "El Viaje" definido en `prompt-compact-memorymanager.md`. Modelos pequeños (<8B) podrían 
+    tener dificultades para seguir instrucciones tan complejas.

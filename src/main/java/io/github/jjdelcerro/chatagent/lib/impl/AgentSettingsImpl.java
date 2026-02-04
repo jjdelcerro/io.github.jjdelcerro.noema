@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  *
@@ -23,6 +24,20 @@ public class AgentSettingsImpl implements AgentSettings {
         return values.get(name);
     }
 
+    @Override
+    public long getPropertyAsLong(String name, long defaultValue) {
+      try {
+        String s = values.get(name);
+        if( StringUtils.isBlank(s) ) {
+          return defaultValue;
+        }
+        Long v = Long.getLong(s);
+        return v;
+      } catch(Exception ex) {
+        return defaultValue; // TODO: enviar al log.
+      }
+    }
+    
     @Override
     public String setProperty(String name, String value) {
         if (value == null) {

@@ -2,6 +2,8 @@ package io.github.jjdelcerro.chatagent.main;
 
 import io.github.jjdelcerro.chatagent.lib.AgentConsole;
 import io.github.jjdelcerro.chatagent.lib.AgentLocator;
+import io.github.jjdelcerro.chatagent.lib.AgentManager;
+import io.github.jjdelcerro.chatagent.lib.AgentServiceFactory;
 import io.github.jjdelcerro.chatagent.lib.AgentSettings;
 import io.github.jjdelcerro.chatagent.ui.AgentUILocator;
 import io.github.jjdelcerro.chatagent.ui.AgentUISettings;
@@ -22,21 +24,16 @@ public class AgentUtils {
     if (!settingsFile.exists()) {
       return false;
     }
-    AgentSettings settings = AgentLocator.getAgentManager().createSettings();
+    AgentManager agentManager = AgentLocator.getAgentManager();
+    AgentSettings settings = agentManager.createSettings();
     settings.load(settingsFile);
 
-    String[] criticalKeys = {
-      AgentSettings.MEMORY_PROVIDER_URL,
-      AgentSettings.MEMORY_PROVIDER_API_KEY,
-      AgentSettings.MEMORY_MODEL_ID,
-      AgentSettings.CONVERSATION_PROVIDER_URL,
-      AgentSettings.CONVERSATION_PROVIDER_API_KEY,
-      AgentSettings.CONVERSATION_MODEL_ID
+    AgentServiceFactory[] services = {
+      agentManager.getServiceFactory("MEMORY"),
+      agentManager.getServiceFactory("CONVERSATION")
     };
-
-    for (String key : criticalKeys) {
-      String val = settings.getProperty(key);
-      if (val == null || val.trim().isEmpty()) {
+    for (AgentServiceFactory service : services) {
+      if( !service.canStart(settings) ) {
         return false;
       }
     }

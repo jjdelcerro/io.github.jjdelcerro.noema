@@ -2,6 +2,7 @@ package io.github.jjdelcerro.chatagent.lib;
 
 import java.io.File;
 import java.sql.Connection;
+import java.util.Collection;
 
 /**
  *
@@ -14,5 +15,12 @@ public interface AgentManager {
   public AgentActions createActions();
   
   public AgentSettings createSettings();
+
+  public AgentServiceFactory getServiceFactory(String name);
   
+  public void registerService(AgentServiceFactory factory);
+  
+  public Collection<AgentServiceFactory> getServiceFactories();
+  
+    
 }

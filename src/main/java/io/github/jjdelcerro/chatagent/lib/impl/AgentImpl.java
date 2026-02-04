@@ -1,61 +1,33 @@
 package io.github.jjdelcerro.chatagent.lib.impl;
 
+import io.github.jjdelcerro.chatagent.lib.impl.services.memory.MemoryService;
+import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.ConversationService;
+import io.github.jjdelcerro.chatagent.lib.impl.services.scheduler.SchedulerServiceFactory;
 import com.google.gson.JsonObject;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.AgentActions;
-import static io.github.jjdelcerro.chatagent.lib.AgentActions.CHANGE_CONVERSATION_MODEL;
-import static io.github.jjdelcerro.chatagent.lib.AgentActions.CHANGE_CONVERSATION_PROVIDER;
-import static io.github.jjdelcerro.chatagent.lib.AgentActions.CHANGE_MEMORY_MODEL;
-import static io.github.jjdelcerro.chatagent.lib.AgentActions.CHANGE_MEMORY_PROVIDER;
 import io.github.jjdelcerro.chatagent.lib.AgentConsole;
 import io.github.jjdelcerro.chatagent.lib.AgentLocator;
 import io.github.jjdelcerro.chatagent.lib.AgentSettings;
-import static io.github.jjdelcerro.chatagent.lib.AgentSettings.BRAVE_SEARCH_API_KEY;
-import static io.github.jjdelcerro.chatagent.lib.AgentSettings.MEMORY_MODEL_ID;
 import io.github.jjdelcerro.chatagent.lib.impl.persistence.SourceOfTruthImpl;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.events.PoolEventTool;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.file.FileExtractTextTool;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.file.FileFindTool;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.file.FileGrepTool;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.file.FileMkdirTool;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.file.FilePatchTool;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.file.FileReadTool;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.file.FileSearchAndReplaceTool;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.file.FileWriteTool;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.memory.LookupTurnTool;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.memory.SearchFullHistoryTool;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.web.LocationTool;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.web.TimeTool;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.web.WeatherTool;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.web.WebGetTikaTool;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.web.WebSearchTool;
 import io.github.jjdelcerro.chatagent.lib.persistence.SourceOfTruth;
 import java.io.File;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
-import org.apache.commons.lang3.StringUtils;
 import io.github.jjdelcerro.chatagent.lib.AgentAccessControl;
-import static io.github.jjdelcerro.chatagent.lib.AgentSettings.CONVERSATION_MODEL_ID;
-import static io.github.jjdelcerro.chatagent.lib.AgentSettings.CONVERSATION_PROVIDER_API_KEY;
-import static io.github.jjdelcerro.chatagent.lib.AgentSettings.CONVERSATION_PROVIDER_URL;
-import static io.github.jjdelcerro.chatagent.lib.AgentSettings.DOCMAPPER_BASIC_MODEL_ID;
-import static io.github.jjdelcerro.chatagent.lib.AgentSettings.DOCMAPPER_BASIC_PROVIDER_API_KEY;
-import static io.github.jjdelcerro.chatagent.lib.AgentSettings.DOCMAPPER_BASIC_PROVIDER_URL;
-import static io.github.jjdelcerro.chatagent.lib.AgentSettings.DOCMAPPER_REASONING_MODEL_ID;
-import static io.github.jjdelcerro.chatagent.lib.AgentSettings.DOCMAPPER_REASONING_PROVIDER_API_KEY;
-import static io.github.jjdelcerro.chatagent.lib.AgentSettings.DOCMAPPER_REASONING_PROVIDER_URL;
-import static io.github.jjdelcerro.chatagent.lib.AgentSettings.MEMORY_PROVIDER_API_KEY;
-import static io.github.jjdelcerro.chatagent.lib.AgentSettings.MEMORY_PROVIDER_URL;
-import io.github.jjdelcerro.chatagent.lib.SchedulerService;
-import io.github.jjdelcerro.chatagent.lib.impl.docmapper.DocumentServices;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.docmapper.DocumentSearchByCategoriesTool;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.docmapper.DocumentSearchBySumariesTool;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.docmapper.DocumentSearchTool;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.docmapper.GetDocumentStructureTool;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.docmapper.GetPartialDocumentTool;
-import io.github.jjdelcerro.chatagent.lib.impl.tools.time.ScheduleAlarmTool;
+import io.github.jjdelcerro.chatagent.lib.AgentManager;
+import io.github.jjdelcerro.chatagent.lib.AgentService;
+import io.github.jjdelcerro.chatagent.lib.AgentServiceFactory;
+import io.github.jjdelcerro.chatagent.lib.AgentTool;
+import static io.github.jjdelcerro.chatagent.lib.impl.services.conversation.ConversationService.CONVERSATION_MODEL_ID;
+import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.ConversationServiceFactory;
+import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.DocumentsServiceFactory;
+import io.github.jjdelcerro.chatagent.lib.impl.services.email.EmailServiceFactory;
+import static io.github.jjdelcerro.chatagent.lib.impl.services.memory.MemoryService.MEMORY_MODEL_ID;
+import io.github.jjdelcerro.chatagent.lib.impl.services.memory.MemoryServiceFactory;
+import io.github.jjdelcerro.chatagent.lib.impl.services.telegram.TelegramServiceFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -64,7 +36,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -77,22 +51,18 @@ public class AgentImpl implements Agent {
   private AgentActions actions;
   private final File dataFolder;
   private SourceOfTruth sourceOfTruth;
-  private final ConversationManagerImpl conversationManager;
-  private final MemoryManagerImpl memoryManager;
 
   private final AgentAccessControl accessControl;
   private final Connection connServices;
-  private final SchedulerServiceImpl schedulerService;
 
-  private final DocumentServices documentServices;
+  private final Map<String, AgentService> services;
 
   public AgentImpl(Connection knowledgeDatabase, Connection servicesDatabase, File dataFolder, AgentSettings settings, AgentConsole console) {
     this.dataFolder = dataFolder;
     this.settings = settings;
     this.console = console;
-
+    this.services = new LinkedHashMap<>();
     this.accessControl = new AgentAccessControlImpl(Paths.get(".").toAbsolutePath().normalize());
-
     this.actions = AgentLocator.getAgentManager().createActions();
     this.connServices = servicesDatabase;
     try {
@@ -100,103 +70,34 @@ public class AgentImpl implements Agent {
     } catch (SQLException ex) {
       throw new RuntimeException("Can't open database", ex);
     }
+  }
 
-    this.schedulerService = new SchedulerServiceImpl(this);
-
-    memoryManager = new MemoryManagerImpl(this);
-
-    conversationManager = new ConversationManagerImpl(this);
-
-    this.documentServices = new DocumentServices(this);
-    this.documentServices.init();
-
-    conversationManager.addTool(new PoolEventTool(this));
-
-    conversationManager.addTool(new SearchFullHistoryTool(this));
-    conversationManager.addTool(new LookupTurnTool(this));
-
-    conversationManager.addTool(new ScheduleAlarmTool(this));
-
-    conversationManager.addTool(new FileFindTool(this));
-    conversationManager.addTool(new FileGrepTool(this));
-    conversationManager.addTool(new FileReadTool(this));
-    conversationManager.addTool(new FileWriteTool(this));
-    conversationManager.addTool(new FileSearchAndReplaceTool(this));
-    conversationManager.addTool(new FilePatchTool(this));
-    conversationManager.addTool(new FileMkdirTool(this));
-
-    console.println("File tools installed");
-
-    conversationManager.addTool(new FileExtractTextTool(this));
-
-    console.println("Extract text tools installed");
-
-    conversationManager.addTool(new WebGetTikaTool(this));
-    console.println("Web access tools installed");
-
-    conversationManager.addTool(new WeatherTool(this));
-    console.println("Weather tools installed");
-
-    conversationManager.addTool(new LocationTool(this));
-    console.println("Location tools installed");
-
-    conversationManager.addTool(new TimeTool(this));
-    console.println("Time tools installed");
-
-    conversationManager.addTool(new DocumentSearchTool(this));
-    conversationManager.addTool(new DocumentSearchByCategoriesTool(this));
-    conversationManager.addTool(new DocumentSearchBySumariesTool(this));
-    conversationManager.addTool(new GetDocumentStructureTool(this));
-    conversationManager.addTool(new GetPartialDocumentTool(this));
-    console.println("Document tools installed");
-
-    String braveApiKey = this.settings.getProperty(BRAVE_SEARCH_API_KEY);
-    if (StringUtils.isNotBlank(braveApiKey)) {
-      conversationManager.addTool(new WebSearchTool(this));
-      console.println("Web search tools installed");
-    } else {
-      console.println("Web search tools NOT installed");
+  public void start() {
+    AgentManager manager = AgentLocator.getAgentManager();
+    for (AgentServiceFactory serviceFactory : manager.getServiceFactories()) {
+      this.services.put(serviceFactory.getName(), serviceFactory.createService(this));
     }
+    
+    this.startAllServices();
 
-//    String telegramApiKey = System.getenv("TELEGRAM_API_KEY");
-//    long telegramAuthorizedChatId = NumberUtils.toLong(System.getenv("TELEGRAM_CHAT_ID"),0);
-//    if( StringUtils.isNotBlank(telegramApiKey) && telegramAuthorizedChatId>0 ) {
-//        agent.addTool(TelegramTool.create(telegramApiKey, telegramAuthorizedChatId, agent));            
-//        console.println("Telegram tools installed");
-//    } else {
-//        console.println("Telegram tools NOT installed");
-//    }
-//
-//    String emailUser = System.getenv("EMAIL_USER");
-//    String emailPass = System.getenv("EMAIL_PASS");
-//    String myEmail = "joaquin@miempresa.com"; // FIXME: leerlo de algun lado
-//    if (StringUtils.isNotBlank(emailUser)) {
-//        EmailService.install(
-//            agent,
-//            "imap.gmail.com", // FIXME: leerlo de algun lado
-//            "smtp.gmail.com", // FIXME: leerlo de algun lado
-//            emailUser, 
-//            emailPass, 
-//            myEmail
-//        );
-//        console.println("EMail tools installed");
-//    } else {
-//        console.println("EMail tools NOT installed");
-//    }
-    this.actions.addAction(CHANGE_MEMORY_PROVIDER, (AgentSettings s) -> memoryManager.createChatLanguageModel(s));
-    this.actions.addAction(CHANGE_MEMORY_MODEL, (AgentSettings s) -> memoryManager.createChatLanguageModel(s));
-    this.actions.addAction(CHANGE_CONVERSATION_PROVIDER, (AgentSettings s) -> conversationManager.createChatLanguageModel(s));
-    this.actions.addAction(CHANGE_CONVERSATION_MODEL, (AgentSettings s) -> conversationManager.createChatLanguageModel(s));
-
-    this.schedulerService.start();
+    ConversationService conversation = (ConversationService) this.getService(ConversationService.NAME);    
+    for (AgentService service : this.services.values()) {
+      if (service.canStart()) {
+        List<AgentTool> tools = service.getTools();
+        if (tools != null) {
+          for (AgentTool tool : tools) {
+            conversation.addTool(tool);
+          }
+          console.println(service.getName() + " tools installed");          
+        }
+      } else {
+          console.println(service.getName() + " tools NOT installed");          
+      }
+    }
 
     console.println("MemoryManager " + settings.getProperty(MEMORY_MODEL_ID));
     console.println("ConversationManager " + settings.getProperty(CONVERSATION_MODEL_ID));
 
-  }
-
-  public MemoryManagerImpl getMemoryManager() {
-    return this.memoryManager;
   }
 
   @Override
@@ -226,12 +127,14 @@ public class AgentImpl implements Agent {
 
   @Override
   public String processTurn(String input) {
-    return this.conversationManager.processTurn(input);
+    ConversationService conversation = (ConversationService) this.getService(ConversationService.NAME);    
+    return conversation.processTurn(input);
   }
 
   @Override
   public void putEvent(String channel, String priority, String eventText) {
-    this.conversationManager.putEvent(channel, priority, eventText);
+    ConversationService conversation = (ConversationService) this.getService(ConversationService.NAME);    
+    conversation.putEvent(channel, priority, eventText);
   }
 
   @Override
@@ -249,18 +152,13 @@ public class AgentImpl implements Agent {
     return this.connServices;
   }
 
-  @Override
-  public SchedulerService getSchedulerService() {
-    return schedulerService;
-  }
-
   /**
    * Realiza una llamada al modelo de lenguaje y devuelve la respuesta como
    * texto plano.
    */
-  public String callChatModel(String llmid, String systemPrompt, String message, double temperature) {
+  public String callChatModel(String llmid, String systemPrompt, String message) {
     try {
-      OpenAiChatModel model = this.createChatModel(llmid, temperature);
+      OpenAiChatModel model = this.createChatModel(llmid);
 
       List<dev.langchain4j.data.message.ChatMessage> messages = new ArrayList<>();
       if (org.apache.commons.lang3.StringUtils.isNotBlank(systemPrompt)) {
@@ -281,8 +179,8 @@ public class AgentImpl implements Agent {
    * Realiza una llamada al modelo y parsea la respuesta como un JsonObject de
    * GSON. Incluye limpieza automática de bloques de código Markdown.
    */
-  public JsonObject callChatModelAsJson(String llmid, String systemPrompt, String message, double temperature) {
-    String rawResponse = callChatModel(llmid, systemPrompt, message, temperature);
+  public JsonObject callChatModelAsJson(String llmid, String systemPrompt, String message) {
+    String rawResponse = callChatModel(llmid, systemPrompt, message);
 
     if (rawResponse == null || rawResponse.isBlank()) {
       return null;
@@ -307,39 +205,16 @@ public class AgentImpl implements Agent {
     }
   }
 
-  public OpenAiChatModel createChatModel(String llmid, double temperature) {
-    llmid = llmid.toUpperCase();
-    String provider_url = null;
-    String provider_apikey = null;
-    String modelid = null;
+  @Override
+  public OpenAiChatModel createChatModel(String name) {
+    name = name.toUpperCase();
 
-    switch (llmid) {
-      case "DOCMAPPER_REASONING":
-        provider_url = DOCMAPPER_REASONING_PROVIDER_URL;
-        provider_apikey = DOCMAPPER_REASONING_PROVIDER_API_KEY;
-        modelid = DOCMAPPER_REASONING_MODEL_ID;
-        break;
-      case "DOCMAPPER_BASIC":
-        provider_url = DOCMAPPER_BASIC_PROVIDER_URL;
-        provider_apikey = DOCMAPPER_BASIC_PROVIDER_API_KEY;
-        modelid = DOCMAPPER_BASIC_MODEL_ID;
-        break;
-      case "CONVERSATION":
-        provider_url = CONVERSATION_PROVIDER_URL;
-        provider_apikey = CONVERSATION_PROVIDER_API_KEY;
-        modelid = CONVERSATION_MODEL_ID;
-        break;
-      case "MEMORY":
-        provider_url = MEMORY_PROVIDER_URL;
-        provider_apikey = MEMORY_PROVIDER_API_KEY;
-        modelid = MEMORY_MODEL_ID;
-        break;
-    }
+    ModelParameters params = this.getModelParameters(name);
     OpenAiChatModel model = OpenAiChatModel.builder()
-            .baseUrl(settings.getProperty(provider_url))
-            .apiKey(settings.getProperty(provider_apikey))
-            .modelName(settings.getProperty(modelid))
-            .temperature(temperature)
+            .baseUrl(params.providerUrl())
+            .apiKey(params.providerApiKey())
+            .modelName(params.modelId())
+            .temperature(params.temperature())
             .timeout(Duration.ofSeconds(180))
             .logRequests(false)
             .logResponses(false)
@@ -347,8 +222,14 @@ public class AgentImpl implements Agent {
     return model;
   }
 
-  public DocumentServices getDocumentServices() {
-    return this.documentServices;
+  public ModelParameters getModelParameters(String name) {
+    for (AgentService service : this.services.values()) {
+      ModelParameters params = service.getModelParameters(name);
+      if (params != null) {
+        return params;
+      }
+    }
+    return null;
   }
 
   /**
@@ -410,6 +291,26 @@ public class AgentImpl implements Agent {
       console.printerrorln("Error leyendo recurso " + resname + ": " + e.getMessage());
       return "";
     }
+  }
+
+  public void startAllServices() {
+    for (AgentService service : this.services.values()) {
+      if (!service.isRunning()) {
+        service.start();
+      }
+    }
+  }
+
+  public void startService(String name) {
+    AgentService service = this.services.get(name);
+    if (service != null && !service.isRunning()) {
+      service.start();
+    }
+  }
+
+  public AgentService getService(String name) {
+    AgentService service = this.services.get(name);
+    return service;
   }
 
 }
