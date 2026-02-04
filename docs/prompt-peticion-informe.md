@@ -5,7 +5,7 @@ Analizalos en profundidad y prepara un informe que incluya como minimo:
 * El stack tecnologico
 * Estructura de paquetes, interfaces/implementacion
 * Arquitectura y diseño 
-* Herramientas del agente
+* Herramientas del agente, se exaustivo en la enumeracion de las herramientas.
 * Construccion y despliegue
 * Una conclusion
 
@@ -20,7 +20,8 @@ Incluye una descripcion detallada de los principales mecanismos:
 * Seguridad
 * Flujos en el conversation manager.
 
-Es preferible que te extiendas y generes un analisis detallado. Cuanto mas detallado mejor.
+Cuanto mas detallado mejor.
+Es preferible que te extiendas y generes un analisis detallado. 
 
 Sientete libre de incluir cualquier detalle del proyecto que crees que es relevante.
 
