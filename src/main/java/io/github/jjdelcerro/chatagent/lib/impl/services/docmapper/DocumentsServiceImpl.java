@@ -204,7 +204,8 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
       try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql.toString())) {
         while (rs.next()) {
           DocumentResultImpl doc = mapResultSetToDocument(rs);
-          search.add(rs.getBytes("summary_embedding"), doc);
+          double score = search.add(rs.getBytes("summary_embedding"), doc);
+          doc.score = score;
         }
       }
     } catch (SQLException ex) {
