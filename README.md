@@ -40,7 +40,7 @@ La documentación técnica detallada de este proyecto reside en un archivo espec
 
 📄 **[DEVELOPMENT_STATUS.md](./DEVELOPMENT_STATUS.md)**
 
-Este proyecto es un organismo vivo que evoluciona junto con mis investigaciones. Para conocer el grado de completitud de cada bloque y la deuda técnica identificada, consulta:
+Este proyecto es un organismo vivo que evoluciona junto con mis investigaciones. Para conocer el grado de completitud de cada bloque y la deuda técnica identificada, consultalo.
 
 > **Nota:** Este informe es generado y actualizado de vez en cuando con ayuda de mi asistente de IA tras cada hito relevante, actuando como un registro del progreso y los desafíos pendientes.
 
@@ -136,7 +136,7 @@ Al arrancar, el agente crea una carpeta `./data` en el directorio de ejecución.
 ### 1. La Base de Conocimiento (Source of Truth)
 
 *   **`memory.mv.db`**: Base de Datos H2 embebida. Contiene la tabla de turnos inmutables, metadatos y los embeddings vectoriales. 
-    > *Tip:* Puedes abrir este archivo con cualquier cliente SQL (como DBeaver) para auditar cómo el agente guarda sus interacciones.
+    > *Tip:* Puedes abrir este archivo con cualquier cliente SQL para auditar cómo el agente guarda sus interacciones. Debera estar la aplicacion cerrada para acceder a la BBDD desde herramientas externas.
 
 ### 2. Memoria Narrativa (Checkpoints)
 
