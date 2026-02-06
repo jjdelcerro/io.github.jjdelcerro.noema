@@ -38,6 +38,19 @@ La documentación técnica detallada de este proyecto reside en un archivo espec
 >
 > Si quieres entender cómo funciona este sistema "bajo el capó", ese es el documento que debes leer.
 
+📄 **[DEVELOPMENT_STATUS.md](./DEVELOPMENT_STATUS.md)**
+
+Este proyecto es un organismo vivo que evoluciona junto con mis investigaciones. Para conocer el grado de completitud de cada bloque y la deuda técnica identificada, consulta:
+
+> **Nota:** Este informe es generado y actualizado de vez en cuando con ayuda de mi asistente de IA tras cada hito relevante, actuando como un registro del progreso y los desafíos pendientes.
+
+📄 **Otra documentacion relevante**
+
+Puedes encontrar interesantes algunos de los articulos que he publicado y para los que este proyecto a sido el patio de pruebas.
+
+*   [¿Qué es un agente?](https://jjdelcerro.github.io/es/blog/que-es-un-agente/)
+*   [Agentes de IA y la inyección de observaciones proactivas en clientes de chat](https://jjdelcerro.github.io/es/blog/agentes-de-ia-y-la-inyeccion-de-observaciones-proactivas-en-clientes-de-chat/)
+
 ## Características Principales
 
 1.  **Gestión de Memoria:**
@@ -151,14 +164,6 @@ Para facilitar la auditoría de la memoria del agente, la aplicación inicia aut
 *   **Usuario:** `sa` / **Password:** (vacío)
 
 Desde aquí puedes ejecutar consultas SQL para ver los vectores, los turnos consolidados y los metadatos de las herramientas en tiempo real.
-
-## Estado de Desarrollo
-
-Este proyecto es un organismo vivo que evoluciona junto con mis investigaciones. Para conocer el grado de completitud de cada bloque y la deuda técnica identificada, consulta:
-
-📄 **[DEVELOPMENT_STATUS.md](./DEVELOPMENT_STATUS.md)**
-
-> **Nota:** Este informe es generado y actualizado de vez en cuando con ayuda de mi asistente de IA tras cada hito relevante, actuando como un registro del progreso y los desafíos pendientes.
 
 ---
 *Desarrollado por [Joaquin del Cerro](https://github.com/jjdelcerro) como parte de la investigación sobre arquitecturas de IA.*
