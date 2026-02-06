@@ -1,6 +1,5 @@
 package io.github.jjdelcerro.chatagent.lib.impl.services.conversation;
 
-import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.AiMessage;
@@ -29,7 +28,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.lang3.StringUtils;
@@ -67,37 +65,6 @@ public class ConversationService implements AgentService {
   public static final String CONVERSATION_PROVIDER_URL = "CONVERSATION_PROVIDER_URL";
   public static final String CONVERSATION_PROVIDER_API_KEY = "CONVERSATION_PROVIDER_API_KEY";
   public static final String CONVERSATION_MODEL_ID = "CONVERSATION_MODEL_ID";
-
-  private static class Event {
-
-    final String channel;
-    final String priority;
-    final String contents;
-    final String event_time;
-
-    public Event(String channel, String priority, String contents) {
-      this.event_time = now();
-      this.channel = channel;
-      this.priority = priority;
-      this.contents = contents;
-    }
-
-    @Override
-    public String toString() {
-      return "[channel:" + this.channel + ",priority:" + this.priority + ",text:" + StringUtils.abbreviate(StringUtils.replace(contents, "\n", " "), 40) + "]";
-    }
-
-    public String toJson() {
-      Gson gson = new Gson();
-      return gson.toJson(Map.of(
-              "current_time", now(),
-              "event_time", this.event_time,
-              "channel", channel,
-              "priority", priority,
-              "contents", contents
-      ));
-    }
-  }
 
   private final Agent agent;
   private final SourceOfTruth sourceOfTruth;
@@ -173,61 +140,38 @@ public class ConversationService implements AgentService {
     while (!pendingEvents.isEmpty()) {
       Event event = pendingEvents.poll();
       this.console.println("Evento: " + event.toString());
-      ToolExecutionRequest request = ToolExecutionRequest.builder()
-              .name("pool_event")
-              .id("pool_event_" + (UUID.randomUUID().toString().replace("-", "")))
-              .build();
-      ToolExecutionResultMessage result = ToolExecutionResultMessage.from(request, event.toJson());
-      this.executeReasoningLoop(result);
+
+      this.session.add(event.getAiMessage());
+      this.session.add(event.getResponseMessage());
+      String contentType = "tool_execution";
+      Turn toolTurn = this.sourceOfTruth.createTurn(
+              Timestamp.from(Instant.now()),
+              contentType,
+              null,
+              null,
+              null,
+              event.getAiMessage().toString(),
+              event.getResponseMessage().toString(),
+              null
+      );
+      this.sourceOfTruth.add(toolTurn);
+      this.session.consolideTurn(toolTurn);
+
+      this.executeReasoningLoop(null);
     }
   }
 
   public synchronized String processTurn(String textUser) {
-    String value = this.executeReasoningLoop(UserMessage.from(textUser));
+    UserMessage inputMessage = UserMessage.from(textUser);
+    this.session.add(inputMessage);
+    String value = this.executeReasoningLoop(textUser);
     processPendingEvents();
     return value;
-
   }
 
-  private synchronized String executeReasoningLoop(ChatMessage inputMessage) {
+  private synchronized String executeReasoningLoop(String textUser) {
     StringBuilder llmResponse = new StringBuilder();
-
     try {
-      // 1. INYECTAR INPUT 
-      String textUser = null;
-      if (inputMessage instanceof ToolExecutionResultMessage result) {
-
-        // Reconstruimos la petición original para mantener la coherencia del historial
-        ToolExecutionRequest request = ToolExecutionRequest.builder()
-                .id(result.id())
-                .name(result.toolName())
-                .arguments("{}")
-                .build();
-
-        // Inyectamos la "intención" simulada del asistente antes del resultado
-        this.session.add(AiMessage.from(request));
-        this.session.add(result);
-
-        String contentType = "tool_execution";
-        Turn toolTurn = this.sourceOfTruth.createTurn(
-                Timestamp.from(Instant.now()),
-                contentType,
-                null,
-                null,
-                null,
-                request.toString(),
-                result.toString(),
-                null
-        );
-
-        this.sourceOfTruth.add(toolTurn);
-        this.session.consolideTurn(toolTurn);
-      } else {
-        this.session.add(inputMessage);
-        textUser = ((UserMessage) inputMessage).singleText();
-      }
-
-      // 2. BUCLE DE INTERACCION (Reasoning Loop)
       boolean turnFinished = false;
 
       while (!turnFinished) {
@@ -244,37 +188,25 @@ public class ConversationService implements AgentService {
         if (aiMessage.hasToolExecutionRequests()) {
           // --- MODO HERRAMIENTA ---
           for (ToolExecutionRequest request : aiMessage.toolExecutionRequests()) {
-
-            // A. Ejecucion
             String result = executeToolLogic(request);
-
-            // B. Tipo de contenido
             String contentType = "tool_execution";
             if (isMemoryTool(request.name())) {
               contentType = "lookup_turn";
             }
-
-            // C. Persistencia del Turno (Archivo)
             Turn toolTurn = this.sourceOfTruth.createTurn(
                     Timestamp.from(Instant.now()),
                     contentType,
-                    null, // User text is managed by Session/Messages now
+                    null,
                     null,
                     null,
                     request.toString(),
                     result,
                     null
             );
-
             this.sourceOfTruth.add(toolTurn);
-
-            // D. Feedback al LLM (Protocolo)
             this.session.add(ToolExecutionResultMessage.from(request, result));
-
-            // E. Consolidar el turno en la sesion
             this.session.consolideTurn(toolTurn);
           }
-          // El bucle continua... 
 
         } else {
           // --- MODO RESPUESTA FINAL ---
@@ -298,7 +230,6 @@ public class ConversationService implements AgentService {
         }
       }
 
-      // 3. GESTION DE COMPACTACION
       if (this.session.needCompaction()) {
         performCompaction();
       }
@@ -456,9 +387,9 @@ public class ConversationService implements AgentService {
     return this.running;
   }
 
-  private static String now() {
+  public static String now() {
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, HH:mm", new Locale("es", "ES"));
     return LocalDateTime.now().format(formatter);
   }
-  
+
 }

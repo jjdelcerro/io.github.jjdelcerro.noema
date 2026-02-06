@@ -9,6 +9,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ChatMessageType;
@@ -21,7 +22,6 @@ import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
 import io.github.jjdelcerro.chatagent.lib.persistence.CheckPoint;
 import io.github.jjdelcerro.chatagent.lib.persistence.Turn;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -30,8 +30,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import org.ocpsoft.prettytime.PrettyTime;
 
 /**
  * Agregado que gobierna el estado de la sesion activa de conversacion.
@@ -48,6 +51,7 @@ public class Session {
     private final List<ChatMessage> messages = new ArrayList<>();
     // Key: Indice en 'messages', Value: ID del Turno
     private Map<Integer, Integer> turnOfMessage = new HashMap<>();
+    private LocalDateTime lastInteractionTime;
 
     /**
      * Interfaz publica para marcas de compactacion.
@@ -94,8 +98,7 @@ public class Session {
 
     public List<ChatMessage> getContextMessages(CheckPoint checkpoint, String systemPrompt) {
         List<ChatMessage> context = new ArrayList<>();
-
-        // 1. Construir System Prompt compuesto
+        
         StringBuilder sb = new StringBuilder();
         if (systemPrompt != null && !systemPrompt.isEmpty()) {
             sb.append(systemPrompt);
@@ -114,8 +117,26 @@ public class Session {
             context.add(SystemMessage.from(sb.toString()));
         }
 
-        // 2. Anadir mensajes activos
+
+        LocalDateTime now = LocalDateTime.now();
+        if (this.lastInteractionTime != null && !this.messages.isEmpty()) {
+            ChatMessage lastMessage = this.messages.get(this.messages.size() - 1);
+            if (lastMessage instanceof UserMessage) {
+                // Introduccion de la percepcion temporal.
+                Duration delta = Duration.between(this.lastInteractionTime, now);
+                if (delta.toHours() >= 1) {
+                    PrettyTime pt = new PrettyTime(Locale.of("es"));
+                    String timeAgo = pt.format(this.lastInteractionTime);
+                    String content = "Ha pasado " + timeAgo + " desde la última interacción con el usuario.";
+                    Event timerEvent = new Event("timer", "normal", content);
+                    this.messages.add(timerEvent.getAiMessage());
+                    this.messages.add(timerEvent.getResponseMessage());
+                }
+            }
+        }
+
         context.addAll(this.messages);
+        this.lastInteractionTime = now;
 
         return context;
     }
@@ -245,10 +266,12 @@ public class Session {
     private static class SessionState {
         List<ChatMessage> messages;
         Map<Integer, Integer> turnOfMessage;
+        String lastInteractionTime;
         
-        SessionState(List<ChatMessage> m, Map<Integer, Integer> t) { 
+        SessionState(List<ChatMessage> m, Map<Integer, Integer> t, String l) { 
             this.messages = m; 
             this.turnOfMessage = t; 
+            this.lastInteractionTime = l;
         }
         SessionState() {
         }
@@ -268,6 +291,9 @@ public class Session {
                 if (state.turnOfMessage != null) {
                     this.turnOfMessage.putAll(state.turnOfMessage);
                 }
+                if (state.lastInteractionTime != null) {
+                    this.lastInteractionTime = LocalDateTime.parse(state.lastInteractionTime);
+                }
             }
         } catch (Exception e) {
             System.err.println("Error recuperando sesion: " + e.getMessage());
@@ -276,7 +302,8 @@ public class Session {
 
     private void save() {
         Gson gson = createGson();
-        SessionState state = new SessionState(this.messages, this.turnOfMessage);
+        String lastTimeStr = this.lastInteractionTime != null ? this.lastInteractionTime.toString() : null;
+        SessionState state = new SessionState(this.messages, this.turnOfMessage, lastTimeStr);
         try {
             try (Writer writer = Files.newBufferedWriter(tempPath, StandardCharsets.UTF_8)) {
                 gson.toJson(state, writer);
