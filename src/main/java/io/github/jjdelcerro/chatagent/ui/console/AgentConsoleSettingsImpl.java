@@ -25,6 +25,7 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
   private interface AgentSettingsItemConsole extends AgentSettingsItem {
 
     AgentSettingsItemConsole show();  // Muestra el UI
+
     AgentSettingsItemConsole input(); // Espera la entrada del usuario y devuelve el siguiente item
   }
 
@@ -38,17 +39,19 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
 
     @Override
     protected AgentSettingsItem createItem(AgentSettingsItem parent, Agent agent, JsonObject jsonItem) {
-          switch (jsonItem.get("type").getAsString().toLowerCase()) {
-            case "menu":
-              return new MenuItem(this, this.agent, jsonItem);
-            case "inputstring":
-              return  new InputStringItem(this, this.agent, jsonItem);
-            case "selectoption":
-              return  new SelectOptionItem(this, this.agent, jsonItem);
-            case "value":
-            default:
-              return  new ValueItem(this, this.agent, jsonItem);
-          }
+      switch (jsonItem.get("type").getAsString().toLowerCase()) {
+        case "menu":
+          return new MenuItem(this, this.agent, jsonItem);
+        case "inputstring":
+          return new InputStringItem(this, this.agent, jsonItem);
+        case "selectoption":
+          return new SelectOptionItem(this, this.agent, jsonItem);
+        case "combo":
+          return new ComboItemConsole(this, this.agent, jsonItem);
+        case "value":
+        default:
+          return new ValueItem(this, this.agent, jsonItem);
+      }
     }
   }
 
@@ -178,6 +181,80 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
       return this;
     }
 
+  }
+
+  private static class ComboItemConsole extends AbstractAgentSettingsItemConsole {
+
+    public ComboItemConsole(AgentSettingsItem parent, Agent agent, JsonObject item) {
+      super(parent, agent, item);
+    }
+
+    @Override
+    public AgentSettingsItemConsole show() {
+      AgentConsoleImpl console = (AgentConsoleImpl) agent.getConsole();
+      String current = agent.getSettings().getProperty(getVariableName());
+
+      console.println("\n--- " + getLabel() + " ---");
+      console.println("Valor actual: " + (current == null ? "(no definido)" : current));
+      console.println("Sugerencias:");
+
+      List<AgentSettingsItem> childs = getChilds();
+      for (int i = 0; i < childs.size(); i++) {
+        console.println("[" + (i + 1) + "] " + childs.get(i).getLabel() + " (" + childs.get(i).getValue() + ")");
+      }
+      console.println("Escribe un número para seleccionar, o introduce un valor manualmente.");
+      return this;
+    }
+
+    @Override
+    public AgentSettingsItemConsole input() {
+      AgentConsoleImpl console = (AgentConsoleImpl) agent.getConsole();
+      LineReader reader = console.getLineReader();
+
+      // 1. Leemos el input SIN trimar inmediatamente
+      String rawInput = reader.readLine("Selección (nº) o Valor manual: ");
+
+      if (rawInput == null || rawInput.isEmpty()) {
+        return (AgentSettingsItemConsole) getParent();
+      }
+
+      String finalValue;
+
+      // 2. Lógica del "Espacio como Escape"
+      if (rawInput.startsWith(" ")) {
+        // Si empieza por espacio, tratamos el resto como literal
+        // (esto permite meter un "8" literal incluso si hay 10 opciones)
+        finalValue = rawInput.substring(1);
+        console.println("Interpretado como valor literal: '" + finalValue + "'");
+      } else {
+        // Si no hay espacio, intentamos la lógica numérica
+        String trimmed = rawInput.trim();
+        try {
+          int choice = Integer.parseInt(trimmed);
+          List<AgentSettingsItem> childs = getChilds();
+
+          if (choice > 0 && choice <= childs.size()) {
+            // Es una opción de la lista
+            finalValue = childs.get(choice - 1).getValue();
+          } else {
+            // Es un número, pero no está en el rango (ej: un puerto 8080)
+            finalValue = trimmed;
+          }
+        } catch (NumberFormatException e) {
+          // No es un número, es texto normal
+          finalValue = trimmed;
+        }
+      }
+
+      // 3. Persistencia y Acción
+      if (finalValue != null) {
+        agent.getSettings().setProperty(getVariableName(), finalValue);
+        this.save(); // Este método ya está en AbstractAgentSettingsItem y hace el save() + action call
+      }
+
+      return (AgentSettingsItemConsole) getParent();
+    }
+    
   }
 
   private static class ValueItem extends AbstractAgentSettingsItemConsole {
