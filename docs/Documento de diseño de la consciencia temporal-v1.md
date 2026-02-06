@@ -34,7 +34,7 @@ La herramienta `pool_event` y el mecanismo de eventos de `ConversationService` s
         2.  Si `lastInteractionTime != null` **Y** el último mensaje de la lista `messages` es de tipo `USER`:
             *   Calcular `Duration delta = Duration.between(lastInteractionTime, now)`.
             *   Si `delta.toHours() >= 1` :
-                *   Insertar un `SystemMessage` temporal al inicio de la lista que diga: *"Han pasado [X] horas y [Y] minutos desde la última interacción."*
+<!--                 *   Insertar una llamada ficticia a pool_event que devuelva un evento del canal "time" con la hora actual y un mensaje que diga: *"Han pasado [X] horas y [Y] minutos desde la última interacción."* -->
         3.  `this.lastInteractionTime = now;` (Actualizar siempre).
         4.  `this.save();` (Persistir el nuevo tiempo).
 
@@ -74,4 +74,60 @@ A esta parte hay que dedicarle aun una pensada.
 *   **Primer arranque:** Si `lastInteractionTime` es `null` (primera ejecución histórica), no se debe inyectar ninguna nota.
 *   **Bucle ReAct:** La inyección solo ocurre si el último mensaje es `USER`, evitando que en un bucle de 5 llamadas a herramientas el mensaje de tiempo se repita 5 veces.
 *   **Eficiencia:** No se utiliza ningún hilo `Timer` o `ScheduledExecutor` para esta percepción; todo ocurre en el hilo de la solicitud del usuario, manteniendo el sistema ligero.
+
+# 6. Notas sobre el formatea de Duration.
+
+Para realizar el proceso inverso (de objeto temporal a lenguaje natural), la librería estándar de Java es un poco limitada (te da formatos tipo `PT5H10M`), por lo que en el ecosistema Java la solución "estándar de facto" es **PrettyTime**.
+
+Dado que tu proyecto es pragmático y buscas algo que se integre bien con Java 21, aquí tienes las mejores opciones:
+
+### 1. La opción recomendada: **PrettyTime**
+Es la contraparte perfecta de Natty. Es muy ligera, no tiene dependencias y soporta **Castellano** perfectamente.
+
+**Dependencia Maven:**
+
+```xml
+<dependency>
+    <groupId>org.ocpsoft.prettytime</groupId>
+    <artifactId>prettytime</artifactId>
+    <version>5.0.7.Final</version>
+</dependency>
+```
+
+**Uso básico:**
+
+```java
+PrettyTime p = new PrettyTime(new Locale("es"));
+// Para una fecha pasada (tu caso de "silencio")
+System.out.println(p.format(LocalDateTime.now().minusHours(5))); 
+// Resultado: "hace 5 horas"
+
+// Para una duración específica
+System.out.println(p.formatDuration(Duration.ofMinutes(10)));
+// Resultado: "10 minutos"
+```
+
+### 2. Opción "Sin Dependencias" (Java 21 nativo)
+Si no quieres añadir otro JAR al proyecto, puedes crear un pequeño método utilitario aprovechando que estás en Java 21. Aunque no es "lenguaje natural" puro (como "hace un ratito"), es muy legible para un LLM.
+
+```java
+public static String formatRelative(Duration duration) {
+    if (duration.toDays() > 0) return duration.toDays() + " días";
+    if (duration.toHours() > 0) return duration.toHours() + " horas";
+    if (duration.toMinutes() > 0) return duration.toMinutes() + " minutos";
+    return "pocos segundos";
+}
+```
+
+### 3. Comparativa para tu diseño
+
+Para los puntos de intervención que definimos en el documento de diseño:
+
+*   **En la nota de `Session` (Percepción de Silencio):**
+    Te recomiendo **PrettyTime** usando `format(lastInteractionTime)`. Obtendrás frases como *"hace 3 horas"* o *"hace 2 días"*, que el LLM entiende perfectamente para ajustar su saludo.
+    
+*   **En el CSV de `SourceOfTruth` (Delta Time):**
+    Aquí es mejor guardar el número crudo (segundos) o usar la opción **nativo de Java** (ej. `5h 10m`), ya que el `MemoryManager` necesita precisión para calcular la cronología en "El Viaje".
+
+Como ya se esta usando Natty para "entender", PrettyTime es la herramienta lógica para que el agente se "exprese" sobre el tiempo en sus logs internos y notas de sistema.
 

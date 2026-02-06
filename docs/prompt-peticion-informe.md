@@ -16,6 +16,7 @@ Opcionalmente puede incluir:
 Incluye una descripcion detallada de los principales mecanismos:
 * Gestion de memoria (session vs persistencia de turnos vs puntos-de-guardado)
 * Gestion de eventos
+* Percepcion temporal (insercion de marcas de silencio en la conversacion y tiempo en las respuestas a pool_event)
 * Document Mapper. juego de herramientas, y mecanismo que emplea para el indexado de los documento.
 * Seguridad
 * Flujos en el conversation manager.
