@@ -6,4 +6,5 @@ Que incluya:
 * Analisis de completitud por bloques funcionales
 * Resumen de deuda tecnica indentificada
 * Proximos itos.
+* Valoracion de la documentacion del proyecto.
 * Resumen del estado
