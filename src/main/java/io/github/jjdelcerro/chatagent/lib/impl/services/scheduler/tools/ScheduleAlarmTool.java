@@ -7,7 +7,7 @@ import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.chatagent.lib.Agent;
 
-import io.github.jjdelcerro.chatagent.lib.SchedulerService;
+import io.github.jjdelcerro.chatagent.lib.impl.services.scheduler.SchedulerService;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;

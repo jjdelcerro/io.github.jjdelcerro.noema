@@ -13,12 +13,12 @@ import io.github.jjdelcerro.chatagent.lib.persistence.SourceOfTruth;
 import java.io.File;
 import java.nio.file.Paths;
 import java.sql.Connection;
-import java.sql.SQLException;
 import io.github.jjdelcerro.chatagent.lib.AgentAccessControl;
 import io.github.jjdelcerro.chatagent.lib.AgentManager;
 import io.github.jjdelcerro.chatagent.lib.AgentService;
 import io.github.jjdelcerro.chatagent.lib.AgentServiceFactory;
 import io.github.jjdelcerro.chatagent.lib.AgentTool;
+import io.github.jjdelcerro.chatagent.lib.ConnectionSupplier;
 import static io.github.jjdelcerro.chatagent.lib.impl.services.conversation.ConversationService.CONVERSATION_MODEL_ID;
 import static io.github.jjdelcerro.chatagent.lib.impl.services.memory.MemoryService.MEMORY_MODEL_ID;
 import java.io.IOException;
@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  *
@@ -41,23 +42,26 @@ public class AgentImpl implements Agent {
 
   private AgentConsole console;
   private final AgentSettings settings;
-  private AgentActions actions;
+  private final AgentActions actions;
   private final File dataFolder;
-  private SourceOfTruth sourceOfTruth;
+  private final SourceOfTruth sourceOfTruth;
 
   private final AgentAccessControl accessControl;
-  private final Connection connServices;
+
+  private final ConnectionSupplier servicesDatabase;
+  private final ConnectionSupplier memoryDatabase;
 
   private final Map<String, AgentService> services;
 
-  public AgentImpl(Connection knowledgeDatabase, Connection servicesDatabase, File dataFolder, AgentSettings settings, AgentConsole console) {
+  public AgentImpl(ConnectionSupplier memoryDatabase, ConnectionSupplier servicesDatabase, File dataFolder, AgentSettings settings, AgentConsole console) {
     this.dataFolder = dataFolder;
     this.settings = settings;
     this.console = console;
     this.services = new LinkedHashMap<>();
     this.accessControl = new AgentAccessControlImpl(Paths.get(".").toAbsolutePath().normalize());
     this.actions = AgentLocator.getAgentManager().createActions();
-    this.connServices = servicesDatabase;
+    this.servicesDatabase = servicesDatabase;
+    this.memoryDatabase = memoryDatabase;
     this.sourceOfTruth = SourceOfTruthImpl.from(this);
   }
 
@@ -137,8 +141,13 @@ public class AgentImpl implements Agent {
   }
 
   @Override
-  public Connection getServicesDatabase() {
-    return this.connServices;
+  public ConnectionSupplier getServicesDatabase() {
+    return this.servicesDatabase;
+  }
+
+  @Override
+  public ConnectionSupplier getMemoryDatabase() {
+    return this.memoryDatabase;
   }
 
   /**

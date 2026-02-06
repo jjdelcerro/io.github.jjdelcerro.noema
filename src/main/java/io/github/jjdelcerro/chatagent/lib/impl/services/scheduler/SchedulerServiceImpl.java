@@ -4,7 +4,8 @@ import com.google.gson.Gson;
 import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.AgentServiceFactory;
 import io.github.jjdelcerro.chatagent.lib.AgentTool;
-import io.github.jjdelcerro.chatagent.lib.SchedulerService;
+import io.github.jjdelcerro.chatagent.lib.ConnectionSupplier;
+import io.github.jjdelcerro.chatagent.lib.impl.SQLProvider;
 import io.github.jjdelcerro.chatagent.lib.impl.persistence.Counter;
 import io.github.jjdelcerro.chatagent.lib.impl.services.scheduler.tools.ScheduleAlarmTool;
 import java.sql.Connection;
@@ -44,6 +45,10 @@ public class SchedulerServiceImpl implements SchedulerService {
     this.running = false;
   }
 
+  private ConnectionSupplier getConnection() {
+    return this.agent.getServicesDatabase();
+  }
+  
   @Override
   public AgentServiceFactory getFactory() {
     return factory;
@@ -54,10 +59,11 @@ public class SchedulerServiceImpl implements SchedulerService {
     this.scheduler = Executors.newSingleThreadScheduledExecutor(
             Thread.ofVirtual().factory()
     );
-    try {
-      Connection conn = this.agent.getServicesDatabase();
+    try (
+            Connection conn = this.agent.getServicesDatabase().get()
+      ) {      
       this.createTables(conn);
-      this.counter = Counter.from(conn, "SCHEDULER");
+      this.counter = Counter.from(this.agent.getServicesDatabase(), "SCHEDULER");
       rescheduleNextAlarm();
       this.running = true;
     } catch (SQLException ex) {
@@ -67,21 +73,32 @@ public class SchedulerServiceImpl implements SchedulerService {
 
   private void createTables(Connection conn) throws SQLException {
     try (Statement stmt = conn.createStatement()) {
-      stmt.execute("""
-                CREATE TABLE IF NOT EXISTS SCHEDULER (
-                    id VARCHAR(255) PRIMARY KEY,
-                    timestamp TIMESTAMP,
-                    alarm_time TIMESTAMP,
-                    reason VARCHAR(1024)
-                )
-            """);
+      String sql = SQLProvider.from(this.getConnection()).get(
+              "Scheduler_createTables_scheduler", 
+              """
+                              CREATE TABLE IF NOT EXISTS SCHEDULER (
+                                  id VARCHAR(255) PRIMARY KEY,
+                                  timestamp TIMESTAMP,
+                                  alarm_time TIMESTAMP,
+                                  reason VARCHAR(1024)
+                              )
+                            """
+      );
+      stmt.execute(sql);
     }
   }
 
   @Override
   public String schedule(LocalDateTime when, String reason) {
     String alarmId = "ALARM-" + counter.get();
-    try (Connection conn = this.agent.getServicesDatabase(); PreparedStatement pstmt = conn.prepareStatement("INSERT INTO SCHEDULER (id, timestamp, alarm_time, reason) VALUES (?, ?, ?, ?)")) {
+    String sql = SQLProvider.from(this.getConnection()).get(
+              "Scheduler_schedule", 
+              "INSERT INTO SCHEDULER (id, timestamp, alarm_time, reason) VALUES (?, ?, ?, ?)"
+    );
+    try (
+            Connection conn = this.agent.getServicesDatabase().get(); 
+            PreparedStatement pstmt = conn.prepareStatement(sql)
+      ) {
       pstmt.setString(1, alarmId);
       pstmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
       pstmt.setTimestamp(3, Timestamp.valueOf(when));
@@ -120,7 +137,14 @@ public class SchedulerServiceImpl implements SchedulerService {
   }
 
   private void removeAlarm(String id) {
-    try (Connection conn = this.agent.getServicesDatabase(); PreparedStatement pstmt = conn.prepareStatement("DELETE FROM SCHEDULER WHERE id = ?")) {
+    String sql = SQLProvider.from(this.getConnection()).get(
+              "Scheduler_removeAlarm", 
+              "DELETE FROM SCHEDULER WHERE id = ?"
+    );
+    try (
+            Connection conn = this.agent.getServicesDatabase().get(); 
+            PreparedStatement pstmt = conn.prepareStatement(sql)
+      ) {
       pstmt.setString(1, id);
       pstmt.executeUpdate();
     } catch (SQLException ex) {
@@ -132,9 +156,14 @@ public class SchedulerServiceImpl implements SchedulerService {
     if (currentScheduledTask != null && !currentScheduledTask.isDone()) {
       currentScheduledTask.cancel(false);
     }
-
-    try (Connection conn = this.agent.getServicesDatabase(); PreparedStatement pstmt = conn.prepareStatement("SELECT id, reason, alarm_time FROM SCHEDULER WHERE alarm_time > ? ORDER BY alarm_time ASC LIMIT 1")) {
-
+    String sql = SQLProvider.from(this.getConnection()).get(
+              "Scheduler_rescheduleNextAlarm", 
+              "SELECT id, reason, alarm_time FROM SCHEDULER WHERE alarm_time > ? ORDER BY alarm_time ASC LIMIT 1"
+    );
+    try (
+            Connection conn = this.agent.getServicesDatabase().get(); 
+            PreparedStatement pstmt = conn.prepareStatement(sql)
+      ) {
       pstmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()));
       try (ResultSet rs = pstmt.executeQuery()) {
         if (rs.next()) {

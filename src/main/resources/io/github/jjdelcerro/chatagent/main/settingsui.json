@@ -24,12 +24,23 @@
           "variableName": "CONVERSATION_MODEL_ID",
           "actionName": "CHANGE_CONVERSATION_MODEL",
           "childs": [
-            { "type": "value", "label": "GLM-4.5-Air", "value": "z-ai/glm-4.5-air:free" },
-            { "type": "value", "label": "Llama 3.3 70B", "value": "meta-llama/llama-3.3-70b-instruct:free" },
-            { "type": "value", "label": "DeepSeek R1", "value": "tngtech/deepseek-r1t2-chimera:free" },
-            { "type": "value", "label": "Hermes 3 405b", "value": "nousresearch/hermes-3-llama-3.1-405b:free" },
-            { "type": "value", "label": "Mistral small 3.1 24b", "value": "mistralai/mistral-small-3.1-24b-instruct:free" },
-            { "type": "value", "label": "Qwen 3 4b local", "value": "models/Qwen_Qwen3-4B-Q4_K_M.gguf" }
+            { "type": "value", "label": "OpenRouter: GLM-4.5-Air", "value": "z-ai/glm-4.5-air:free" },
+            { "type": "value", "label": "OpenRouter: Llama 3.3 70B", "value": "meta-llama/llama-3.3-70b-instruct:free" },
+            { "type": "value", "label": "OpenRouter: DeepSeek R1", "value": "tngtech/deepseek-r1t2-chimera:free" },
+            { "type": "value", "label": "OpenRouter: Hermes 3 405b", "value": "nousresearch/hermes-3-llama-3.1-405b:free" },
+            { "type": "value", "label": "OpenRouter: Mistral small 3.1 24b instruct", "value": "mistralai/mistral-small-3.1-24b-instruct:free" },
+            { "type": "value", "label": "OpenRouter: GPT OSS 120b", "value": "openai/gpt-oss-120b:free" },
+            { "type": "value", "label": "OpenRouter: GPT OSS 20b", "value": "openai/gpt-oss-20b:free" },
+            { "type": "value", "label": "OpenRouter: Qwen 3 coder", "value": "qwen/qwen3-coder:free" },
+            { "type": "value", "label": "OpenRouter: Qwen 3 4b", "value": "qwen/qwen3-4b:free" },
+            { "type": "value", "label": "Groq: GPT OSS 120b", "value": "openai/gpt-oss-120b" },
+            { "type": "value", "label": "Groq: GPT OSS 20", "value": "openai/gpt-oss-20b" },
+            { "type": "value", "label": "Groq: kimi k2 instruct 0905", "value": "moonshotai/kimi-k2-instruct-0905" },
+            { "type": "value", "label": "Groq: qwen3 32b", "value": "qwen/qwen3-32b" },
+            { "type": "value", "label": "Groq: Llama 3.3 70b versatile", "value": "llama-3.3-70b-versatile" },
+            { "type": "value", "label": "Groq: Llama 3.1 8b instant", "value": "llama-3.1-8b-instant" },
+            { "type": "value", "label": "Groq: Llama 4 17b 128e instruct", "value": "meta-llama/llama-4-maverick-17b-128e-instruct" },
+            { "type": "value", "label": "Groq: Llama 4 17b 16e instruct", "value": "meta-llama/llama-4-scout-17b-16e-instruct" }
           ]
         }
       ]
@@ -56,10 +67,23 @@
           "variableName": "MEMORY_MODEL_ID",
           "actionName": "CHANGE_MEMORY_MODEL",
           "childs": [
-            { "type": "value", "label": "DeepSeek R1", "value": "tngtech/deepseek-r1t2-chimera:free" },
-            { "type": "value", "label": "GLM-4.5-Air", "value": "z-ai/glm-4.5-air:free" },
-            { "type": "value", "label": "Mistral small 3.1 24b", "value": "mistralai/mistral-small-3.1-24b-instruct:free" },
-            { "type": "value", "label": "Hermes 3 405b", "value": "nousresearch/hermes-3-llama-3.1-405b:free" }
+            { "type": "value", "label": "OpenRouter: GLM-4.5-Air", "value": "z-ai/glm-4.5-air:free" },
+            { "type": "value", "label": "OpenRouter: Llama 3.3 70B", "value": "meta-llama/llama-3.3-70b-instruct:free" },
+            { "type": "value", "label": "OpenRouter: DeepSeek R1", "value": "tngtech/deepseek-r1t2-chimera:free" },
+            { "type": "value", "label": "OpenRouter: Hermes 3 405b", "value": "nousresearch/hermes-3-llama-3.1-405b:free" },
+            { "type": "value", "label": "OpenRouter: Mistral small 3.1 24b instruct", "value": "mistralai/mistral-small-3.1-24b-instruct:free" },
+            { "type": "value", "label": "OpenRouter: GPT OSS 120b", "value": "openai/gpt-oss-120b:free" },
+            { "type": "value", "label": "OpenRouter: GPT OSS 20b", "value": "openai/gpt-oss-20b:free" },
+            { "type": "value", "label": "OpenRouter: Qwen 3 coder", "value": "qwen/qwen3-coder:free" },
+            { "type": "value", "label": "OpenRouter: Qwen 3 4b", "value": "qwen/qwen3-4b:free" },
+            { "type": "value", "label": "Groq: GPT OSS 120b", "value": "openai/gpt-oss-120b" },
+            { "type": "value", "label": "Groq: GPT OSS 20", "value": "openai/gpt-oss-20b" },
+            { "type": "value", "label": "Groq: kimi k2 instruct 0905", "value": "moonshotai/kimi-k2-instruct-0905" },
+            { "type": "value", "label": "Groq: qwen3 32b", "value": "qwen/qwen3-32b" },
+            { "type": "value", "label": "Groq: Llama 3.3 70b versatile", "value": "llama-3.3-70b-versatile" },
+            { "type": "value", "label": "Groq: Llama 3.1 8b instant", "value": "llama-3.1-8b-instant" },
+            { "type": "value", "label": "Groq: Llama 4 17b 128e instruct", "value": "meta-llama/llama-4-maverick-17b-128e-instruct" },
+            { "type": "value", "label": "Groq: Llama 4 17b 16e instruct", "value": "meta-llama/llama-4-scout-17b-16e-instruct" }
           ]
         }
       ]
@@ -134,9 +158,23 @@
               "label": "Seleccionar Modelo (Reasoning)",
               "variableName": "DOCMAPPER_REASONING_MODEL_ID",
               "childs": [
-                { "type": "value", "label": "DeepSeek R1", "value": "tngtech/deepseek-r1t2-chimera:free" },
-                { "type": "value", "label": "Llama 3.3 70B", "value": "meta-llama/llama-3.3-70b-instruct:free" },
-                { "type": "value", "label": "GLM-4.5-Air", "value": "z-ai/glm-4.5-air:free" }
+                { "type": "value", "label": "OpenRouter: GLM-4.5-Air", "value": "z-ai/glm-4.5-air:free" },
+                { "type": "value", "label": "OpenRouter: Llama 3.3 70B", "value": "meta-llama/llama-3.3-70b-instruct:free" },
+                { "type": "value", "label": "OpenRouter: DeepSeek R1", "value": "tngtech/deepseek-r1t2-chimera:free" },
+                { "type": "value", "label": "OpenRouter: Hermes 3 405b", "value": "nousresearch/hermes-3-llama-3.1-405b:free" },
+                { "type": "value", "label": "OpenRouter: Mistral small 3.1 24b instruct", "value": "mistralai/mistral-small-3.1-24b-instruct:free" },
+                { "type": "value", "label": "OpenRouter: GPT OSS 120b", "value": "openai/gpt-oss-120b:free" },
+                { "type": "value", "label": "OpenRouter: GPT OSS 20b", "value": "openai/gpt-oss-20b:free" },
+                { "type": "value", "label": "OpenRouter: Qwen 3 coder", "value": "qwen/qwen3-coder:free" },
+                { "type": "value", "label": "OpenRouter: Qwen 3 4b", "value": "qwen/qwen3-4b:free" },
+                { "type": "value", "label": "Groq: GPT OSS 120b", "value": "openai/gpt-oss-120b" },
+                { "type": "value", "label": "Groq: GPT OSS 20", "value": "openai/gpt-oss-20b" },
+                { "type": "value", "label": "Groq: kimi k2 instruct 0905", "value": "moonshotai/kimi-k2-instruct-0905" },
+                { "type": "value", "label": "Groq: qwen3 32b", "value": "qwen/qwen3-32b" },
+                { "type": "value", "label": "Groq: Llama 3.3 70b versatile", "value": "llama-3.3-70b-versatile" },
+                { "type": "value", "label": "Groq: Llama 3.1 8b instant", "value": "llama-3.1-8b-instant" },
+                { "type": "value", "label": "Groq: Llama 4 17b 128e instruct", "value": "meta-llama/llama-4-maverick-17b-128e-instruct" },
+                { "type": "value", "label": "Groq: Llama 4 17b 16e instruct", "value": "meta-llama/llama-4-scout-17b-16e-instruct" }
               ]
             }
           ]
@@ -160,8 +198,23 @@
               "label": "Seleccionar Modelo (Basic)",
               "variableName": "DOCMAPPER_BASIC_MODEL_ID",
               "childs": [
-                { "type": "value", "label": "GLM-4.5-Air", "value": "z-ai/glm-4.5-air:free" },
-                { "type": "value", "label": "Mistral Small 3.1", "value": "mistralai/mistral-small-3.1-24b-instruct:free" }
+                { "type": "value", "label": "OpenRouter: GLM-4.5-Air", "value": "z-ai/glm-4.5-air:free" },
+                { "type": "value", "label": "OpenRouter: Llama 3.3 70B", "value": "meta-llama/llama-3.3-70b-instruct:free" },
+                { "type": "value", "label": "OpenRouter: DeepSeek R1", "value": "tngtech/deepseek-r1t2-chimera:free" },
+                { "type": "value", "label": "OpenRouter: Hermes 3 405b", "value": "nousresearch/hermes-3-llama-3.1-405b:free" },
+                { "type": "value", "label": "OpenRouter: Mistral small 3.1 24b instruct", "value": "mistralai/mistral-small-3.1-24b-instruct:free" },
+                { "type": "value", "label": "OpenRouter: GPT OSS 120b", "value": "openai/gpt-oss-120b:free" },
+                { "type": "value", "label": "OpenRouter: GPT OSS 20b", "value": "openai/gpt-oss-20b:free" },
+                { "type": "value", "label": "OpenRouter: Qwen 3 coder", "value": "qwen/qwen3-coder:free" },
+                { "type": "value", "label": "OpenRouter: Qwen 3 4b", "value": "qwen/qwen3-4b:free" },
+                { "type": "value", "label": "Groq: GPT OSS 120b", "value": "openai/gpt-oss-120b" },
+                { "type": "value", "label": "Groq: GPT OSS 20", "value": "openai/gpt-oss-20b" },
+                { "type": "value", "label": "Groq: kimi k2 instruct 0905", "value": "moonshotai/kimi-k2-instruct-0905" },
+                { "type": "value", "label": "Groq: qwen3 32b", "value": "qwen/qwen3-32b" },
+                { "type": "value", "label": "Groq: Llama 3.3 70b versatile", "value": "llama-3.3-70b-versatile" },
+                { "type": "value", "label": "Groq: Llama 3.1 8b instant", "value": "llama-3.1-8b-instant" },
+                { "type": "value", "label": "Groq: Llama 4 17b 128e instruct", "value": "meta-llama/llama-4-maverick-17b-128e-instruct" },
+                { "type": "value", "label": "Groq: Llama 4 17b 16e instruct", "value": "meta-llama/llama-4-scout-17b-16e-instruct" }
               ]
             }
           ]

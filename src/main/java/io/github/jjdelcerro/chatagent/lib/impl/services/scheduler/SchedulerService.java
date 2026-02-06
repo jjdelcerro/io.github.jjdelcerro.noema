@@ -1,5 +1,6 @@
-package io.github.jjdelcerro.chatagent.lib;
+package io.github.jjdelcerro.chatagent.lib.impl.services.scheduler;
 
+import io.github.jjdelcerro.chatagent.lib.AgentService;
 import java.time.LocalDateTime;
 
 /**

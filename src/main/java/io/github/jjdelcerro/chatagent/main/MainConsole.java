@@ -17,8 +17,11 @@ import java.sql.DriverManager;
 import io.github.jjdelcerro.chatagent.lib.AgentConsole;
 import io.github.jjdelcerro.chatagent.lib.AgentLocator;
 import io.github.jjdelcerro.chatagent.lib.AgentSettings;
+import io.github.jjdelcerro.chatagent.lib.ConnectionSupplier;
 import io.github.jjdelcerro.chatagent.ui.AgentUILocator;
 import io.github.jjdelcerro.chatagent.ui.console.AgentConsoleInitializer;
+import java.sql.SQLException;
+import java.util.function.Supplier;
 
 public class MainConsole {
 
@@ -70,16 +73,55 @@ public class MainConsole {
       settings.load(settingsFile);
 
       // Conexión a Base de Datos (H2)
-      File fileKnowledge = new File(dataFolder, "memory");
-      Connection knowledgeDatabase = DriverManager.getConnection("jdbc:h2:" + fileKnowledge.getAbsolutePath(), "sa", "");
-      console.println("Conectado a Base de Conocimiento: " + fileKnowledge.getAbsolutePath());
+      File memoryFile = new File(dataFolder, "memory");
+      ConnectionSupplier memoryDatabase = new ConnectionSupplier() {
+        @Override
+        public Connection get() {
+          try {
+            return DriverManager.getConnection("jdbc:h2:" + memoryFile.getAbsolutePath(), "sa", "");
+          } catch (SQLException ex) {
+            throw new RuntimeException("Can't get memory database connection",ex);
+          }
+        }
 
-      File fileService = new File(dataFolder, "service");
-      Connection servicesDatabase = DriverManager.getConnection("jdbc:h2:" + fileService.getAbsolutePath(), "sa", "");
-      console.println("Conectado a Base de datos de servicio: " + fileService.getAbsolutePath());
+        @Override
+        public String getProviderName() {
+          return "H2";
+        }
+      };
+      File servicesFile = new File(dataFolder, "service");
+      ConnectionSupplier servicesDatabase = new ConnectionSupplier() {
+        @Override
+        public Connection get() {
+          try {
+            return DriverManager.getConnection("jdbc:h2:" + servicesFile.getAbsolutePath(), "sa", "");
+          } catch (SQLException ex) {
+            throw new RuntimeException("Can't get services database connection",ex);
+          }
+        }
+
+        @Override
+        public String getProviderName() {
+          return "H2";
+        }
+      };
+      
+      // Create databses and maintain server loaded
+      @SuppressWarnings("unused")
+      Connection memoryConn = memoryDatabase.get();
+      console.println("Conectado a Base de Conocimiento: " + memoryFile.getAbsolutePath());
+      @SuppressWarnings("unused")
+      Connection servicesConn = servicesDatabase.get();
+      console.println("Conectado a Base de datos de servicio: " + servicesFile.getAbsolutePath());
+      Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+          try {
+              if (memoryConn != null) memoryConn.close();
+              if (servicesConn != null) servicesConn.close();
+          } catch (SQLException e) { /* ignore */ }
+      }));
 
       Agent agent = AgentLocator.getAgentManager().createAgent(
-              knowledgeDatabase,
+              memoryDatabase,
               servicesDatabase,
               new File(DATA_FOLDER),
               settings,
