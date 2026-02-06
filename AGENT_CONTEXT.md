@@ -1,5 +1,5 @@
 
-# GEMINI.md - Contexto del Proyecto: ChatAgent de Memoria Híbrida
+# Contexto del Proyecto: ChatAgent de Memoria Híbrida
 
 Este documento proporciona el contexto arquitectónico y técnico para el proyecto `io.github.jjdelcerro.chatagent`, un 
 sistema de agente conversacional diseñado para mantener una memoria coherente a largo plazo sin degradación cognitiva.
@@ -121,11 +121,12 @@ El bucle principal en `ConversationService.executeReasoningLoop` sigue el patró
         *   **Recurso:** Vuelve al paso 2 (el LLM recibe el resultado y razona de nuevo).
 4.  Al finalizar el turno, verifica `session.needCompaction()`. Si es true, dispara la compactación asíncrona de memoria.
 
-## 5. Herramientas del Agente (Exhaustivo)
+## 5. Herramientas del Agente
 
 El agente dispone de un conjunto muy amplio de herramientas (`AgentTool`), clasificadas por funcionalidad:
 
 **Sistema de Archivos:**
+
 1.  `file_read`: Lectura de texto plano.
 2.  `file_write`: Escritura de archivos (sobrescritura/creación).
 3.  `file_mkdir`: Creación de directorios (mkdir -p).
@@ -137,6 +138,7 @@ El agente dispone de un conjunto muy amplio de herramientas (`AgentTool`), clasi
 9.  `file_search_and_replace`: Reemplazo literal de cadenas.
 
 **Web y Conectividad:**
+
 10. `web_search`: Búsqueda en internet (Brave Search API).
 11. `web_get_content`: Descarga y limpieza de HTML a texto (versión Tika).
 12. `get_weather`: Consulta de clima (Open-Meteo).
@@ -144,10 +146,12 @@ El agente dispone de un conjunto muy amplio de herramientas (`AgentTool`), clasi
 14. `get_current_time`: Fecha y hora actual con zona horaria.
 
 **Memoria y Cognición:**
+
 15. `lookup_turn`: Recuperación precisa de un turno histórico por ID (`{cite:ID}`).
 16. `search_full_history`: Búsqueda semántica (vectorial) en toda la base de datos de turnos.
 
 **Documentación (DocMapper):**
+
 17. `document_index`: Iniciar ingestión de un documento.
 18. `document_search`: Búsqueda híbrida (categoría + vectorial).
 19. `get_document_structure`: Obtener índice XML del documento.
@@ -156,6 +160,7 @@ El agente dispone de un conjunto muy amplio de herramientas (`AgentTool`), clasi
 22. `document_search_by_sumaries`: Búsqueda vectorial pura en resúmenes.
 
 **Comunicación y Sensores:**
+
 23. `telegram_send`: Envío de mensajes a Telegram.
 24. `email_list_inbox`: Listado de cabeceras de email.
 25. `email_read`: Lectura de cuerpo de email (sanitizado).
