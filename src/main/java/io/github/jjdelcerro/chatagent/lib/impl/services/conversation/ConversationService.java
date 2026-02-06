@@ -73,8 +73,10 @@ public class ConversationService implements AgentService {
     final String channel;
     final String priority;
     final String contents;
+    final String event_time;
 
     public Event(String channel, String priority, String contents) {
+      this.event_time = now();
       this.channel = channel;
       this.priority = priority;
       this.contents = contents;
@@ -89,6 +91,7 @@ public class ConversationService implements AgentService {
       Gson gson = new Gson();
       return gson.toJson(Map.of(
               "current_time", now(),
+              "event_time", this.event_time,
               "channel", channel,
               "priority", priority,
               "contents", contents
