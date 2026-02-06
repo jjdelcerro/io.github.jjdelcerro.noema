@@ -6,6 +6,7 @@ import dev.langchain4j.model.openai.OpenAiChatModel;
 import io.github.jjdelcerro.chatagent.lib.persistence.SourceOfTruth;
 import java.io.File;
 import java.sql.Connection;
+import java.util.function.Supplier;
 
 /**
  *
@@ -82,7 +83,9 @@ public interface Agent {
 
   public void setConsole(AgentConsole console);
   
-  public Connection getServicesDatabase();
+  public ConnectionSupplier getServicesDatabase();
+
+  public ConnectionSupplier getMemoryDatabase();
 
   public AgentService getService(String name);
   

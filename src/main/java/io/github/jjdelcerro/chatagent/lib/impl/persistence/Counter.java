@@ -1,5 +1,7 @@
 package io.github.jjdelcerro.chatagent.lib.impl.persistence;
 
+import io.github.jjdelcerro.chatagent.lib.ConnectionSupplier;
+import io.github.jjdelcerro.chatagent.lib.impl.SQLProvider;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -24,15 +26,17 @@ public class Counter {
      * Inicializa el contador consultando el MAX(id) de la tabla especificada.
      * Lee la base de datos una única vez durante la inicialización.
      *
-     * @param conn Conexión abierta a la base de datos.
+     * @param connSupplier Conexión abierta a la base de datos.
      * @param table Nombre de la tabla sobre la que contar.
      * @return Una instancia de Counter sincronizada.
      * @throws IllegalArgumentException Si la tabla no existe o hay error SQL.
      */
-    public static Counter from(Connection conn, String table) {
-        String sql = "SELECT MAX(id) FROM " + table;
+    public static Counter from(ConnectionSupplier connSupplier, String table) {
+        String sql = SQLProvider.from(connSupplier).get("Counter_selectmax","SELECT MAX(id) FROM " + table);
 
-        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+        try (   Connection conn = connSupplier.get();
+                Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)
+            ) {
 
             if (rs.next()) {
                 // getInt devuelve 0 si el valor SQL es NULL (tabla vacía),

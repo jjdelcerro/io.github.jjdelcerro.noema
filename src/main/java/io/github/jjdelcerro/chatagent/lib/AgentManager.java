@@ -1,7 +1,7 @@
 package io.github.jjdelcerro.chatagent.lib;
 
+import io.github.jjdelcerro.chatagent.lib.impl.SQLProvider;
 import java.io.File;
-import java.sql.Connection;
 import java.util.Collection;
 
 /**
@@ -10,7 +10,7 @@ import java.util.Collection;
  */
 public interface AgentManager {
   
-  public Agent createAgent(Connection knowledgeDatabase, Connection servicesDatabase, File dataFolder, AgentSettings settings, AgentConsole console);
+  public Agent createAgent(ConnectionSupplier memoryDatabase, ConnectionSupplier servicesDatabase, File dataFolder, AgentSettings settings, AgentConsole console);
   
   public AgentActions createActions();
   
@@ -22,5 +22,5 @@ public interface AgentManager {
   
   public Collection<AgentServiceFactory> getServiceFactories();
   
-    
+  public SQLProvider getSQLProvider(String providerName);
 }

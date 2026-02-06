@@ -1,7 +1,6 @@
 package io.github.jjdelcerro.chatagent.lib;
 
 import io.github.jjdelcerro.chatagent.lib.impl.AgentManagerImpl;
-import java.io.Reader;
 
 /**
  *

@@ -11,7 +11,7 @@ import io.github.jjdelcerro.chatagent.lib.persistence.SourceOfTruth;
 import java.io.File;
 import io.github.jjdelcerro.chatagent.lib.AgentAccessControl;
 import io.github.jjdelcerro.chatagent.lib.AgentService;
-import java.sql.Connection;
+import io.github.jjdelcerro.chatagent.lib.ConnectionSupplier;
 
 /**
  * Mínima implementación de Agent para permitir la configuración inicial sin
@@ -70,17 +70,12 @@ public class FakeAgent implements Agent {
 
   @Override
   public AgentAccessControl getAccessControl() {
-    throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    throw new UnsupportedOperationException("Not supported yet."); 
   }
 
   @Override
   public void setConsole(AgentConsole console) {
     this.console = console;
-  }
-
-  @Override
-  public Connection getServicesDatabase() {
-    throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
   }
 
   @Override
@@ -94,27 +89,37 @@ public class FakeAgent implements Agent {
 
   @Override
   public String getResourceAsString(String resname) {
-    throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    throw new UnsupportedOperationException("Not supported yet."); 
   }
 
   @Override
   public OpenAiChatModel createChatModel(String name) {
-    throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    throw new UnsupportedOperationException("Not supported yet."); 
   }
 
   @Override
   public ModelParameters getModelParameters(String name) {
-    throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    throw new UnsupportedOperationException("Not supported yet."); 
   }
 
   @Override
   public String callChatModel(String docmapper_reasoning_llm, String extractStructureSystemPrompt, String doc_csv) {
-    throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    throw new UnsupportedOperationException("Not supported yet."); 
   }
 
   @Override
   public JsonObject callChatModelAsJson(String docmapper_basic_llm, String summaryAndCategorizeSystemPrompt, String contents) {
-    throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    throw new UnsupportedOperationException("Not supported yet."); 
+  }
+
+  @Override
+  public ConnectionSupplier getMemoryDatabase() {
+    throw new UnsupportedOperationException("Not supported yet."); 
+  }
+
+  @Override
+  public ConnectionSupplier getServicesDatabase() {
+    throw new UnsupportedOperationException("Not supported yet."); 
   }
 
   private static class FakeActions implements AgentActions {
