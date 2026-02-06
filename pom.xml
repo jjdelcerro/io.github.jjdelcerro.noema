@@ -182,6 +182,10 @@
             <artifactId>natty</artifactId>
             <version>0.13</version>
         </dependency>
-        
+        <dependency>
+            <groupId>org.ocpsoft.prettytime</groupId>
+            <artifactId>prettytime</artifactId>
+            <version>5.0.7.Final</version>
+        </dependency>        
     </dependencies>
 </project>
