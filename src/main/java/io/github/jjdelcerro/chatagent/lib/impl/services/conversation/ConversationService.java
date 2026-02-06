@@ -10,7 +10,6 @@ import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.output.Response;
 import io.github.jjdelcerro.chatagent.lib.Agent;
-import io.github.jjdelcerro.chatagent.lib.AgentActions;
 import static io.github.jjdelcerro.chatagent.lib.AgentActions.CHANGE_CONVERSATION_MODEL;
 import static io.github.jjdelcerro.chatagent.lib.AgentActions.CHANGE_CONVERSATION_PROVIDER;
 import io.github.jjdelcerro.chatagent.lib.impl.services.memory.tools.LookupTurnTool;
@@ -89,6 +88,7 @@ public class ConversationService implements AgentService {
     public String toJson() {
       Gson gson = new Gson();
       return gson.toJson(Map.of(
+              "current_time", now(),
               "channel", channel,
               "priority", priority,
               "contents", contents
@@ -311,14 +311,12 @@ public class ConversationService implements AgentService {
   }
 
   private String getBaseSystemPrompt() {
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, HH:mm", new Locale("es", "ES"));
-
     String systemPrompt = agent.getResourceAsString("prompts/prompt-system-conversationmanager.md");
 
     if (systemPrompt.isEmpty()) {
       throw new RuntimeException("Can't load system prompt from data folder");
     }
-    systemPrompt = StringUtils.replace(systemPrompt, "{NOW}", LocalDateTime.now().format(formatter));
+    systemPrompt = StringUtils.replace(systemPrompt, "{NOW}", now());
     systemPrompt = StringUtils.replace(systemPrompt, "{LOOKUPTURN}", LookupTurnTool.NAME);
     systemPrompt = StringUtils.replace(systemPrompt, "{SEARCHFULLHISTORY}", SearchFullHistoryTool.NAME);
     return systemPrompt;
@@ -455,4 +453,9 @@ public class ConversationService implements AgentService {
     return this.running;
   }
 
+  private static String now() {
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, HH:mm", new Locale("es", "ES"));
+    return LocalDateTime.now().format(formatter);
+  }
+  
 }
