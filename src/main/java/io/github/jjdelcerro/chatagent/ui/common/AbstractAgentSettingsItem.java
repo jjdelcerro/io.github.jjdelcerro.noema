@@ -1,5 +1,6 @@
 package io.github.jjdelcerro.chatagent.ui.common;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.github.jjdelcerro.chatagent.lib.Agent;
@@ -69,14 +70,54 @@ public abstract class AbstractAgentSettingsItem implements AgentSettingsItem {
       if (!this.item.has("childs")) {
         return null;
       }
+
+      JsonElement childsElement = this.item.get("childs");
       List<AgentSettingsItem> theChilds = new ArrayList<>();
-      for (JsonElement e : this.item.getAsJsonArray("childs")) {
-        AgentSettingsItem i = this.createItem(parent, agent, (JsonObject) e);
-        theChilds.add(i);
+
+      if (childsElement.isJsonArray()) {
+        // Es una lista de objetos directa
+        for (JsonElement e : childsElement.getAsJsonArray()) {
+          theChilds.add(this.createItem(this, agent, (JsonObject) e));
+        }
+      } else if (childsElement.isJsonPrimitive() && childsElement.getAsJsonPrimitive().isString()) {
+        // Es una referencia a un dominio
+        String domainName = childsElement.getAsString();
+        JsonArray domainArray = findDomainInTree(domainName);
+
+        if (domainArray != null) {
+          for (JsonElement e : domainArray) {
+            theChilds.add(this.createItem(this, agent, (JsonObject) e));
+          }
+        } else {
+          System.err.println("WARN: Dominio no encontrado: " + domainName);
+        }
       }
       this.childs = theChilds;
     }
     return this.childs;
+  }
+
+  /**
+   * Busca recursivamente hacia arriba en el árbol de items hasta encontrar la
+   * definición del dominio solicitado.
+   */
+  private JsonArray findDomainInTree(String name) {
+    AgentSettingsItem current = this;
+    while (current != null) {
+      // Necesitamos acceder al JsonObject original. 
+      // Como estamos en AbstractAgentSettingsItem, podemos acceder a 'this.item'
+      if (current instanceof AbstractAgentSettingsItem abstractItem) {
+        JsonObject json = abstractItem.item;
+        if (json.has("domains")) {
+          JsonObject domains = json.getAsJsonObject("domains");
+          if (domains.has(name)) {
+            return domains.getAsJsonArray(name);
+          }
+        }
+      }
+      current = current.getParent();
+    }
+    return null;
   }
 
   @Override

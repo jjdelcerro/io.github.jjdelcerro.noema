@@ -24,8 +24,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.util.List;
 import javax.swing.BorderFactory;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -169,6 +171,8 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
           new InputStringItem(parent, agent, json);
         case "selectoption" ->
           new SelectOptionItem(parent, agent, json);
+        case "combo" ->
+          new ComboOptionItem(parent, agent, json);
         default ->
           new ValueItem(parent, agent, json);
       };
@@ -199,13 +203,13 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
     public JComponent getComponent() {
       JPanel p = new JPanel(new GridBagLayout());
       p.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-      GridBagConstraints gbc = new GridBagConstraints();        
-      gbc.gridx = 0; 
+      GridBagConstraints gbc = new GridBagConstraints();
+      gbc.gridx = 0;
       gbc.gridy = 0;
       gbc.weightx = 1.0; // Ocupa todo el ancho
       gbc.fill = GridBagConstraints.HORIZONTAL;
       gbc.anchor = GridBagConstraints.NORTHWEST;
-        
+
       p.add(new JLabel("<html><b>" + getLabel() + "</b></html>"), gbc);
 
       String current = agent.getSettings().getProperty(getVariableName());
@@ -293,6 +297,66 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
 
       p.add(new JScrollPane(list), BorderLayout.CENTER);
       p.setPreferredSize(new Dimension(400, 250));
+      return p;
+    }
+  }
+
+  public static class ComboOptionItem extends AbstractAgentSettingsItemSwing {
+
+    public ComboOptionItem(AgentSettingsItem parent, Agent agent, JsonObject json) {
+      super(parent, agent, json);
+    }
+
+    @Override
+    public JComponent getComponent() {
+      JPanel p = new JPanel(new GridBagLayout());
+      p.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+      GridBagConstraints gbc = new GridBagConstraints();
+      gbc.gridx = 0;
+      gbc.gridy = 0;
+      gbc.weightx = 1.0;
+      gbc.fill = GridBagConstraints.HORIZONTAL;
+
+      p.add(new JLabel("<html><b>" + getLabel() + "</b></html>"), gbc);
+
+      // Cargamos las opciones (childs)
+      DefaultComboBoxModel<AgentSettingsItem> model = new DefaultComboBoxModel<>();
+      for (AgentSettingsItem child : getChilds()) {
+        model.addElement(child);
+      }
+
+      JComboBox<AgentSettingsItem> combo = new JComboBox<>(model);
+      combo.setEditable(true);
+
+      // Seleccionar el valor actual si existe
+      String current = agent.getSettings().getProperty(getVariableName());
+      if (current != null) {
+        combo.setSelectedItem(current);
+      }
+
+      combo.addActionListener(e -> {
+        Object selected = combo.getSelectedItem();
+        String newValue = null;
+
+        if (selected instanceof AgentSettingsItem item) {
+          newValue = item.getValue();
+        } else if (selected instanceof String s) {
+          newValue = s;
+        }
+
+        if (newValue != null && !newValue.isEmpty()) {
+          agent.getSettings().setProperty(getVariableName(), newValue);
+          save();
+        }
+      });
+
+      gbc.gridy = 1;
+      gbc.insets = new Insets(10, 0, 0, 0);
+      p.add(combo, gbc);
+
+      gbc.gridy = 2;
+      gbc.weighty = 1.0;
+      p.add(new JPanel(), gbc);
       return p;
     }
   }
