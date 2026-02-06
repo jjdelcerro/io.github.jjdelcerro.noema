@@ -16,6 +16,62 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class EmbeddingsService implements AgentService {
 
+  public static class H2VectorUtils {
+    /*
+    Notas sobre H2.
+    
+    ```sql
+    CREATE ALIAS COSINE_DISTANCE FOR "cio.github.jjdelcerro.chatagent.lib.impl.services.embeddings.H2VectorUtils.cosineDistance";
+    ```
+    
+    Para definir una tabla con un campo embedding seria:
+    ```
+    CREATE TABLE DATOS (
+        ID BIGINT AUTO_INCREMENT PRIMARY KEY,
+        EMBEDDING ARRAY -- En H2, ARRAY es el tipo que mejor mapea a double[] de Java
+    );
+    ```
+    
+    Para insertar elementos en la tabla:
+    ```
+    INSERT INTO DATOS (EMBEDDING) VALUES (?);
+    ```
+    Y desde java pasarle un float[].
+    
+    Y usar consultas del tipo:
+    ```
+    SELECT * FROM DATOS 
+    WHERE COSINE_DISTANCE(EMBEDDING, ?) < 0.3
+    ORDER BY COSINE_DISTANCE(EMBEDDING, ?)
+    LIMIT 10;
+    ```
+    Y igual que en la insercion pasarle float[].
+    
+    
+    Ojo, que 0.3 seria la distancia coseno entre el EMBEDDING del campo de la tabla
+    y el valor query, no la similutud. "(1-simulitud) = distancia".
+    
+    */
+
+    public static double cosineDistance(Object v1, Object v2) {
+      // H2 pasa los arrays como float[] si eso es lo que insertaste
+      float[] vec1 = (float[]) v1;
+      float[] vec2 = (float[]) v2;
+      
+      double dotProduct = 0.0;
+      double normA = 0.0;
+      double normB = 0.0;
+      for (int i = 0; i < vec1.length; i++) {
+        dotProduct += vec1[i] * vec2[i];
+        normA += Math.pow(vec1[i], 2);
+        normB += Math.pow(vec2[i], 2);
+      }
+      double similarity = dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+      return 1.0 - similarity; // Devolvemos la distancia
+    }
+  }
+
+  
   public static final String NAME = "Embeddings";
 
   private final AgentServiceFactory factory;
