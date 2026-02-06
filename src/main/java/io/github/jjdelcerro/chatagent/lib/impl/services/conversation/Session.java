@@ -1,8 +1,24 @@
 package io.github.jjdelcerro.chatagent.lib.impl.services.conversation;
 
-import com.google.gson.*;
-import com.google.gson.reflect.TypeToken;
-import dev.langchain4j.data.message.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.ChatMessageType;
+import dev.langchain4j.data.message.Content;
+import dev.langchain4j.data.message.ContentType;
+import dev.langchain4j.data.message.ImageContent;
+import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.TextContent;
+import dev.langchain4j.data.message.ToolExecutionResultMessage;
+import dev.langchain4j.data.message.UserMessage;
 import io.github.jjdelcerro.chatagent.lib.persistence.CheckPoint;
 import io.github.jjdelcerro.chatagent.lib.persistence.Turn;
 
