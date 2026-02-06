@@ -22,6 +22,7 @@ import io.github.jjdelcerro.chatagent.ui.AgentUILocator;
 import io.github.jjdelcerro.chatagent.ui.console.AgentConsoleInitializer;
 import java.sql.SQLException;
 import java.util.function.Supplier;
+import org.h2.tools.Server;
 
 public class MainConsole {
 
@@ -67,6 +68,10 @@ public class MainConsole {
       AgentUtils.initSettingsUI(console, dataFolder);
       AgentUtils.askSettings(console,dataFolder);
 
+      // Iniciar el servidor web de H2 (Consola)
+      Server webServer = Server.createWebServer("-webPort", "8082", "-webAllowOthers").start();
+      console.println("H2 Web Console activa en: " + webServer.getURL());      
+      
       // Cargamos los settings del agente
       File settingsFile = new File(dataFolder, "settings.properties");
       AgentSettings settings = AgentLocator.getAgentManager().createSettings();
