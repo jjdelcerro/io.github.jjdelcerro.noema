@@ -1,5 +1,8 @@
 {
   "context": {
-    "fileName": "AGENT_CONTEXT.md"
+	"fileName": "AGENT_CONTEXT.md",
+	  "fileFiltering": {
+	    "respectGitIgnore": false
+	  }
   }
 }
