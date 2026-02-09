@@ -40,28 +40,23 @@ public class AgentSwingConsoleImpl extends JPanel implements AgentConsole {
 
   // --- Delegación de AgentConsole al Controller ---
   @Override
-  public void print(String msg) {
-    controller.print(msg);
+  public void printSystemLog(String msg) {
+    controller.printSystemLog(msg);
   }
 
   @Override
-  public void println(String msg) {
-    controller.println(msg);
+  public void printSystemError(String msg) {
+    controller.printSystemError(msg);
   }
 
   @Override
-  public void printerror(String msg) {
-    controller.printerror(msg);
+  public void printUserMessage(String message) {
+    controller.printUserMessage(message);
   }
 
   @Override
-  public void printerrorln(String msg) {
-    controller.printerrorln(msg);
-  }
-
-  @Override
-  public void flush() {
-    controller.flush();
+  public void printModelResponse(String message) {
+    controller.printModelResponse(message);
   }
 
   @Override

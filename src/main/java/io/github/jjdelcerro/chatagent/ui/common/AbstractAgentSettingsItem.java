@@ -97,7 +97,7 @@ public abstract class AbstractAgentSettingsItem implements AgentSettingsItem {
             theChilds.add(this.createItem(this, agent, (JsonObject) e));
           }
         } else {
-          agent.getConsole().println("WARN: Dominio no encontrado: " + domainName);
+          agent.getConsole().printSystemLog("WARN: Dominio no encontrado: " + domainName);
         }
       }
       this.childs = theChilds;

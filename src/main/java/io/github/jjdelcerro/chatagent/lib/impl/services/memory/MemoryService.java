@@ -6,8 +6,6 @@ import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.Agent.ModelParameters;
-import static io.github.jjdelcerro.chatagent.lib.AgentActions.CHANGE_CONVERSATION_MODEL;
-import static io.github.jjdelcerro.chatagent.lib.AgentActions.CHANGE_CONVERSATION_PROVIDER;
 import static io.github.jjdelcerro.chatagent.lib.AgentActions.CHANGE_MEMORY_MODEL;
 import static io.github.jjdelcerro.chatagent.lib.AgentActions.CHANGE_MEMORY_PROVIDER;
 import io.github.jjdelcerro.chatagent.lib.persistence.CheckPoint;
@@ -25,7 +23,6 @@ import io.github.jjdelcerro.chatagent.lib.AgentTool;
 import io.github.jjdelcerro.chatagent.lib.impl.services.memory.tools.LookupTurnTool;
 import io.github.jjdelcerro.chatagent.lib.impl.services.memory.tools.SearchFullHistoryTool;
 import java.util.Arrays;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Componente cognitivo encargado de la consolidación de la memoria. Ejecuta el
@@ -103,7 +100,7 @@ public class MemoryService implements AgentService {
     String userPrompt = buildUserPrompt(previous, newTurns);
 
     // 2. Invocar al LLM
-    this.console.println("[MemoryManager] Iniciando compactación de " + newTurns.size() + " turnos...");
+    this.console.printSystemLog("Iniciando compactación de " + newTurns.size() + " turnos...");
     AiMessage response = model.generate(
             SystemMessage.from(this.systemPrompt),
             UserMessage.from(userPrompt)

@@ -97,7 +97,7 @@ public class EmbeddingsService implements AgentService {
 
   @Override
   public void start() {
-    agent.getConsole().println(">>> Cargando motor de embeddings local...");
+    agent.getConsole().printSystemLog("Cargando motor de embeddings local...");
     this.embeddingModel = new AllMiniLmL6V2EmbeddingModel();
     this.running = true;
   }

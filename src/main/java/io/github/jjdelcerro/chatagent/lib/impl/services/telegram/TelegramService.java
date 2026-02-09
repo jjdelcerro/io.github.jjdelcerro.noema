@@ -70,8 +70,6 @@ public class TelegramService implements AgentService {
     if (StringUtils.isBlank(apiKeyTelegram) || authorizedChatId < 0) {
       return;
     }
-    this.agent.getConsole().println("");
-
     this.bot = new TelegramBot(apiKeyTelegram);
 
     bot.setUpdatesListener(updates -> {
@@ -87,7 +85,7 @@ public class TelegramService implements AgentService {
       return UpdatesListener.CONFIRMED_UPDATES_ALL;
     });
     this.running = true;
-    this.agent.getConsole().println(">>> Servicio de telegram iniciado.");
+    this.agent.getConsole().printSystemLog("Servicio de telegram iniciado.");
   }
 
   @Override

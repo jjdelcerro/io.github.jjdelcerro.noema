@@ -79,15 +79,15 @@ public class AgentImpl implements Agent {
           for (AgentTool tool : tools) {
             conversation.addTool(tool);
           }
-          console.println(service.getName() + " tools installed");          
+          console.printSystemLog(service.getName() + " tools installed");          
         }
       } else {
-          console.println(service.getName() + " tools NOT installed");          
+          console.printSystemLog(service.getName() + " tools NOT installed");          
       }
     }
 
-    console.println("MemoryManager " + settings.getProperty(MEMORY_MODEL_ID));
-    console.println("ConversationManager " + settings.getProperty(CONVERSATION_MODEL_ID));
+    console.printSystemLog("MemoryManager " + settings.getProperty(MEMORY_MODEL_ID));
+    console.printSystemLog("ConversationManager " + settings.getProperty(CONVERSATION_MODEL_ID));
 
   }
 
@@ -166,7 +166,7 @@ public class AgentImpl implements Agent {
       return response.content().text();
 
     } catch (Exception e) {
-      console.printerrorln("Error en callChatModel (" + llmid + "): " + e.getMessage());
+      console.printSystemError("Error en callChatModel (" + llmid + "): " + e.getMessage());
       return null;
     }
   }
@@ -195,8 +195,8 @@ public class AgentImpl implements Agent {
       return com.google.gson.JsonParser.parseString(cleanJson).getAsJsonObject();
 
     } catch (Exception e) {
-      console.printerrorln("Error parseando JSON de " + llmid + ": " + e.getMessage());
-      console.printerrorln("Contenido que falló: " + rawResponse);
+      console.printSystemError("Error parseando JSON de " + llmid + ": " + e.getMessage());
+      console.printSystemError("Contenido que falló: " + rawResponse);
       return null;
     }
   }
@@ -254,13 +254,13 @@ public class AgentImpl implements Agent {
           try (InputStream is = getClass().getResourceAsStream(resourceBase + resPath)) {
             if (is != null) {
               Files.copy(is, targetPath, StandardCopyOption.REPLACE_EXISTING);
-              console.println("Recurso inicializado en data: " + resPath);
+              console.printSystemLog("Recurso inicializado en data: " + resPath);
             } else {
-              console.printerrorln("Error: Recurso no encontrado en el classpath: " + resourceBase + resPath);
+              console.printSystemError("Error: Recurso no encontrado en el classpath: " + resourceBase + resPath);
             }
           }
         } catch (IOException e) {
-          console.printerrorln("Error al inicializar recurso " + resPath + ": " + e.getMessage());
+          console.printSystemError("Error al inicializar recurso " + resPath + ": " + e.getMessage());
         }
       }
     }
@@ -280,11 +280,11 @@ public class AgentImpl implements Agent {
       if (Files.exists(path)) {
         return Files.readString(path, StandardCharsets.UTF_8);
       } else {
-        console.printerrorln("Recurso no encontrado en data: " + resname);
+        console.printSystemError("Recurso no encontrado en data: " + resname);
         return "";
       }
     } catch (IOException e) {
-      console.printerrorln("Error leyendo recurso " + resname + ": " + e.getMessage());
+      console.printSystemError("Error leyendo recurso " + resname + ": " + e.getMessage());
       return "";
     }
   }

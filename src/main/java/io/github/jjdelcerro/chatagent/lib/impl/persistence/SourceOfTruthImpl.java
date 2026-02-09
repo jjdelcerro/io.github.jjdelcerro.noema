@@ -187,7 +187,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
       }
       pw.println(turn.toCSVLine());
     } catch (IOException e) {
-      getConsole().printerrorln("Error escribiendo en CSV log: " + e.getMessage());
+      getConsole().printSystemError("Error escribiendo en CSV log: " + e.getMessage());
     }
   }
 

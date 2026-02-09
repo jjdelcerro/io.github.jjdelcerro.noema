@@ -107,7 +107,7 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
       this.counter = Counter.from(this.agent.getServicesDatabase(), "DOCUMENTS");
       this.running = true;
     } catch (SQLException ex) {
-      agent.getConsole().printerrorln("Error inicializando DocumentServices: " + ex.getMessage());
+      agent.getConsole().printSystemError("Error inicializando DocumentServices: " + ex.getMessage());
     }
   }
 
@@ -178,7 +178,7 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
       structure.save(docPath);
 
     } catch (Exception ex) {
-      agent.getConsole().printerrorln("Error al insertar documento: " + ex.getMessage());
+      agent.getConsole().printSystemError("Error al insertar documento: " + ex.getMessage());
     }
   }
 
@@ -212,7 +212,7 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
         }
       }
     } catch (SQLException ex) {
-      agent.getConsole().printerrorln("Error en búsqueda de documentos: " + ex.getMessage());
+      agent.getConsole().printSystemError("Error en búsqueda de documentos: " + ex.getMessage());
     }
     return search.get();
   }

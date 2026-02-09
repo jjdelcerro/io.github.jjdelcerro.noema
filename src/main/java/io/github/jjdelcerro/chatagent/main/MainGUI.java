@@ -38,7 +38,7 @@ public class MainGUI {
     AgentSwingInitializer.init();
       
     Agent agent = AgentUtils.init(new File(DATA_FOLDER));
-    agent.getConsole().println("Sistema listo.");
+    agent.getConsole().printSystemLog("Sistema listo.");
     agent.start();
 
     MainChatPanel mainPanel = new MainChatPanel(agent);
