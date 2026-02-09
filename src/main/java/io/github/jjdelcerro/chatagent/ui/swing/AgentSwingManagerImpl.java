@@ -14,13 +14,16 @@ import java.io.File;
  * @author jjdelcerro
  */
 public class AgentSwingManagerImpl implements AgentUIManager {
+
+  private final AgentConsole console;
   
-  public AgentSwingManagerImpl() {
+  public AgentSwingManagerImpl(AgentConsole console) {
+    this.console = console;
   }
 
   @Override
   public AgentConsole createConsole() {
-    return new AgentSwingConsoleImpl();
+    return this.console;
   }
 
   @Override

@@ -160,7 +160,7 @@ public class MemoryService implements AgentService {
   public ModelParameters getModelParameters(String name) {
     AgentSettings settings = this.agent.getSettings();
     switch (name) {
-      case "CONVERSATION":
+      case "MEMORY":
         return new ModelParameters(
                 settings.getProperty(MEMORY_PROVIDER_URL),
                 settings.getProperty(MEMORY_PROVIDER_API_KEY),

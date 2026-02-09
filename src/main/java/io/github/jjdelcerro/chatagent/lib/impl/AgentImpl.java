@@ -290,6 +290,7 @@ public class AgentImpl implements Agent {
   }
 
   public void startAllServices() {
+    initResources(); // FIXME: Cada servicio deberia inicialiar sus recursos.
     for (AgentService service : this.services.values()) {
       if (!service.isRunning()) {
         service.start();
