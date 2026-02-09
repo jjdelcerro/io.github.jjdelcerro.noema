@@ -1,26 +1,115 @@
 package io.github.jjdelcerro.chatagent.main;
 
+import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.AgentConsole;
 import io.github.jjdelcerro.chatagent.lib.AgentLocator;
 import io.github.jjdelcerro.chatagent.lib.AgentManager;
 import io.github.jjdelcerro.chatagent.lib.AgentServiceFactory;
 import io.github.jjdelcerro.chatagent.lib.AgentSettings;
+import io.github.jjdelcerro.chatagent.lib.ConnectionSupplier;
 import io.github.jjdelcerro.chatagent.ui.AgentUILocator;
 import io.github.jjdelcerro.chatagent.ui.AgentUISettings;
 import java.io.File;
 import java.nio.file.Files;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import org.h2.tools.Server;
 
 /**
  *
  * @author jjdelcerro
  */
+@SuppressWarnings("UseSpecificCatch")
 public class AgentUtils {
   
   private AgentUtils() {
     
   }
   
-  public static boolean areSettingsValid(AgentConsole console, File settingsFile) {
+  public static Agent init(File dataFolder) {
+    try {
+      System.out.println(">>> Iniciando Agente de Memoria Híbrida Determinista...");
+      // Preparar Directorios
+      Files.createDirectories(dataFolder.toPath());
+      
+      // Inicializar la consola y settings del agente
+      AgentConsole console = AgentUILocator.getAgentUIManager().createConsole();
+      AgentUtils.initSettings(console, dataFolder);
+      AgentUtils.initSettingsUI(console, dataFolder);
+      AgentUtils.askSettings(console,dataFolder);
+
+      // Iniciar el servidor web de H2 (Consola)
+      Server webServer = Server.createWebServer("-webPort", "8082", "-webAllowOthers").start();
+      console.println("H2 Web Console activa en: " + webServer.getURL());      
+      
+      // Cargamos los settings del agente
+      File settingsFile = new File(dataFolder, "settings.properties");
+      AgentSettings settings = AgentLocator.getAgentManager().createSettings();
+      settings.load(settingsFile);
+
+      // Conexión a Base de Datos (H2)
+      File memoryFile = new File(dataFolder, "memory");
+      ConnectionSupplier memoryDatabase = new ConnectionSupplier() {
+        @Override
+        public Connection get() {
+          try {
+            return DriverManager.getConnection("jdbc:h2:" + memoryFile.getAbsolutePath(), "sa", "");
+          } catch (SQLException ex) {
+            throw new RuntimeException("Can't get memory database connection",ex);
+          }
+        }
+
+        @Override
+        public String getProviderName() {
+          return "H2";
+        }
+      };
+      File servicesFile = new File(dataFolder, "service");
+      ConnectionSupplier servicesDatabase = new ConnectionSupplier() {
+        @Override
+        public Connection get() {
+          try {
+            return DriverManager.getConnection("jdbc:h2:" + servicesFile.getAbsolutePath(), "sa", "");
+          } catch (SQLException ex) {
+            throw new RuntimeException("Can't get services database connection",ex);
+          }
+        }
+
+        @Override
+        public String getProviderName() {
+          return "H2";
+        }
+      };
+      
+      // Create databses and maintain server loaded
+      @SuppressWarnings("unused")
+              Connection memoryConn = memoryDatabase.get();
+      console.println("Conectado a Base de Conocimiento: " + memoryFile.getAbsolutePath());
+      @SuppressWarnings("unused")
+              Connection servicesConn = servicesDatabase.get();
+      console.println("Conectado a Base de datos de servicio: " + servicesFile.getAbsolutePath());
+      Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        try {
+          if (memoryConn != null) memoryConn.close();
+          if (servicesConn != null) servicesConn.close();
+        } catch (SQLException e) { /* ignore */ }
+      }));
+
+      Agent agent = AgentLocator.getAgentManager().createAgent(
+              memoryDatabase,
+              servicesDatabase,
+              dataFolder,
+              settings,
+              console
+      );
+      return agent;
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
+  }
+  
+  private static boolean areSettingsValid(AgentConsole console, File settingsFile) {
     if (!settingsFile.exists()) {
       return false;
     }
@@ -40,7 +129,7 @@ public class AgentUtils {
     return true;
   }
 
-  public static void initSettingsUI(AgentConsole console, File dataFolder) {
+  private static void initSettingsUI(AgentConsole console, File dataFolder) {
     File settingsUIFile = new File(dataFolder, "settingsui.json");
     if (settingsUIFile.exists()) {
       return;
@@ -57,7 +146,7 @@ public class AgentUtils {
     }    
   }
 
-  public static void askSettings(AgentConsole console, File dataFolder) {
+  private static void askSettings(AgentConsole console, File dataFolder) {
     File settingsFile = new File(dataFolder, "settings.properties");
     if (!AgentUtils.areSettingsValid(console,settingsFile)) {
         console.println("Configuración incompleta. Abriendo asistente...");
@@ -66,26 +155,26 @@ public class AgentUtils {
         settingsUI.showWindow();
 
         if (!AgentUtils.areSettingsValid(console,settingsFile)) {
-            console.printerrorln("Configuración cancelada. Saliendo.");
+            console.printerrorln("Configuración cancelada. Saliendo de la aplicacion.");
             System.exit(1);
         }
     }        
   }
   
-  public static void initSettings(AgentConsole console, File dataFolder) {
+  private static void initSettings(AgentConsole console, File dataFolder) {
     File settingsFile = new File(dataFolder, "settings.properties");
     if (settingsFile.exists()) {
       return;
     }
-    try (java.io.InputStream is = AgentUtils.class.getResourceAsStream("settings.json")) {
+    try (java.io.InputStream is = AgentUtils.class.getResourceAsStream("settings.properties")) {
       if (is == null) {
-        System.err.println(">>> [WARN] No se pudo encontrar el recurso settingsui.json");
+        System.err.println(">>> [WARN] No se pudo encontrar el recurso settings.properties");
         return;
       }
       Files.copy(is, settingsFile.toPath());
       System.out.println(">>> Configuración de UI inicializada en: " + settingsFile.getAbsolutePath());
     } catch (Exception e) {
-      System.err.println(">>> [ERR] Error al inicializar settingsui.json: " + e.getMessage());
+      System.err.println(">>> [ERR] Error al inicializar settings.properties: " + e.getMessage());
     }
   }
   
