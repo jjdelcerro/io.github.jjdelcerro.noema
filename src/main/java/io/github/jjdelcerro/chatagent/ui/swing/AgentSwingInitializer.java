@@ -1,5 +1,6 @@
 package io.github.jjdelcerro.chatagent.ui.swing;
 
+import io.github.jjdelcerro.chatagent.lib.AgentConsole;
 import io.github.jjdelcerro.chatagent.ui.AgentUILocator;
 
 /**
@@ -8,7 +9,7 @@ import io.github.jjdelcerro.chatagent.ui.AgentUILocator;
  */
 public class AgentSwingInitializer {
 
-  public static void init() {
-    AgentUILocator.registerAgentUIManager(new AgentSwingManagerImpl());
+  public static void init(AgentConsole console) {
+    AgentUILocator.registerAgentUIManager(new AgentSwingManagerImpl(console));
   }
 }
