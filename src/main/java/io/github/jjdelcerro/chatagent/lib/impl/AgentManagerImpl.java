@@ -43,7 +43,7 @@ public class AgentManagerImpl implements AgentManager {
   }
   
   public final void registerService(AgentServiceFactory factory) {
-    this.serviceFactories.put(factory.getName(), factory);
+    this.serviceFactories.put(factory.getName().toUpperCase(), factory);
   }
   
   public Collection<AgentServiceFactory> getServiceFactories() {
@@ -51,7 +51,7 @@ public class AgentManagerImpl implements AgentManager {
   }
   
   public AgentServiceFactory getServiceFactory(String name) {
-    return this.serviceFactories.get(name);
+    return this.serviceFactories.get(name.toUpperCase());
   }
   
 

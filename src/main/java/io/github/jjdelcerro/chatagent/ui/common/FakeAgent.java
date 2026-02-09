@@ -26,11 +26,11 @@ public class FakeAgent implements Agent {
   private AgentConsole console;
   private final AgentActions actions = new FakeActions();
 
-  public FakeAgent(File settingsFile, AgentConsole console) {
-    this.dataFolder = settingsFile.getParentFile();
+  public FakeAgent(File dataFolder, AgentConsole console) {
+    this.dataFolder = dataFolder;
     this.settings = AgentLocator.getAgentManager().createSettings();
     this.console = console;
-    this.settings.load(settingsFile); // Para que sepa donde guardar
+    this.settings.load(new File(dataFolder,"settings.properties"));
   }
 
   @Override
