@@ -20,6 +20,7 @@ public class MainConsole {
   private static final String DATA_FOLDER = "./data";
 
   public static void main(String[] args) {
+    Agent agent = null;
     try {
       // Inicialización de JLine (Terminal y LineReader)
       Terminal terminal = TerminalBuilder.builder()
@@ -46,9 +47,9 @@ public class MainConsole {
       }
       AgentConsoleInitializer.init(terminal, lineReader);
       
-      Agent agent = AgentUtils.init(new File(DATA_FOLDER));
+      agent = AgentUtils.init(new File(DATA_FOLDER));
       agent.start();
-      agent.getConsole().println("Sistema listo. Escribe '/quit' para terminar.");
+      agent.getConsole().printSystemLog("Sistema listo. Escribe '/quit' para terminar.");
 
       // Bucle de Chat (REPL con JLine)
       while (true) {
@@ -76,14 +77,15 @@ public class MainConsole {
 
         // Ejecución del turno completo
         String response = agent.processTurn(input);
-
-        terminal.writer().println("Modelo:");
-        terminal.writer().println(response);
-        terminal.flush();
+        agent.getConsole().printModelResponse(response);
       }
 
     } catch (Exception e) {
-      System.err.println(">>> [ERR] " + e.getLocalizedMessage());
+      if( agent == null ) {
+        System.err.println(">>> [ERR] " + e.getLocalizedMessage());
+      } else {
+        agent.getConsole().printSystemError(e.getLocalizedMessage());
+      }
       e.printStackTrace();
     }
   }

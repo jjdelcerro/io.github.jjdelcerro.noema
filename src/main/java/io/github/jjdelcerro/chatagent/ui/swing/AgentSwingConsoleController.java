@@ -29,8 +29,7 @@ public class AgentSwingConsoleController implements AgentConsole {
     return textComponent.getText();
   }
 
-  @Override
-  public void print(String message) {
+  private void print(String message) {
     // Patrón Self-Dispatching: Protección de hilos
     if (!SwingUtilities.isEventDispatchThread()) {
       SwingUtilities.invokeLater(() -> print(message));
@@ -47,30 +46,23 @@ public class AgentSwingConsoleController implements AgentConsole {
   }
 
   @Override
-  public void println(String message) {
+  public void printSystemLog(String message) {
     print(message + "\n");
   }
 
   @Override
-  public void printerror(String message) {
-    // Por ahora lo enviamos al flujo principal, pero al estar centralizado
-    // aquí, es fácil añadir estilos (rojo) en el futuro.
-    print(">>> [ERR] " + message);
+  public void printSystemError(String message) {
+    print("[ERR] " + message + "\n");
   }
 
   @Override
-  public void printerrorln(String message) {
-    printerror(message + "\n");
+  public void printUserMessage(String message) {
+    print("User: " + message + "\n");
   }
 
   @Override
-  public void flush() {
-    if (!SwingUtilities.isEventDispatchThread()) {
-      SwingUtilities.invokeLater(this::flush);
-      return;
-    }
-    textComponent.repaint();
-    textComponent.revalidate();
+  public void printModelResponse(String message) {
+    print("Model: " + message + "\n");
   }
 
   @Override
@@ -100,4 +92,5 @@ public class AgentSwingConsoleController implements AgentConsole {
 
     return choice == JOptionPane.YES_OPTION;
   }
+
 }

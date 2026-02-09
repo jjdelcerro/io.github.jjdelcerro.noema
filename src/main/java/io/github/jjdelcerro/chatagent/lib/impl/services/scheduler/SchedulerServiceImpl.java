@@ -67,7 +67,7 @@ public class SchedulerServiceImpl implements SchedulerService {
       rescheduleNextAlarm();
       this.running = true;
     } catch (SQLException ex) {
-      agent.getConsole().printerrorln("Error al iniciar SchedulerService: " + ex.getMessage());
+      agent.getConsole().printSystemError("Error al iniciar SchedulerService: " + ex.getMessage());
     }
   }
 
@@ -108,7 +108,7 @@ public class SchedulerServiceImpl implements SchedulerService {
       rescheduleNextAlarm();
 
     } catch (SQLException ex) {
-      agent.getConsole().printerrorln("Error al guardar alarma en la BBDD: " + ex.getMessage());
+      agent.getConsole().printSystemError("Error al guardar alarma en la BBDD: " + ex.getMessage());
       return "{\"status\": \"error\", \"message\": \"Error al guardar alarma\"}";
     }
     return alarmId;
@@ -148,7 +148,7 @@ public class SchedulerServiceImpl implements SchedulerService {
       pstmt.setString(1, id);
       pstmt.executeUpdate();
     } catch (SQLException ex) {
-      agent.getConsole().printerrorln("Error al eliminar alarma " + id + ": " + ex.getMessage());
+      agent.getConsole().printSystemError("Error al eliminar alarma " + id + ": " + ex.getMessage());
     }
   }
 
@@ -174,7 +174,7 @@ public class SchedulerServiceImpl implements SchedulerService {
         }
       }
     } catch (SQLException ex) {
-      agent.getConsole().printerrorln("Error al reprogramar la siguiente alarma: " + ex.getMessage());
+      agent.getConsole().printSystemError("Error al reprogramar la siguiente alarma: " + ex.getMessage());
     }
   }
 

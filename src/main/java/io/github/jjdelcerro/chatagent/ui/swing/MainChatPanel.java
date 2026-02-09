@@ -95,8 +95,8 @@ public class MainChatPanel extends JPanel {
     if (currentConsole instanceof AgentSwingConsoleImpl bootstrap) {
       String history = bootstrap.getText();
       if (history != null && !history.isEmpty()) {
-        chatController.print(history);
-        chatController.println("\n--- Interfaz de Chat Activada ---\n");
+        chatController.printSystemLog(history);
+        chatController.printSystemLog("\n--- Interfaz de Chat Activada ---\n");
       }
 
       // Cerramos la ventana de la consola inicial
@@ -144,7 +144,7 @@ public class MainChatPanel extends JPanel {
 
     // Limpiar entrada y mostrar el mensaje del usuario en el chat
     inputArea.setText("");
-    chatController.println("Usuario: " + text);
+    chatController.printSystemLog("Usuario: " + text);
 
     // Deshabilitar UI durante el proceso cognitivo
     setControlsEnabled(false);
@@ -157,14 +157,14 @@ public class MainChatPanel extends JPanel {
 
         // Volvemos al EDT para actualizar la UI
         SwingUtilities.invokeLater(() -> {
-          chatController.println("\nModelo:");
-          chatController.println(response);
-          chatController.println("--------------------------------------------------");
+          chatController.printSystemLog("\nModelo:");
+          chatController.printSystemLog(response);
+          chatController.printSystemLog("--------------------------------------------------");
           setControlsEnabled(true);
         });
 
       } catch (Exception ex) {
-        chatController.printerrorln("Error crítico procesando el turno: " + ex.getMessage());
+        chatController.printSystemError("Error crítico procesando el turno: " + ex.getMessage());
         SwingUtilities.invokeLater(() -> setControlsEnabled(true));
       }
     });

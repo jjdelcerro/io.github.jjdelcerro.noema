@@ -46,32 +46,28 @@ public class AgentConsoleImpl implements AgentConsole {
     }
 
     @Override
-    public void println(String message) {
+    public void printSystemLog(String message) {
         terminal.writer().println(">>> " + message);
         terminal.flush(); // JLine a veces buferiza
     }
-
-    @Override
-    public void print(String message) {
-        terminal.writer().print(message);
-        terminal.flush();
-    }
     
     @Override
-    public void flush() {
-        terminal.writer().flush();
-    }
-    
-    @Override
-    public void printerrorln(String message) {
+    public void printSystemError(String message) {
         // Podríamos usar colores ANSI aquí si quisiéramos (ej: "\u001B[31m")
-        terminal.writer().println(">>> [ERR] " + message);
+        terminal.writer().println("[ERR] " + message);
         terminal.flush();
     }
 
-    @Override
-    public void printerror(String message) {
-        terminal.writer().print(">>> [ERR] " + message);
+  @Override
+  public void printUserMessage(String message) {
+        terminal.writer().println("User: " + message);
         terminal.flush();
-    }
+  }
+
+  @Override
+  public void printModelResponse(String message) {
+        terminal.writer().println("Model: " + message);
+        terminal.flush();
+  }
+
 }

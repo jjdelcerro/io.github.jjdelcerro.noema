@@ -139,7 +139,7 @@ public class ConversationService implements AgentService {
   private synchronized void processPendingEvents() {
     while (!pendingEvents.isEmpty()) {
       Event event = pendingEvents.poll();
-      this.console.println("Evento: " + event.toString());
+      this.console.printSystemLog("Evento: " + event.toString());
 
       this.session.add(event.getAiMessage());
       this.session.add(event.getResponseMessage());
@@ -235,10 +235,10 @@ public class ConversationService implements AgentService {
       }
 
     } catch (SQLException e) {
-      this.console.printerrorln("Error critico de base de datos en processTurn: " + e.getMessage());
+      this.console.printSystemError("Error critico de base de datos en processTurn: " + e.getMessage());
       e.printStackTrace(); // FIXME: log
     } catch (Exception e) {
-      this.console.printerrorln("Error inesperado en processTurn: " + e.getMessage());
+      this.console.printSystemError("Error inesperado en processTurn: " + e.getMessage());
       e.printStackTrace(); // FIXME: log
     }
     return llmResponse.toString();
@@ -269,12 +269,12 @@ public class ConversationService implements AgentService {
         );
 
         if (!authorized) {
-          this.console.println("Ejecución denegada por el usuario.");
+          this.console.printSystemLog("Ejecución denegada por el usuario.");
           return "Error: User rejected the execution of tool '" + toolName + "'.";
         }
-        this.console.println("Ejecutando herramienta: " + toolName);
+        this.console.printSystemLog("Ejecutando herramienta: " + toolName);
       } else {
-        this.console.println(String.format("Ejecutando herramienta: %s\n    Argumentos: %s", toolName, args));
+        this.console.printSystemLog(String.format("Ejecutando herramienta: %s\n    Argumentos: %s", toolName, args));
       }
       try {
         return tool.execute(args);
@@ -292,14 +292,14 @@ public class ConversationService implements AgentService {
   }
 
   private void performCompaction() throws SQLException {
-    this.console.println("Iniciando proceso de compactación de memoria...");
+    this.console.printSystemLog("Iniciando proceso de compactación de memoria...");
 
     // 1. Obtener marcas de sesion
     Session.SessionMark mark1 = this.session.getOldestMark();
     Session.SessionMark mark2 = this.session.getCompactMark();
 
     if (mark1 == null || mark2 == null) {
-      this.console.println("Advertencia: No hay suficientes datos consolidados para compactar.");
+      this.console.printSystemLog("Advertencia: No hay suficientes datos consolidados para compactar.");
       return;
     }
 
@@ -307,7 +307,7 @@ public class ConversationService implements AgentService {
     List<Turn> compactTurns = this.sourceOfTruth.getTurnsByIds(mark1.getTurnId(), mark2.getTurnId());
 
     if (compactTurns.isEmpty()) {
-      this.console.println("Advertencia: Rango de compactación vacío.");
+      this.console.printSystemLog("Advertencia: Rango de compactación vacío.");
       return;
     }
 
@@ -324,7 +324,7 @@ public class ConversationService implements AgentService {
     // 6. Actualizar punteros del Agente
     this.activeCheckPoint = newCheckPoint;
 
-    this.console.println("Memoria compactada con éxito. Nuevo CheckPoint ID: " + newCheckPoint.getId());
+    this.console.printSystemLog("Memoria compactada con éxito. Nuevo CheckPoint ID: " + newCheckPoint.getId());
   }
 
   public void setConsole(AgentConsole console) {

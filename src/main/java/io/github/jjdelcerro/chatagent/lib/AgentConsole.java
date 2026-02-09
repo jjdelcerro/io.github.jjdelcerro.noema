@@ -8,14 +8,12 @@ public interface AgentConsole {
 
     boolean confirm(String message);
             
-    void flush();
+    void printSystemError(String message);
 
-    void print(String message);
-
-    void printerror(String message);
-
-    void printerrorln(String message);
-
-    void println(String message);
+    void printSystemLog(String message);
+    
+    void printUserMessage(String message);
+    
+    void printModelResponse(String message);
     
 }

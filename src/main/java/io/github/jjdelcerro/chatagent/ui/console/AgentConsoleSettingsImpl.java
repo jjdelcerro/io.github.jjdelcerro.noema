@@ -64,7 +64,7 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
     @Override
     public AgentSettingsItemConsole show() {
       AgentConsoleImpl console = (AgentConsoleImpl) agent.getConsole();
-      console.println("\n--- " + getLabel() + " ---");
+      console.printSystemLog("\n--- " + getLabel() + " ---");
       List<AgentSettingsItem> childs = getChilds();
       if (childs != null) {
         for (int i = 0; i < childs.size(); i++) {
@@ -74,10 +74,10 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
             String v = agent.getSettings().getProperty(child.getVariableName());
             value = " [" + (v == null ? "no definido" : v) + "]";
           }
-          console.println("[" + (i + 1) + "] " + child.getLabel() + value);
+          console.printSystemLog("[" + (i + 1) + "] " + child.getLabel() + value);
         }
       }
-      console.println("[0] " + (getParent() == null ? "Salir" : "Volver"));
+      console.printSystemLog("[0] " + (getParent() == null ? "Salir" : "Volver"));
       return this;
     }
 
@@ -113,8 +113,8 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
     public AgentSettingsItemConsole show() {
       AgentConsoleImpl console = (AgentConsoleImpl) agent.getConsole();
       String current = agent.getSettings().getProperty(getVariableName());
-      console.println("\nModificando: " + getLabel());
-      console.println("Valor actual: " + (current == null ? "(vacio)" : current));
+      console.printSystemLog("\nModificando: " + getLabel());
+      console.printSystemLog("Valor actual: " + (current == null ? "(vacio)" : current));
       return this;
     }
 
@@ -144,14 +144,14 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
     @Override
     public AgentSettingsItemConsole show() {
       AgentConsoleImpl console = (AgentConsoleImpl) agent.getConsole();
-      console.println("\n--- " + getLabel() + " ---");
+      console.printSystemLog("\n--- " + getLabel() + " ---");
       List<AgentSettingsItem> childs = getChilds();
       if (childs != null) {
         for (int i = 0; i < childs.size(); i++) {
-          console.println("[" + (i + 1) + "] " + childs.get(i).getLabel());
+          console.printSystemLog("[" + (i + 1) + "] " + childs.get(i).getLabel());
         }
       }
-      console.println("[0] Cancelar");
+      console.printSystemLog("[0] Cancelar");
       return this;
     }
 
@@ -194,15 +194,15 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
       AgentConsoleImpl console = (AgentConsoleImpl) agent.getConsole();
       String current = agent.getSettings().getProperty(getVariableName());
 
-      console.println("\n--- " + getLabel() + " ---");
-      console.println("Valor actual: " + (current == null ? "(no definido)" : current));
-      console.println("Sugerencias:");
+      console.printSystemLog("\n--- " + getLabel() + " ---");
+      console.printSystemLog("Valor actual: " + (current == null ? "(no definido)" : current));
+      console.printSystemLog("Sugerencias:");
 
       List<AgentSettingsItem> childs = getChilds();
       for (int i = 0; i < childs.size(); i++) {
-        console.println("[" + (i + 1) + "] " + childs.get(i).getLabel() + " (" + childs.get(i).getValue() + ")");
+        console.printSystemLog("[" + (i + 1) + "] " + childs.get(i).getLabel() + " (" + childs.get(i).getValue() + ")");
       }
-      console.println("Escribe un número para seleccionar, o introduce un valor manualmente.");
+      console.printSystemLog("Escribe un número para seleccionar, o introduce un valor manualmente.");
       return this;
     }
 
@@ -225,7 +225,7 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
         // Si empieza por espacio, tratamos el resto como literal
         // (esto permite meter un "8" literal incluso si hay 10 opciones)
         finalValue = rawInput.substring(1);
-        console.println("Interpretado como valor literal: '" + finalValue + "'");
+        console.printSystemLog("Interpretado como valor literal: '" + finalValue + "'");
       } else {
         // Si no hay espacio, intentamos la lógica numérica
         String trimmed = rawInput.trim();

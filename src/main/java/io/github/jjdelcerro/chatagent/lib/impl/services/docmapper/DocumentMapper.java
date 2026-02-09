@@ -36,7 +36,7 @@ public class DocumentMapper {
     // Usamos la factoría de hilos virtuales de Java 21
     Thread.ofVirtual().start(() -> {
       try {
-        agent.getConsole().println("DocMapper: Iniciando análisis de " + document.getFileName());
+        agent.getConsole().printSystemLog("DocMapper: Iniciando análisis de " + document.getFileName());
 
         doProcessDocument(document);
 
@@ -46,7 +46,7 @@ public class DocumentMapper {
                 + ". Ya está disponible para búsquedas y consultas detalladas.");
 
       } catch (Exception ex) {
-        agent.getConsole().printerrorln("Error crítico en DocMapper para " + document.getFileName() + ": " + ex.getMessage());
+        agent.getConsole().printSystemError("Error crítico en DocMapper para " + document.getFileName() + ": " + ex.getMessage());
         ex.printStackTrace(); // Log para depuración
       }
     });
