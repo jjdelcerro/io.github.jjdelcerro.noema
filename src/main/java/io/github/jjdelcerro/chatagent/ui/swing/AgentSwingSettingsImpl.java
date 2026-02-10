@@ -123,7 +123,8 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
   @Override
   public void showWindow() {
     // Envolvemos el panel en un JDialog modal
-    Window parent = SwingUtilities.getWindowAncestor(this);
+//    Window parent = SwingUtilities.getWindowAncestor(this);
+    Window parent = ((AgentSwingConsoleController)(this.agent.getConsole())).getRoot();
     JDialog dialog = new JDialog((Frame) (parent instanceof Frame ? parent : null), "Ajustes", true);
     dialog.getContentPane().add(this);
     dialog.setSize(900, 600);

@@ -4,6 +4,7 @@ import com.formdev.flatlaf.FlatDarkLaf;
 import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.ui.swing.AgentSwingInitializer;
 import io.github.jjdelcerro.chatagent.ui.swing.MainChatPanel;
+import java.awt.Color;
 import javax.swing.*;
 import java.io.File;
 
@@ -23,7 +24,7 @@ public class MainGUI {
       frame.add(chatPanel);
       frame.setLocationRelativeTo(null);
       frame.setVisible(true);
-
+      
       AgentSwingInitializer.init(chatPanel.getController());
       
       // Carga asíncrona del agente
