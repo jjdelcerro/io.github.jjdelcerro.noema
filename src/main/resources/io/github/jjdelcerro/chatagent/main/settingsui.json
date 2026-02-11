@@ -2,86 +2,68 @@
   "type": "menu",
   "label": "Configuracion del Agente",
   "domains": {
-    "LLM_MODELS": [
-      { "type": "value", "label": "OpenRouter: GLM-4.5-Air", "value": "z-ai/glm-4.5-air:free" },
-      { "type": "value", "label": "OpenRouter: Llama 3.3 70B", "value": "meta-llama/llama-3.3-70b-instruct:free" },
-      { "type": "value", "label": "OpenRouter: DeepSeek R1", "value": "tngtech/deepseek-r1t2-chimera:free" },
-      { "type": "value", "label": "OpenRouter: Hermes 3 405b", "value": "nousresearch/hermes-3-llama-3.1-405b:free" },
-      { "type": "value", "label": "OpenRouter: Mistral small 3.1 24b instruct", "value": "mistralai/mistral-small-3.1-24b-instruct:free" },
-      { "type": "value", "label": "OpenRouter: GPT OSS 120b", "value": "openai/gpt-oss-120b:free" },
-      { "type": "value", "label": "OpenRouter: GPT OSS 20b", "value": "openai/gpt-oss-20b:free" },
-      { "type": "value", "label": "OpenRouter: Qwen 3 coder", "value": "qwen/qwen3-coder:free" },
-      { "type": "value", "label": "OpenRouter: Qwen 3 4b", "value": "qwen/qwen3-4b:free" },
-      { "type": "value", "label": "Groq: GPT OSS 120b", "value": "openai/gpt-oss-120b" },
-      { "type": "value", "label": "Groq: GPT OSS 20", "value": "openai/gpt-oss-20b" },
-      { "type": "value", "label": "Groq: kimi k2 instruct 0905", "value": "moonshotai/kimi-k2-instruct-0905" },
-      { "type": "value", "label": "Groq: qwen3 32b", "value": "qwen/qwen3-32b" },
-      { "type": "value", "label": "Groq: Llama 3.3 70b versatile", "value": "llama-3.3-70b-versatile" },
-      { "type": "value", "label": "Groq: Llama 3.1 8b instant", "value": "llama-3.1-8b-instant" },
-      { "type": "value", "label": "Groq: Llama 4 17b 128e instruct", "value": "meta-llama/llama-4-maverick-17b-128e-instruct" },
-      { "type": "value", "label": "Groq: Llama 4 17b 16e instruct", "value": "meta-llama/llama-4-scout-17b-16e-instruct" }
-    ],
-    "URL_LLM_PROVIDERS": [
-      { "type": "value", "label": "OpenRouter", "value": "https://openrouter.ai/api/v1" },
-      { "type": "value", "label": "Groq", "value": "https://api.groq.com/openai/v1/chat/completions" }
-    ]
+    "LLM_MODELS": "models.properties",
+    "LLM_PROVIDERS_URL": "providers_urls.properties",
+    "LLM_PROVIDERS_APIKEY": "providers_apikeys.properties"
   },  
   "childs": [
     {
       "type": "menu",
-      "label": "Configuracion para el modelo del ConversationManager",
+      "label": "Configuración - modelo de conversación",
       "childs": [
         {
           "type": "combo",
           "childs": "URL_LLM_PROVIDERS",
-          "label": "URL del proveedor (ConversationManager)",
+          "label": "URL del proveedor (conversación)",
           "variableName": "CONVERSATION_PROVIDER_URL",
           "actionName": "CHANGE_CONVERSATION_PROVIDER"
         },
         {
-          "type": "inputstring",
-          "label": "API Key (ConversationManager)",
+          "type": "combo",
+          "label": "API Key (conversación)",
           "variableName": "CONVERSATION_PROVIDER_API_KEY",
-          "actionName": "CHANGE_CONVERSATION_PROVIDER"
+          "actionName": "CHANGE_CONVERSATION_PROVIDER",
+          "childs": "LLM_PROVIDERS_APIKEY"
         },
         {
           "type": "selectoption",
-          "label": "Seleccionar Modelo (ConversationManager)",
+          "label": "Seleccionar Modelo (conversación)",
           "variableName": "CONVERSATION_MODEL_ID",
           "actionName": "CHANGE_CONVERSATION_MODEL",
-          "childs": "LLM_MODELS"
+          "childs": "LLM_PROVIDERS_URL"
         }
       ]
     },
     {
       "type": "menu",
-      "label": "Configuracion para el modelo del MemoryManager",
+      "label": "Configuracion - modelo memoria",
       "childs": [
         {
           "type": "combo",
           "childs": "URL_LLM_PROVIDERS",
-          "label": "URL del proveedor (MemoryManager)",
+          "label": "URL del proveedor (memoria)",
           "variableName": "MEMORY_PROVIDER_URL",
           "actionName": "CHANGE_MEMORY_PROVIDER"
         },
         {
-          "type": "inputstring",
-          "label": "API Key (MemoryManager)",
+          "type": "combo",
+          "label": "API Key (memoria)",
           "variableName": "MEMORY_PROVIDER_API_KEY",
-          "actionName": "CHANGE_MEMORY_PROVIDER"
+          "actionName": "CHANGE_MEMORY_PROVIDER",
+          "childs": "LLM_PROVIDERS_APIKEY"
         },
         {
           "type": "selectoption",
-          "label": "Seleccionar Modelo (MemoryManager)",
+          "label": "Seleccionar Modelo (memoria)",
           "variableName": "MEMORY_MODEL_ID",
           "actionName": "CHANGE_MEMORY_MODEL",
-          "childs": "LLM_MODELS"
+          "childs": "LLM_PROVIDERS_URL"
         }
       ]
     },
     {
       "type": "menu",
-      "label": "Configuración de Telegram (Sensor)",
+      "label": "Configuración de Telegram",
       "childs": [
         {
           "type": "inputstring",
@@ -97,7 +79,7 @@
     },
     {
       "type": "menu",
-      "label": "Configuración de Email (Secretaría)",
+      "label": "Configuración de Email",
       "childs": [
         {
           "type": "inputstring",
@@ -137,19 +119,20 @@
             {
               "type": "combo",
               "childs": "URL_LLM_PROVIDERS",
-              "label": "URL del proveedor (Reasoning)",
+              "label": "URL del proveedor (documentos razonamiento)",
               "variableName": "DOCMAPPER_REASONING_PROVIDER_URL"
             },
             {
-              "type": "inputstring",
-              "label": "API Key (Reasoning)",
-              "variableName": "DOCMAPPER_REASONING_PROVIDER_API_KEY"
+              "type": "combo",
+              "label": "API Key (documentos razonamiento)",
+              "variableName": "DOCMAPPER_REASONING_PROVIDER_API_KEY",
+              "childs": "LLM_PROVIDERS_APIKEY"
             },
             {
               "type": "selectoption",
-              "label": "Seleccionar Modelo (Reasoning)",
+              "label": "Seleccionar Modelo (documentos razonamiento)",
               "variableName": "DOCMAPPER_REASONING_MODEL_ID",
-              "childs": "LLM_MODELS"
+              "childs": "LLM_PROVIDERS_URL"
             }
           ]
         },
@@ -160,19 +143,20 @@
             {
               "type": "combo",
               "childs": "URL_LLM_PROVIDERS",
-              "label": "URL del proveedor (Basic)",
+              "label": "URL del proveedor (documentos basico)",
               "variableName": "DOCMAPPER_BASIC_PROVIDER_URL"
             },
             {
-              "type": "inputstring",
-              "label": "API Key (Basic)",
-              "variableName": "DOCMAPPER_BASIC_PROVIDER_API_KEY"
+              "type": "combo",
+              "label": "API Key (documentos basico)",
+              "variableName": "DOCMAPPER_BASIC_PROVIDER_API_KEY",
+              "childs": "LLM_PROVIDERS_APIKEY"
             },
             {
               "type": "selectoption",
-              "label": "Seleccionar Modelo (Basic)",
+              "label": "Seleccionar Modelo (documentos basico)",
               "variableName": "DOCMAPPER_BASIC_MODEL_ID",
-              "childs": "LLM_MODELS"
+              "childs": "LLM_PROVIDERS_URL"
             }
           ]
         }
@@ -182,6 +166,21 @@
       "type": "inputstring",
       "label": "Brave Search API Key",
       "variableName": "BRAVE_SEARCH_API_KEY"
+    },
+    {
+      "type": "action",
+      "label": "Modelos",
+      "actionName": "OPEN_MODELS_EDITOR"
+    },
+    {
+      "type": "action",
+      "label": "Proveedores",
+      "actionName": "OPEN_PROVIDERS_URL_EDITOR"
+    },
+    {
+      "type": "action",
+      "label": "API Keys",
+      "actionName": "OPEN_PROVIDERS_APIKEY_EDITOR"
     },
     {
       "type": "menu",

@@ -209,6 +209,19 @@
       <artifactId>flatlaf-extras</artifactId>
       <version>3.4.1</version>
     </dependency>    
-              
+    
+    <!-- Editor de texto con resaltado de sintaxis -->
+    <dependency>
+      <groupId>com.fifesoft</groupId>
+      <artifactId>rsyntaxtextarea</artifactId>
+      <version>3.6.1</version>
+    </dependency>
+    
+    <!-- Diálogos de búsqueda y reemplazo prefabricados -->
+    <dependency>
+        <groupId>com.fifesoft</groupId>
+        <artifactId>rstaui</artifactId>
+        <version>3.3.2</version>
+    </dependency>            
   </dependencies>
 </project>

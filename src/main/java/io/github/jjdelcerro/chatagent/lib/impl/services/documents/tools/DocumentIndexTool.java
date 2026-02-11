@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.tools;
+package io.github.jjdelcerro.chatagent.lib.impl.services.documents.tools;
 
 import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
@@ -9,7 +9,7 @@ import io.github.jjdelcerro.chatagent.lib.impl.AgentImpl;
 import java.nio.file.Path;
 import java.util.Map;
 import io.github.jjdelcerro.chatagent.lib.AgentTool;
-import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.DocumentsService;
+import io.github.jjdelcerro.chatagent.lib.impl.services.documents.DocumentsService;
 
 /**
  * Herramienta para indexar y procesar documentos nuevos. Activa el DocMapper

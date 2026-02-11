@@ -8,7 +8,7 @@ import io.github.jjdelcerro.chatagent.lib.AgentServiceFactory;
 import io.github.jjdelcerro.chatagent.lib.AgentSettings;
 import io.github.jjdelcerro.chatagent.lib.ConnectionSupplier;
 import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.ConversationServiceFactory;
-import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.DocumentsServiceFactory;
+import io.github.jjdelcerro.chatagent.lib.impl.services.documents.DocumentsServiceFactory;
 import io.github.jjdelcerro.chatagent.lib.impl.services.email.EmailServiceFactory;
 import io.github.jjdelcerro.chatagent.lib.impl.services.embeddings.EmbeddingsServiceFactory;
 import io.github.jjdelcerro.chatagent.lib.impl.services.memory.MemoryServiceFactory;

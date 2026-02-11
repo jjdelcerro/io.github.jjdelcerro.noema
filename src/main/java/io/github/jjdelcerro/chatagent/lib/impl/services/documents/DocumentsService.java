@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.chatagent.lib.impl.services.docmapper;
+package io.github.jjdelcerro.chatagent.lib.impl.services.documents;
 
 import io.github.jjdelcerro.chatagent.lib.AgentService;
 import java.nio.file.Path;
