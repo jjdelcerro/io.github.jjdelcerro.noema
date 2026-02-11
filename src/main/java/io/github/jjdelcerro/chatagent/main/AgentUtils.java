@@ -49,7 +49,7 @@ public class AgentUtils {
       settings.load(settingsFile);
 
       // Conexión a Base de Datos (H2)
-      File memoryFile = new File(dataFolder, "memory");
+      File memoryFile = new File(dataFolder, "memory").getCanonicalFile();
       ConnectionSupplier memoryDatabase = new ConnectionSupplier() {
         @Override
         public Connection get() {
@@ -65,7 +65,7 @@ public class AgentUtils {
           return "H2";
         }
       };
-      File servicesFile = new File(dataFolder, "service");
+      File servicesFile = new File(dataFolder, "service").getCanonicalFile();
       ConnectionSupplier servicesDatabase = new ConnectionSupplier() {
         @Override
         public Connection get() {

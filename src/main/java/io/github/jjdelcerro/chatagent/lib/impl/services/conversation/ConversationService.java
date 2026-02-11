@@ -104,6 +104,13 @@ public class ConversationService implements AgentService {
 
   @Override
   public void start() {
+    String[] resources = new String[]{
+      "prompts/conversation-system.md"
+    };
+    for (String resPath : resources) {
+      this.agent.installResource(resPath);
+    }
+    
     this.agent.getActions().addAction(
             CHANGE_CONVERSATION_PROVIDER,
             (AgentSettings settings) -> {
@@ -245,7 +252,7 @@ public class ConversationService implements AgentService {
   }
 
   private String getBaseSystemPrompt() {
-    String systemPrompt = agent.getResourceAsString("prompts/prompt-system-conversationmanager.md");
+    String systemPrompt = agent.getResourceAsString("prompts/conversation-system.md");
 
     if (systemPrompt.isEmpty()) {
       throw new RuntimeException("Can't load system prompt from data folder");
