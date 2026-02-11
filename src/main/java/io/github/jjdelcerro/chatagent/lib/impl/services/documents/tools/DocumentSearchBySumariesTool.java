@@ -1,12 +1,12 @@
-package io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.tools;
+package io.github.jjdelcerro.chatagent.lib.impl.services.documents.tools;
 
 import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.impl.AgentImpl;
-import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.DocumentsService.DocumentResult;
-import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.DocumentsServiceImpl;
+import io.github.jjdelcerro.chatagent.lib.impl.services.documents.DocumentsService.DocumentResult;
+import io.github.jjdelcerro.chatagent.lib.impl.services.documents.DocumentsServiceImpl;
 import java.util.List;
 import java.util.Map;
 import io.github.jjdelcerro.chatagent.lib.AgentTool;

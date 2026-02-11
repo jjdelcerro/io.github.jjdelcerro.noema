@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.chatagent.lib.impl.services.docmapper;
+package io.github.jjdelcerro.chatagent.lib.impl.services.documents;
 
 import java.io.IOException;
 import java.io.InputStream;

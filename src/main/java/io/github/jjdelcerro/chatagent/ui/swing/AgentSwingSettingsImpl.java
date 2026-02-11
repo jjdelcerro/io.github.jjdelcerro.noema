@@ -39,7 +39,6 @@ import javax.swing.JTextField;
 import javax.swing.JTree;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 
 public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
 
@@ -124,7 +123,7 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
   public void showWindow() {
     // Envolvemos el panel en un JDialog modal
 //    Window parent = SwingUtilities.getWindowAncestor(this);
-    Window parent = ((AgentSwingConsoleController)(this.agent.getConsole())).getRoot();
+    Window parent = ((AgentSwingConsoleController) (this.agent.getConsole())).getRoot();
     JDialog dialog = new JDialog((Frame) (parent instanceof Frame ? parent : null), "Ajustes", true);
     dialog.getContentPane().add(this);
     dialog.setSize(900, 600);
@@ -163,6 +162,7 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
       return getChilds() == null || getChilds().isEmpty();
     }
 
+    @Override
     protected AgentSettingsItem createItem(AgentSettingsItem parent, Agent agent, JsonObject json) {
       String type = json.get("type").getAsString().toLowerCase();
       return switch (type) {
@@ -174,9 +174,67 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
           new SelectOptionItem(parent, agent, json);
         case "combo" ->
           new ComboOptionItem(parent, agent, json);
+        case "action" ->
+          new ActionItem(parent, agent, json);
         default ->
           new ValueItem(parent, agent, json);
       };
+    }
+  }
+
+  public static class ActionItem extends AbstractAgentSettingsItemSwing {
+
+    public ActionItem(AgentSettingsItem parent, Agent agent, JsonObject json) {
+      super(parent, agent, json);
+    }
+
+    @Override
+    public JComponent getComponent() {
+      JPanel p = new JPanel(new GridBagLayout());
+      p.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+      GridBagConstraints gbc = new GridBagConstraints();
+      gbc.gridx = 0;
+      gbc.gridy = 0;
+      gbc.weightx = 1.0;
+      gbc.fill = GridBagConstraints.HORIZONTAL;
+      gbc.anchor = GridBagConstraints.NORTHWEST;
+
+      // Etiqueta descriptiva
+      p.add(new JLabel("<html><b>" + getLabel() + "</b></html>"), gbc);
+
+      // Botón de acción
+      // Usamos el texto "Ejecutar" por defecto, o podemos ser creativos.
+      // Para mantenerlo simple y funcional:
+      JButton btn = new JButton("Ejecutar Acción");
+
+      btn.addActionListener(e -> {
+        String actionName = getActionName();
+        if (actionName != null && !actionName.isEmpty()) {
+          // Ejecutamos la acción en el hilo actual (EDT) como solicitaste.
+          // La acción recibe los settings actuales.
+          boolean result = agent.getActions().call(actionName, agent.getSettings());
+
+          if (!result) {
+            // Feedback mínimo en caso de fallo lógico (opcional)
+            agent.getConsole().printSystemError("La acción '" + actionName + "' devolvió false.");
+          }
+        } else {
+          agent.getConsole().printSystemError("Error: El botón '" + getLabel() + "' no tiene 'actionName' definido.");
+        }
+      });
+
+      gbc.gridy = 1;
+      gbc.insets = new Insets(10, 0, 0, 0);
+      gbc.fill = GridBagConstraints.NONE; // El botón no se estira todo el ancho
+      p.add(btn, gbc);
+
+      // Panel espaciador para empujar todo hacia arriba (coherencia visual con otros items)
+      gbc.gridy = 2;
+      gbc.weighty = 1.0;
+      gbc.fill = GridBagConstraints.BOTH;
+      p.add(new JPanel(), gbc);
+
+      return p;
     }
   }
 

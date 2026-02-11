@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.chatagent.lib.impl.services.docmapper;
+package io.github.jjdelcerro.chatagent.lib.impl.services.documents;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

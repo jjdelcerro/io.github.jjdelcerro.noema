@@ -10,7 +10,11 @@ import io.github.jjdelcerro.chatagent.lib.ConnectionSupplier;
 import io.github.jjdelcerro.chatagent.ui.AgentUILocator;
 import io.github.jjdelcerro.chatagent.ui.AgentUISettings;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -30,24 +34,24 @@ public class AgentUtils {
   public static Agent init(File dataFolder) {
     try {
       // Preparar Directorios
+      dataFolder = dataFolder.getCanonicalFile();
       Files.createDirectories(dataFolder.toPath());
       
       // Inicializar la consola y settings del agente
       AgentConsole console = AgentUILocator.getAgentUIManager().createConsole();
       console.printSystemLog("Iniciando Agente de Memoria Híbrida Determinista...");
       AgentUtils.initSettings(console, dataFolder);
-      AgentUtils.initSettingsUI(console, dataFolder);
       AgentUtils.askSettings(console,dataFolder);
 
-      // Iniciar el servidor web de H2 (Consola)
-      Server webServer = Server.createWebServer("-webPort", "8082", "-webAllowOthers").start();
-      console.printSystemLog("H2 Web Console activa en: " + webServer.getURL());      
-      
       // Cargamos los settings del agente
       File settingsFile = new File(dataFolder, "settings.properties");
       AgentSettings settings = AgentLocator.getAgentManager().createSettings();
       settings.load(settingsFile);
 
+      // Iniciar el servidor web de H2 (Consola)
+      Server webServer = Server.createWebServer("-webPort", settings.getProperty("H2_WEBPORT"), "-webAllowOthers").start();
+      console.printSystemLog("H2 Web Console activa en: " + webServer.getURL());      
+      
       // Conexión a Base de Datos (H2)
       File memoryFile = new File(dataFolder, "memory").getCanonicalFile();
       ConnectionSupplier memoryDatabase = new ConnectionSupplier() {
@@ -129,23 +133,6 @@ public class AgentUtils {
     return true;
   }
 
-  private static void initSettingsUI(AgentConsole console, File dataFolder) {
-    File settingsUIFile = new File(dataFolder, "settingsui.json");
-    if (settingsUIFile.exists()) {
-      return;
-    }
-    try (java.io.InputStream is = AgentUtils.class.getResourceAsStream("settingsui.json")) {
-      if (is == null) {
-        console.printSystemError("No se pudo encontrar el recurso settingsui.json");
-        return;
-      }
-      Files.copy(is, settingsUIFile.toPath());
-      console.printSystemLog("Configuración de UI inicializada en: " + settingsUIFile.getAbsolutePath());
-    } catch (Exception e) {
-      console.printSystemError("Error al inicializar settingsui.json: " + e.getMessage());
-    }    
-  }
-
   private static void askSettings(AgentConsole console, File dataFolder) {
     File settingsFile = new File(dataFolder, "settings.properties");
     if (!AgentUtils.areSettingsValid(console,settingsFile)) {
@@ -161,20 +148,37 @@ public class AgentUtils {
     }        
   }
   
-  private static void initSettings(AgentConsole console, File dataFolder) {
-    File settingsFile = new File(dataFolder, "settings.properties");
-    if (settingsFile.exists()) {
-      return;
-    }
-    try (java.io.InputStream is = AgentUtils.class.getResourceAsStream("settings.properties")) {
-      if (is == null) {
-        console.printSystemError("No se pudo encontrar el recurso settings.properties");
-        return;
+  private static void installResource(AgentConsole console, File dataFolder, String resPath) {
+    String resourceBase = "/io/github/jjdelcerro/chatagent/main/";
+    Path targetPath = dataFolder.toPath().resolve(resPath);
+    if (!Files.exists(targetPath)) {
+      try {
+        Files.createDirectories(targetPath.getParent());
+
+        try (InputStream is = AgentUtils.class.getResourceAsStream(resourceBase + resPath)) {
+          if (is != null) {
+            Files.copy(is, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            console.printSystemLog("Recurso instalado en data " + resPath);
+          } else {
+            console.printSystemError("Error: Recurso no encontrado en el classpath: " + resourceBase + resPath);
+          }
+        }
+      } catch (IOException e) {
+        console.printSystemError("Error al inicializar recurso " + resPath + ": " + e.getMessage());
       }
-      Files.copy(is, settingsFile.toPath());
-      console.printSystemLog("Configuración de UI inicializada en: " + settingsFile.getAbsolutePath());
-    } catch (Exception e) {
-      console.printSystemError("Error al inicializar settings.properties: " + e.getMessage());
+    }
+  }
+  
+  private static void initSettings(AgentConsole console, File dataFolder) {
+    String[] resources = new String[]{
+      "models.properties",
+      "providers_apikeys.properties",
+      "providers_urls.properties",
+      "settings.properties",
+      "settingsui.json"
+    };
+    for (String resPath : resources) {
+      installResource(console, dataFolder, resPath);
     }
   }
   

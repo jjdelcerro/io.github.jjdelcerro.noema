@@ -4,8 +4,14 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.github.jjdelcerro.chatagent.lib.Agent;
+import java.io.File;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 
 /**
  *
@@ -88,7 +94,7 @@ public abstract class AbstractAgentSettingsItem implements AgentSettingsItem {
           que si childs empieza por "file:", cargue un JSON externo. 
           Pero con la solución del nodo "domains" en el raíz, ya resuelves el 90% 
           del problema de mantenimiento.
-        */
+         */
         String domainName = childsElement.getAsString();
         JsonArray domainArray = findDomainInTree(domainName);
 
@@ -112,20 +118,67 @@ public abstract class AbstractAgentSettingsItem implements AgentSettingsItem {
   private JsonArray findDomainInTree(String name) {
     AgentSettingsItem current = this;
     while (current != null) {
-      // Necesitamos acceder al JsonObject original. 
-      // Como estamos en AbstractAgentSettingsItem, podemos acceder a 'this.item'
       if (current instanceof AbstractAgentSettingsItem abstractItem) {
         JsonObject json = abstractItem.item;
         if (json.has("domains")) {
           JsonObject domains = json.getAsJsonObject("domains");
           if (domains.has(name)) {
-            return domains.getAsJsonArray(name);
+            JsonElement element = domains.get(name);
+
+            // CASO 1: Lista definida inline en el JSON
+            if (element.isJsonArray()) {
+              return element.getAsJsonArray();
+            }
+
+            // CASO 2: Referencia a fichero externo (String)
+            if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
+              return loadDomainFromProperties(element.getAsString());
+            }
           }
         }
       }
       current = current.getParent();
     }
     return null;
+  }
+
+  /**
+   * Carga un fichero .properties, ordena las claves y genera un JsonArray
+   * compatible.
+   */
+  private JsonArray loadDomainFromProperties(String relativePath) {
+    File file = new File(agent.getDataFolder(), relativePath);
+    if (!file.exists()) {
+      agent.getConsole().printSystemError("Fichero de dominio no encontrado: " + file.getAbsolutePath());
+      return new JsonArray(); // Devolvemos lista vacía para no romper la UI
+    }
+
+    Properties props = new Properties();
+    try (Reader reader = new InputStreamReader(
+            new java.io.FileInputStream(file), StandardCharsets.UTF_8)) {
+      props.load(reader);
+    } catch (java.io.IOException e) {
+      agent.getConsole().printSystemError("Error leyendo dominio externo (" + relativePath + "): " + e.getMessage());
+      return new JsonArray();
+    }
+
+    // Ordenar alfabéticamente por la clave (Label)
+    List<String> sortedKeys = new ArrayList<>(props.stringPropertyNames());
+    Collections.sort(sortedKeys);
+
+    JsonArray result = new JsonArray();
+    for (String label : sortedKeys) {
+      String value = props.getProperty(label);
+      label = label.replace('_',' ');
+      JsonObject option = new JsonObject();
+      option.addProperty("type", "value");
+      option.addProperty("label", label); // La clave del properties es lo que ve el usuario
+      option.addProperty("value", value); // El valor es lo que se guarda en settings
+
+      result.add(option);
+    }
+
+    return result;
   }
 
   @Override

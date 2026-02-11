@@ -1,10 +1,10 @@
-package io.github.jjdelcerro.chatagent.lib.impl.services.docmapper;
+package io.github.jjdelcerro.chatagent.lib.impl.services.documents;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.github.jjdelcerro.chatagent.lib.Agent;
-import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.DocumentStructure.DocumentStructureEntry;
+import io.github.jjdelcerro.chatagent.lib.impl.services.documents.DocumentStructure.DocumentStructureEntry;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;

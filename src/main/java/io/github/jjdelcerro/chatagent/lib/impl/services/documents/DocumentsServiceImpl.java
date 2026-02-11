@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.chatagent.lib.impl.services.docmapper;
+package io.github.jjdelcerro.chatagent.lib.impl.services.documents;
 
 import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.Agent.ModelParameters;
@@ -9,11 +9,11 @@ import io.github.jjdelcerro.chatagent.lib.AgentTool;
 import io.github.jjdelcerro.chatagent.lib.ConnectionSupplier;
 import io.github.jjdelcerro.chatagent.lib.impl.SQLProvider;
 import io.github.jjdelcerro.chatagent.lib.impl.persistence.Counter;
-import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.tools.DocumentSearchByCategoriesTool;
-import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.tools.DocumentSearchBySumariesTool;
-import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.tools.DocumentSearchTool;
-import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.tools.GetDocumentStructureTool;
-import io.github.jjdelcerro.chatagent.lib.impl.services.docmapper.tools.GetPartialDocumentTool;
+import io.github.jjdelcerro.chatagent.lib.impl.services.documents.tools.DocumentSearchByCategoriesTool;
+import io.github.jjdelcerro.chatagent.lib.impl.services.documents.tools.DocumentSearchBySumariesTool;
+import io.github.jjdelcerro.chatagent.lib.impl.services.documents.tools.DocumentSearchTool;
+import io.github.jjdelcerro.chatagent.lib.impl.services.documents.tools.GetDocumentStructureTool;
+import io.github.jjdelcerro.chatagent.lib.impl.services.documents.tools.GetPartialDocumentTool;
 import io.github.jjdelcerro.chatagent.lib.impl.services.embeddings.EmbeddingFilter;
 import io.github.jjdelcerro.chatagent.lib.impl.services.embeddings.EmbeddingsService;
 import java.nio.file.Path;
