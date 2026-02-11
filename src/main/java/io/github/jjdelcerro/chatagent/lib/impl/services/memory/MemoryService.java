@@ -57,6 +57,12 @@ public class MemoryService implements AgentService {
 
   @Override
   public void start() {
+    String[] resources = new String[]{
+      "prompts/memory-compact.md"
+    };
+    for (String resPath : resources) {
+      this.agent.installResource(resPath);
+    }
     this.agent.getActions().addAction(
             CHANGE_MEMORY_PROVIDER,
             (AgentSettings settings) -> {
@@ -77,7 +83,7 @@ public class MemoryService implements AgentService {
   }
   
   private void loadSystemPrompt() {
-    this.systemPrompt = agent.getResourceAsString("prompts/prompt-compact-memorymanager.md");
+    this.systemPrompt = agent.getResourceAsString("prompts/memory-compact.md");
     if (this.systemPrompt.isEmpty()) {
       throw new RuntimeException("No se pudo cargar el prompt del MemoryManager");
     }

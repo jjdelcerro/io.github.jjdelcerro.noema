@@ -101,6 +101,13 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
     if (!this.canStart()) {
       return;
     }
+    String[] resources = new String[]{
+      "prompts/documents/extract-structure.md",
+      "prompts/documents/sumary-and-categorize.md"
+    };
+    for (String resPath : resources) {
+      this.agent.installResource(resPath);
+    }
     try (
             Connection conn = this.agent.getServicesDatabase().get()) {
       this.createTables(conn);
@@ -353,7 +360,7 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
 
   @Override
   public void indexDocument(Path docPath) {
-    DocumentMapper mapper = new DocumentMapper(agent);
+    DocumentStructureExtractor mapper = new DocumentStructureExtractor(agent);
     mapper.processDocument(docPath);
   }
 

@@ -101,4 +101,6 @@ public interface Agent {
 
   public JsonObject callChatModelAsJson(String docmapper_basic_llm, String summaryAndCategorizeSystemPrompt, String contents);
 
+  public void installResource(String resPath);
+  
 }

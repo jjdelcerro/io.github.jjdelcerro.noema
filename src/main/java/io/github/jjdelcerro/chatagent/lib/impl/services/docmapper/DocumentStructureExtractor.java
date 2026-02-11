@@ -15,15 +15,15 @@ import org.apache.commons.lang3.StringUtils;
 /**
  * @author jjdelcerro
  */
-public class DocumentMapper {
+public class DocumentStructureExtractor {
 
   private final Agent agent;
 
-  public DocumentMapper() { // Para lanzar main de pruebas.
+  public DocumentStructureExtractor() { // Para lanzar main de pruebas.
     this.agent = null;
   }
 
-  public DocumentMapper(Agent agent) {
+  public DocumentStructureExtractor(Agent agent) {
     this.agent = agent;
   }
 
@@ -41,7 +41,7 @@ public class DocumentMapper {
         doProcessDocument(document);
 
         // Al terminar, inyectamos un evento para que el Agente se entere proactivamente
-        agent.putEvent("DocMapper", "normal",
+        agent.putEvent("document_index", "normal",
                 "He terminado de procesar el documento: " + document.getFileName()
                 + ". Ya está disponible para búsquedas y consultas detalladas.");
 
@@ -133,12 +133,12 @@ public class DocumentMapper {
   }
 
   private String getExtractStructureSystemPrompt() {
-    String systemPrompt = agent.getResourceAsString("prompts/docmapper/prompt-extract-structure.md");
+    String systemPrompt = agent.getResourceAsString("prompts/documents/extract-structure.md");
     return systemPrompt;
   }
 
   private String getSummaryAndCategorizeSystemPrompt() {
-    String systemPrompt = agent.getResourceAsString("prompts/docmapper/prompt-sumary-and-categorize.md");
+    String systemPrompt = agent.getResourceAsString("prompts/documents/sumary-and-categorize.md");
     return systemPrompt;
   }
 }

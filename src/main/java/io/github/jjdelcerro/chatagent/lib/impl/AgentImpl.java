@@ -68,10 +68,10 @@ public class AgentImpl implements Agent {
     for (AgentServiceFactory serviceFactory : manager.getServiceFactories()) {
       this.services.put(serviceFactory.getName(), serviceFactory.createService(this));
     }
-    
+
     this.startAllServices();
 
-    ConversationService conversation = (ConversationService) this.getService(ConversationService.NAME);    
+    ConversationService conversation = (ConversationService) this.getService(ConversationService.NAME);
     for (AgentService service : this.services.values()) {
       if (service.canStart()) {
         List<AgentTool> tools = service.getTools();
@@ -79,10 +79,10 @@ public class AgentImpl implements Agent {
           for (AgentTool tool : tools) {
             conversation.addTool(tool);
           }
-          console.printSystemLog(service.getName() + " tools installed");          
+          console.printSystemLog(service.getName() + " tools installed");
         }
       } else {
-          console.printSystemLog(service.getName() + " tools NOT installed");          
+        console.printSystemLog(service.getName() + " tools NOT installed");
       }
     }
 
@@ -118,13 +118,13 @@ public class AgentImpl implements Agent {
 
   @Override
   public String processTurn(String input) {
-    ConversationService conversation = (ConversationService) this.getService(ConversationService.NAME);    
+    ConversationService conversation = (ConversationService) this.getService(ConversationService.NAME);
     return conversation.processTurn(input);
   }
 
   @Override
   public void putEvent(String channel, String priority, String eventText) {
-    ConversationService conversation = (ConversationService) this.getService(ConversationService.NAME);    
+    ConversationService conversation = (ConversationService) this.getService(ConversationService.NAME);
     conversation.putEvent(channel, priority, eventText);
   }
 
@@ -228,40 +228,24 @@ public class AgentImpl implements Agent {
     return null;
   }
 
-  /**
-   * Inicializa los recursos del sistema copiándolos del JAR a la carpeta data
-   * si no existen previamente. Permite la personalización de prompts por el
-   * usuario.
-   */
-  private void initResources() {
-    String[] resources = new String[]{
-      "prompts/prompt-compact-memorymanager.md",
-      "prompts/prompt-system-conversationmanager.md",
-      "prompts/docmapper/prompt-extract-structure-docmapper.md",
-      "prompts/docmapper/prompt-sumary-docmapper.md",
-      "prompts/docmapper/prompt-sumary-and-categorize-docmapper.md"
-    };
-
+  @Override
+  public void installResource(String resPath) {
     String resourceBase = "/io/github/jjdelcerro/chatagent/lib/impl/resources/";
+    Path targetPath = this.dataFolder.toPath().resolve(resPath);
+    if (!Files.exists(targetPath)) {
+      try {
+        Files.createDirectories(targetPath.getParent());
 
-    for (String resPath : resources) {
-      Path targetPath = this.dataFolder.toPath().resolve(resPath);
-
-      if (!Files.exists(targetPath)) {
-        try {
-          Files.createDirectories(targetPath.getParent());
-
-          try (InputStream is = getClass().getResourceAsStream(resourceBase + resPath)) {
-            if (is != null) {
-              Files.copy(is, targetPath, StandardCopyOption.REPLACE_EXISTING);
-              console.printSystemLog("Recurso inicializado en data: " + resPath);
-            } else {
-              console.printSystemError("Error: Recurso no encontrado en el classpath: " + resourceBase + resPath);
-            }
+        try (InputStream is = getClass().getResourceAsStream(resourceBase + resPath)) {
+          if (is != null) {
+            Files.copy(is, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            console.printSystemLog("Recurso instalado en data " + resPath);
+          } else {
+            console.printSystemError("Error: Recurso no encontrado en el classpath: " + resourceBase + resPath);
           }
-        } catch (IOException e) {
-          console.printSystemError("Error al inicializar recurso " + resPath + ": " + e.getMessage());
         }
+      } catch (IOException e) {
+        console.printSystemError("Error al inicializar recurso " + resPath + ": " + e.getMessage());
       }
     }
   }
@@ -290,7 +274,6 @@ public class AgentImpl implements Agent {
   }
 
   public void startAllServices() {
-    initResources(); // FIXME: Cada servicio deberia inicialiar sus recursos.
     for (AgentService service : this.services.values()) {
       if (!service.isRunning()) {
         service.start();
