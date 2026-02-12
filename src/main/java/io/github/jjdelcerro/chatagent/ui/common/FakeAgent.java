@@ -10,8 +10,10 @@ import io.github.jjdelcerro.chatagent.lib.AgentSettings;
 import io.github.jjdelcerro.chatagent.lib.persistence.SourceOfTruth;
 import java.io.File;
 import io.github.jjdelcerro.chatagent.lib.AgentAccessControl;
+import io.github.jjdelcerro.chatagent.lib.AgentManager;
 import io.github.jjdelcerro.chatagent.lib.AgentService;
 import io.github.jjdelcerro.chatagent.lib.ConnectionSupplier;
+import java.util.function.Supplier;
 
 /**
  * Mínima implementación de Agent para permitir la configuración inicial sin
@@ -32,11 +34,24 @@ public class FakeAgent implements Agent {
     this.actions = AgentLocator.getAgentManager().createActions();
     this.console = console;
     this.settings.load(new File(dataFolder,"settings.properties"));
+
+    AgentManager manager = AgentLocator.getAgentManager();
+    for (Supplier<AgentActions.AgentAction> actionFactory : manager.getActions()) {
+      AgentActions.AgentAction action = actionFactory.get();
+      action.setAgent(this);
+      this.actions.addAction(action);
+    }
   }
 
   @Override
   public File getDataFolder() {
     return dataFolder;
+  }
+
+  @Override
+  public File getDataFolder(String name) {
+      File file = this.dataFolder.toPath().resolve(name).normalize().toFile();
+      return file;
   }
 
   @Override

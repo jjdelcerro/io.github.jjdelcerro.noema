@@ -31,11 +31,13 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  *
  * @author jjdelcerro
  */
+@SuppressWarnings("UseSpecificCatch")
 public class AgentImpl implements Agent {
 
   private AgentConsole console;
@@ -61,8 +63,16 @@ public class AgentImpl implements Agent {
     this.servicesDatabase = servicesDatabase;
     this.memoryDatabase = memoryDatabase;
     this.sourceOfTruth = SourceOfTruthImpl.from(this);
+    
+    AgentManager manager = AgentLocator.getAgentManager();
+    for (Supplier<AgentActions.AgentAction> actionFactory : manager.getActions()) {
+      AgentActions.AgentAction action = actionFactory.get();
+      action.setAgent(this);
+      this.actions.addAction(action);
+    }
   }
 
+  @Override
   public void start() {
     AgentManager manager = AgentLocator.getAgentManager();
     for (AgentServiceFactory serviceFactory : manager.getServiceFactories()) {
@@ -94,6 +104,12 @@ public class AgentImpl implements Agent {
   @Override
   public File getDataFolder() {
     return this.dataFolder;
+  }
+
+  @Override
+  public File getDataFolder(String name) {
+      File file = this.dataFolder.toPath().resolve(name).normalize().toFile();
+      return file;
   }
 
   @Override
@@ -151,7 +167,12 @@ public class AgentImpl implements Agent {
   /**
    * Realiza una llamada al modelo de lenguaje y devuelve la respuesta como
    * texto plano.
+   * @param llmid
+   * @param systemPrompt
+   * @param message
+   * @return 
    */
+  @Override
   public String callChatModel(String llmid, String systemPrompt, String message) {
     try {
       OpenAiChatModel model = this.createChatModel(llmid);
@@ -175,6 +196,7 @@ public class AgentImpl implements Agent {
    * Realiza una llamada al modelo y parsea la respuesta como un JsonObject de
    * GSON. Incluye limpieza automática de bloques de código Markdown.
    */
+  @Override
   public JsonObject callChatModelAsJson(String llmid, String systemPrompt, String message) {
     String rawResponse = callChatModel(llmid, systemPrompt, message);
 
@@ -218,6 +240,7 @@ public class AgentImpl implements Agent {
     return model;
   }
 
+  @Override
   public ModelParameters getModelParameters(String name) {
     for (AgentService service : this.services.values()) {
       ModelParameters params = service.getModelParameters(name);
@@ -258,6 +281,7 @@ public class AgentImpl implements Agent {
    * @return El contenido del archivo como String, o una cadena vacía si hay
    * error.
    */
+  @Override
   public String getResourceAsString(String resname) {
     Path path = this.dataFolder.toPath().resolve(resname);
     try {
@@ -288,6 +312,7 @@ public class AgentImpl implements Agent {
     }
   }
 
+  @Override
   public AgentService getService(String name) {
     AgentService service = this.services.get(name);
     return service;

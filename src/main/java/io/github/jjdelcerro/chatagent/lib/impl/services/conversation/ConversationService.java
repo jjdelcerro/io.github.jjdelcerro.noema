@@ -8,6 +8,7 @@ import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.output.Response;
+import io.github.jjdelcerro.chatagent.lib.AbstractAgentAction;
 import io.github.jjdelcerro.chatagent.lib.Agent;
 import static io.github.jjdelcerro.chatagent.lib.AgentActions.CHANGE_CONVERSATION_MODEL;
 import static io.github.jjdelcerro.chatagent.lib.AgentActions.CHANGE_CONVERSATION_PROVIDER;
@@ -111,20 +112,20 @@ public class ConversationService implements AgentService {
       this.agent.installResource(resPath);
     }
     
-    this.agent.getActions().addAction(
-            CHANGE_CONVERSATION_PROVIDER,
-            (AgentSettings settings) -> {
-              model = agent.createChatModel("CONVERSATION");
-              return true;
-            }
-    );
-    this.agent.getActions().addAction(
-            CHANGE_CONVERSATION_MODEL,
-            (AgentSettings settings) -> {
-              model = agent.createChatModel("CONVERSATION");
-              return true;
-            }
-    );
+    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_CONVERSATION_PROVIDER) {
+      @Override
+      public boolean perform(AgentSettings settings) {
+        model = agent.createChatModel("CONVERSATION");
+        return true;
+      }
+    });
+    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_CONVERSATION_MODEL) {
+      @Override
+      public boolean perform(AgentSettings settings) {
+        model = agent.createChatModel("CONVERSATION");
+        return true;
+      }
+    });
     this.model = this.agent.createChatModel("CONVERSATION");
     this.running = true;
   }

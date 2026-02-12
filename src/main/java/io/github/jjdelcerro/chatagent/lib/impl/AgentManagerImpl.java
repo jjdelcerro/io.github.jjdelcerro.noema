@@ -2,6 +2,7 @@ package io.github.jjdelcerro.chatagent.lib.impl;
 
 import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.AgentActions;
+import io.github.jjdelcerro.chatagent.lib.AgentActions.AgentAction;
 import io.github.jjdelcerro.chatagent.lib.AgentConsole;
 import io.github.jjdelcerro.chatagent.lib.AgentManager;
 import io.github.jjdelcerro.chatagent.lib.AgentServiceFactory;
@@ -15,10 +16,13 @@ import io.github.jjdelcerro.chatagent.lib.impl.services.memory.MemoryServiceFact
 import io.github.jjdelcerro.chatagent.lib.impl.services.scheduler.SchedulerServiceFactory;
 import io.github.jjdelcerro.chatagent.lib.impl.services.telegram.TelegramServiceFactory;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  *
@@ -28,10 +32,12 @@ public class AgentManagerImpl implements AgentManager {
 
   private final Map<String,AgentServiceFactory> serviceFactories;
   private Map<String,SQLProvider> sqlProvider;
+  private List<Supplier<AgentAction>> actions;
   
   public AgentManagerImpl() {
     this.serviceFactories = new LinkedHashMap<>();
     this.sqlProvider = new HashMap<>();
+    this.actions = new ArrayList<>();
     
     this.registerService(new EmbeddingsServiceFactory());
     this.registerService(new MemoryServiceFactory());
@@ -81,4 +87,13 @@ public class AgentManagerImpl implements AgentManager {
     return prov;
   }
 
+  @Override
+  public void registerAction(Supplier<AgentActions.AgentAction> action) {
+    this.actions.add(action);
+  }
+
+  public Collection<Supplier<AgentActions.AgentAction>> getActions() {
+    return this.actions;
+  }
+  
 }
