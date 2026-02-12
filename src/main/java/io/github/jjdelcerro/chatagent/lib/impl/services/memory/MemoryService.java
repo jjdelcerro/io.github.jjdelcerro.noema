@@ -4,6 +4,7 @@ import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatLanguageModel;
+import io.github.jjdelcerro.chatagent.lib.AbstractAgentAction;
 import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.Agent.ModelParameters;
 import static io.github.jjdelcerro.chatagent.lib.AgentActions.CHANGE_MEMORY_MODEL;
@@ -63,20 +64,20 @@ public class MemoryService implements AgentService {
     for (String resPath : resources) {
       this.agent.installResource(resPath);
     }
-    this.agent.getActions().addAction(
-            CHANGE_MEMORY_PROVIDER,
-            (AgentSettings settings) -> {
-              model = agent.createChatModel("MEMORY");
-              return true;
-            }
-    );
-    this.agent.getActions().addAction(
-            CHANGE_MEMORY_MODEL,
-            (AgentSettings settings) -> {
-              model = agent.createChatModel("MEMORY");
-              return true;
-            }
-    );
+    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_MEMORY_PROVIDER) {
+      @Override
+      public boolean perform(AgentSettings settings) {
+        model = agent.createChatModel("MEMORY");
+        return true;
+      }
+    });    
+    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_MEMORY_MODEL) {
+      @Override
+      public boolean perform(AgentSettings settings) {
+        model = agent.createChatModel("MEMORY");
+        return true;
+      }
+    });    
     this.model = this.agent.createChatModel("MEMORY");
     loadSystemPrompt();
     this.running = true;

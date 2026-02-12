@@ -13,7 +13,7 @@
       "childs": [
         {
           "type": "combo",
-          "childs": "URL_LLM_PROVIDERS",
+          "childs": "LLM_PROVIDERS_URL",
           "label": "URL del proveedor (conversación)",
           "variableName": "CONVERSATION_PROVIDER_URL",
           "actionName": "CHANGE_CONVERSATION_PROVIDER"
@@ -30,7 +30,7 @@
           "label": "Seleccionar Modelo (conversación)",
           "variableName": "CONVERSATION_MODEL_ID",
           "actionName": "CHANGE_CONVERSATION_MODEL",
-          "childs": "LLM_PROVIDERS_URL"
+          "childs": "LLM_MODELS"
         }
       ]
     },
@@ -40,7 +40,7 @@
       "childs": [
         {
           "type": "combo",
-          "childs": "URL_LLM_PROVIDERS",
+          "childs": "LLM_PROVIDERS_URL",
           "label": "URL del proveedor (memoria)",
           "variableName": "MEMORY_PROVIDER_URL",
           "actionName": "CHANGE_MEMORY_PROVIDER"
@@ -57,7 +57,7 @@
           "label": "Seleccionar Modelo (memoria)",
           "variableName": "MEMORY_MODEL_ID",
           "actionName": "CHANGE_MEMORY_MODEL",
-          "childs": "LLM_PROVIDERS_URL"
+          "childs": "LLM_MODELS"
         }
       ]
     },
@@ -118,7 +118,7 @@
           "childs": [
             {
               "type": "combo",
-              "childs": "URL_LLM_PROVIDERS",
+              "childs": "LLM_PROVIDERS_URL",
               "label": "URL del proveedor (documentos razonamiento)",
               "variableName": "DOCMAPPER_REASONING_PROVIDER_URL"
             },
@@ -132,7 +132,7 @@
               "type": "selectoption",
               "label": "Seleccionar Modelo (documentos razonamiento)",
               "variableName": "DOCMAPPER_REASONING_MODEL_ID",
-              "childs": "LLM_PROVIDERS_URL"
+              "childs": "LLM_MODELS"
             }
           ]
         },
@@ -142,7 +142,7 @@
           "childs": [
             {
               "type": "combo",
-              "childs": "URL_LLM_PROVIDERS",
+              "childs": "LLM_PROVIDERS_URL",
               "label": "URL del proveedor (documentos basico)",
               "variableName": "DOCMAPPER_BASIC_PROVIDER_URL"
             },
@@ -156,7 +156,7 @@
               "type": "selectoption",
               "label": "Seleccionar Modelo (documentos basico)",
               "variableName": "DOCMAPPER_BASIC_MODEL_ID",
-              "childs": "LLM_PROVIDERS_URL"
+              "childs": "LLM_MODELS"
             }
           ]
         }

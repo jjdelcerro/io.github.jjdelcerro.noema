@@ -23,6 +23,8 @@ public interface Agent {
   
   public File getDataFolder();
 
+  public File getDataFolder(String name);
+
   public AgentActions getActions();
 
   public AgentSettings getSettings();

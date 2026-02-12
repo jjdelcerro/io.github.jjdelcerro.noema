@@ -12,11 +12,15 @@ public interface AgentActions {
   public static final String CHANGE_CONVERSATION_MODEL = "CHANGE_CONVERSATION_MODEL";
 
   public interface AgentAction {
-
     public boolean perform(AgentSettings settings);
+    public String getName();    
+    public void set(String name, Object value);
+    public Object get(String name);
+    public Agent getAgent();
+    public void setAgent(Agent agent);
   }
 
-  public void addAction(String name, AgentAction action);
+  public void addAction(AgentAction action);
 
   public boolean call(String name, AgentSettings settings);
 }

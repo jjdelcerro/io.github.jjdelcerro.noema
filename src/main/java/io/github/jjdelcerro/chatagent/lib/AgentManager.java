@@ -1,8 +1,10 @@
 package io.github.jjdelcerro.chatagent.lib;
 
+import io.github.jjdelcerro.chatagent.lib.AgentActions.AgentAction;
 import io.github.jjdelcerro.chatagent.lib.impl.SQLProvider;
 import java.io.File;
 import java.util.Collection;
+import java.util.function.Supplier;
 
 /**
  *
@@ -23,4 +25,8 @@ public interface AgentManager {
   public Collection<AgentServiceFactory> getServiceFactories();
   
   public SQLProvider getSQLProvider(String providerName);
+  
+  public void registerAction(Supplier<AgentAction> action);
+  
+  public Collection<Supplier<AgentActions.AgentAction>> getActions();
 }

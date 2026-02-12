@@ -12,6 +12,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import okio.Path;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -19,6 +22,8 @@ import java.util.Properties;
  */
 public abstract class AbstractAgentSettingsItem implements AgentSettingsItem {
 
+  public static final Logger LOGGER = LoggerFactory.getLogger(AbstractAgentSettingsItem.class);
+  
   protected final Agent agent;
   protected final JsonObject item;
   private final AgentSettingsItem parent;
@@ -147,38 +152,47 @@ public abstract class AbstractAgentSettingsItem implements AgentSettingsItem {
    * compatible.
    */
   private JsonArray loadDomainFromProperties(String relativePath) {
-    File file = new File(agent.getDataFolder(), relativePath);
-    if (!file.exists()) {
-      agent.getConsole().printSystemError("Fichero de dominio no encontrado: " + file.getAbsolutePath());
-      return new JsonArray(); // Devolvemos lista vacía para no romper la UI
+    try {
+      File file = Path.get(agent.getDataFolder()).resolve(relativePath, true).toFile();
+      if (!file.exists()) {
+        agent.getConsole().printSystemError("Fichero de dominio no encontrado: " + file.getAbsolutePath());
+        return new JsonArray(); // Devolvemos lista vacía para no romper la UI
+      }
+
+//      LOGGER.info("file="+file.getAbsolutePath());
+//      LOGGER.info("Contents:\n"+FileUtils.readFileToString(file, StandardCharsets.UTF_8));
+
+      Properties props = new Properties();
+      try (Reader reader = new InputStreamReader(
+              new java.io.FileInputStream(file), StandardCharsets.UTF_8)) {
+        props.load(reader);
+      } catch (java.io.IOException e) {
+        agent.getConsole().printSystemError("Error leyendo dominio externo (" + relativePath + "): " + e.getMessage());
+        return new JsonArray();
+      }
+
+      // Ordenar alfabéticamente por la clave (Label)
+      List<String> sortedKeys = new ArrayList<>(props.stringPropertyNames());
+      Collections.sort(sortedKeys);
+
+//      LOGGER.info("Keys: "+StringUtils.join(sortedKeys,","));
+
+      JsonArray result = new JsonArray();
+      for (String label : sortedKeys) {
+        String value = props.getProperty(label);
+        label = label.replace('_',' ');
+        JsonObject option = new JsonObject();
+        option.addProperty("type", "value");
+        option.addProperty("label", label); // La clave del properties es lo que ve el usuario
+        option.addProperty("value", value); // El valor es lo que se guarda en settings
+
+        result.add(option);
+      }
+      return result;
+    } catch (Exception ex) {
+      LOGGER.warn("Can't load domain from '"+relativePath+"'.",ex);
+      return null;
     }
-
-    Properties props = new Properties();
-    try (Reader reader = new InputStreamReader(
-            new java.io.FileInputStream(file), StandardCharsets.UTF_8)) {
-      props.load(reader);
-    } catch (java.io.IOException e) {
-      agent.getConsole().printSystemError("Error leyendo dominio externo (" + relativePath + "): " + e.getMessage());
-      return new JsonArray();
-    }
-
-    // Ordenar alfabéticamente por la clave (Label)
-    List<String> sortedKeys = new ArrayList<>(props.stringPropertyNames());
-    Collections.sort(sortedKeys);
-
-    JsonArray result = new JsonArray();
-    for (String label : sortedKeys) {
-      String value = props.getProperty(label);
-      label = label.replace('_',' ');
-      JsonObject option = new JsonObject();
-      option.addProperty("type", "value");
-      option.addProperty("label", label); // La clave del properties es lo que ve el usuario
-      option.addProperty("value", value); // El valor es lo que se guarda en settings
-
-      result.add(option);
-    }
-
-    return result;
   }
 
   @Override
