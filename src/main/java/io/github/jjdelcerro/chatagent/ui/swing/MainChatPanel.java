@@ -207,22 +207,7 @@ public class MainChatPanel extends JPanel {
   
   private AgentConsole createConsoleController(JPanel panel) {
     AgentConsole controller;
-//    String s = StringUtils.lowerCase(this.settings.getProperty("CHAT_CONSOLE_CONTROLLER"));
-//    if( s==null ) {
-//      s = "UsingMultipleJTextPane";
-//    }
-//    switch(s) {
-//      case  "usingsinglehtml_1":
-//        controller = new AgentSwingConsoleControllerUsingSingleHTML_1(panel);
-//        break;
-//      case "usinglobo":
-//        controller = new AgentSwingConsoleControllerUsingLobo(panel);
-//        break;
-//      default:
-//      case "usingmultiplejtextpane":
-        controller = new AgentSwingConsoleControllerUsingMultipleJTextPane(panel);
-//        break;
-//    }    
+    controller = new AgentSwingConsoleControllerUsingMultipleJTextPane(panel);
     return controller;
   }
 }
