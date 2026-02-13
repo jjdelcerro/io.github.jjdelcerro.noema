@@ -50,7 +50,7 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
         if (type == lastType && currentTextPanel != null) {
           // AGRUPACIÓN: Añadimos al componente existente
           String oldText = currentTextPanel.getText();
-          String newText = oldText + "\n\n" + text;
+          String newText = oldText + "\n" + text;
           currentTextPanel.setText(newText);        
         } else {
           // NUEVA CAJA: Creamos el contenedor y el text pane
@@ -65,7 +65,7 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
           // AGRUPACIÓN: Añadimos al componente existente
           JMarkdownPanel markdownPanel = (JMarkdownPanel) this.currentTextPanel; 
           String oldMd = markdownPanel.getMarkdownText();
-          String newMd = oldMd + "\n\n" + text;
+          String newMd = oldMd + "\n" + text;
           markdownPanel.setMarkdownText(header, newMd);        
         } else {
           // NUEVA CAJA: Creamos el contenedor y el text pane
