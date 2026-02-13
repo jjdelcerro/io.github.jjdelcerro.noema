@@ -7,7 +7,6 @@ import java.awt.Container;
 import java.awt.Insets;
 import java.awt.Window;
 import javax.swing.BorderFactory;
-import javax.swing.JEditorPane;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
@@ -16,64 +15,71 @@ import javax.swing.JTextPane;
 import javax.swing.JViewport;
 import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
-import javax.swing.text.html.HTMLEditorKit;
-import javax.swing.text.html.StyleSheet;
-import org.apache.commons.lang3.StringUtils;
-import org.commonmark.parser.Parser;
-import org.commonmark.renderer.html.HtmlRenderer;
 
-public class AgentSwingConsoleController implements AgentConsole {
+public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentConsole {
 
   private final JPanel chatContainer;
   private MessageType lastType = null;
-  private JTextPane currentTextPane = null; // Ahora apuntamos al componente de texto interno
-  private StringBuilder currentContent = new StringBuilder();
 
-  private final Parser mdParser = Parser.builder().build();
-  private final HtmlRenderer htmlRenderer = HtmlRenderer.builder().build();
+  private JTextPane currentTextPanel;
 
   public enum MessageType {
     SYSTEM, ERROR, USER, MODEL
   }
 
-  public AgentSwingConsoleController(JPanel chatContainer) {
+  public AgentSwingConsoleControllerUsingMultipleJTextPane(JPanel chatContainer) {
     this.chatContainer = chatContainer;
   }
 
   private synchronized void addMessage(MessageType type, String text) {
     SwingUtilities.invokeLater(() -> {
-      if (type == lastType && currentTextPane != null) {
-        // AGRUPACIÓN: Añadimos al componente existente
-        currentContent.append("<br>").append(formatText(type, text));
-        currentTextPane.setText(wrapHtml(currentContent.toString()));
+      String header = null;
+      switch(type) {
+        case MODEL:
+          header = "Modelo:";
+          break;
+        case USER:
+          header = "Usuario:";
+          break;
+        default:
+        case SYSTEM:
+        case ERROR:
+          break;
+      }        
+      if( header == null )  {
+        if (type == lastType && currentTextPanel != null) {
+          // AGRUPACIÓN: Añadimos al componente existente
+          String oldText = currentTextPanel.getText();
+          String newText = oldText + "\n\n" + text;
+          currentTextPanel.setText(newText);        
+        } else {
+          // NUEVA CAJA: Creamos el contenedor y el text pane
+          currentTextPanel = new JTextPane();
+          currentTextPanel.setText(text);
+
+          JPanel bubble = createBubbleWrapper(type, currentTextPanel);
+          chatContainer.add(bubble, "growx, width 0:100:100%, gapy 5 5");
+        }
       } else {
-        // NUEVA CAJA: Creamos el contenedor y el text pane
-        currentContent = new StringBuilder();
-        lastType = type;
-        switch(type) {
-          case MODEL:
-            currentContent.append("<smal>Modelo:</smal><br>");
-            break;
-          case USER:
-            currentContent.append("<smal>Usuario:</smal><br>");
-            break;
-          default:
-          case SYSTEM:
-          case ERROR:
-            break;
-        }        
-        currentContent.append(formatText(type, text));
-
-        currentTextPane = createFormattedTextPane(type);
-        currentTextPane.setText(wrapHtml(currentContent.toString()));
-
-        // Creamos la "Burbuja" (el contenedor)
-        JPanel bubble = createBubbleWrapper(type, currentTextPane);
-
-        // "width 85%" para que no ocupen todo el ancho y sea más legible
-//        chatContainer.add(bubble, "growx, width 80%, gapy 5 5");
-        chatContainer.add(bubble, "growx, width 0:100:100%, gapy 5 5");
+        if (type == lastType && currentTextPanel != null) {
+          // AGRUPACIÓN: Añadimos al componente existente
+          JMarkdownPanel markdownPanel = (JMarkdownPanel) this.currentTextPanel; 
+          String oldMd = markdownPanel.getMarkdownText();
+          String newMd = oldMd + "\n\n" + text;
+          markdownPanel.setMarkdownText(header, newMd);        
+        } else {
+          // NUEVA CAJA: Creamos el contenedor y el text pane
+          JMarkdownPanel markdownPanel = new JMarkdownPanel();
+          markdownPanel.setMarkdownText(header, text);
+          currentTextPanel = markdownPanel;
+          
+          JPanel bubble = createBubbleWrapper(type, currentTextPanel);
+          chatContainer.add(bubble, "growx, width 0:100:100%, gapy 5 5");
+        }
       }
+      lastType = type;
+      currentTextPanel.setPreferredSize(null); 
+      currentTextPanel.validate();
 
       chatContainer.revalidate();
       chatContainer.repaint();
@@ -125,46 +131,6 @@ public class AgentSwingConsoleController implements AgentConsole {
       return p;
   }
   
-  private JTextPane createFormattedTextPane(MessageType type) {
-    JTextPane pane = new JTextPane();
-    pane.setEditable(false);
-    pane.setContentType("text/html");
-    pane.setOpaque(true);
-    pane.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
-
-    HTMLEditorKit kit = new HTMLEditorKit();
-    StyleSheet ss = kit.getStyleSheet();
-    // Estilo base para el texto
-//    ss.addRule("body { font-family: sans-serif; font-size: 11pt; color: #e0e0e0; margin: 0; }");
-    ss.addRule("body { width: 100%; font-family: sans-serif; font-size: 11pt; }");
-//    ss.addRule("pre { background-color: #1e1e1e; color: #dcdcdc; padding: 8px; border-radius: 4px; }");
-    ss.addRule("pre { white-space: pre-wrap; word-wrap: break-word; }");    
-    ss.addRule("code { font-family: 'Monospaced'; color: #ffad66; }");
-
-    if (type == MessageType.SYSTEM) {
-      ss.addRule("body { color: #999999; font-style: italic; }");
-    }
-    if (type == MessageType.ERROR) {
-      ss.addRule("body { color: #ff6666; font-weight: bold; }");
-    }
-    if (type == MessageType.USER) {
-      ss.addRule("body { color: #a6e22e; }");
-    }
-    pane.setEditorKit(kit);
-    return pane;
-  }
-
-  private String formatText(MessageType type, String text) {
-    if (type == MessageType.MODEL) {
-      return htmlRenderer.render(mdParser.parse(text));
-    }
-    return text.replace("\n", "<br>");
-  }
-
-  private String wrapHtml(String content) {
-    return "<html><body>" + content + "</body></html>";
-  }
-
   private void scrollAtBottom() {
     SwingUtilities.invokeLater(() -> {
       Container parent = chatContainer.getParent();

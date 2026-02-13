@@ -2,18 +2,24 @@ package io.github.jjdelcerro.chatagent.ui.swing;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import io.github.jjdelcerro.chatagent.lib.Agent;
+import io.github.jjdelcerro.chatagent.lib.AgentConsole;
+import io.github.jjdelcerro.chatagent.lib.AgentSettings;
 import io.github.jjdelcerro.chatagent.ui.AgentUILocator;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Insets;
+import java.awt.event.KeyEvent;
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.KeyStroke;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -29,10 +35,12 @@ public class MainChatPanel extends JPanel {
   private final JButton settingsBtn;
   private final JButton btnSave; // Cambiado
   private final JButton btnCopy; // Cambiado
-  private final AgentSwingConsoleController controller;
+  private final AgentConsole controller;
   private Agent agent;
+  private AgentSettings settings;
 
-  public MainChatPanel() {
+  public MainChatPanel(AgentSettings settings) {
+    this.settings = settings;
     setLayout(new BorderLayout());
 
     // --- 1. PANELES LATERALES ---
@@ -83,7 +91,20 @@ public class MainChatPanel extends JPanel {
     inputArea.setWrapStyleWord(true);
     inputArea.setOpaque(false);
     inputArea.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+    // Definimos el KeyStroke (Ctrl + Enter)
+    KeyStroke ctrlEnter = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, java.awt.event.InputEvent.CTRL_DOWN_MASK);
 
+    // Lo registramos en el InputMap del área de texto
+    inputArea.getInputMap(JComponent.WHEN_FOCUSED).put(ctrlEnter, "send-message");
+
+    // Registramos la acción en el ActionMap
+    inputArea.getActionMap().put("send-message", new AbstractAction() {
+        @Override
+        public void actionPerformed(java.awt.event.ActionEvent e) {
+            handleSend();
+        }
+    });
+    
     JScrollPane inputScroll = new JScrollPane(inputArea);
     inputScroll.setOpaque(false);
     inputScroll.getViewport().setOpaque(false);
@@ -94,6 +115,7 @@ public class MainChatPanel extends JPanel {
     sendBtn = new JButton();
     sendBtn.setEnabled(false);
     sendBtn.putClientProperty("JButton.buttonType", "roundRect");
+    sendBtn.setToolTipText("Enviar mensaje (Ctrl+Enter)");
 
     // "hmin 80" para acomodar visualmente las 3 líneas con margen
     bottomPanel.add(inputScroll, "growx, hmin 80, aligny center");
@@ -115,7 +137,7 @@ public class MainChatPanel extends JPanel {
       btnCopy.setText("C");
     }
 
-    controller = new AgentSwingConsoleController(chatHistory);
+    controller = this.createConsoleController(chatHistory);
 
     JPopupMenu copyMenu = new JPopupMenu();
     JMenuItem itemCopyMarkdown = new JMenuItem("Copy as Markdown");
@@ -150,6 +172,8 @@ public class MainChatPanel extends JPanel {
 
   public void setAgent(Agent agent) {
     this.agent = agent;
+    this.settings = agent.getSettings();
+    
     SwingUtilities.invokeLater(() -> {
       inputArea.setEnabled(true);
       sendBtn.setEnabled(true);
@@ -160,7 +184,7 @@ public class MainChatPanel extends JPanel {
     });
   }
 
-  public AgentSwingConsoleController getController() {
+  public AgentConsole getConsole() {
     return controller;
   }
 
@@ -179,5 +203,26 @@ public class MainChatPanel extends JPanel {
         controller.printSystemError("Error: " + e.getMessage());
       }
     });
+  }
+  
+  private AgentConsole createConsoleController(JPanel panel) {
+    AgentConsole controller;
+//    String s = StringUtils.lowerCase(this.settings.getProperty("CHAT_CONSOLE_CONTROLLER"));
+//    if( s==null ) {
+//      s = "UsingMultipleJTextPane";
+//    }
+//    switch(s) {
+//      case  "usingsinglehtml_1":
+//        controller = new AgentSwingConsoleControllerUsingSingleHTML_1(panel);
+//        break;
+//      case "usinglobo":
+//        controller = new AgentSwingConsoleControllerUsingLobo(panel);
+//        break;
+//      default:
+//      case "usingmultiplejtextpane":
+        controller = new AgentSwingConsoleControllerUsingMultipleJTextPane(panel);
+//        break;
+//    }    
+    return controller;
   }
 }

@@ -9,18 +9,18 @@ import static io.github.jjdelcerro.chatagent.lib.AgentAccessControl.AccessMode.P
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import io.github.jjdelcerro.chatagent.lib.AgentTool;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class FileReadTool implements AgentTool {
+public class FileReadTool extends AbstractAgentTool {
+
     /*
     TODO: Paginacion?
     */
-    private final Gson gson = new Gson();
-
-    private final Agent agent;
     
     public FileReadTool(Agent agent) {
-      this.agent = agent;
+      super(agent);
     }
     
     @Override
@@ -37,15 +37,16 @@ public class FileReadTool implements AgentTool {
         try {
             Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
 
-            Path filePath = this.agent.getAccessControl().resolvePathOrNull(args.get("path"),PATH_ACCESS_READ);
+            Path filePath = this.resolvePathOrNull(args.get("path"));
             if (filePath==null) {
-                return gson.toJson(Map.of("status", "error", "message", "Acceso denegado fuera del proyecto"));
+                return error("Acceso denegado fuera del proyecto");
             }
 
             String content = Files.readString(filePath);
             return gson.toJson(Map.of("status", "success", "content", content));
         } catch (Exception e) {
-            return gson.toJson(Map.of("status", "error", "message", e.getMessage()));
+            LOGGER.warn("Can't read file, arguments="+StringUtils.replace(jsonArguments,"\n"," "),e);
+            return error(e.getMessage());
         }
     }
 }
