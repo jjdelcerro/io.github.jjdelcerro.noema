@@ -93,9 +93,9 @@ public class EmailService implements AgentService {
   @Override
   public List<AgentTool> getTools() {
     AgentTool[] tools = new AgentTool[]{
-      new EmailListTool(this.agent),
-      new EmailReadTool(this.agent),
-      new EmailSendTool(this.agent)
+//      new EmailListTool(this.agent),
+//      new EmailReadTool(this.agent),
+//      new EmailSendTool(this.agent)
     };
     return Arrays.asList(tools);
   }
@@ -123,7 +123,7 @@ public class EmailService implements AgentService {
                   long uid = ((UIDFolder) inbox).getUID(m);
                   // INYECTAMOS SOLO LA NOTIFICACIÓN
                   String notify = String.format("NUEVO EMAIL [UID:%d] de %s. Asunto: %s", uid, from, m.getSubject());
-                  agent.putEvent("Email", "normal", notify);
+                  agent.putEvent("EMAIL RECEIVED", "normal", notify);
                 }
                 lastCount = current;
               }

@@ -13,6 +13,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Map;
 import io.github.jjdelcerro.chatagent.lib.AgentTool;
+import java.util.Locale;
 
 /**
  * Herramienta para consultar el clima actual utilizando Open-Meteo. No requiere
@@ -72,7 +73,7 @@ public class WeatherTool implements AgentTool {
       String name = geo.get("name").getAsString();
 
       // 2. Consulta de clima
-      String url = String.format(
+      String url = String.format(Locale.UK,
               "https://api.open-meteo.com/v1/forecast?latitude=%f&longitude=%f&current_weather=true",
               lat, lon);
 

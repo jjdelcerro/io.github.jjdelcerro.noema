@@ -13,23 +13,23 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class Event {
 
-  private final String channel;
+  private final String status;
   private final String priority;
   private final String contents;
   private final String event_time;
   private AiMessage aimessage;
   private ToolExecutionResultMessage response;
 
-  public Event(String channel, String priority, String contents) {
+  public Event(String status, String priority, String contents) {
     this.event_time = ConversationService.now();
-    this.channel = channel;
+    this.status = status;
     this.priority = priority;
     this.contents = contents;
   }
 
   @Override
   public String toString() {
-    return "[channel:" + this.channel
+    return "[status:" + this.status
             + ",priority:" + this.priority
             + ",text:" + StringUtils.abbreviate(StringUtils.replace(contents, "\n", " "), 40)
             + "]";
@@ -40,7 +40,7 @@ public class Event {
     return gson.toJson(Map.of(
             "current_time", ConversationService.now(),
             "event_time", this.event_time,
-            "channel", channel,
+            "status", status,
             "priority", priority,
             "contents", contents
     ));
@@ -48,7 +48,7 @@ public class Event {
 
   private void buildMessages() {
     ToolExecutionRequest request = ToolExecutionRequest.builder()
-            .id(channel + "_" + System.currentTimeMillis())
+            .id(status + "_" + System.currentTimeMillis())
             .name("pool_event")
             .arguments("{}")
             .build();

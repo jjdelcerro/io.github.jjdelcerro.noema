@@ -119,7 +119,7 @@ public class SchedulerServiceImpl implements SchedulerService {
             "alarm_time", when.toString(),
             "reason", reason
     ));
-    this.agent.putEvent("scheduler", "normal", notify);
+    this.agent.putEvent("ALARM TRIGGERED", "normal", notify);
   }
 
   private void schedule_alarm(String id, String reason, LocalDateTime alarmTime) {

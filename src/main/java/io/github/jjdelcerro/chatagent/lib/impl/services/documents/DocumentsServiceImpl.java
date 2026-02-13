@@ -349,11 +349,11 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
   @Override
   public List<AgentTool> getTools() {
     AgentTool[] tools = new AgentTool[]{
-      new DocumentSearchTool(this.agent),
-      new DocumentSearchByCategoriesTool(this.agent),
-      new DocumentSearchBySumariesTool(this.agent),
-      new GetDocumentStructureTool(this.agent),
-      new GetPartialDocumentTool(this.agent)
+//      new DocumentSearchTool(this.agent),
+//      new DocumentSearchByCategoriesTool(this.agent),
+//      new DocumentSearchBySumariesTool(this.agent),
+//      new GetDocumentStructureTool(this.agent),
+//      new GetPartialDocumentTool(this.agent)
     };
     return Arrays.asList(tools);
   }

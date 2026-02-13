@@ -33,9 +33,9 @@ public class ScheduleAlarmTool implements AgentTool {
     return ToolSpecification.builder()
             .name("schedule_alarm")
             // Descripción general en el idioma del sistema (Castellano)
-            .description("Reserva o programa una alarma o recordatorio en el sistema.")
+            .description("Permite programar una alarma para que te avise cuando se dispare mediante un evento. Cuando recibas el evento de que se ha disparado la alarma sera responsabilidad tuya dar el aviso al usuario.")
             .addParameter("reason", JsonSchemaProperty.STRING,
-                    JsonSchemaProperty.description("El motivo o contenido del recordatorio."))
+                    JsonSchemaProperty.description("El motivo o contenido de la alarma."))
             // Instrucción específica sobre el idioma para el parámetro técnico
             .addParameter("when", JsonSchemaProperty.STRING,
                     JsonSchemaProperty.description("Descripción temporal. DEBE ESTAR EN INGLÉS "

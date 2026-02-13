@@ -18,6 +18,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.StyleSheet;
+import org.apache.commons.lang3.StringUtils;
 import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
 
@@ -40,7 +41,6 @@ public class AgentSwingConsoleController implements AgentConsole {
   }
 
   private synchronized void addMessage(MessageType type, String text) {
-    // TODO: integrar aqui https://github.com/commonmark/commonmark-java
     SwingUtilities.invokeLater(() -> {
       if (type == lastType && currentTextPane != null) {
         // AGRUPACIÓN: Añadimos al componente existente
@@ -48,8 +48,21 @@ public class AgentSwingConsoleController implements AgentConsole {
         currentTextPane.setText(wrapHtml(currentContent.toString()));
       } else {
         // NUEVA CAJA: Creamos el contenedor y el text pane
+        currentContent = new StringBuilder();
         lastType = type;
-        currentContent = new StringBuilder(formatText(type, text));
+        switch(type) {
+          case MODEL:
+            currentContent.append("<smal>Modelo:</smal><br>");
+            break;
+          case USER:
+            currentContent.append("<smal>Usuario:</smal><br>");
+            break;
+          default:
+          case SYSTEM:
+          case ERROR:
+            break;
+        }        
+        currentContent.append(formatText(type, text));
 
         currentTextPane = createFormattedTextPane(type);
         currentTextPane.setText(wrapHtml(currentContent.toString()));
@@ -185,7 +198,12 @@ public class AgentSwingConsoleController implements AgentConsole {
 
   @Override
   public boolean confirm(String message) {
-    return JOptionPane.showConfirmDialog(null, message, "Confirmación", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
+    return JOptionPane.showConfirmDialog(
+            SwingUtils.getTopWindow(), 
+            message, 
+            "Confirmación", 
+            JOptionPane.YES_NO_OPTION
+      ) == JOptionPane.YES_OPTION;
   }
   
   public Window getRoot() {

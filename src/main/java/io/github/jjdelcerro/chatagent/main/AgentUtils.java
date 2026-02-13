@@ -86,7 +86,7 @@ public class AgentUtils {
         }
       };
       
-      // Create databses and maintain server loaded
+      // Create databases and maintain server loaded
       @SuppressWarnings("unused")
               Connection memoryConn = memoryDatabase.get();
       console.printSystemLog("Conectado a Base de Conocimiento: " + memoryFile.getAbsolutePath());

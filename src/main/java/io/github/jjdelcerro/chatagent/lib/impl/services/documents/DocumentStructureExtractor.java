@@ -36,14 +36,14 @@ public class DocumentStructureExtractor {
     // Usamos la factoría de hilos virtuales de Java 21
     Thread.ofVirtual().start(() -> {
       try {
-        agent.getConsole().printSystemLog("DocMapper: Iniciando análisis de " + document.getFileName());
+        agent.getConsole().printSystemLog("Iniciando análisis del documento " + document.getFileName());
 
         doProcessDocument(document);
 
         // Al terminar, inyectamos un evento para que el Agente se entere proactivamente
-        agent.putEvent("document_index", "normal",
-                "He terminado de procesar el documento: " + document.getFileName()
-                + ". Ya está disponible para búsquedas y consultas detalladas.");
+        agent.putEvent("DOCUMENT INDEXATION FINALIZED", "normal",
+                "Ha terminado la indexacion del documento: `" + document.getFileName()
+                + "`. Ya está disponible para búsquedas y consultas detalladas.");
 
       } catch (Exception ex) {
         agent.getConsole().printSystemError("Error crítico en DocMapper para " + document.getFileName() + ": " + ex.getMessage());
