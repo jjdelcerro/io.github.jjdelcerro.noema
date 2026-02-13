@@ -82,7 +82,7 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
       JComponent comp = item.getComponent();
       if (comp != null) {
         // Usamos CENTER para que el componente interno decida cómo crecer
-        detailPanel.add(comp, BorderLayout.NORTH);
+        detailPanel.add(comp, BorderLayout.CENTER);
       } else {
         JLabel lbl = new JLabel("Seleccione una sub-opción para: " + item.getLabel());
         lbl.setHorizontalAlignment(SwingConstants.CENTER);
@@ -123,7 +123,7 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
   public void showWindow() {
     // Envolvemos el panel en un JDialog modal
 //    Window parent = SwingUtilities.getWindowAncestor(this);
-    Window parent = ((AgentSwingConsoleController) (this.agent.getConsole())).getRoot();
+    Window parent = ((AgentSwingConsoleControllerUsingMultipleJTextPane) (this.agent.getConsole())).getRoot();
     JDialog dialog = new JDialog((Frame) (parent instanceof Frame ? parent : null), "Ajustes", true);
     dialog.getContentPane().add(this);
     dialog.setSize(1024, 600);
