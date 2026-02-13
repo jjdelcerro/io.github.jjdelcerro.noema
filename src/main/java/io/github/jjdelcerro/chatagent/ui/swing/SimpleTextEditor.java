@@ -85,21 +85,27 @@ public class SimpleTextEditor extends JPanel implements SearchListener {
    * Muestra el editor en una ventana independiente (JDialog).
    */
   public void showWindow(String title) {
-    Window parentWindow = SwingUtilities.getWindowAncestor(this);
-    Frame parentFrame = (parentWindow instanceof Frame) ? (Frame) parentWindow : null;
+    
+    // 1. Averiguamos si debemos ser modales
+    JDialog modalParent = SwingUtils.getTopModalDialog();
+    boolean shouldBeModal = (modalParent != null);
 
-    JDialog dialog = new JDialog(parentFrame, title, false);
+    // 2. Creamos nuestro diálogo con la modalidad correcta
+    // El primer parámetro es el "dueño" de la ventana, que es importante para el foco.
+    // Usamos el diálogo modal encontrado como dueño si existe.
+    JDialog dialog = new JDialog(modalParent, title, shouldBeModal);
+    
+    dialog.setContentPane(this);
+    dialog.setLocationRelativeTo(modalParent); // Centrar respecto al modal padre
+    
     dialog.setContentPane(this);
     dialog.setJMenuBar(createMenuBar(dialog));
     dialog.pack();
-    dialog.setLocationRelativeTo(parentWindow);
     dialog.setVisible(true);
 
-    // Si ya hay fichero cargado, actualizamos el título ahora que tenemos ventana
     if (currentFile != null) {
       updateWindowTitle();
     }
-
     initSearchDialogs(dialog);
   }
 

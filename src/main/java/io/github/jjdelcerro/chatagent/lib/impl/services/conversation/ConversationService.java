@@ -135,11 +135,11 @@ public class ConversationService implements AgentService {
     this.toolSpecifications.add(tool.getSpecification());
   }
 
-  public synchronized void putEvent(String channel, String priority, String eventText) {
-    pendingEvents.offer(new Event(channel, priority, eventText));
+  public synchronized void putEvent(String status, String priority, String eventText) {
+    pendingEvents.offer(new Event(status, priority, eventText));
 
     // Si el agente no está trabajando en un turno, lanzamos el procesador de cola
-    if (!isBusy.get()) {
+    if (!isBusy.get()) { //FIXME: falta gestionar correctamente isBusy
       processPendingEvents();
     }
   }
@@ -165,7 +165,10 @@ public class ConversationService implements AgentService {
       this.sourceOfTruth.add(toolTurn);
       this.session.consolideTurn(toolTurn);
 
-      this.executeReasoningLoop(null);
+      String resp = this.executeReasoningLoop(null);
+      if( StringUtils.isNotBlank(resp) ) {
+        this.agent.getConsole().printModelResponse(resp);
+      }    
     }
   }
 
@@ -363,15 +366,15 @@ public class ConversationService implements AgentService {
   public List<AgentTool> getTools() {
     AgentTool[] tools0 = new AgentTool[]{
       new PoolEventTool(this.agent),
-      new FileFindTool(this.agent),
-      new FileGrepTool(this.agent),
-      new FileReadTool(this.agent),
-      new FileWriteTool(this.agent),
-      new FileSearchAndReplaceTool(this.agent),
-      new FilePatchTool(this.agent),
-      new FileMkdirTool(this.agent),
-      new FileExtractTextTool(this.agent),
-      new WebGetTikaTool(this.agent),
+//      new FileFindTool(this.agent),
+//      new FileGrepTool(this.agent),
+//      new FileReadTool(this.agent),
+//      new FileWriteTool(this.agent),
+//      new FileSearchAndReplaceTool(this.agent),
+//      new FilePatchTool(this.agent),
+//      new FileMkdirTool(this.agent),
+//      new FileExtractTextTool(this.agent),
+//      new WebGetTikaTool(this.agent),
       new WeatherTool(this.agent),
       new LocationTool(this.agent),
       new TimeTool(this.agent)

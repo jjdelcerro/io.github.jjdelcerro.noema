@@ -126,7 +126,7 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
     Window parent = ((AgentSwingConsoleController) (this.agent.getConsole())).getRoot();
     JDialog dialog = new JDialog((Frame) (parent instanceof Frame ? parent : null), "Ajustes", true);
     dialog.getContentPane().add(this);
-    dialog.setSize(900, 600);
+    dialog.setSize(1024, 600);
     dialog.setLocationRelativeTo(parent);
 
     // Añadir botón de cerrar en la parte inferior para el diálogo

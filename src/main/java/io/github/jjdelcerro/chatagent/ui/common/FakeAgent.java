@@ -30,8 +30,9 @@ public class FakeAgent implements Agent {
 
   public FakeAgent(File dataFolder, AgentConsole console) {
     this.dataFolder = dataFolder;
-    this.settings = AgentLocator.getAgentManager().createSettings();
-    this.actions = AgentLocator.getAgentManager().createActions();
+    AgentManager agentManager = AgentLocator.getAgentManager();
+    this.settings = agentManager.createSettings();
+    this.actions = new FakeAgentActions(agentManager.createActions());
     this.console = console;
     this.settings.load(new File(dataFolder,"settings.properties"));
 
@@ -143,4 +144,24 @@ public class FakeAgent implements Agent {
     throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
   }
 
+  private class FakeAgentActions implements AgentActions {
+
+    private final AgentActions delegate;
+
+    public FakeAgentActions(AgentActions delegate) {
+      this.delegate = delegate;
+    }
+    
+    @Override
+    public void addAction(AgentAction action) {
+      this.delegate.addAction(action);
+    }
+
+    @Override
+    public boolean call(String name, AgentSettings settings) {
+      delegate.call(name, settings);
+      return true;
+    }
+    
+  }
 }

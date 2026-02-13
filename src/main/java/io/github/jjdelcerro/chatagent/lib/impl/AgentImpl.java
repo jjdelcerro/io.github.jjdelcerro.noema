@@ -139,9 +139,9 @@ public class AgentImpl implements Agent {
   }
 
   @Override
-  public void putEvent(String channel, String priority, String eventText) {
+  public void putEvent(String status, String priority, String eventText) {
     ConversationService conversation = (ConversationService) this.getService(ConversationService.NAME);
-    conversation.putEvent(channel, priority, eventText);
+    conversation.putEvent(status, priority, eventText);
   }
 
   @Override

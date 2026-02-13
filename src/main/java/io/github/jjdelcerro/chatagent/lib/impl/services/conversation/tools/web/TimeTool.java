@@ -10,6 +10,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import io.github.jjdelcerro.chatagent.lib.AgentTool;
+import java.util.LinkedHashMap;
 
 /**
  * Herramienta para obtener la fecha y hora actual del sistema. Permite

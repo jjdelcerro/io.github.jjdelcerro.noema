@@ -78,7 +78,7 @@ public class TelegramService implements AgentService {
           long chatId = update.message().chat().id();
           // Seguridad: Solo hacemos caso si eres tú (chatId configurado)
           if (chatId == authorizedChatId) {
-            agent.putEvent("Telegram", "normal", update.message().text());
+            agent.putEvent("TELEGRAM MESSAGE RECEIVED", "normal", update.message().text());
           }
         }
       });
@@ -106,7 +106,7 @@ public class TelegramService implements AgentService {
   @Override
   public List<AgentTool> getTools() {
     AgentTool[] tools = new AgentTool[]{
-      new TelegramTool(this.agent)
+//      new TelegramTool(this.agent)
     };
     return Arrays.asList(tools);
   }

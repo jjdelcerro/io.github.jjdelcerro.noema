@@ -1,22 +1,15 @@
 package io.github.jjdelcerro.chatagent.main;
 
 import com.formdev.flatlaf.FlatDarkLaf;
-import io.github.jjdelcerro.chatagent.lib.AbstractAgentAction;
+import com.formdev.flatlaf.extras.FlatSVGUtils;
 import io.github.jjdelcerro.chatagent.lib.Agent;
-import io.github.jjdelcerro.chatagent.lib.AgentActions.AgentAction;
-import io.github.jjdelcerro.chatagent.lib.AgentLocator;
-import io.github.jjdelcerro.chatagent.lib.AgentManager;
-import io.github.jjdelcerro.chatagent.lib.AgentSettings;
 import io.github.jjdelcerro.chatagent.ui.swing.AgentSwingInitializer;
 import io.github.jjdelcerro.chatagent.ui.swing.MainChatPanel;
 import io.github.jjdelcerro.chatagent.ui.swing.OpenEditorAction;
-import io.github.jjdelcerro.chatagent.ui.swing.SimpleTextEditor;
+import java.awt.Image;
 import javax.swing.*;
 import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.function.Supplier;
+import java.util.List;
 
 public class MainGUI {
 
@@ -27,8 +20,16 @@ public class MainGUI {
 
     SwingUtilities.invokeLater(() -> {
       JFrame frame = new JFrame("ChatAgent v1.0");
+      try {
+          List<Image> icons = FlatSVGUtils.createWindowIconImages(
+              MainGUI.class.getResource("/io/github/jjdelcerro/chatagent/ui/swing/app_icon.svg")
+          );
+          frame.setIconImages(icons);
+      } catch (Exception e) {
+          System.err.println("No se pudo cargar el icono de la aplicación: " + e.getMessage());
+      }      
       frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-      frame.setSize(900, 700);
+      frame.setSize(1024, 700);
 
       MainChatPanel chatPanel = new MainChatPanel();
       frame.add(chatPanel);
