@@ -1,107 +1,126 @@
-
 # Informe de Estado del Proyecto: ChatAgent
 
-**Versión Analizada:** 1.0.0 (Snapshot/Dev)
+**Versión Analizada:** 1.0.0 (según pom.xml)
 
-**Fecha de Análisis:** 06/02/2026
+**Fecha de Análisis:** 13 de Febrero de 2026
 
-**Tecnología Base:** Java 21, H2, LangChain4j, Swing/JLine.
+**Tecnología Base:** Java 21, LangChain4j 0.35.0, H2 Database (Embedded), Swing/JLine.
 
 ---
 
 ## 1. Evaluación General
 
-El proyecto se encuentra en una fase de **Prototipo Avanzado (Alpha Funcional)**. No es un simple "esqueleto"; la arquitectura nuclear está completa y operativa.
+El proyecto es una **Prueba de Concepto (PoC) avanzada y funcional** de un Agente Autónomo con arquitectura de memoria híbrida. A diferencia de los asistentes estándar tipo RAG, este sistema implementa una arquitectura cognitiva ambiciosa basada en la **continuidad narrativa** ("El Viaje") y la **persistencia determinista**.
 
-El sistema demuestra una madurez arquitectónica superior a la media para proyectos de agentes personales, especialmente en la gestión de memoria y la independencia de la nube. Implementa con éxito patrones complejos como la **Memoria Híbrida (Narrativa + Vectorial)** y la **Agencia Autónoma** (herramientas de sistema de archivos y comunicación).
+El código demuestra un diseño de software maduro: uso de interfaces para desacoplar componentes, inyección de dependencias manual (Service Locator) para evitar sobrecarga de frameworks, y un uso moderno de Java 21 (Virtual Threads).
 
-Sin embargo, aunque funcionalmente es muy rico, presenta limitaciones de escalabilidad (búsqueda vectorial en memoria) y robustez en el manejo de errores que son típicas de esta fase de desarrollo.
+El sistema está diseñado específicamente para cumplir la premisa de "compañero de larga duración" en local, sacrificando escalabilidad masiva (innecesaria para un usuario único) en favor de la simplicidad de despliegue (todo en un JAR + H2).
 
 ---
 
 ## 2. Análisis de Completitud por Bloques Funcionales
 
-### A. Núcleo y Arquitectura (100% Completo)
-*   **Inyección de Dependencias:** El patrón *Service Locator* (`AgentLocator`, `AgentManagerImpl`) está totalmente implementado y funcional.
-*   **Ciclo de Vida:** El arranque (`Main`, `AgentImpl`) y el cierre de recursos (Hooks para H2) están gestionados.
-*   **Configuración:** Sistema dual (`settings.properties` + `settingsui.json`) implementado y funcional tanto en CLI como en GUI.
+### A. Núcleo y Arquitectura (90% Completo)
+El esqueleto del sistema es sólido y está bien definido.
 
-### B. Motor de Conversación y Herramientas (95% Completo)
-*   **Bucle ReAct:** La clase `ConversationService` gestiona correctamente el ciclo *Pensar -> Actuar -> Observar*.
-*   **Herramientas:** El catálogo es exhaustivo (28 herramientas).
-    *   *Sistema de archivos:* Completo (Lectura, escritura, parches, búsqueda).
-    *   *Web:* Completo (Búsqueda, descarga con Tika, clima, hora).
-    *   *Integraciones:* Telegram y Email funcionales (lectura/escritura).
-*   **Faltante:** Falta robustez en la herramienta `file_patch`. Si el LLM no genera el formato Unified Diff exacto, falla. Se sugiere implementar un mecanismo de reintento o una herramienta de edición más simple (`sed`-like) como fallback.
+*   **Inyección de Dependencias:** Implementada manualmente vía `AgentManager` y `AgentLocator`. Es ligero y funcional.
+*   **Ciclo de Vida:** Gestión correcta de arranque y parada de servicios. Mecanismo de `ShutdownHook` para cerrar conexiones de BBDD.
+*   **Configuración:** Sistema robusto basado en `properties` con una definición de UI dinámica (`settingsui.json`) que permite editar la configuración sin tocar código.
+*   **Seguridad:** Implementación de `AgentAccessControl` (Sandbox) para limitar el acceso al sistema de archivos, crucial dado que el agente tiene herramientas de escritura.
+*   **Limitaciones:** La gestión de errores en el arranque de servicios es básica (logs a consola).
 
-### C. Gestión de Memoria (90% Completo)
-*   **Persistencia:** `SourceOfTruthImpl` almacena correctamente turnos y checkpoints en H2.
-*   **Compactación:** `MemoryService` implementa la lógica de resumen narrativo ("El Viaje"). El prompt asociado (`prompt-compact-memorymanager.md`) es muy sofisticado.
-*   **Recuperación:** `LookupTurnTool` y `SearchFullHistoryTool` están implementadas.
-*   **Limitación:** La búsqueda vectorial se realiza iterando en memoria (`EmbeddingFilterImpl`). Esto funciona para miles de turnos, pero será un cuello de botella con cientos de miles.
+### B. Motor de Conversación y Herramientas (85% Completo)
+El corazón del agente es un bucle ReAct funcional.
 
-### D. Document Mapper / RAG (85% Completo)
-*   **Ingesta:** El flujo de doble paso (Estructura -> Resumen) está implementado en `DocumentMapper`.
-*   **Estructura:** Soporta jerarquías complejas (`DocumentStructure`).
-*   **Faltante:** No parece haber un mecanismo robusto de paginación para documentos *muy* grandes durante la fase de extracción de estructura inicial. Si el CSV de líneas excede la ventana de contexto del modelo "Reasoning", fallará.
+*   **Bucle ReAct:** Implementado en `ConversationService`. Gestiona correctamente la llamada al LLM, la detección de herramientas (`ToolExecutionRequest`), la ejecución y la recursividad.
+*   **Proactividad (Agency):** Destaca la implementación de `pool_event` y `Event`. Permite inyectar estímulos asíncronos (Email, Telegram, Alarmas) en un flujo síncrono, simulando "interrupciones" o iniciativa propia.
+*   **Herramientas Implementadas:**
 
-### E. Interfaces de Usuario (80% Completo)
-*   **Consola:** Funcional con `JLine`, soporta historial y edición básica.
-*   **Swing:** Funcional pero espartana.
-    *   *Deuda:* El `MainChatPanel` usa un `JTextPane` básico. No renderiza Markdown (negritas, código, tablas), lo cual es crítico para leer respuestas de programación.
-    *   *Deuda:* La gestión de hilos es correcta (Virtual Threads para lógica, SwingUtilities para UI), pero la UX se bloquea visualmente (controles deshabilitados) durante la inferencia.
+    *   *Sistema de archivos:* Muy completo (Lectura, Escritura, Grep, Find, Patch).
+    *   *Web:* Búsqueda (Brave), Scrapeo (Tika), Clima, Ubicación.
+    *   *Integraciones:* Telegram (Bidireccional) y Email (Lectura/Envío/Monitorización IDLE).
+    *   *Scheduler:* Alarmas en lenguaje natural.
+    
+*   **Limitaciones:** La herramienta `file_patch` (Unified Diff) es potente pero frágil; depende de la capacidad del LLM para generar diffs exactos.
 
----
+### C. Gestión de Memoria (80% Completo)
+El punto fuerte conceptual del proyecto.
 
-## 3. Resumen de Deuda Técnica Identificada
+*   **Persistencia:** Modelo híbrido H2. `Turn` (episódico) y `CheckPoint` (narrativo).
+*   **Compactación:** Lógica implementada en `MemoryService`. El sistema detecta umbrales (`COMPACTION_THRESHOLD`) y consolida turnos en una narrativa ("El Viaje").
+*   **Recuperación:**
 
-1.  **Escalabilidad Vectorial (Crítica):**
-    *   *Problema:* La clase `EmbeddingsService` carga los vectores y realiza el cálculo de similitud del coseno en Java (heap space).
-    *   *Impacto:* Alto consumo de RAM y lentitud CPU-bound a medida que crece la historia.
-    *   *Solución:* Migrar a H2 con soporte nativo de arrays/vectores o integrar una base de datos vectorial ligera (ej. ChromaDB local o extensión de H2).
+    *   *Lookup:* Recuperación determinista por ID (`{cite:ID}`).
+    *   *Búsqueda Vectorial:* Implementación "artesanal" en memoria (`EmbeddingFilterImpl`) sobre BLOBs en H2.
+    
+*   **Limitaciones:** La búsqueda vectorial carga los vectores en memoria y filtra por coseno en Java. Es perfecto para un usuario único (miles de turnos), pero podría degradarse con historias de años de duración si no se optimiza o poda.
 
-2.  **Manejo de Errores y Logs:**
-    *   *Problema:* Uso extensivo de `e.printStackTrace()` o mensajes JSON genéricos `{"status": "error"}`.
-    *   *Impacto:* Dificultad para depurar problemas en producción (ej. fallos SMTP o timeouts de LLM).
-    *   *Solución:* Estandarizar el logging (SLF4J ya está en el pom, falta usarlo consistentemente) y tipificar las excepciones de las herramientas.
+### D. Document Mapper / RAG (75% Completo)
+Implementación no convencional de RAG, enfocada en estructura.
 
-3.  **Visualización de Código:**
-    *   *Problema:* El output del agente en Swing es texto plano.
-    *   *Impacto:* Mala experiencia de usuario al generar código o tablas.
-    *   *Solución:* Integrar una librería de renderizado Markdown para Swing (ej. `commonmark-java` + `JEditorPane` HTML) o migrar a JavaFX/Webview.
+*   **Ingesta:** Uso de LLM ("Reasoning") para extraer TOC (Tabla de Contenidos) y LLM ("Basic") para resumir secciones.
+*   **Estructura:** Persistencia en JSON (`.struct`) y H2.
+*   **Recuperación:** Herramientas para leer estructura (`get_document_structure`) y lectura parcial (`get_partial_document`).
+*   **Limitaciones:** Depende fuertemente de la calidad del modelo para extraer la estructura CSV correctamente. Si el documento es muy complejo, el parser de CSV manual podría fallar.
 
-4.  **Seguridad de Herramientas:**
-    *   *Problema:* `FileWriteTool` y `FilePatchTool` pueden destruir trabajo. Aunque hay confirmación (`console.confirm`), no hay sistema de "Deshacer" o backup automático antes de escribir.
-    *   *Solución:* Implementar copias de seguridad automáticas (`.bak`) antes de sobrescribir ficheros.
+### E. Interfaces de Usuario (70% Completo)
+Funcionales para el propósito, aunque espartanas.
 
----
+*   **Consola:** Basada en JLine 3. Robusta para uso en terminal.
+*   **Swing:** Implementación funcional con FlatLaf.
 
-## 4. Próximos Hitos (Roadmap Sugerido)
-
-### Corto Plazo (Estabilización)
-*   **Hito 1.1:** Implementar renderizado de Markdown en la UI de Swing.
-*   **Hito 1.2:** Reforzar la herramienta `file_patch`. Añadir lógica para intentar arreglar diffs mal formados o proveer una herramienta `file_overwrite_block` alternativa.
-*   **Hito 1.3:** Backup automático de archivos modificados por el agente.
-
-### Medio Plazo (Escalabilidad)
-*   **Hito 2.1:** Migración de la búsqueda vectorial. Sustituir la iteración en memoria por consultas SQL con funciones de distancia (si H2 lo permite) o integración con SQLite-VSS / ChromaDB.
-*   **Hito 2.2:** Paginación en `DocumentMapper`. Permitir ingestar libros enteros dividiendo el CSV de estructura en bloques lógicos.
-
-### Largo Plazo (Evolución)
-*   **Hito 3.0:** Soporte Multi-Agente. Permitir que el agente principal delegue tareas a sub-agentes especializados (ej. un "Coder" y un "Researcher") que compartan la misma `SourceOfTruth`.
+    *   Renderizado de Markdown a HTML básico.
+    *   Editor de configuración dinámico (muy útil).
+    *   Visualización de mensajes diferenciada por colores/burbujas.
+    
+*   **Faltante:** No hay visualización gráfica del estado de la memoria (ver vectores o estructura de documentos) más allá de los logs. La edición de código en `SimpleTextEditor` es básica.
 
 ---
 
-## 5. Resumen del Estado
+## 3. Valoración de la Documentación
+
+El proyecto contiene una pieza de documentación excelente: **`AGENT_CONTEXT.md`**.
+
+*   Está redactada para ser consumida tanto por humanos como por el propio LLM para auto-entenderse.
+*   Describe la arquitectura con precisión.
+*   El código está razonablemente limpio, aunque faltan JavaDocs en algunos métodos complejos de la lógica de UI.
+*   Los **Prompts del Sistema** (`prompts/*.md`) actúan como documentación viva del comportamiento cognitivo.
+
+---
+
+## 4. Resumen de Deuda Técnica Identificada
+
+1.  **Búsqueda Vectorial en Memoria:** `EmbeddingFilterImpl` recupera *todos* los vectores de la BBDD que no son nulos y calcula el coseno en Java. Para una sesión de "toda la vida", esto acabará siendo lento (O(n)). *Sugerencia futura:* Usar índices, aunque en H2 nativo es difícil sin extensiones.
+2.  **Manejo de Errores en UI Swing:** La carga del agente se hace en un hilo virtual, pero las excepciones fatales a veces solo se imprimen en consola y no muestran un diálogo de error al usuario.
+3.  **Parsing de CSV en DocMapper:** `DocumentStructure.from(String csvstruct)` usa un split básico. Un título con comas dentro de comillas podría romper el parser si el LLM no escapa perfectamente.
+4.  **Inyección de Dependencias Manual:** Aunque es una decisión de diseño válida, a medida que crezcan los servicios (`ServiceLocator`), el `AgentManagerImpl` puede volverse difícil de mantener.
+
+---
+
+## 5. Próximos Hitos (Roadmap Sugerido)
+
+Dado el objetivo de "compañero de investigación de larga duración":
+
+1.  **Refuerzo de la Memoria Semántica:** Implementar una herramienta que permita al agente "reescribir" o "anotar" recuerdos antiguos si detecta que la información ha cambiado, para evitar contradicciones a largo plazo.
+2.  **Visor de Conocimiento (UI):** Añadir una pestaña en Swing para visualizar la lista de documentos indexados y los Checkpoints generados, permitiendo al usuario forzar una compactación o borrar un recuerdo erróneo manualmente.
+3.  **Backup Automático:** Dado que es una sesión única y continua, la corrupción de la BBDD H2 sería catastrófica. Implementar un backup automático del archivo `.mv.db` al iniciar/cerrar.
+4.  **Mejora de `web_search`:** Implementar "navigational browsing" (poder seguir links profundos) más allá de un simple `web_get_content`, para investigaciones profundas.
+
+---
+
+## 6. Resumen del Estado
 
 | Área | Estado | Calidad del Código | Riesgo |
 | :--- | :---: | :---: | :---: |
 | **Arquitectura Core** | 🟢 Estable | Alta | Bajo |
-| **Persistencia** | 🟡 Funcional | Media | Medio (Escalabilidad) |
-| **Integración LLM** | 🟢 Estable | Alta | Bajo |
-| **Herramientas** | 🟢 Completa | Alta | Medio (Fiabilidad Patch) |
-| **Interfaz Usuario** | 🟡 Básica | Media | Bajo |
-| **Documentación** | 🔴 Escasa | Baja | Medio (Onboarding) |
+| **Persistencia** | 🟡 Funcional | Media (Vector scan) | Medio |
+| **Integración LLM** | 🟢 Sólida | Alta | Bajo |
+| **Herramientas** | 🟢 Completa | Alta | Bajo |
+| **Interfaz Usuario** | 🟡 Espartana | Media | Bajo |
+| **Documentación** | 🟢 Excelente | Alta (Contextual) | Bajo |
 
-**Conclusión:**
-El proyecto `chatagent` es una pieza de ingeniería de software sólida. Ha superado la fase de prueba de concepto. Su mayor valor reside en la implementación de la **memoria determinista** y la independencia de proveedores cloud para el almacenamiento. Está listo para ser usado por desarrolladores (dogfooding) para pulir los casos de borde, pero requiere mejoras en la UI y la base de datos vectorial antes de un uso generalizado.
+**Conclusión**
+
+El proyecto se encuentra en un estado **Alpha Maduro**. No es un simple "juguete", sino una arquitectura de agente completa y funcional que cumple con los requisitos de independencia de infraestructura y persistencia local.
+
+La base está lista para empezar a usarlo como compañero de investigación. El mayor riesgo a largo plazo reside en la estrategia de búsqueda vectorial en memoria si la base de datos crece exponencialmente, pero para un uso personal monousuario, es una solución perfectamente válida y pragmática.

@@ -8,3 +8,5 @@ Que incluya:
 * Proximos itos.
 * Valoracion de la documentacion del proyecto.
 * Resumen del estado
+
+**Importante**, no tengas en cuenta la informacion del fichero "DEVELOPMENT_STATUS.md", tu mision es recrear este a partir del analisis de los fuentes de java de la aplicacion.
