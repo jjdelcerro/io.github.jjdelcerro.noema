@@ -54,6 +54,8 @@ import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.web.W
 import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.web.WebSearchTool;
 import io.github.jjdelcerro.chatagent.lib.impl.services.memory.MemoryService;
 import java.util.Arrays;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Orquestador principal del sistema. Gestiona el bucle de razonamiento, la
@@ -61,6 +63,8 @@ import java.util.Arrays;
  */
 public class ConversationService implements AgentService {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(ConversationService.class);
+  
   public static final String NAME = "Conversation";
 
   public static final String CONVERSATION_PROVIDER_URL = "CONVERSATION_PROVIDER_URL";
@@ -89,7 +93,7 @@ public class ConversationService implements AgentService {
     this.agent = agent;
     this.sourceOfTruth = agent.getSourceOfTruth();
     this.console = agent.getConsole();
-    this.session = new Session(agent.getDataFolder().toPath());
+    this.session = new Session(agent.getDataFolder().toPath(), agent.getSettings());
     this.running = false;
     try {
       this.activeCheckPoint = sourceOfTruth.getLatestCheckPoint();
@@ -124,6 +128,18 @@ public class ConversationService implements AgentService {
       public boolean perform(AgentSettings settings) {
         model = agent.createChatModel("CONVERSATION");
         return true;
+      }
+    });
+    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, "COMPACT_CONVERSATION") {
+      @Override
+      public boolean perform(AgentSettings settings) {
+        try {
+          performCompaction();
+          return true;
+        } catch (Exception ex) {
+          LOGGER.warn("Can't compact conversation", ex);
+          return false;
+        }
       }
     });
     this.model = this.agent.createChatModel("CONVERSATION");

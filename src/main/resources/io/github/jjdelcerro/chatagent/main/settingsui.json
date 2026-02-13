@@ -192,14 +192,9 @@
           "variableName": "H2_WEBPORT"
         },
         {
-          "type": "selectoption",
-          "label": "Componente para la ventana de chat",
-          "variableName": "CHAT_CONSOLE_CONTROLLER",
-          "childs": [
-            { "type": "value", "label": "UsingMultipleJTextPane", "value": "UsingMultipleJTextPane" },
-            { "type": "value", "label": "UsingLobo", "value": "UsingLobo" },
-            { "type": "value", "label": "UsingSingleHTML_1", "value": "UsingSingleHTML_1" }
-          ]
+          "type": "action",
+          "label": "Compactar conversación",
+          "actionName": "COMPACT_CONVERSATION"
         }
       ]
     }
