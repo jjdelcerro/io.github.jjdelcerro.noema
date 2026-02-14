@@ -105,10 +105,10 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
           lineColor = Color.RED.darker();
           break;
         case MODEL:
-          lineColor = Color.GREEN.darker();
+          lineColor = new Color(80, 170, 110); // Color.GREEN.darker();
           break;
         case USER:
-          lineColor = Color.BLUE.darker();
+          lineColor = new Color(60, 140, 200); // Color.BLUE.darker();
           break;
         default:
         case SYSTEM:

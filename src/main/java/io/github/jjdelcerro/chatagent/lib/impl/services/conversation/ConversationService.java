@@ -7,6 +7,7 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.TokenCountEstimator;
 import dev.langchain4j.model.output.Response;
 import io.github.jjdelcerro.chatagent.lib.AbstractAgentAction;
 import io.github.jjdelcerro.chatagent.lib.Agent;
@@ -64,13 +65,15 @@ import org.slf4j.LoggerFactory;
 public class ConversationService implements AgentService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ConversationService.class);
-  
+
   public static final String NAME = "Conversation";
 
   public static final String CONVERSATION_PROVIDER_URL = "CONVERSATION_PROVIDER_URL";
   public static final String CONVERSATION_PROVIDER_API_KEY = "CONVERSATION_PROVIDER_API_KEY";
   public static final String CONVERSATION_MODEL_ID = "CONVERSATION_MODEL_ID";
 
+  private static final int OVERHEAD_IN_ESTIMATE_TOOLS_TOKEN_COUNT = 15;   
+  
   private final Agent agent;
   private final SourceOfTruth sourceOfTruth;
   private AgentConsole console;
@@ -208,7 +211,7 @@ public class ConversationService implements AgentService {
         // Llamada al Modelo
         Response<AiMessage> response = model.generate(messages, toolSpecifications);
         AiMessage aiMessage = response.content();
-
+        
         // Anadir respuesta al historial
         this.session.add(aiMessage);
 
@@ -418,5 +421,30 @@ public class ConversationService implements AgentService {
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, HH:mm", new Locale("es", "ES"));
     return LocalDateTime.now().format(formatter);
   }
+  
+  public int estimateToolsTokenCount() {
+    if( this.model == null || !(this.model instanceof TokenCountEstimator) ) {
+      return 0;
+    }
+    TokenCountEstimator tokenCountEstimator = (TokenCountEstimator) this.model;
+    int n = 0;
+    for (ToolSpecification toolSpecification : toolSpecifications) {
+      String s = toolSpecification.toString();
+      n += tokenCountEstimator.estimateTokenCount(s) + OVERHEAD_IN_ESTIMATE_TOOLS_TOKEN_COUNT;
+    }
+    return n;
+  }
 
+  public int estimateMessagesTokenCount() {
+    if( this.model == null || !(this.model instanceof TokenCountEstimator) ) {
+      return 0;
+    }
+    TokenCountEstimator tokenCountEstimator = (TokenCountEstimator) this.model;
+    List<ChatMessage> messages = this.session.getContextMessages(this.activeCheckPoint, getBaseSystemPrompt());  
+    return tokenCountEstimator.estimateTokenCount(messages);
+  }
+  
+  public String getModelName() {
+    return this.agent.getSettings().getProperty(CONVERSATION_MODEL_ID);
+  }
 }

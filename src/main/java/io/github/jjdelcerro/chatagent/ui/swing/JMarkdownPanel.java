@@ -103,11 +103,7 @@ public class JMarkdownPanel extends JTextPane {
 
       @Override
       public void mouseExited(MouseEvent e) {
-        // Verificamos si el ratón realmente salió del componente completo
-        // (incluyendo el área del botón)
-        if (!getBounds().contains(e.getPoint())) {
           copyButton.setVisible(false);
-        }
       }
     };
     this.addMouseListener(hoverHandler);
