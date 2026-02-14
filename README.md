@@ -16,6 +16,18 @@ Implementa los conceptos teóricos de:
 *   **Proactividad Simulada:** Implementación del patrón `pool_event` para permitir al agente reaccionar a estímulos externos (Telegram, Email) dentro del ciclo síncrono del LLM.
 *   **Independencia:** Ejecución local (On-Premise) con soporte para LLMs remotos (OpenRouter) o locales (Ollama).
 
+## Interfaz de Usuario
+
+ChatAgent no solo procesa texto; interactúa con su entorno. En la siguiente captura se observa cómo 
+el agente, ante una consulta meteorológica, decide de forma autónoma localizar al usuario y consultar 
+una API de clima externa antes de responder:
+
+![ChatAgent en acción](./screenshot.png)
+
+*   **Razonamiento y Herramientas:** Visualización clara de la ejecución de `AgentTools`.
+*   **Diseño Moderno:** Interfaz con la estética de los asistentes de IA actuales con soporte para Markdown.
+*   **Control de Contexto:** Monitorización en tiempo real de los tokens utilizados (Herramientas + Conversación).
+
 ## Stack Tecnológico
 
 La implementación prioriza la ligereza y el control explícito de recursos:

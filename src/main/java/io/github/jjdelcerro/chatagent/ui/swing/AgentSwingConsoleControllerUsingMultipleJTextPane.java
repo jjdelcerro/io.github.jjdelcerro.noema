@@ -58,7 +58,7 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
           currentTextPanel.setText(text);
 
           JPanel bubble = createBubbleWrapper(type, currentTextPanel);
-          chatContainer.add(bubble, "growx, width 0:100:100%, gapy 5 5");
+          chatContainer.add(bubble, "growx, width 0:100:100%, gapy 0 2");
         }
       } else {
         if (type == lastType && currentTextPanel != null) {
@@ -118,10 +118,10 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
       JPanel p = new JPanel();
       p.setLayout(new BorderLayout());
       p.setBorder(BorderFactory.createCompoundBorder(
-              BorderFactory.createEmptyBorder(5, 5, 5, 5), 
+              BorderFactory.createEmptyBorder(2, 5, 2, 5), 
               BorderFactory.createCompoundBorder(
                       createRoundedBorder(lineColor), 
-                      BorderFactory.createEmptyBorder(8, 12, 8, 12) 
+                      BorderFactory.createEmptyBorder(4, 12, 4, 12) 
               )
       ));    
       p.add(textPane, BorderLayout.CENTER);

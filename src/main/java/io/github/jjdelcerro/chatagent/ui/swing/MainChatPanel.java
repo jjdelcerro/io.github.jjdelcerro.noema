@@ -59,7 +59,7 @@ public class MainChatPanel extends JPanel {
     rightBar.add(btnCopy, "w 28!, h 28!");
 
     // --- 2. HISTORIAL DE CHAT ---
-    chatHistory = new JPanel(new MigLayout("fillx, wrap 1, ins 10", "[grow, left]"));
+    chatHistory = new JPanel(new MigLayout("fillx, wrap 1, ins 1 10 1 10", "[grow, left]"));
     chatHistory.setBackground(Color.DARK_GRAY);
     JScrollPane historyScroll = new JScrollPane(chatHistory);
     historyScroll.setBorder(null);
