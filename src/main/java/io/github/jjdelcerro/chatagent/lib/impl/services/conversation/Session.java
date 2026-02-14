@@ -45,13 +45,40 @@ public class Session {
 
   private static final int DEFAULT_COMPACTION_THRESHOLD = 40;
 
+  private static class ChatMessageInfo {
+    
+    int turnId;
+
+    // Gson necesita este constructor para la deserialización
+    public ChatMessageInfo() {
+    }
+    
+    public ChatMessageInfo(int turnId) {
+      this.turnId = turnId;
+    }
+  
+    // necesario en needCompaction()
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ChatMessageInfo that = (ChatMessageInfo) o;
+        return turnId == that.turnId;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(turnId);
+    }
+  }
+  
   private final Path sessionPath;
   private final Path tempPath;
 
   // ESTADO INTERNO
   private final List<ChatMessage> messages = new ArrayList<>();
-  // Key: Indice en 'messages', Value: ID del Turno
-  private Map<Integer, Integer> turnOfMessage = new HashMap<>();
+  // Key: Indice en 'messages', Value: ChatMessageInfo
+  private Map<Integer, ChatMessageInfo> turnOfMessage = new HashMap<>();
   private LocalDateTime lastInteractionTime;
   private final AgentSettings settings;
 
@@ -67,6 +94,8 @@ public class Session {
 
   /**
    * Constructor.
+   * @param dataFolder
+   * @param settings
    */
   public Session(Path dataFolder, AgentSettings settings) {
     this.settings = settings;
@@ -94,7 +123,7 @@ public class Session {
       if (this.turnOfMessage.containsKey(i)) {
         break;
       }
-      this.turnOfMessage.put(i, turn.getId());
+      this.turnOfMessage.put(i, new ChatMessageInfo(turn.getId()));
     }
 
     this.save();
@@ -161,7 +190,7 @@ public class Session {
       return false;
     }
     // Contamos cuantos IDs de turnos unicos tenemos en la sesion
-    Set<Integer> uniqueTurns = new HashSet<>(turnOfMessage.values());
+    Set<ChatMessageInfo> uniqueTurns = new HashSet<>(turnOfMessage.values());
     return uniqueTurns.size() >= getCompactationThreshold();
   }
 
@@ -186,7 +215,7 @@ public class Session {
       return null;
     }
 
-    return new SessionMarkImpl(0, turnOfMessage.get(0), messages.get(0));
+    return new SessionMarkImpl(0, turnOfMessage.get(0).turnId, messages.get(0));
   }
 
   public SessionMark getCompactMark() {
@@ -206,7 +235,7 @@ public class Session {
       return null;
     }
 
-    int currentTurnId = turnOfMessage.get(mid);
+    int currentTurnId = turnOfMessage.get(mid).turnId;
 
     // Avanzar hasta el final del bloque del mismo turno para no romper la secuencia.
     int candidate = mid;
@@ -214,7 +243,7 @@ public class Session {
       if (!turnOfMessage.containsKey(candidate + 1)) {
         break;
       }
-      if (turnOfMessage.get(candidate + 1) != currentTurnId) {
+      if (turnOfMessage.get(candidate + 1).turnId != currentTurnId) {
         break;
       }
       candidate++;
@@ -246,7 +275,7 @@ public class Session {
     }
 
     int offset = idx2 - idx1 + 1;
-    Map<Integer, Integer> newMap = new HashMap<>();
+    Map<Integer, ChatMessageInfo> newMap = new HashMap<>();
 
     // 1. Preservar lo anterior al corte (indices menores a idx1)
     for (int i = 0; i < idx1; i++) {
@@ -277,15 +306,16 @@ public class Session {
   private static class SessionState {
 
     List<ChatMessage> messages;
-    Map<Integer, Integer> turnOfMessage;
+    Map<Integer, ChatMessageInfo> turnOfMessage;
     String lastInteractionTime;
 
-    SessionState(List<ChatMessage> m, Map<Integer, Integer> t, String l) {
+    SessionState(List<ChatMessage> m, Map<Integer, ChatMessageInfo> t, String l) {
       this.messages = m;
       this.turnOfMessage = t;
       this.lastInteractionTime = l;
     }
 
+    @SuppressWarnings("unused")
     SessionState() {
     }
   }
@@ -424,5 +454,5 @@ public class Session {
       };
       return context.deserialize(data, clazz);
     }
-  }
+  }  
 }
