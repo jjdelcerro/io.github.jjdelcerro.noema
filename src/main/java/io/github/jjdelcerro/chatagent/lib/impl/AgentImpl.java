@@ -63,7 +63,7 @@ public class AgentImpl implements Agent {
     this.servicesDatabase = servicesDatabase;
     this.memoryDatabase = memoryDatabase;
     this.sourceOfTruth = SourceOfTruthImpl.from(this);
-    
+
     AgentManager manager = AgentLocator.getAgentManager();
     for (Supplier<AgentActions.AgentAction> actionFactory : manager.getActions()) {
       AgentActions.AgentAction action = actionFactory.get();
@@ -108,8 +108,8 @@ public class AgentImpl implements Agent {
 
   @Override
   public File getDataFolder(String name) {
-      File file = this.dataFolder.toPath().resolve(name).normalize().toFile();
-      return file;
+    File file = this.dataFolder.toPath().resolve(name).normalize().toFile();
+    return file;
   }
 
   @Override
@@ -167,10 +167,11 @@ public class AgentImpl implements Agent {
   /**
    * Realiza una llamada al modelo de lenguaje y devuelve la respuesta como
    * texto plano.
+   *
    * @param llmid
    * @param systemPrompt
    * @param message
-   * @return 
+   * @return
    */
   @Override
   public String callChatModel(String llmid, String systemPrompt, String message) {
@@ -318,4 +319,11 @@ public class AgentImpl implements Agent {
     return service;
   }
 
+  @Override
+  public void showSession() {
+    ConversationService conversation = (ConversationService) this.getService(ConversationService.NAME);
+    if (conversation != null) {
+      conversation.showSession();
+    }
+  }
 }

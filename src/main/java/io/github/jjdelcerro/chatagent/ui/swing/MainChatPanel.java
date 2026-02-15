@@ -268,6 +268,7 @@ public class MainChatPanel extends JPanel {
   public void setAgent(Agent agent) {
     this.agent = agent;
     SwingUtilities.invokeLater(() -> {
+      Thread.ofVirtual().start(() -> agent.showSession());
       inputArea.setEnabled(true);
       updateMetadata();
       inputArea.requestFocusInWindow();

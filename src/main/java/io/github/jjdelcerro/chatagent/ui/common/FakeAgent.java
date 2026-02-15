@@ -144,6 +144,11 @@ public class FakeAgent implements Agent {
     throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
   }
 
+  @Override
+  public void showSession() {
+
+  }
+
   private class FakeAgentActions implements AgentActions {
 
     private final AgentActions delegate;

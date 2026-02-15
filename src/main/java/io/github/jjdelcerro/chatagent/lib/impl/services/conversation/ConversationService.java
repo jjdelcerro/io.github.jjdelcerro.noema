@@ -25,7 +25,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -55,6 +54,7 @@ import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.web.W
 import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.web.WebSearchTool;
 import io.github.jjdelcerro.chatagent.lib.impl.services.memory.MemoryService;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +72,19 @@ public class ConversationService implements AgentService {
   public static final String CONVERSATION_PROVIDER_API_KEY = "CONVERSATION_PROVIDER_API_KEY";
   public static final String CONVERSATION_MODEL_ID = "CONVERSATION_MODEL_ID";
 
-  private static final int OVERHEAD_IN_ESTIMATE_TOOLS_TOKEN_COUNT = 15;   
+  private static final int OVERHEAD_IN_ESTIMATE_TOOLS_TOKEN_COUNT = 15;
+
+  private static class AvailableAgentTool {
+
+    private final AgentTool tool;
+    private boolean active;
+    
+    public AvailableAgentTool(AgentTool tool) {
+      this.tool = tool;    
+      this.active = true;
+    }
+  }
+  
   
   private final Agent agent;
   private final SourceOfTruth sourceOfTruth;
@@ -84,8 +96,7 @@ public class ConversationService implements AgentService {
   private CheckPoint activeCheckPoint;
 
   // Registro de herramientas
-  private final Map<String, AgentTool> toolDispatcher = new HashMap<>();
-  private final List<ToolSpecification> toolSpecifications = new ArrayList<>();
+  private final Map<String, AvailableAgentTool> availableTools = new LinkedHashMap<>();  
 
   private final Queue<Event> pendingEvents = new ConcurrentLinkedQueue<>();
   private final AtomicBoolean isBusy = new AtomicBoolean(false);
@@ -118,7 +129,7 @@ public class ConversationService implements AgentService {
     for (String resPath : resources) {
       this.agent.installResource(resPath);
     }
-    
+
     this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_CONVERSATION_PROVIDER) {
       @Override
       public boolean perform(AgentSettings settings) {
@@ -150,8 +161,7 @@ public class ConversationService implements AgentService {
   }
 
   public void addTool(AgentTool tool) {
-    this.toolDispatcher.put(tool.getName(), tool);
-    this.toolSpecifications.add(tool.getSpecification());
+    this.availableTools.put(tool.getName(), new AvailableAgentTool(tool));
   }
 
   public synchronized void putEvent(String status, String priority, String eventText) {
@@ -185,9 +195,9 @@ public class ConversationService implements AgentService {
       this.session.consolideTurn(toolTurn);
 
       String resp = this.executeReasoningLoop(null);
-      if( StringUtils.isNotBlank(resp) ) {
+      if (StringUtils.isNotBlank(resp)) {
         this.agent.getConsole().printModelResponse(resp);
-      }    
+      }
     }
   }
 
@@ -209,9 +219,9 @@ public class ConversationService implements AgentService {
         List<ChatMessage> messages = this.session.getContextMessages(this.activeCheckPoint, getBaseSystemPrompt());
 
         // Llamada al Modelo
-        Response<AiMessage> response = model.generate(messages, toolSpecifications);
+        Response<AiMessage> response = model.generate(messages, this.getToolSpecifications());
         AiMessage aiMessage = response.content();
-        
+
         // Anadir respuesta al historial
         this.session.add(aiMessage);
 
@@ -290,9 +300,10 @@ public class ConversationService implements AgentService {
     String toolName = request.name();
     String args = request.arguments();
 
-    AgentTool tool = toolDispatcher.get(toolName);
+    AvailableAgentTool availableTool = availableTools.get(toolName);
 
-    if (tool != null) {
+    if (availableTool != null && availableTool.tool!=null ) {
+      AgentTool tool = availableTool.tool;
       if (tool.getMode() != AgentTool.MODE_READ) {
         boolean authorized = this.console.confirm(
                 String.format("El agente quiere ejecutar la herramienta: %s\nArgumentos: %s\n¿Autorizar?", toolName, args)
@@ -317,8 +328,8 @@ public class ConversationService implements AgentService {
   }
 
   private boolean isMemoryTool(String toolName) {
-    AgentTool tool = toolDispatcher.get(toolName);
-    return tool.getType() == AgentTool.TYPE_MEMORY;
+    AvailableAgentTool tool = availableTools.get(toolName);
+    return tool.tool.getType() == AgentTool.TYPE_MEMORY;
   }
 
   private void performCompaction() throws SQLException {
@@ -421,14 +432,14 @@ public class ConversationService implements AgentService {
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, HH:mm", new Locale("es", "ES"));
     return LocalDateTime.now().format(formatter);
   }
-  
+
   public int estimateToolsTokenCount() {
-    if( this.model == null || !(this.model instanceof TokenCountEstimator) ) {
+    if (this.model == null || !(this.model instanceof TokenCountEstimator)) {
       return 0;
     }
     TokenCountEstimator tokenCountEstimator = (TokenCountEstimator) this.model;
     int n = 0;
-    for (ToolSpecification toolSpecification : toolSpecifications) {
+    for (ToolSpecification toolSpecification : this.getToolSpecifications()) {
       String s = toolSpecification.toString();
       n += tokenCountEstimator.estimateTokenCount(s) + OVERHEAD_IN_ESTIMATE_TOOLS_TOKEN_COUNT;
     }
@@ -436,15 +447,66 @@ public class ConversationService implements AgentService {
   }
 
   public int estimateMessagesTokenCount() {
-    if( this.model == null || !(this.model instanceof TokenCountEstimator) ) {
+    if (this.model == null || !(this.model instanceof TokenCountEstimator)) {
       return 0;
     }
     TokenCountEstimator tokenCountEstimator = (TokenCountEstimator) this.model;
-    List<ChatMessage> messages = this.session.getContextMessages(this.activeCheckPoint, getBaseSystemPrompt());  
+    List<ChatMessage> messages = this.session.getContextMessages(this.activeCheckPoint, getBaseSystemPrompt());
     return tokenCountEstimator.estimateTokenCount(messages);
   }
-  
+
   public String getModelName() {
     return this.agent.getSettings().getProperty(CONVERSATION_MODEL_ID);
+  }
+
+  public void showSession() {
+    List<ChatMessage> history = this.session.getMessages();
+
+    for (ChatMessage message : history) {
+      if (message instanceof UserMessage userMsg) {
+        console.printUserMessage(userMsg.singleText());
+
+      } else if (message instanceof AiMessage aiMsg) {
+        // 1. Si el modelo pidió ejecutar herramientas, informamos de cada una
+        if (aiMsg.hasToolExecutionRequests()) {
+          for (ToolExecutionRequest req : aiMsg.toolExecutionRequests()) {
+            console.printSystemLog(String.format("Ejecutando herramienta: %s\n    Argumentos: %s",
+                    req.name(), req.arguments()));
+          }
+        }
+        // Los ToolExecutionResultMessage y SystemMessage se ignoran 
+        // ya que no se presentan en la consola.
+        // 2. Si el modelo respondió con texto, lo mostramos
+        if (StringUtils.isNotBlank(aiMsg.text())) {
+          console.printModelResponse(aiMsg.text());
+        }
+      }
+    }
+  }
+  
+  private List<ToolSpecification> getToolSpecifications() {
+    List<ToolSpecification> toolSpecifications = new ArrayList<>();    
+    for (AvailableAgentTool availableTool : this.availableTools.values()) {
+      if( availableTool.active ) {
+        toolSpecifications.add(availableTool.tool.getSpecification());
+      }
+    }
+    return toolSpecifications;
+  }
+  
+  public List<AgentTool> getAvailableTools() {
+    List<AgentTool> tools = new ArrayList<>();    
+    for (AvailableAgentTool tool : this.availableTools.values()) {
+      tools.add(tool.tool);
+    }
+    return tools;
+  }
+  
+  public boolean isToolActive(String name) {
+    return this.availableTools.get(name).active;
+  }
+  
+  public void setToolActive(String name, boolean active) {
+    this.availableTools.get(name).active = active;
   }
 }
