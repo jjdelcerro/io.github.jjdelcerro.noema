@@ -46,32 +46,36 @@ public class Session {
   private static final int DEFAULT_COMPACTION_THRESHOLD = 40;
 
   private static class ChatMessageInfo {
-    
+
     int turnId;
 
     // Gson necesita este constructor para la deserialización
     public ChatMessageInfo() {
     }
-    
+
     public ChatMessageInfo(int turnId) {
       this.turnId = turnId;
     }
-  
+
     // necesario en needCompaction()
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ChatMessageInfo that = (ChatMessageInfo) o;
-        return turnId == that.turnId;
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      ChatMessageInfo that = (ChatMessageInfo) o;
+      return turnId == that.turnId;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(turnId);
+      return Objects.hash(turnId);
     }
   }
-  
+
   private final Path sessionPath;
   private final Path tempPath;
 
@@ -94,6 +98,7 @@ public class Session {
 
   /**
    * Constructor.
+   *
    * @param dataFolder
    * @param settings
    */
@@ -196,7 +201,7 @@ public class Session {
 
   private int getCompactationThreshold() {
     int x = (int) this.settings.getPropertyAsLong("MEMORY_COMPACTION_THRESHOLD", -1);
-    if( x<0 ) {
+    if (x < 0) {
       this.settings.setProperty("MEMORY_COMPACTION_THRESHOLD", String.valueOf(DEFAULT_COMPACTION_THRESHOLD));
       x = DEFAULT_COMPACTION_THRESHOLD;
     }
@@ -454,5 +459,10 @@ public class Session {
       };
       return context.deserialize(data, clazz);
     }
-  }  
+  }
+
+  public List<ChatMessage> getMessages() {
+    // Devolvemos una copia para evitar problemas de concurrencia
+    return new ArrayList<>(this.messages);
+  }
 }
