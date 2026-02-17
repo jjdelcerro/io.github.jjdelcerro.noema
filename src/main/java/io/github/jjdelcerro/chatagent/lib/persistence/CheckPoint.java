@@ -8,24 +8,28 @@ import java.sql.Timestamp;
  */
 public interface CheckPoint {
 
-    int getTurnFirst();
+  int getTurnFirst();
 
-    int getTurnLast();
+  int getTurnLast();
 
-    /**
-     * Genera el código único del CheckPoint. 
-     * Formato: checkpoint-{id}-{first}-{last}
-     */
-    String getCode();
+  /**
+   * Genera el código único del CheckPoint.Formato:
+   * checkpoint-{id}-{first}-{last}
+   *
+   * @return
+   */
+  String getCode();
 
-    int getId();
+  int getId();
 
-    /**
-     * Obtiene el contenido textual (Resumen + El Viaje). Si no está en memoria,
-     * lo lee del archivo correspondiente en disco.
-     */
-    String getText();
+  /**
+   * Obtiene el contenido textual (Resumen + El Viaje).Si no está en memoria, lo
+   * lee del archivo correspondiente en disco.
+   *
+   * @return
+   */
+  String getText();
 
-    Timestamp getTimestamp();
+  Timestamp getTimestamp();
 
 }

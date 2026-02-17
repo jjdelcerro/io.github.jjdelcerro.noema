@@ -8,8 +8,8 @@ import java.util.Properties;
  * @author jjdelcerro
  */
 public class SQLProviderImpl implements SQLProvider {
-  private Properties sqls;
-  private String name;
+  private final Properties sqls;
+  private final String name;
   
   public SQLProviderImpl(String providerName) {
     this.name = providerName;
@@ -22,6 +22,7 @@ public class SQLProviderImpl implements SQLProvider {
     return defaultSql;
   }
 
+  @Override
   public String getSearchDocumentsByCategories(List<String> categories) {
       StringBuilder sql = new StringBuilder("SELECT * FROM DOCUMENTS WHERE 1=1"); 
       if (categories != null && !categories.isEmpty()) {

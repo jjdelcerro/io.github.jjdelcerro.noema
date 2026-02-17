@@ -9,34 +9,39 @@ import java.util.List;
  */
 public interface SourceOfTruth {
 
-    CheckPoint createCheckPoint(int turnFirst, int turnLast, Timestamp timestamp, String text);
+  CheckPoint createCheckPoint(int turnFirst, int turnLast, Timestamp timestamp, String text);
 
-    Turn createTurn(Timestamp timestamp, String contenttype, String textUser, String textModelThinking, String textModel, String toolCall, String toolResult, float[] embedding);
+  Turn createTurn(Timestamp timestamp, String contenttype, String textUser, String textModelThinking, String textModel, String toolCall, String toolResult, float[] embedding);
 
-    /**
-     * Persiste un Turno en la base de datos.
-     */
-    void add(Turn turn);
+  /**
+   * Persiste un Turno en la base de datos.
+   *
+   * @param turn
+   */
+  void add(Turn turn);
 
-    /**
-     * Persiste los metadatos de un CheckPoint en la base de datos.
-     */
-    void add(CheckPoint checkpoint);
+  /**
+   * Persiste los metadatos de un CheckPoint en la base de datos.
+   * @param checkpoint
+   */
+  void add(CheckPoint checkpoint);
 
-    CheckPoint getLatestCheckPoint();
+  CheckPoint getLatestCheckPoint();
 
-    /**
-     * Recupera todos los turnos que aún no han sido consolidados en un
-     * CheckPoint.
-     */
-    List<Turn> getUnconsolidatedTurns();
+  /**
+   * Recupera todos los turnos que aún no han sido consolidados en un
+   * CheckPoint.
+   *
+   * @return
+   */
+  List<Turn> getUnconsolidatedTurns();
 
-    Turn getTurnById(int id);
+  Turn getTurnById(int id);
 
-    List<Turn> getTurnsByIds(int first, int last);
+  List<Turn> getTurnsByIds(int first, int last);
 
-    List<Turn> getTurnsByText(String query, int maxResults);
+  List<Turn> getTurnsByText(String query, int maxResults);
 
-    CheckPoint getCheckPointById(int id);
+  CheckPoint getCheckPointById(int id);
 
 }

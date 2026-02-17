@@ -9,17 +9,14 @@ import io.github.jjdelcerro.chatagent.lib.AgentTool;
 import io.github.jjdelcerro.chatagent.lib.ConnectionSupplier;
 import io.github.jjdelcerro.chatagent.lib.impl.SQLProvider;
 import io.github.jjdelcerro.chatagent.lib.impl.persistence.Counter;
-import io.github.jjdelcerro.chatagent.lib.impl.services.documents.tools.DocumentSearchByCategoriesTool;
-import io.github.jjdelcerro.chatagent.lib.impl.services.documents.tools.DocumentSearchBySumariesTool;
-import io.github.jjdelcerro.chatagent.lib.impl.services.documents.tools.DocumentSearchTool;
-import io.github.jjdelcerro.chatagent.lib.impl.services.documents.tools.GetDocumentStructureTool;
-import io.github.jjdelcerro.chatagent.lib.impl.services.documents.tools.GetPartialDocumentTool;
 import io.github.jjdelcerro.chatagent.lib.impl.services.embeddings.EmbeddingFilter;
 import io.github.jjdelcerro.chatagent.lib.impl.services.embeddings.EmbeddingsService;
 import java.nio.file.Path;
 import java.sql.*;
 import java.time.Instant;
 import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Servicio central para la gestión de documentos. Combina persistencia en base
@@ -28,6 +25,8 @@ import java.util.*;
  */
 @SuppressWarnings("UseSpecificCatch")
 public class DocumentsServiceImpl implements AgentService, DocumentsService {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(DocumentsServiceImpl.class);
 
   // Clase de transporte para los resultados
   public static class DocumentResultImpl implements DocumentResult {
@@ -113,7 +112,8 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
       this.createTables(conn);
       this.counter = Counter.from(this.agent.getServicesDatabase(), "DOCUMENTS");
       this.running = true;
-    } catch (SQLException ex) {
+    } catch (Exception ex) {
+      LOGGER.warn("Error inicializando DocumentServices", ex);
       agent.getConsole().printSystemError("Error inicializando DocumentServices: " + ex.getMessage());
     }
   }
@@ -124,7 +124,7 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
 
   private void createTables(Connection conn) throws SQLException {
     String sql = SQLProvider.from(getConnection()).get(
-            "DocumentsService_createTables_documents", 
+            "DocumentsService_createTables_documents",
             """
             CREATE TABLE IF NOT EXISTS DOCUMENTS (
                 id INT PRIMARY KEY,
@@ -163,7 +163,7 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
       String categoriesStr = serializeCategories(structure.getCategories());
 
       String sql = SQLProvider.from(getConnection()).get(
-              "DocumentsService_insertOrReplace", 
+              "DocumentsService_insertOrReplace",
               """
                 MERGE INTO DOCUMENTS (id, timestamp, path, title, summary, categories, summary_embedding)
                 KEY(id)
@@ -185,6 +185,7 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
       structure.save(docPath);
 
     } catch (Exception ex) {
+      LOGGER.warn("Error al insertar documento '" + Objects.toString(docPath) + "'.", ex);
       agent.getConsole().printSystemError("Error al insertar documento: " + ex.getMessage());
     }
   }
@@ -209,7 +210,7 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
     EmbeddingsService embedding = (EmbeddingsService) agent.getService(EmbeddingsService.NAME);
     EmbeddingFilter<DocumentResult> search = embedding.createEmbeddingFilter(query, maxResults);
     try (
-      Connection conn = this.getConnection().get()) {
+            Connection conn = this.getConnection().get()) {
       String sql = SQLProvider.from(this.getConnection()).getSearchDocumentsByCategories(categories);
       try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
         while (rs.next()) {
@@ -218,7 +219,8 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
           doc.score = score;
         }
       }
-    } catch (SQLException ex) {
+    } catch (Exception ex) {
+      LOGGER.warn("Error durante la busqueda de documentos (query=" + query + ").", ex);
       agent.getConsole().printSystemError("Error en búsqueda de documentos: " + ex.getMessage());
     }
     return search.get();
@@ -236,20 +238,18 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
     int id = parseDocId(docIdStr);
     DocumentStructure struct = loadStructureById(id);
     if (struct == null) {
+      LOGGER.warn("Documento no encontrado '" + docIdStr + "'.");
       return "<error>Documento no encontrado</error>";
     }
 
-//    Path docPath = Path.of(getDocumentPathFromDb(id));
     // Inyectar el texto solo en las secciones pedidas
     for (String sId : sectionIds) {
       DocumentStructure.DocumentStructureEntry entry = struct.get(sId);
       if (entry != null) {
         try {
-          // Usamos el nuevo método de StructureEntry que accede por offset
-          entry.setFullText(entry.getContents(null)); // Pasamos null si getContents ya usa el Path internamente
-          // O si implementaste entry.getContents(Path):
-          // entry.setFullText(entry.getContents(docPath)); 
+          entry.setFullText(entry.getContents(null)); // Pasamos null, getContents ya usa el Path internamente
         } catch (Exception e) {
+          LOGGER.warn("No se ha podido cargar el contenido de 'DOCUMENT-" + docIdStr + ":" + sId + "'.", e);
           entry.setFullText("Error al leer contenido: " + e.getMessage());
         }
       }
@@ -258,7 +258,6 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
     return struct.toXML(sectionIds, true);
   }
 
-  // --- HELPERS INTERNOS ---
   private String serializeCategories(List<String> cats) {
     if (cats == null || cats.isEmpty()) {
       return "";
@@ -281,9 +280,9 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
 
   private String getDocumentPathFromDb(int id) {
     try (
-      Connection conn = this.agent.getServicesDatabase().get()) {
+            Connection conn = this.agent.getServicesDatabase().get()) {
       String sql = SQLProvider.from(getConnection()).get(
-              "DocumentsService_insertOrReplace", 
+              "DocumentsService_insertOrReplace",
               "SELECT path FROM DOCUMENTS WHERE id = ?"
       );
       try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -293,7 +292,8 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
           return rs.getString("path");
         }
       }
-    } catch (SQLException ignored) {
+    } catch (Exception ex) {
+      LOGGER.warn("No se ha podido recuperar la ruta del documento 'DOCUMENT-" + id + "'.", ex);
     }
     return null;
   }
@@ -313,6 +313,7 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
       }
       return Integer.parseInt(docIdStr);
     } catch (Exception e) {
+      LOGGER.warn("Id de documento '" + docIdStr + "' no valido.", e);
       return -1;
     }
   }
@@ -348,12 +349,11 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
 
   @Override
   public List<AgentTool> getTools() {
-    AgentTool[] tools = new AgentTool[]{
-//      new DocumentSearchTool(this.agent),
-//      new DocumentSearchByCategoriesTool(this.agent),
-//      new DocumentSearchBySumariesTool(this.agent),
-//      new GetDocumentStructureTool(this.agent),
-//      new GetPartialDocumentTool(this.agent)
+    AgentTool[] tools = new AgentTool[]{ //      new DocumentSearchTool(this.agent),
+    //      new DocumentSearchByCategoriesTool(this.agent),
+    //      new DocumentSearchBySumariesTool(this.agent),
+    //      new GetDocumentStructureTool(this.agent),
+    //      new GetPartialDocumentTool(this.agent)
     };
     return Arrays.asList(tools);
   }

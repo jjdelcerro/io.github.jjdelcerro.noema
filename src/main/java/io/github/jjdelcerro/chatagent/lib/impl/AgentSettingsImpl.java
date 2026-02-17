@@ -58,8 +58,7 @@ public class AgentSettingsImpl implements AgentSettings {
             for (String key : props.stringPropertyNames()) {
                 values.put(key, props.getProperty(key));
             }
-        } catch (IOException e) {
-            // Log error or throw runtime exception
+        } catch (Exception e) {
             throw new RuntimeException("Error loading settings from " + f.getAbsolutePath(), e);
         }
     }
@@ -75,7 +74,7 @@ public class AgentSettingsImpl implements AgentSettings {
         }
         try (FileOutputStream fos = new FileOutputStream(file)) {
             props.store(fos, "Agent Settings");
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RuntimeException("Error saving settings to " + file.getAbsolutePath(), e);
         }
     }

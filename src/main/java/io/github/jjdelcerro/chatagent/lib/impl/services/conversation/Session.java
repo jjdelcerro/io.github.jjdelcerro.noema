@@ -35,6 +35,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import org.ocpsoft.prettytime.PrettyTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Agregado que gobierna el estado de la sesion activa de conversacion. Gestiona
@@ -42,6 +44,8 @@ import org.ocpsoft.prettytime.PrettyTime;
  * (Archivo).
  */
 public class Session {
+  
+  private static final Logger LOGGER = LoggerFactory.getLogger(Session.class);
 
   private static final int DEFAULT_COMPACTION_THRESHOLD = 40;
 
@@ -344,7 +348,7 @@ public class Session {
         }
       }
     } catch (Exception e) {
-      System.err.println("Error recuperando sesion: " + e.getMessage());
+      LOGGER.warn("Error recuperando sesion", e);
     }
   }
 

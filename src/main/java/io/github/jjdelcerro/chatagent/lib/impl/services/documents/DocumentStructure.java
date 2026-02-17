@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Representa la estructura jerárquica de un documento. Se persiste en disco
@@ -29,7 +31,10 @@ import org.apache.commons.lang3.StringUtils;
  *
  * @author jjdelcerro
  */
+@SuppressWarnings("UseSpecificCatch")
 public class DocumentStructure implements Iterable<DocumentStructure.DocumentStructureEntry> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(DocumentStructure.class);
 
   public static class DocumentStructureEntry {
 
@@ -179,7 +184,8 @@ public class DocumentStructure implements Iterable<DocumentStructure.DocumentStr
 
     public String getContents(Path path) throws IOException {
       if (this.byteOffset < 0 || this.byteLength <= 0) {
-        return "ERROR: Sección no indexada.";
+        LOGGER.warn("Sección '" + this.title + " no indexada.");
+        return "Sección '" + this.title + " no indexada.";
       }
 
       try (InputStream fis = Files.newInputStream(path); BufferedInputStream bis = new BufferedInputStream(fis)) {
@@ -276,13 +282,6 @@ public class DocumentStructure implements Iterable<DocumentStructure.DocumentStr
     }
   }
 
-//  public Path getDocumentPath() {
-//    return documentPath;
-//  }
-//
-//  public void setDocumentPath(Path documentPath) {
-//    this.documentPath = documentPath;
-//  }
   public boolean isDirty() {
     return dirty || entries.stream().anyMatch(DocumentStructureEntry::isDirty);
   }
@@ -292,7 +291,6 @@ public class DocumentStructure implements Iterable<DocumentStructure.DocumentStr
     this.entries.forEach(DocumentStructureEntry::clearDirty);
   }
 
-  // --- Métodos de List ---
   public int size() {
     return this.entries.size();
   }
@@ -310,10 +308,14 @@ public class DocumentStructure implements Iterable<DocumentStructure.DocumentStr
     return this.entries.iterator();
   }
 
-  // --- MÉTODOS DE MANEJO DE ESTRUCTURA ---
   /**
-   * Añade una nueva entrada a la estructura. Actualiza el endLineNumber de la
+   * Añade una nueva entrada a la estructura.Actualiza el endLineNumber de la
    * entrada anterior.
+   *
+   * @param title
+   * @param parentTitle
+   * @param startLineNumber
+   * @param level
    */
   public void add(String title, String parentTitle, int level, int startLineNumber) {
     if (!this.entries.isEmpty()) {
@@ -327,7 +329,10 @@ public class DocumentStructure implements Iterable<DocumentStructure.DocumentStr
   }
 
   /**
-   * Recupera una entrada por su ID (ej. "SECTION-120").
+   * Recupera una entrada por su ID (ej."SECTION-120").
+   *
+   * @param id
+   * @return
    */
   public DocumentStructureEntry get(String id) {
     return this.entries.stream()
@@ -384,9 +389,11 @@ public class DocumentStructure implements Iterable<DocumentStructure.DocumentStr
             .collect(Collectors.joining("\n"));
   }
 
-  // --- MÉTODOS DE PERSISTENCIA (JSON) ---
   /**
    * Carga la estructura del documento desde un archivo JSON.
+   *
+   * @param documentPath
+   * @return
    */
   public static DocumentStructure from(Path documentPath) {
     Path structFile = getStructFilePath(documentPath);
@@ -397,25 +404,24 @@ public class DocumentStructure implements Iterable<DocumentStructure.DocumentStr
     try (Reader reader = new FileReader(structFile.toFile(), StandardCharsets.UTF_8)) {
       DocumentStructure loaded = gson.fromJson(reader, DocumentStructure.class);
       if (loaded != null) {
-//        loaded.setDocumentPath(documentPath); // Establecer el path después de cargar
         loaded.clearDirty();
       }
       return loaded;
-    } catch (IOException e) {
-      // TODO: Log error
-      e.printStackTrace();
+    } catch (Exception e) {
+      LOGGER.warn("Can't create document from '" + Objects.toString(documentPath), e);
       return null;
     }
   }
 
   /**
    * Guarda la estructura del documento en un archivo JSON.
+   *
+   * @param documentPath
    */
   public void save(Path documentPath) {
     if (!isDirty()) { // Solo guardar si ha habido cambios
       return;
     }
-//    this.documentPath = documentPath; // Asegurarse de tener el path correcto
     Path structFile = getStructFilePath(documentPath);
     try {
       Files.createDirectories(structFile.getParent());
@@ -424,9 +430,8 @@ public class DocumentStructure implements Iterable<DocumentStructure.DocumentStr
         gson.toJson(this, writer);
       }
       clearDirty();
-    } catch (IOException e) {
-      // TODO: Log error
-      e.printStackTrace();
+    } catch (Exception e) {
+      LOGGER.warn("Can't save document to '" + Objects.toString(documentPath), e);
     }
   }
 
@@ -437,7 +442,6 @@ public class DocumentStructure implements Iterable<DocumentStructure.DocumentStr
     return documentPath.getParent().resolve(structFileName);
   }
 
-  // --- MÉTODOS DE COMUNICACIÓN LLM (XML PLANO) ---
   /**
    * Genera la representación XML plana de la estructura del documento para el
    * LLM.
@@ -488,6 +492,9 @@ public class DocumentStructure implements Iterable<DocumentStructure.DocumentStr
 
   /**
    * Genera la representación XML plana sin resúmenes.
+   *
+   * @param expandedIds
+   * @return
    */
   public String toXMLWithoutSummaries(List<String> expandedIds) {
     return toXML(expandedIds, false);
@@ -496,12 +503,13 @@ public class DocumentStructure implements Iterable<DocumentStructure.DocumentStr
   /**
    * Genera la representación XML plana con resúmenes, sin contenido expandido
    * por defecto.
+   *
+   * @return
    */
   public String toXML() {
     return toXML(Collections.emptyList(), true);
   }
 
-  // --- UTILITIES ---
   /**
    * Escapa caracteres especiales para ser usados como atributos XML.
    */
@@ -548,9 +556,12 @@ public class DocumentStructure implements Iterable<DocumentStructure.DocumentStr
   }
 
   /**
-   * Reconstruye la estructura a partir de un CSV. Basado en la optimización de
-   * seguridad: Solo procesamos líneas que empiezan por dígito. Orden esperado:
+   * Reconstruye la estructura a partir de un CSV.Basado en la optimización de
+   * seguridad: Solo procesamos líneas que empiezan por dígito.Orden esperado:
    * linestart, level, title, parentTitle
+   *
+   * @param csvstruct
+   * @return
    */
   public static DocumentStructure from(String csvstruct) {
     DocumentStructure ds = new DocumentStructure();

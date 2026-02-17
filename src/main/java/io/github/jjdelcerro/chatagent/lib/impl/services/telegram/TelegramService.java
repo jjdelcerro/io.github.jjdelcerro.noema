@@ -8,16 +8,20 @@ import io.github.jjdelcerro.chatagent.lib.AgentService;
 import io.github.jjdelcerro.chatagent.lib.AgentServiceFactory;
 import io.github.jjdelcerro.chatagent.lib.AgentSettings;
 import io.github.jjdelcerro.chatagent.lib.AgentTool;
-import io.github.jjdelcerro.chatagent.lib.impl.services.telegram.tools.TelegramTool;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author jjdelcerro
  */
 public class TelegramService implements AgentService {
+  
+  private static final Logger LOGGER = LoggerFactory.getLogger(TelegramService.class);
+  
 
   public static final String NAME = "Telegram";
 

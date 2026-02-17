@@ -1,160 +1,250 @@
 package io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file;
 
-import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.chatagent.lib.Agent;
-import static io.github.jjdelcerro.chatagent.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
+import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.ConversationService;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.collections4.map.LRUMap;
+import org.apache.tika.Tika;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
-import javax.swing.plaf.RootPaneUI;
-import io.github.jjdelcerro.chatagent.lib.AgentTool;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class FileReadSelectorsTool implements AgentTool {
+import static io.github.jjdelcerro.chatagent.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
+import java.nio.file.FileSystems;
+import java.nio.file.FileVisitOption;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
+import java.nio.file.SimpleFileVisitor;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-  private final Gson gson = new Gson();
+public class FileReadSelectorsTool extends AbstractAgentTool {
 
-  // Límites de seguridad para evitar colapsar el contexto del LLM
-  private static final int MAX_FILES = 20;
-  private static final long MAX_TOTAL_SIZE = 1024 * 1024; // 1MB
-  private final Agent agent;
+  public static final String TOOL_NAME = "file_read_selectors";
+  private static final int DEFAULT_MAX_LINES = 1000;
+  private static final int CACHE_SIZE = 10;
+  private static final long CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutos
+
+  private final Tika tika = new Tika();
+
+  // Caché de Bundles: Hash de lista de archivos -> (lineCount, timestamp)
+  private final Map<String, BundleMeta> bundleCache = Collections.synchronizedMap(new LRUMap<>(CACHE_SIZE));
+
+  private record BundleMeta(long lineCount, long timestamp) {
+
+  }
 
   public FileReadSelectorsTool(Agent agent) {
-    this.agent = agent;
+    super(agent);
   }
 
   @Override
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
-            .name("file_read_selectors")
-            .description("Lee contenido de archivos basados en rutas exactas o patrones glob (ej: 'src/**/*.java').")
+            .name(TOOL_NAME)
+            .description("""
+                    Lee contenido de múltiples archivos mediante rutas exactas o patrones glob (ej: 'src/**/*.java').
+                    Soporta paginación. Si el conjunto de archivos es muy grande, usa 'offset' y 'limit' para navegar.
+                    """)
             .addParameter("selectors", JsonSchemaProperty.ARRAY,
                     JsonSchemaProperty.description("Lista de rutas o patrones glob."))
+            .addParameter("offset", JsonSchemaProperty.INTEGER,
+                    JsonSchemaProperty.description("Línea inicial (0-based) del conjunto. Default: 0."))
+            .addParameter("limit", JsonSchemaProperty.INTEGER,
+                    JsonSchemaProperty.description("Líneas a leer en este bloque. Default: " + DEFAULT_MAX_LINES))
             .build();
   }
 
   @Override
   public String execute(String jsonArguments) {
     try {
-      Map<String, List<String>> args = gson.fromJson(jsonArguments, Map.class);
-      List<String> selectors = args.get("selectors");
+      Map<String, Object> args = new com.google.gson.Gson().fromJson(jsonArguments, Map.class);
+      List<String> selectors = (List<String>) args.get("selectors");
+      int offset = args.get("offset") != null ? ((Double) args.get("offset")).intValue() : 0;
+      int limit = args.get("limit") != null ? ((Double) args.get("limit")).intValue() : DEFAULT_MAX_LINES;
 
       if (selectors == null || selectors.isEmpty()) {
-        return error("Lista de selectores vacía.");
+        return "{\"status\": \"error\", \"message\": \"Lista de selectores vacía.\"}";
       }
 
-      // 1. Resolver todos los archivos únicos
-      Set<Path> filesToRead = resolveSelectors(selectors);
+      // 1. Resolver y normalizar archivos (Ordenados para hash estable)
+      List<Path> resolvedPaths = resolveSelectors(selectors);
+      Collections.sort(resolvedPaths);
 
-      if (filesToRead.isEmpty()) {
-        return error("No se encontró ningún archivo que coincida con los selectores.");
-      }
-      if (filesToRead.size() > MAX_FILES) {
-        return error("Demasiados archivos (" + filesToRead.size() + "). Máximo permitido: " + MAX_FILES);
+      if (resolvedPaths.isEmpty()) {
+        return "{\"status\": \"error\", \"message\": \"No se encontraron archivos para esos selectores.\"}";
       }
 
-      // 2. Empaquetar contenido
-      StringBuilder sb = new StringBuilder();
-      sb.append("--- SELECTORS READ START ---\n");
-      long totalBytes = 0;
+      // 2. Identificar el "Bundle" mediante Hash de sus rutas
+      String bundleHash = calculateBundleHash(resolvedPaths);
 
-      for (Path path : filesToRead) {
-        if (totalBytes > MAX_TOTAL_SIZE) {
-          sb.append("\n--- [AVISO: Límite de tamaño alcanzado, resto de archivos omitidos] ---\n");
-          break;
-        }
-        Path relPath = this.agent.getAccessControl().resolvePathOrNull(path,PATH_ACCESS_READ);
-        if( relPath==null ) {
-          continue;
-        }
-        try {
-          byte[] bytes = Files.readAllBytes(path);
-          totalBytes += bytes.length;
-
-          String status = isBinary(bytes) ? "B" : "T";
-          String content;
-
-          if ("B".equals(status)) {
-            content = Base64.getEncoder().encodeToString(bytes);
-          } else {
-            // Intentar UTF-8, fallback a Latin-1
-            try {
-              content = new String(bytes, StandardCharsets.UTF_8);
-            } catch (Exception e) {
-              content = new String(bytes, StandardCharsets.ISO_8859_1);
-              status = "L";
-            }
-          }
-
-          sb.append(String.format("--- %s [%s] ---\n\n%s\n\n", relPath, status, content));
-
-        } catch (Exception e) {
-          sb.append(String.format("--- %s [E] ---\n\nError leyendo: %s\n\n", relPath, e.getMessage()));
+      // 3. Gestionar el conteo de líneas con la estrategia de "Sincronización en Offset 0"
+      long totalLines;
+      if (offset == 0) {
+        // Siempre recalcular en la primera página
+        totalLines = countTotalLines(resolvedPaths);
+        bundleCache.put(bundleHash, new BundleMeta(totalLines, System.currentTimeMillis()));
+      } else {
+        // Intentar recuperar de caché para páginas sucesivas
+        BundleMeta meta = bundleCache.get(bundleHash);
+        if (meta != null && (System.currentTimeMillis() - meta.timestamp < CACHE_TTL_MS)) {
+          totalLines = meta.lineCount;
+        } else {
+          // Si expiró o no está, recalcular
+          totalLines = countTotalLines(resolvedPaths);
+          bundleCache.put(bundleHash, new BundleMeta(totalLines, System.currentTimeMillis()));
         }
       }
-      sb.append("--- SELECTORS READ END ---");
 
-      return gson.toJson(Map.of("status", "success", "file_count", filesToRead.size(), "content", sb.toString()));
+      // 4. Delegar al motor de FileReadTool pasándole el Stream perezoso
+      ConversationService conv = (ConversationService) agent.getService(ConversationService.NAME);
+      FileReadTool fileRead = (FileReadTool) conv.getAvailableTool(FileReadTool.TOOL_NAME);
+
+      // Pasamos un Stream fresco para la lectura real
+      try (Stream<String> contentStream = getSelectedContents(resolvedPaths)) {
+        // Generamos un String descriptivo para el HINT (ej: un resumen de los selectores)
+        String originalPathHint = String.join(", ", selectors);
+        return fileRead.execute(contentStream, originalPathHint, TOOL_NAME, totalLines, offset, limit);
+      }
 
     } catch (Exception e) {
-      return error(e.getMessage());
+      return "{\"status\": \"error\", \"message\": \"" + e.getMessage() + "\"}";
     }
   }
 
-  private Set<Path> resolveSelectors(List<String> selectors) throws IOException {
+  /**
+   * Genera un Stream perezoso que concatena cabeceras, contenido y separadores
+   * de todos los archivos.
+   */
+  private Stream<String> getSelectedContents(List<Path> paths) {
+    return paths.stream().flatMap(path -> {
+      try {
+        String path_s = path.toAbsolutePath().toString();
+        String mimeType = tika.detect(path);
+        boolean isBinary = isBinaryMime(mimeType);
+
+        // Cabecera del archivo
+        Stream<String> header = Stream.of(String.format("--- %s [%s] ---", path_s, isBinary ? "B" : "T"));
+
+        // Contenido (Líneas reales o Base64 si es binario)
+        Stream<String> content;
+        if (isBinary) {
+//          byte[] bytes = Files.readAllBytes(path);
+//          content = Stream.of(Base64.getEncoder().encodeToString(bytes));
+            content = Stream.of("");
+        } else {
+          // Nota: flatMap cerrará este stream interno al terminar de leerlo
+          content = Files.lines(path, StandardCharsets.UTF_8);
+        }
+
+        // Separador final
+        Stream<String> footer = Stream.of("");
+
+        return Stream.concat(header, Stream.concat(content, footer));
+      } catch (Exception e) {
+        return Stream.of("--- ERROR leyendo " + path + ": " + e.getMessage() + " ---", "");
+      }
+    });
+  }
+
+  private long countTotalLines(List<Path> paths) throws IOException {
+    try (Stream<String> s = getSelectedContents(paths)) {
+      return s.count();
+    }
+  }
+
+  private String calculateBundleHash(List<Path> paths) {
+    String allPaths = paths.stream()
+            .map(p -> p.toAbsolutePath().toString())
+            .collect(Collectors.joining("|"));
+    return DigestUtils.sha256Hex(allPaths);
+  }
+
+  private List<Path> resolveSelectors(List<String> selectors) throws IOException {
     Set<Path> resolved = new LinkedHashSet<>();
+    Path rootPath = agent.getAccessControl().resolvePathOrNull(".", PATH_ACCESS_READ);
 
     for (String selector : selectors) {
       if (selector.contains("*") || selector.contains("?")) {
-        // Es un patrón Glob
         final PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + selector);
-        Path rootPath = this.agent.getAccessControl().resolvePathOrNull(".",PATH_ACCESS_READ);
-        if( rootPath!=null ) {
-          Files.walkFileTree(rootPath, new SimpleFileVisitor<>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-              if (matcher.matches(rootPath.relativize(file))) {
-                resolved.add(file.normalize());
-              }
-              return FileVisitResult.CONTINUE;
-            }
 
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-              String name = dir.getFileName().toString();
-              // Omitir carpetas ruidosas por defecto
-              if (name.equals("target") || name.equals(".git") || name.equals(".idea")) {
-                return FileVisitResult.SKIP_SUBTREE;
+        // Activamos FOLLOW_LINKS para descubrir archivos a través de symlinks
+        Files.walkFileTree(rootPath, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, new SimpleFileVisitor<>() {
+          @Override
+          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+            try {
+              // FIXME: no tengo claro que aqui debamos usar toRealPath, deberia dejarse como esta y que sea el AccessControl quien decida que hacer con las rutas.
+              // 1. Obtenemos la ruta absoluta real del archivo (resolviendo symlinks)
+              Path realPath = file.toRealPath();
+
+              // 2. Calculamos la ruta relativa de lo que el matcher espera ver
+              // (el matcher suele esperar la ruta relativa al root del walk)
+              Path relativeForMatcher = rootPath.relativize(file);
+
+              if (matcher.matches(relativeForMatcher)) {
+                // 3. Validamos la RUTA REAL contra el AccessControl
+                // Esto asegura que si el link apunta fuera y no está en la whitelist, falle.
+                Path safePath = agent.getAccessControl().resolvePathOrNull(realPath.toString(), PATH_ACCESS_READ);
+                if (safePath != null) {
+                  resolved.add(safePath);
+                }
               }
-              return FileVisitResult.CONTINUE;
+            } catch (IOException e) {
+              // Si el link está roto o no hay permisos de lectura de metadatos, saltamos
+              LOGGER.warn("No se pudo resolver la ruta real de: " + file, e);
             }
-          });
-        }
+            return FileVisitResult.CONTINUE;
+          }
+
+          @Override
+          public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+            String name = dir.getFileName().toString();
+            if (name.equals("target") || name.equals(".git") || name.equals(".idea")) {
+              return FileVisitResult.SKIP_SUBTREE;
+            }
+            return FileVisitResult.CONTINUE;
+          }
+        });
       } else {
-        // Es una ruta directa
-        Path p = this.agent.getAccessControl().resolvePathOrNull(selector,PATH_ACCESS_READ);
-        if (p!=null && Files.exists(p) && Files.isRegularFile(p) ) {
-          resolved.add(p);
+        // Caso de ruta directa
+        Path p = agent.getAccessControl().resolvePathOrNull(selector, PATH_ACCESS_READ);
+        if (p != null && Files.exists(p) && Files.isRegularFile(p)) {
+          try {
+            resolved.add(p.toRealPath());
+          } catch (IOException e) {
+            resolved.add(p.normalize());
+          }
         }
       }
     }
-    return resolved;
+    return new ArrayList<>(resolved);
   }
 
-  private boolean isBinary(byte[] bytes) {
-    for (int i = 0; i < Math.min(bytes.length, 1024); i++) {
-      if (bytes[i] == 0) {
-        return true;
-      }
+  private boolean isBinaryMime(String mimeType) {
+    if (mimeType.startsWith("text/")) {
+      return false;
     }
-    return false;
-  }
-
-  private String error(String m) {
-    return gson.toJson(Map.of("status", "error", "message", m));
+    if (mimeType.contains("json")
+            || mimeType.contains("xml")
+            || mimeType.contains("javascript")
+            || mimeType.contains("properties")
+            || mimeType.contains("yaml")
+            || mimeType.equals("application/x-sh")) {
+      return false;
+    }
+    return true;
   }
 }

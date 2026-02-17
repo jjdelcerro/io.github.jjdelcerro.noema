@@ -5,14 +5,13 @@ import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.AgentService;
 import io.github.jjdelcerro.chatagent.lib.AgentServiceFactory;
 import io.github.jjdelcerro.chatagent.lib.AgentTool;
-import io.github.jjdelcerro.chatagent.lib.impl.services.email.tools.EmailListTool;
-import io.github.jjdelcerro.chatagent.lib.impl.services.email.tools.EmailReadTool;
-import io.github.jjdelcerro.chatagent.lib.impl.services.email.tools.EmailSendTool;
 import jakarta.mail.*;
 import jakarta.mail.internet.*;
 import org.apache.tika.Tika;
 import java.lang.reflect.Method;
 import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Gestor unificado de comunicaciones por correo electrónico que implementa una
@@ -46,20 +45,21 @@ import java.util.*;
  *
  * @author jjdelcerro
  */
+@SuppressWarnings("UseSpecificCatch")
 public class EmailService implements AgentService {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(EmailService.class);
+
   public static final String NAME = "Email";
-  
+
   public static final String EMAIL_IMAP_HOST = "EMAIL_IMAP_HOST";
   public static final String EMAIL_SMTP_HOST = "EMAIL_SMTP_HOST";
   public static final String EMAIL_USER = "EMAIL_USER";
   public static final String EMAIL_PASSWORD = "EMAIL_PASSWORD";
   public static final String EMAIL_AUTHORIZED_SENDER = "EMAIL_AUTHORIZED_SENDER";
-  
 
-  
-  private Tika tika = new Tika();
-  private Gson gson = new Gson();
+  private final Tika tika = new Tika();
+  private final Gson gson = new Gson();
   private boolean running;
   private final Agent agent;
   private final AgentServiceFactory factory;
@@ -92,10 +92,9 @@ public class EmailService implements AgentService {
 
   @Override
   public List<AgentTool> getTools() {
-    AgentTool[] tools = new AgentTool[]{
-//      new EmailListTool(this.agent),
-//      new EmailReadTool(this.agent),
-//      new EmailSendTool(this.agent)
+    AgentTool[] tools = new AgentTool[]{ //      new EmailListTool(this.agent),
+    //      new EmailReadTool(this.agent),
+    //      new EmailSendTool(this.agent)
     };
     return Arrays.asList(tools);
   }
@@ -104,7 +103,7 @@ public class EmailService implements AgentService {
   public boolean canStart() {
     return this.factory.canStart(agent.getSettings());
   }
-  
+
   @Override
   public void start() {
     Thread t = new Thread(() -> {
@@ -144,13 +143,12 @@ public class EmailService implements AgentService {
     this.running = true;
   }
 
-
   public String send(String to, String subject, String body) {
     try {
       String smtpHost = agent.getSettings().getProperty(EMAIL_SMTP_HOST);
       String user = agent.getSettings().getProperty(EMAIL_USER);
       String password = agent.getSettings().getProperty(EMAIL_PASSWORD);
-      
+
       Properties props = new Properties();
       props.put("mail.smtp.auth", "true");
       props.put("mail.smtp.starttls.enable", "true");
@@ -171,6 +169,7 @@ public class EmailService implements AgentService {
       Transport.send(message);
       return "{\"status\":\"success\"}";
     } catch (Exception e) {
+      LOGGER.warn("Cant send email (to='" + Objects.toString(to) + "', subjects='" + Objects.toString(subject) + "')", e);
       return "{\"status\":\"error\", \"msg\":\"" + e.getMessage() + "\"}";
     }
   }
@@ -190,11 +189,11 @@ public class EmailService implements AgentService {
         return gson.toJson(headers);
       });
     } catch (Exception e) {
+      LOGGER.warn("Can't list email headers", e);
       return "{\"error\":\"" + e.getMessage() + "\"}";
     }
   }
 
-  // --- Lógica de Lectura (Tika) ---
   public String read(long uid) {
     try {
       return executeInInbox(inbox -> {
@@ -207,6 +206,7 @@ public class EmailService implements AgentService {
         return gson.toJson(Map.of("uid", uid, "content", cleanContent.trim()));
       });
     } catch (Exception e) {
+      LOGGER.warn("Can't read email id=" + uid + ".", e);
       return "{\"error\":\"" + e.getMessage() + "\"}";
     }
   }

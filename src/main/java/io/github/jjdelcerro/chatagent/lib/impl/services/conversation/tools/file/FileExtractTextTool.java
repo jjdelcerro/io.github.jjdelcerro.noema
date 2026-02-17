@@ -1,69 +1,93 @@
 package io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file;
 
-import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.chatagent.lib.Agent;
-import static io.github.jjdelcerro.chatagent.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
+import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.ConversationService;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.tika.Tika;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import org.apache.tika.Tika;
-import io.github.jjdelcerro.chatagent.lib.AgentTool;
-//import org.apache.tika.Tika;
-//
-//import java.nio.file.Files;
-//import java.nio.file.Path;
-//import java.nio.file.Paths;
-//import java.util.Map;
 
-public class FileExtractTextTool implements AgentTool {
-/*
-    TODO: Implementar esto cuando se introduzca Tika (paginacion?)
-*/
-    
-    private final Gson gson = new Gson();
-    private final Tika tika = new Tika(); // Tika centraliza la lógica de extracción
+import static io.github.jjdelcerro.chatagent.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
 
-    private final Agent agent;
-    
-    public FileExtractTextTool(Agent agent) {
-      this.agent = agent;
+public class FileExtractTextTool extends AbstractAgentTool {
+
+  public static final String TOOL_NAME = "file_extract_text";
+  private final Tika tika = new Tika();
+
+  public FileExtractTextTool(Agent agent) {
+    super(agent);
+  }
+
+  @Override
+  public ToolSpecification getSpecification() {
+    return ToolSpecification.builder()
+            .name(TOOL_NAME)
+            .description("""
+                    Extrae el texto de archivos complejos (PDF, DOCX, etc). 
+                    Soporta paginación. Si el contenido es largo, usa 'offset' y 'limit' para leer por partes.
+                    """)
+            .addParameter("path", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Ruta del archivo binario."))
+            .addParameter("offset", JsonSchemaProperty.INTEGER, JsonSchemaProperty.description("Línea inicial del texto extraído."))
+            .addParameter("limit", JsonSchemaProperty.INTEGER, JsonSchemaProperty.description("Líneas a leer."))
+            .build();
+  }
+
+  @Override
+  public String execute(String jsonArguments) {
+    try {
+      Map<String, Object> args = gson.fromJson(jsonArguments, Map.class);
+      String relPath = (String) args.get("path");
+      int offset = args.get("offset") != null ? ((Double) args.get("offset")).intValue() : 0;
+      int limit = args.get("limit") != null ? ((Double) args.get("limit")).intValue() : 1000;
+
+      Path sourcePath = this.resolvePathOrNull(relPath, PATH_ACCESS_READ);
+      if (sourcePath == null || !Files.exists(sourcePath)) {
+        return error("Archivo no encontrado o acceso denegado.");
+      }
+
+      // 1. Obtener/Crear versión de texto en caché
+      Path cachedTextPath = getCachedTextPath(sourcePath);
+
+      // 2. Delegar lectura a FileReadTool
+      ConversationService conv = (ConversationService) agent.getService(ConversationService.NAME);
+      FileReadTool fileRead = (FileReadTool) conv.getAvailableTool(FileReadTool.TOOL_NAME);
+
+      // Usamos el execute interno con el nombre de esta herramienta (para el HINT) y la ruta original
+      return fileRead.execute(cachedTextPath, relPath, TOOL_NAME, offset, limit);
+
+    } catch (Exception e) {
+      return error("Error extrayendo texto: " + e.getMessage());
     }
-    
-    @Override
-    public ToolSpecification getSpecification() {
-        return ToolSpecification.builder()
-                .name("file_extract_text")
-                .description("Extrae el texto legible de archivos complejos (PDF, DOCX, XLSX, etc).")
-                .addParameter("path", JsonSchemaProperty.STRING, 
-                        JsonSchemaProperty.description("Ruta relativa del archivo binario del que extraer texto."))
-                .build();
+  }
+
+  private Path getCachedTextPath(Path sourcePath) throws Exception {
+    Path cacheDir = getTemporaryFolder();
+    if (!Files.exists(cacheDir)) {
+      Files.createDirectories(cacheDir);
     }
 
-    @Override
-    public String execute(String jsonArguments) {
-        try {
-            Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
-            String relativePath = args.get("path");
+    // Nombre basado en Hash de la ruta absoluta para evitar colisiones
+    String fileHash = DigestUtils.sha256Hex(sourcePath.toAbsolutePath().toString());
+    Path cachedFile = cacheDir.resolve(fileHash + ".txt");
 
-            Path filePath = this.agent.getAccessControl().resolvePathOrNull(relativePath,PATH_ACCESS_READ);
-            if (filePath == null) {
-                return gson.toJson(Map.of("status", "error", "message", "Archivo no encontrado o acceso denegado."));
-            }
+    // Invalida si el origen es más nuevo que la caché
+    if (!Files.exists(cachedFile)
+            || Files.getLastModifiedTime(sourcePath).toMillis() > Files.getLastModifiedTime(cachedFile).toMillis()) {
 
-            // Tika hace la magia aquí
-            // Abre el archivo, detecta el parser adecuado, extrae metadatos y contenido
-            // y lo devuelve como un String plano.
-            String extractedText = tika.parseToString(filePath);
-
-            return gson.toJson(Map.of(
-                    "status", "success",
-                    "path", relativePath,
-                    "content", extractedText
-            ));
-
-        } catch (Exception e) {
-            return gson.toJson(Map.of("status", "error", "message", "Error en la extracción: " + e.getMessage()));
-        }
+      LOGGER.info("Extrayendo texto (Tika) de: " + sourcePath);
+      String text = tika.parseToString(sourcePath);
+      Files.writeString(cachedFile, text, StandardCharsets.UTF_8);
     }
+
+    return cachedFile;
+  }
+
+  private Path getTemporaryFolder() {
+    return agent.getDataFolder().toPath().resolve("cache/" + TOOL_NAME);
+  }
 }

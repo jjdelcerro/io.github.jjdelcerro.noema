@@ -10,12 +10,18 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author jjdelcerro
  */
+@SuppressWarnings("UseSpecificCatch")
 public class DocumentStructureExtractor {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(DocumentStructureExtractor.class);
 
   private final Agent agent;
 
@@ -30,12 +36,13 @@ public class DocumentStructureExtractor {
   /**
    * Inicia el procesamiento del documento de forma asíncrona.Utiliza hilos
    * virtuales para no bloquear el flujo del agente.
+   *
    * @param document
    */
   public void processDocument(Path document) {
-    // Usamos la factoría de hilos virtuales de Java 21
     Thread.ofVirtual().start(() -> {
       try {
+        LOGGER.info("Infiriendo la estrutura del documento '" + Objects.toString(document) + "'.");
         agent.getConsole().printSystemLog("Iniciando análisis del documento " + document.getFileName());
 
         doProcessDocument(document);
@@ -44,10 +51,10 @@ public class DocumentStructureExtractor {
         agent.putEvent("DOCUMENT INDEXATION FINALIZED", "normal",
                 "Ha terminado la indexacion del documento: `" + document.getFileName()
                 + "`. Ya está disponible para búsquedas y consultas detalladas.");
-
+        LOGGER.info("Inferencia de  la estrutura de documento '" + Objects.toString(document) + "' finalizada.");
       } catch (Exception ex) {
-        agent.getConsole().printSystemError("Error crítico en DocMapper para " + document.getFileName() + ": " + ex.getMessage());
-        ex.printStackTrace(); // Log para depuración
+        LOGGER.warn("Error infiriendo la estrutura del documento '" + Objects.toString(document) + "'.", ex);
+        agent.getConsole().printSystemError("Error document-strucure-extractor sobre '" + document.getFileName() + "': " + ex.getMessage());
       }
     });
   }
@@ -79,7 +86,7 @@ public class DocumentStructureExtractor {
       service.insertOrReplace(structure, document);
 
     } catch (Exception ex) {
-      // TODO: log and user message.
+      LOGGER.warn("Error infiriendo la estrutura del documento '" + Objects.toString(document) + "'.", ex);
     }
   }
 

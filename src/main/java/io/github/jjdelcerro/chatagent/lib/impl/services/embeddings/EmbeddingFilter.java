@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Interface.java to edit this template
- */
 package io.github.jjdelcerro.chatagent.lib.impl.services.embeddings;
 
 import java.util.List;
@@ -9,6 +5,7 @@ import java.util.List;
 /**
  *
  * @author jjdelcerro
+ * @param <T>
  */
 public interface EmbeddingFilter<T> {
 
@@ -17,6 +14,7 @@ public interface EmbeddingFilter<T> {
    *
    * @param vector El vector del elemento recuperado de BBDD.
    * @param data El objeto de dominio construido (ej. Turn).
+   * @return 
    */
   double add(float[] vector, T data);
 
@@ -24,12 +22,15 @@ public interface EmbeddingFilter<T> {
   
   /**
    * Retorna la lista final ordenada de mayor a menor relevancia (Descendente).
+   * @return 
    */
   List<T> get();
 
   /**
    * Método de conveniencia para convertir el BLOB de la BBDD a float[]
    * delegando en el servicio.
+   * @param blob
+   * @return 
    */
   float[] toFloat(byte[] blob);
   

@@ -1,6 +1,5 @@
 package io.github.jjdelcerro.chatagent.lib.persistence;
 
-import dev.langchain4j.data.message.ChatMessage;
 import java.sql.Timestamp;
 
 /**
@@ -9,34 +8,38 @@ import java.sql.Timestamp;
  */
 public interface Turn {
 
-    /**
-     * Devuelve el texto concatenado que representa el contenido semántico del
-     * turno. Útil para que el SourceOfTruth calcule el embedding sobre esto.
-     */
-    String getContentForEmbedding();
+  /**
+   * Devuelve el texto concatenado que representa el contenido semántico del
+   * turno.Útil para que el SourceOfTruth calcule el embedding sobre esto.
+   *
+   * @return
+   */
+  String getContentForEmbedding();
 
-    String getContenttype();
+  String getContenttype();
 
-    float[] getEmbedding();
+  float[] getEmbedding();
 
-    int getId();
+  int getId();
 
-    String getTextModel();
+  String getTextModel();
 
-    String getTextModelThinking();
+  String getTextModelThinking();
 
-    String getTextUser();
+  String getTextUser();
 
-    Timestamp getTimestamp();
+  Timestamp getTimestamp();
 
-    String getToolCall();
+  String getToolCall();
 
-    String getToolResult();
+  String getToolResult();
 
-    /**
-     * Genera una línea CSV formateada y escapada para el protocolo de
-     * compactación.
-     */
-    String toCSVLine();
+  /**
+   * Genera una línea CSV formateada y escapada para el protocolo de
+   * compactación.
+   *
+   * @return
+   */
+  String toCSVLine();
 
 }
