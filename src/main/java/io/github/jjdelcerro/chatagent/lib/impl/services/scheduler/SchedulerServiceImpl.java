@@ -23,6 +23,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Servicio de planificacion de alarmas persistente.
@@ -30,6 +32,8 @@ import java.util.concurrent.TimeUnit;
  * @author jjdelcerro
  */
 public class SchedulerServiceImpl implements SchedulerService {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(SchedulerServiceImpl.class);
 
   private final Agent agent;
   private final Gson gson = new Gson();
@@ -48,7 +52,7 @@ public class SchedulerServiceImpl implements SchedulerService {
   private ConnectionSupplier getConnection() {
     return this.agent.getServicesDatabase();
   }
-  
+
   @Override
   public AgentServiceFactory getFactory() {
     return factory;
@@ -60,13 +64,13 @@ public class SchedulerServiceImpl implements SchedulerService {
             Thread.ofVirtual().factory()
     );
     try (
-            Connection conn = this.agent.getServicesDatabase().get()
-      ) {      
+            Connection conn = this.agent.getServicesDatabase().get()) {
       this.createTables(conn);
       this.counter = Counter.from(this.agent.getServicesDatabase(), "SCHEDULER");
       rescheduleNextAlarm();
       this.running = true;
-    } catch (SQLException ex) {
+    } catch (Exception ex) {
+      LOGGER.warn("Error al iniciar SchedulerService", ex);
       agent.getConsole().printSystemError("Error al iniciar SchedulerService: " + ex.getMessage());
     }
   }
@@ -74,7 +78,7 @@ public class SchedulerServiceImpl implements SchedulerService {
   private void createTables(Connection conn) throws SQLException {
     try (Statement stmt = conn.createStatement()) {
       String sql = SQLProvider.from(this.getConnection()).get(
-              "Scheduler_createTables_scheduler", 
+              "Scheduler_createTables_scheduler",
               """
                               CREATE TABLE IF NOT EXISTS SCHEDULER (
                                   id VARCHAR(255) PRIMARY KEY,
@@ -92,13 +96,11 @@ public class SchedulerServiceImpl implements SchedulerService {
   public String schedule(LocalDateTime when, String reason) {
     String alarmId = "ALARM-" + counter.get();
     String sql = SQLProvider.from(this.getConnection()).get(
-              "Scheduler_schedule", 
-              "INSERT INTO SCHEDULER (id, timestamp, alarm_time, reason) VALUES (?, ?, ?, ?)"
+            "Scheduler_schedule",
+            "INSERT INTO SCHEDULER (id, timestamp, alarm_time, reason) VALUES (?, ?, ?, ?)"
     );
     try (
-            Connection conn = this.agent.getServicesDatabase().get(); 
-            PreparedStatement pstmt = conn.prepareStatement(sql)
-      ) {
+            Connection conn = this.agent.getServicesDatabase().get(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
       pstmt.setString(1, alarmId);
       pstmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
       pstmt.setTimestamp(3, Timestamp.valueOf(when));
@@ -107,7 +109,8 @@ public class SchedulerServiceImpl implements SchedulerService {
 
       rescheduleNextAlarm();
 
-    } catch (SQLException ex) {
+    } catch (Exception ex) {
+      LOGGER.warn("Error al guardar alarma en la BBDD", ex);
       agent.getConsole().printSystemError("Error al guardar alarma en la BBDD: " + ex.getMessage());
       return "{\"status\": \"error\", \"message\": \"Error al guardar alarma\"}";
     }
@@ -138,16 +141,15 @@ public class SchedulerServiceImpl implements SchedulerService {
 
   private void removeAlarm(String id) {
     String sql = SQLProvider.from(this.getConnection()).get(
-              "Scheduler_removeAlarm", 
-              "DELETE FROM SCHEDULER WHERE id = ?"
+            "Scheduler_removeAlarm",
+            "DELETE FROM SCHEDULER WHERE id = ?"
     );
     try (
-            Connection conn = this.agent.getServicesDatabase().get(); 
-            PreparedStatement pstmt = conn.prepareStatement(sql)
-      ) {
+            Connection conn = this.agent.getServicesDatabase().get(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
       pstmt.setString(1, id);
       pstmt.executeUpdate();
-    } catch (SQLException ex) {
+    } catch (Exception ex) {
+      LOGGER.warn("Error al eliminar alarma ALARM-" + id + ".", ex);
       agent.getConsole().printSystemError("Error al eliminar alarma " + id + ": " + ex.getMessage());
     }
   }
@@ -157,13 +159,11 @@ public class SchedulerServiceImpl implements SchedulerService {
       currentScheduledTask.cancel(false);
     }
     String sql = SQLProvider.from(this.getConnection()).get(
-              "Scheduler_rescheduleNextAlarm", 
-              "SELECT id, reason, alarm_time FROM SCHEDULER WHERE alarm_time > ? ORDER BY alarm_time ASC LIMIT 1"
+            "Scheduler_rescheduleNextAlarm",
+            "SELECT id, reason, alarm_time FROM SCHEDULER WHERE alarm_time > ? ORDER BY alarm_time ASC LIMIT 1"
     );
     try (
-            Connection conn = this.agent.getServicesDatabase().get(); 
-            PreparedStatement pstmt = conn.prepareStatement(sql)
-      ) {
+            Connection conn = this.agent.getServicesDatabase().get(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
       pstmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()));
       try (ResultSet rs = pstmt.executeQuery()) {
         if (rs.next()) {
@@ -173,7 +173,8 @@ public class SchedulerServiceImpl implements SchedulerService {
           schedule_alarm(id, reason, alarmTime);
         }
       }
-    } catch (SQLException ex) {
+    } catch (Exception ex) {
+      LOGGER.warn("Error al reprogramar la siguiente alarma", ex);
       agent.getConsole().printSystemError("Error al reprogramar la siguiente alarma: " + ex.getMessage());
     }
   }

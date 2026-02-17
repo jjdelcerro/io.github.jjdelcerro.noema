@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import io.github.jjdelcerro.chatagent.lib.AgentAccessControl;
 import java.net.URI;
+import java.nio.file.LinkOption;
 
 /**
  * Gestiona el acceso seguro al sistema de ficheros (Sandbox).
@@ -64,7 +65,7 @@ public class AgentAccessControlImpl implements AgentAccessControl {
              // Si es absoluta, la usamos tal cual, si es relativa, la resolvemos contra root
             Path inputPath = Paths.get(rawPath);
             target = inputPath.isAbsolute() ? inputPath : rootPath.resolve(inputPath);
-            target = target.normalize(); // Elimina ".." y "."
+            target = target.normalize().toRealPath();
         } catch (Exception e) {
             throw new IllegalArgumentException("Path inválido: " + rawPath);
         }

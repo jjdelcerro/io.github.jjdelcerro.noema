@@ -1,6 +1,5 @@
 package io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file;
 
-import com.google.gson.Gson;
 import static dev.langchain4j.agent.tool.JsonSchemaProperty.description;
 import static dev.langchain4j.agent.tool.JsonSchemaProperty.type;
 import dev.langchain4j.agent.tool.ToolSpecification;
@@ -10,20 +9,16 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import io.github.jjdelcerro.chatagent.lib.AgentTool;
 
-public class FileGrepTool implements AgentTool {
-    private final Gson gson = new Gson();
-
-    private final Agent agent;
+@SuppressWarnings("UseSpecificCatch")
+public class FileGrepTool extends AbstractAgentTool {
     
     public FileGrepTool(Agent agent) {
-      this.agent = agent;
+      super(agent);
     }
     
     @Override
@@ -68,6 +63,7 @@ public class FileGrepTool implements AgentTool {
 
             return gson.toJson(Map.of("status", "success", "matches", results.subList(0, Math.min(results.size(), 50))));
         } catch (Exception e) {
+            LOGGER.warn("Error searching in files, args="+jsonArguments,e);
             return gson.toJson(Map.of("status", "error", "message", e.getMessage()));
         }
     }

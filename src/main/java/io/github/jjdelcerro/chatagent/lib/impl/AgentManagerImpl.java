@@ -31,8 +31,8 @@ import java.util.function.Supplier;
 public class AgentManagerImpl implements AgentManager {
 
   private final Map<String,AgentServiceFactory> serviceFactories;
-  private Map<String,SQLProvider> sqlProvider;
-  private List<Supplier<AgentAction>> actions;
+  private final Map<String,SQLProvider> sqlProvider;
+  private final List<Supplier<AgentAction>> actions;
   
   public AgentManagerImpl() {
     this.serviceFactories = new LinkedHashMap<>();
@@ -48,14 +48,17 @@ public class AgentManagerImpl implements AgentManager {
     this.registerService(new TelegramServiceFactory());
   }
   
+  @Override
   public final void registerService(AgentServiceFactory factory) {
     this.serviceFactories.put(factory.getName().toUpperCase(), factory);
   }
   
+  @Override
   public Collection<AgentServiceFactory> getServiceFactories() {
     return this.serviceFactories.values();
   }
   
+  @Override
   public AgentServiceFactory getServiceFactory(String name) {
     return this.serviceFactories.get(name.toUpperCase());
   }
@@ -92,6 +95,7 @@ public class AgentManagerImpl implements AgentManager {
     this.actions.add(action);
   }
 
+  @Override
   public Collection<Supplier<AgentActions.AgentAction>> getActions() {
     return this.actions;
   }

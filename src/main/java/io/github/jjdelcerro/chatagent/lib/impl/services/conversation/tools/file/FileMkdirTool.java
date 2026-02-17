@@ -1,6 +1,5 @@
 package io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file;
 
-import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.chatagent.lib.Agent;
@@ -11,14 +10,10 @@ import java.nio.file.Path;
 import java.util.Map;
 import io.github.jjdelcerro.chatagent.lib.AgentTool;
 
-public class FileMkdirTool implements AgentTool {
-
-  private final Gson gson = new Gson();
-
-  private final Agent agent;
+public class FileMkdirTool extends AbstractAgentTool {
 
   public FileMkdirTool(Agent agent) {
-    this.agent = agent;
+    super(agent);
   }
 
   @Override
@@ -45,20 +40,22 @@ public class FileMkdirTool implements AgentTool {
         return gson.toJson(Map.of("status", "error", "message", "El parámetro 'path' es obligatorio."));
       }
 
-      Path dirPath = this.agent.getAccessControl().resolvePathOrNull(relativePath,PATH_ACCESS_WRITE);
+      Path dirPath = this.agent.getAccessControl().resolvePathOrNull(relativePath, PATH_ACCESS_WRITE);
       if (dirPath == null) {
+        LOGGER.info("Acceso denagado a '" + relativePath + "'");
         return gson.toJson(Map.of("status", "error", "message", "Acceso denegado: No se puede crear directorios fuera de la raíz del proyecto."));
       }
 
       if (Files.exists(dirPath)) {
         if (Files.isDirectory(dirPath)) {
+          LOGGER.info("El directorio ya existe '" + dirPath + "'");
           return gson.toJson(Map.of("status", "success", "message", "El directorio ya existe."));
         } else {
+          LOGGER.info("El archivo ya existe '" + dirPath + "'");
           return gson.toJson(Map.of("status", "error", "message", "Ya existe un archivo con ese nombre."));
         }
       }
 
-      // Creación recursiva (mkdir -p)
       Files.createDirectories(dirPath);
 
       return gson.toJson(Map.of(
@@ -68,6 +65,7 @@ public class FileMkdirTool implements AgentTool {
       ));
 
     } catch (Exception e) {
+      LOGGER.warn("No se ha podido crear el directorio, args=" + jsonArguments);
       return gson.toJson(Map.of("status", "error", "message", e.getMessage()));
     }
   }

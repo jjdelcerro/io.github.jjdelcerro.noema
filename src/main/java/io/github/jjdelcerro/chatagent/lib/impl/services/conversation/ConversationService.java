@@ -78,14 +78,13 @@ public class ConversationService implements AgentService {
 
     private final AgentTool tool;
     private boolean active;
-    
+
     public AvailableAgentTool(AgentTool tool) {
-      this.tool = tool;    
+      this.tool = tool;
       this.active = true;
     }
   }
-  
-  
+
   private final Agent agent;
   private final SourceOfTruth sourceOfTruth;
   private AgentConsole console;
@@ -96,7 +95,7 @@ public class ConversationService implements AgentService {
   private CheckPoint activeCheckPoint;
 
   // Registro de herramientas
-  private final Map<String, AvailableAgentTool> availableTools = new LinkedHashMap<>();  
+  private final Map<String, AvailableAgentTool> availableTools = new LinkedHashMap<>();
 
   private final Queue<Event> pendingEvents = new ConcurrentLinkedQueue<>();
   private final AtomicBoolean isBusy = new AtomicBoolean(false);
@@ -112,7 +111,7 @@ public class ConversationService implements AgentService {
     try {
       this.activeCheckPoint = sourceOfTruth.getLatestCheckPoint();
     } catch (Exception e) {
-      e.printStackTrace(); // FIXME: log
+      LOGGER.warn("No se ha podido recuperar el ultimo checkpoint", e);
     }
   }
 
@@ -276,10 +275,10 @@ public class ConversationService implements AgentService {
 
     } catch (SQLException e) {
       this.console.printSystemError("Error critico de base de datos en processTurn: " + e.getMessage());
-      e.printStackTrace(); // FIXME: log
+      LOGGER.warn("Error de base de datos procesando turno.", e);
     } catch (Exception e) {
       this.console.printSystemError("Error inesperado en processTurn: " + e.getMessage());
-      e.printStackTrace(); // FIXME: log
+      LOGGER.warn("Error de inesperado procesando turno.", e);
     }
     return llmResponse.toString();
   }
@@ -288,6 +287,7 @@ public class ConversationService implements AgentService {
     String systemPrompt = agent.getResourceAsString("prompts/conversation-system.md");
 
     if (systemPrompt.isEmpty()) {
+      LOGGER.warn("No se ha podido cargar el prompt del sistema del ConversationService");
       throw new RuntimeException("Can't load system prompt from data folder");
     }
     systemPrompt = StringUtils.replace(systemPrompt, "{NOW}", now());
@@ -302,7 +302,7 @@ public class ConversationService implements AgentService {
 
     AvailableAgentTool availableTool = availableTools.get(toolName);
 
-    if (availableTool != null && availableTool.tool!=null ) {
+    if (availableTool != null && availableTool.tool != null) {
       AgentTool tool = availableTool.tool;
       if (tool.getMode() != AgentTool.MODE_READ) {
         boolean authorized = this.console.confirm(
@@ -310,20 +310,26 @@ public class ConversationService implements AgentService {
         );
 
         if (!authorized) {
-          this.console.printSystemLog("Ejecución denegada por el usuario.");
-          return "Error: User rejected the execution of tool '" + toolName + "'.";
+          String msg = String.format("Ejecucion de herramienta '%s' denegada por el usuario.", toolName);
+          LOGGER.info(msg);
+          this.console.printSystemLog(msg);
+          return msg;
         }
-        this.console.printSystemLog("Ejecutando herramienta: " + toolName);
-      } else {
-        this.console.printSystemLog(String.format("Ejecutando herramienta: %s\n    Argumentos: %s", toolName, args));
       }
+      String msg = String.format("Ejecutando herramienta: %s\n    Argumentos: %s", toolName, args);
+      LOGGER.info(msg);
+      this.console.printSystemLog(msg);
       try {
         return tool.execute(args);
       } catch (Exception e) {
-        return "Error ejecutando herramienta: " + e.getMessage();
+        String msg1 = "Error ejecutando herramienta '" + toolName + "'.";
+        LOGGER.info(msg1, e);
+        return msg1 + " " + e.getMessage();
       }
     } else {
-      return "Error: Herramienta '" + toolName + "' no encontrada.";
+      String msg = "Herramienta '" + toolName + "' no encontrada.";
+      LOGGER.info(msg);
+      return msg;
     }
   }
 
@@ -340,7 +346,9 @@ public class ConversationService implements AgentService {
     Session.SessionMark mark2 = this.session.getCompactMark();
 
     if (mark1 == null || mark2 == null) {
-      this.console.printSystemLog("Advertencia: No hay suficientes datos consolidados para compactar.");
+      String msg = "No hay suficientes datos consolidados para compactar.";
+      LOGGER.warn(msg);
+      this.console.printSystemLog(msg);
       return;
     }
 
@@ -348,7 +356,9 @@ public class ConversationService implements AgentService {
     List<Turn> compactTurns = this.sourceOfTruth.getTurnsByIds(mark1.getTurnId(), mark2.getTurnId());
 
     if (compactTurns.isEmpty()) {
-      this.console.printSystemLog("Advertencia: Rango de compactación vacío.");
+      String msg = String.format("No se han podido recuperar los turnos a compactar (turns[%s:%s]).", mark1.getTurnId(), mark2.getTurnId());
+      LOGGER.warn(msg);
+      this.console.printSystemLog(msg);
       return;
     }
 
@@ -483,29 +493,38 @@ public class ConversationService implements AgentService {
       }
     }
   }
-  
+
   private List<ToolSpecification> getToolSpecifications() {
-    List<ToolSpecification> toolSpecifications = new ArrayList<>();    
+    List<ToolSpecification> toolSpecifications = new ArrayList<>();
     for (AvailableAgentTool availableTool : this.availableTools.values()) {
-      if( availableTool.active ) {
+      if (availableTool.active) {
         toolSpecifications.add(availableTool.tool.getSpecification());
       }
     }
     return toolSpecifications;
   }
-  
+
   public List<AgentTool> getAvailableTools() {
-    List<AgentTool> tools = new ArrayList<>();    
+    List<AgentTool> tools = new ArrayList<>();
     for (AvailableAgentTool tool : this.availableTools.values()) {
       tools.add(tool.tool);
     }
     return tools;
   }
-  
+
+  public AgentTool getAvailableTool(String name) {
+    for (AvailableAgentTool tool : this.availableTools.values()) {
+      if( StringUtils.equals(name, tool.tool.getName())) {
+        return tool.tool;
+      }
+    }
+    return null;
+  }
+
   public boolean isToolActive(String name) {
     return this.availableTools.get(name).active;
   }
-  
+
   public void setToolActive(String name, boolean active) {
     this.availableTools.get(name).active = active;
   }

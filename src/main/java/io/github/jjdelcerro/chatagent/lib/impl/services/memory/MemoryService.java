@@ -24,18 +24,23 @@ import io.github.jjdelcerro.chatagent.lib.AgentTool;
 import io.github.jjdelcerro.chatagent.lib.impl.services.memory.tools.LookupTurnTool;
 import io.github.jjdelcerro.chatagent.lib.impl.services.memory.tools.SearchFullHistoryTool;
 import java.util.Arrays;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Componente cognitivo encargado de la consolidación de la memoria. Ejecuta el
  * "Protocolo de Generación de Puntos de Guardado" utilizando un LLM.
  */
 public class MemoryService implements AgentService {
-  public static final  String NAME = "Memory";
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(MemoryService.class);
+
+  public static final String NAME = "Memory";
 
   public static final String MEMORY_PROVIDER_URL = "MEMORY_PROVIDER_URL";
   public static final String MEMORY_PROVIDER_API_KEY = "MEMORY_PROVIDER_API_KEY";
   public static final String MEMORY_MODEL_ID = "MEMORY_MODEL_ID";
-  
+
   private final Agent agent;
   private final SourceOfTruth sourceOfTruth;
   private AgentConsole console;
@@ -70,19 +75,19 @@ public class MemoryService implements AgentService {
         model = agent.createChatModel("MEMORY");
         return true;
       }
-    });    
+    });
     this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_MEMORY_MODEL) {
       @Override
       public boolean perform(AgentSettings settings) {
         model = agent.createChatModel("MEMORY");
         return true;
       }
-    });    
+    });
     this.model = this.agent.createChatModel("MEMORY");
     loadSystemPrompt();
     this.running = true;
   }
-  
+
   private void loadSystemPrompt() {
     this.systemPrompt = agent.getResourceAsString("prompts/memory-compact.md");
     if (this.systemPrompt.isEmpty()) {
@@ -107,6 +112,7 @@ public class MemoryService implements AgentService {
     String userPrompt = buildUserPrompt(previous, newTurns);
 
     // 2. Invocar al LLM
+    LOGGER.info("Iniciando compactación de " + newTurns.size() + " turnos.");
     this.console.printSystemLog("Iniciando compactación de " + newTurns.size() + " turnos...");
     AiMessage response = model.generate(
             SystemMessage.from(this.systemPrompt),
@@ -128,7 +134,9 @@ public class MemoryService implements AgentService {
     }
 
     // 4. Crear CheckPoint Transitorio
-    return this.sourceOfTruth.createCheckPoint(firstId, lastId, Timestamp.from(Instant.now()), generatedText);
+    CheckPoint cp = this.sourceOfTruth.createCheckPoint(firstId, lastId, Timestamp.from(Instant.now()), generatedText);
+    LOGGER.info("Compactacion finalizada.");
+    return cp;
   }
 
   private String buildUserPrompt(CheckPoint previous, List<Turn> newTurns) {

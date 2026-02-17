@@ -2,7 +2,6 @@ package io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file
 
 import com.google.gson.Gson;
 import io.github.jjdelcerro.chatagent.lib.Agent;
-import io.github.jjdelcerro.chatagent.lib.AgentAccessControl;
 import io.github.jjdelcerro.chatagent.lib.AgentAccessControl.AccessMode;
 import static io.github.jjdelcerro.chatagent.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
 import io.github.jjdelcerro.chatagent.lib.AgentTool;

@@ -4,7 +4,6 @@ import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.AgentService;
 import io.github.jjdelcerro.chatagent.lib.AgentServiceFactory;
 import io.github.jjdelcerro.chatagent.lib.AgentSettings;
-import io.github.jjdelcerro.chatagent.lib.impl.AgentImpl;
 import static io.github.jjdelcerro.chatagent.lib.impl.services.conversation.ConversationService.CONVERSATION_MODEL_ID;
 import static io.github.jjdelcerro.chatagent.lib.impl.services.conversation.ConversationService.CONVERSATION_PROVIDER_API_KEY;
 import static io.github.jjdelcerro.chatagent.lib.impl.services.conversation.ConversationService.CONVERSATION_PROVIDER_URL;

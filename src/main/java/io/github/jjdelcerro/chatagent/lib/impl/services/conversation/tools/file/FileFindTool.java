@@ -1,26 +1,21 @@
 package io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file;
 
-import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.chatagent.lib.Agent;
-import static io.github.jjdelcerro.chatagent.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
 
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
-import io.github.jjdelcerro.chatagent.lib.AgentTool;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("UseSpecificCatch")
 public class FileFindTool extends AbstractAgentTool {
 
   /*
     TODO: Seria interesante que pasase a usar tika para detectar el mimetype.
    */
-
   public FileFindTool(Agent agent) {
     super(agent);
   }
@@ -81,7 +76,7 @@ public class FileFindTool extends AbstractAgentTool {
       return gson.toJson(Map.of("status", "success", "matches", results));
 
     } catch (Exception e) {
-      LOGGER.warn("Can't find files, arguments="+StringUtils.replace(jsonArguments,"\n"," "),e);
+      LOGGER.warn("Can't find files, arguments=" + StringUtils.replace(jsonArguments, "\n", " "), e);
       return error(e.getMessage());
     }
   }

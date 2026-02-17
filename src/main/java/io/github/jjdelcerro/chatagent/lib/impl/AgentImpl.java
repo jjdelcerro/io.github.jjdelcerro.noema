@@ -20,7 +20,6 @@ import io.github.jjdelcerro.chatagent.lib.AgentTool;
 import io.github.jjdelcerro.chatagent.lib.ConnectionSupplier;
 import static io.github.jjdelcerro.chatagent.lib.impl.services.conversation.ConversationService.CONVERSATION_MODEL_ID;
 import static io.github.jjdelcerro.chatagent.lib.impl.services.memory.MemoryService.MEMORY_MODEL_ID;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -32,6 +31,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -39,6 +41,9 @@ import java.util.function.Supplier;
  */
 @SuppressWarnings("UseSpecificCatch")
 public class AgentImpl implements Agent {
+  
+  private static final Logger LOGGER = LoggerFactory.getLogger(AgentImpl.class);
+  
 
   private AgentConsole console;
   private final AgentSettings settings;
@@ -188,6 +193,7 @@ public class AgentImpl implements Agent {
       return response.content().text();
 
     } catch (Exception e) {
+      LOGGER.warn("Error en callChatModel (" + llmid + ")", e);
       console.printSystemError("Error en callChatModel (" + llmid + "): " + e.getMessage());
       return null;
     }
@@ -195,7 +201,11 @@ public class AgentImpl implements Agent {
 
   /**
    * Realiza una llamada al modelo y parsea la respuesta como un JsonObject de
-   * GSON. Incluye limpieza automática de bloques de código Markdown.
+   * GSON.Incluye limpieza automática de bloques de código Markdown.
+   * @param llmid
+   * @param systemPrompt
+   * @param message
+   * @return 
    */
   @Override
   public JsonObject callChatModelAsJson(String llmid, String systemPrompt, String message) {
@@ -218,8 +228,9 @@ public class AgentImpl implements Agent {
       return com.google.gson.JsonParser.parseString(cleanJson).getAsJsonObject();
 
     } catch (Exception e) {
+      LOGGER.warn("Error en callChatModelAsJson (" + llmid + "), response: "+ rawResponse, e);
       console.printSystemError("Error parseando JSON de " + llmid + ": " + e.getMessage());
-      console.printSystemError("Contenido que falló: " + rawResponse);
+      console.printSystemError("Contenido que falló: " + StringUtils.abbreviate(rawResponse,100));
       return null;
     }
   }
@@ -265,10 +276,12 @@ public class AgentImpl implements Agent {
             Files.copy(is, targetPath, StandardCopyOption.REPLACE_EXISTING);
             console.printSystemLog("Recurso instalado en data " + resPath);
           } else {
-            console.printSystemError("Error: Recurso no encontrado en el classpath: " + resourceBase + resPath);
+            LOGGER.warn("Recurso no encontrado en el classpath " + resourceBase + resPath);
+            console.printSystemError("Recurso no encontrado en el classpath: " + resourceBase + resPath);
           }
         }
-      } catch (IOException e) {
+      } catch (Exception e) {
+        LOGGER.warn("No se ha podido instalar el recurso '"+resPath+"'.",e);
         console.printSystemError("Error al inicializar recurso " + resPath + ": " + e.getMessage());
       }
     }
@@ -292,7 +305,8 @@ public class AgentImpl implements Agent {
         console.printSystemError("Recurso no encontrado en data: " + resname);
         return "";
       }
-    } catch (IOException e) {
+    } catch (Exception e) {
+      LOGGER.warn("Error leyendo recurso " + resname + ".", e);
       console.printSystemError("Error leyendo recurso " + resname + ": " + e.getMessage());
       return "";
     }

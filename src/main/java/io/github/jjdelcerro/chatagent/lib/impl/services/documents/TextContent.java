@@ -53,7 +53,6 @@ public class TextContent extends ArrayList<TextContent.TextLine> {
       String line;
       int currentLine = 1; // Empezamos en 1 para que el LLM no se líe con el 0
       while ((line = reader.readLine()) != null) {
-        // lineOffset se pasa como -1 según lo solicitado
         this.add(new TextLine(currentLine++, line));
       }
     }

@@ -9,7 +9,6 @@ import io.github.jjdelcerro.chatagent.lib.persistence.Turn;
 
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -24,7 +23,8 @@ import io.github.jjdelcerro.chatagent.lib.ConnectionSupplier;
 import io.github.jjdelcerro.chatagent.lib.impl.SQLProvider;
 import io.github.jjdelcerro.chatagent.lib.impl.services.embeddings.EmbeddingFilter;
 import io.github.jjdelcerro.chatagent.lib.impl.services.embeddings.EmbeddingsService;
-import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Repositorio central que gestiona la persistencia (H2) y la indexación
@@ -32,6 +32,8 @@ import java.util.function.Supplier;
  */
 @SuppressWarnings("UseSpecificCatch")
 public class SourceOfTruthImpl implements SourceOfTruth {
+  
+  private static final Logger LOGGER = LoggerFactory.getLogger(SourceOfTruthImpl.class);
 
   private static final int MAX_DB_TEXT_SIZE = 2048; // 2KB
 
@@ -74,12 +76,10 @@ public class SourceOfTruthImpl implements SourceOfTruth {
   }
 
   private void createTables() {
-    
-    try (   Connection conn = this.getConnection().get();
-            Statement stmt = conn.createStatement()
-      ) {
+
+    try (Connection conn = this.getConnection().get(); Statement stmt = conn.createStatement()) {
       // Tabla de Turnos con soporte BLOB para vectores
-      stmt.execute(SQLProvider.from(getConnection()).get("SourceOfTtuth_createTables_turnos","""
+      stmt.execute(SQLProvider.from(getConnection()).get("SourceOfTtuth_createTables_turnos", """
                 CREATE TABLE IF NOT EXISTS turnos (
                     id INT PRIMARY KEY,
                     timestamp TIMESTAMP,
@@ -94,7 +94,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
             """));
 
       // Tabla de CheckPoints (solo metadatos)
-      stmt.execute(SQLProvider.from(getConnection()).get("SourceOfTtuth_createTables_checkpoints","""
+      stmt.execute(SQLProvider.from(getConnection()).get("SourceOfTtuth_createTables_checkpoints", """
                 CREATE TABLE IF NOT EXISTS checkpoints (
                     id INT PRIMARY KEY,
                     cp_first INT,
@@ -116,6 +116,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
    * <p>
    * Lógica de Embedding: - Si turn.getEmbedding() es null, se calcula
    * automáticamente (si hay texto). - Si ya existe, se respeta.
+   *
    * @param turn
    */
   @Override
@@ -149,15 +150,13 @@ public class SourceOfTruthImpl implements SourceOfTruth {
       }
 
       String sql = SQLProvider.from(getConnection()).get("SourceOfTruth_add_turn",
-            """
+              """
                 INSERT INTO turnos (id, timestamp, contenttype, text_user, text_thinking, 
                                     text_model, tool_call, tool_result, embedding_blob) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """);
 
-      try (   Connection conn = getConnection().get();
-              PreparedStatement ps = conn.prepareStatement(sql)
-        ) {
+      try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setInt(1, turn.getId());
         ps.setTimestamp(2, turn.getTimestamp());
         ps.setString(3, dbContentType); // Usamos el tipo calculado para DB
@@ -186,7 +185,8 @@ public class SourceOfTruthImpl implements SourceOfTruth {
         pw.println("code,timestamp,contenttype,text_user,text_model_thinking,text_model,tool_call,tool_result");
       }
       pw.println(turn.toCSVLine());
-    } catch (IOException e) {
+    } catch (Exception e) {
+      LOGGER.warn("Error escribiendo en CSV log", e);
       getConsole().printSystemError("Error escribiendo en CSV log: " + e.getMessage());
     }
   }
@@ -213,8 +213,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
    * la clase CheckPoint antes de llamar a este método.
    * <p>
    * Lógica de ID: - Si cp.getId() < 0: Se genera un nuevo ID usando el contador
-   * interno.
-   * @param checkpoint
+   * interno. @param checkpoint
    */
   @Override
   public synchronized void add(CheckPoint checkpoint) {
@@ -231,9 +230,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
               "SourceOfTtuth_add_checkpoint",
               "INSERT INTO checkpoints (id, cp_first, cp_last, timestamp) VALUES (?, ?, ?, ?)"
       );
-      try (   Connection conn = getConnection().get();
-              PreparedStatement ps = conn.prepareStatement(sql)
-        ) {
+      try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setInt(1, checkpointid);
         ps.setInt(2, checkpoint.getTurnFirst());
         ps.setInt(3, checkpoint.getTurnLast());
@@ -253,9 +250,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
               "SourceOfTtuth_getTurnById",
               "SELECT * FROM turnos WHERE id = ?"
       );
-      try (   Connection conn = getConnection().get();
-              PreparedStatement ps = conn.prepareStatement(sql)
-        ) {
+      try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setInt(1, id);
         try (ResultSet rs = ps.executeQuery()) {
           if (rs.next()) {
@@ -276,9 +271,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
               "SourceOfTtuth_getCheckPointById",
               "SELECT * FROM checkpoints WHERE id = ?"
       );
-      try (   Connection conn = getConnection().get();
-              PreparedStatement ps = conn.prepareStatement(sql)
-        ) {
+      try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setInt(1, id);
         try (ResultSet rs = ps.executeQuery()) {
           if (rs.next()) {
@@ -300,10 +293,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
               "SourceOfTtuth_getLatestCheckPoint",
               "SELECT * FROM checkpoints ORDER BY id DESC LIMIT 1"
       );
-      try (   Connection conn = getConnection().get();
-              Statement stmt = conn.createStatement(); 
-              ResultSet rs = stmt.executeQuery(sql)
-        ) {
+      try (Connection conn = getConnection().get(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
         if (rs.next()) {
           return mapResultSetToCheckPoint(rs);
         }
@@ -316,9 +306,10 @@ public class SourceOfTruthImpl implements SourceOfTruth {
 
   /**
    * Recupera todos los turnos que aún no han sido consolidados en un
-   * CheckPoint.Estrategia: Obtener el último CP y pedir turnos 
-   * con ID > CP.last_turn_id.
-   * @return 
+   * CheckPoint.Estrategia: Obtener el último CP y pedir turnos con ID >
+   * CP.last_turn_id.
+   *
+   * @return
    */
   @Override
   public synchronized List<Turn> getUnconsolidatedTurns() {
@@ -332,9 +323,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
               "SELECT * FROM turnos WHERE id > ? ORDER BY id ASC"
       );
 
-      try (   Connection conn = getConnection().get();
-              PreparedStatement ps = conn.prepareStatement(sql)
-        ) {
+      try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setInt(1, thresholdId);
         try (ResultSet rs = ps.executeQuery()) {
           while (rs.next()) {
@@ -356,9 +345,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
               "SourceOfTtuth_getTurnsByIds",
               "SELECT * FROM turnos WHERE id BETWEEN ? AND ? ORDER BY id ASC"
       );
-      try (   Connection conn = getConnection().get();
-              PreparedStatement ps = conn.prepareStatement(sql)
-        ) {
+      try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setInt(1, first);
         ps.setInt(2, last);
         try (ResultSet rs = ps.executeQuery()) {
@@ -389,10 +376,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
               "SourceOfTtuth_getTurnsByText",
               "SELECT * FROM turnos WHERE embedding_blob IS NOT NULL"
       );
-      try (   Connection conn = getConnection().get();
-              Statement stmt = conn.createStatement(); 
-              ResultSet rs = stmt.executeQuery(sql)
-        ) {
+      try (Connection conn = getConnection().get(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
         while (rs.next()) {
           byte[] blob = rs.getBytes("embedding_blob");
           float[] dbVec = search.toFloat(blob);
@@ -408,7 +392,6 @@ public class SourceOfTruthImpl implements SourceOfTruth {
       throw new TurnException("Can't retrieve turns", ex);
     }
   }
-  
 
   private Turn mapResultSetToTurn(ResultSet rs) throws SQLException {
     // Versión que lee el blob y lo deserializa
