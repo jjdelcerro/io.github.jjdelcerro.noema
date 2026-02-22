@@ -26,22 +26,24 @@ import org.h2.tools.Server;
  */
 @SuppressWarnings("UseSpecificCatch")
 public class AgentUtils {
-  
+
   private AgentUtils() {
-    
+
   }
-  
-  public static Agent init(File dataFolder) {
+
+  public static Agent init(File agentFolder) {
     try {
       // Preparar Directorios
-      dataFolder = dataFolder.getCanonicalFile();
-      Files.createDirectories(dataFolder.toPath());
-      
+      agentFolder = agentFolder.getCanonicalFile();
+      Files.createDirectories(agentFolder.toPath());
+
+      File dataFolder = new File(agentFolder, "data");
+
       // Inicializar la consola y settings del agente
       AgentConsole console = AgentUILocator.getAgentUIManager().createConsole();
-      console.printSystemLog("Iniciando Agente de Memoria Híbrida Determinista...");
+      console.printSystemLog("Iniciando Agente de Memoria narrativa trazable...");
       AgentUtils.initSettings(console, dataFolder);
-      AgentUtils.askSettings(console,dataFolder);
+      AgentUtils.askSettings(console, dataFolder);
 
       // Cargamos los settings del agente
       File settingsFile = new File(dataFolder, "settings.properties");
@@ -50,8 +52,8 @@ public class AgentUtils {
 
       // Iniciar el servidor web de H2 (Consola)
       Server webServer = Server.createWebServer("-webPort", settings.getProperty("H2_WEBPORT"), "-webAllowOthers").start();
-      console.printSystemLog("H2 Web Console activa en: " + webServer.getURL());      
-      
+      console.printSystemLog("H2 Web Console activa en: " + webServer.getURL());
+
       // Conexión a Base de Datos (H2)
       File memoryFile = new File(dataFolder, "memory").getCanonicalFile();
       ConnectionSupplier memoryDatabase = new ConnectionSupplier() {
@@ -60,7 +62,7 @@ public class AgentUtils {
           try {
             return DriverManager.getConnection("jdbc:h2:" + memoryFile.getAbsolutePath(), "sa", "");
           } catch (SQLException ex) {
-            throw new RuntimeException("Can't get memory database connection",ex);
+            throw new RuntimeException("Can't get memory database connection", ex);
           }
         }
 
@@ -76,7 +78,7 @@ public class AgentUtils {
           try {
             return DriverManager.getConnection("jdbc:h2:" + servicesFile.getAbsolutePath(), "sa", "");
           } catch (SQLException ex) {
-            throw new RuntimeException("Can't get services database connection",ex);
+            throw new RuntimeException("Can't get services database connection", ex);
           }
         }
 
@@ -85,25 +87,31 @@ public class AgentUtils {
           return "H2";
         }
       };
-      
+
       // Create databases and maintain server loaded
       @SuppressWarnings("unused")
-              Connection memoryConn = memoryDatabase.get();
+      Connection memoryConn = memoryDatabase.get();
       console.printSystemLog("Conectado a Base de Conocimiento: " + memoryFile.getAbsolutePath());
       @SuppressWarnings("unused")
-              Connection servicesConn = servicesDatabase.get();
+      Connection servicesConn = servicesDatabase.get();
       console.printSystemLog("Conectado a Base de datos de servicio: " + servicesFile.getAbsolutePath());
+      
       Runtime.getRuntime().addShutdownHook(new Thread(() -> {
         try {
-          if (memoryConn != null) memoryConn.close();
-          if (servicesConn != null) servicesConn.close();
-        } catch (SQLException e) { /* ignore */ }
+          if (memoryConn != null) {
+            memoryConn.close();
+          }
+          if (servicesConn != null) {
+            servicesConn.close();
+          }
+        } catch (SQLException e) {
+          /* ignore */ }
       }));
 
       Agent agent = AgentLocator.getAgentManager().createAgent(
               memoryDatabase,
               servicesDatabase,
-              dataFolder,
+              agentFolder,
               settings,
               console
       );
@@ -112,7 +120,7 @@ public class AgentUtils {
       throw new RuntimeException(ex);
     }
   }
-  
+
   private static boolean areSettingsValid(AgentConsole console, File settingsFile) {
     if (!settingsFile.exists()) {
       return false;
@@ -126,7 +134,7 @@ public class AgentUtils {
       agentManager.getServiceFactory("CONVERSATION")
     };
     for (AgentServiceFactory service : services) {
-      if( !service.canStart(settings) ) {
+      if (!service.canStart(settings)) {
         return false;
       }
     }
@@ -135,19 +143,19 @@ public class AgentUtils {
 
   private static void askSettings(AgentConsole console, File dataFolder) {
     File settingsFile = new File(dataFolder, "settings.properties");
-    if (!AgentUtils.areSettingsValid(console,settingsFile)) {
-        console.printSystemLog("Configuración incompleta. Abriendo asistente...");
-        // Usamos el constructor que creará un FakeAgent para la UI inicial
-        AgentUISettings settingsUI = AgentUILocator.getAgentUIManager().createSettings(dataFolder, console);
-        settingsUI.showWindow();
+    if (!AgentUtils.areSettingsValid(console, settingsFile)) {
+      console.printSystemLog("Configuración incompleta. Abriendo asistente...");
+      // Usamos el constructor que creará un FakeAgent para la UI inicial
+      AgentUISettings settingsUI = AgentUILocator.getAgentUIManager().createSettings(dataFolder, console);
+      settingsUI.showWindow();
 
-        if (!AgentUtils.areSettingsValid(console,settingsFile)) {
-            console.printSystemError("Configuración cancelada. Saliendo de la aplicacion.");
-            System.exit(1);
-        }
-    }        
+      if (!AgentUtils.areSettingsValid(console, settingsFile)) {
+        console.printSystemError("Configuración cancelada. Saliendo de la aplicacion.");
+        System.exit(1);
+      }
+    }
   }
-  
+
   private static void installResource(AgentConsole console, File dataFolder, String resPath) {
     String resourceBase = "/io/github/jjdelcerro/chatagent/main/";
     Path targetPath = dataFolder.toPath().resolve(resPath);
@@ -168,7 +176,7 @@ public class AgentUtils {
       }
     }
   }
-  
+
   private static void initSettings(AgentConsole console, File dataFolder) {
     String[] resources = new String[]{
       "models.properties",
@@ -181,5 +189,5 @@ public class AgentUtils {
       installResource(console, dataFolder, resPath);
     }
   }
-  
+
 }

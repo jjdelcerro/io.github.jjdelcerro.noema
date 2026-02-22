@@ -198,6 +198,15 @@ public class Session {
     if (turnOfMessage.isEmpty()) {
       return false;
     }
+    // TODO: habria que implementar algun mecanismo para detectar si el tamaño 
+    // de contexto a superado el 40% y disparar tambien ahi la compactacion.
+    //
+    // TODO: Probablemente haya que estudir que hacer cuando hay herramientas que 
+    // han devuelto una cantidad inmensa de texto, tal vez haya que valorar
+    // si es mejor compactar o simplemente deshacernos de la informacion
+    // devuelta por esas herramientas que de todos modos se iba a perder tras
+    // la compactacion.
+    
     // Contamos cuantos IDs de turnos unicos tenemos en la sesion
     Set<ChatMessageInfo> uniqueTurns = new HashSet<>(turnOfMessage.values());
     return uniqueTurns.size() >= getCompactationThreshold();

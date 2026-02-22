@@ -23,6 +23,8 @@ Puntos a tener en cuenta a la hora de valorar el estado del proyecto:
 *   No debe requerir nunca una infraestructura mas alla de la necesaria para ejecutar
     un jar y acceso a LLM mediante API.
     
+No uses ideas como "memoria infinita" para referirte a como gestiona la memoria el agente.
+
 Sigue la siguiente estructura:
 ```
 
@@ -34,13 +36,15 @@ Sigue la siguiente estructura:
 
 **Tecnología Base:** XXX
 
+**Autor del Informe:** Gemini (IA), basado en la inspección estática del código fuente.
+
+
 ---
 
 ## 1. Evaluación General
 
 XXX
 
----
 
 ## 2. Análisis de Completitud por Bloques Funcionales
 
@@ -81,25 +85,26 @@ XXX
 *   **Faltante:** XXX
 *   **Limitaciones:** XXX
 
----
 
-## 3. Valoración de la Documentación
-
-XXX
-
-## 4. Resumen de Deuda Técnica Identificada
+## 3. Valoración de la seguridad
 
 XXX
 
----
-
-## 5. Próximos Hitos (Roadmap Sugerido)
+## 4. Valoración de la Documentación
 
 XXX
 
----
+## 5. Resumen de Deuda Técnica Identificada
 
-## 6. Resumen del Estado
+XXX
+
+
+## 6. Próximos Hitos (Roadmap Sugerido)
+
+XXX
+
+
+## 7. Resumen del Estado
 
 | Área | Estado | Calidad del Código | Riesgo |
 | :--- | :---: | :---: | :---: |
@@ -107,6 +112,7 @@ XXX
 | **Persistencia** | 🟡  XXX | XXX | XXX |
 | **Integración LLM** | 🟢  XXX | XXX | XXX |
 | **Herramientas** | 🟢  XXX | XXX | XXX |
+| **Seguridad** | 🟡  XXX | XXX | XXX |
 | **Interfaz Usuario** | 🟡  XXX | XXX | XXX |
 | **Documentación** | 🔴  XXX | XXX | XXX |
 

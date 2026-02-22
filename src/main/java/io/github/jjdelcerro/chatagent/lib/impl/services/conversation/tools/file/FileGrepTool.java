@@ -1,5 +1,6 @@
 package io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file;
 
+import io.github.jjdelcerro.chatagent.lib.impl.AbstractAgentTool;
 import static dev.langchain4j.agent.tool.JsonSchemaProperty.description;
 import static dev.langchain4j.agent.tool.JsonSchemaProperty.type;
 import dev.langchain4j.agent.tool.ToolSpecification;

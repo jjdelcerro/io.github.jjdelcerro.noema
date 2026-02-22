@@ -1,126 +1,124 @@
-
 # Informe de Estado del Proyecto: ChatAgent
 
-**Versión Analizada:** 1.0.0 (según `pom.xml`)
+**Versión Analizada:** 1.0.0 (según pom.xml)
 
-**Fecha de Análisis:** 14 de Febrero de 2026
+**Fecha de Análisis:** 22 de Febrero de 2026
 
-**Tecnología Base:** Java 21, LangChain4j 0.35.0, H2 Database, Swing/JLine.
+**Tecnología Base:** Java 21, H2 Database (Embedded), LangChain4j 0.35.0, Swing (FlatLaf), JLine3.
+
+Informe realizado por Gemini.
 
 
 ## 1. Evaluación General
 
-El proyecto **ChatAgent** se encuentra en un estado de **Prototipo Funcional Avanzado (Alpha/Beta)**. La arquitectura propuesta de "Memoria Híbrida Determinista" no es solo teórica, sino que está **totalmente implementada** en el código.
+El proyecto se encuentra en un estado de **madurez técnica avanzada (Beta estable)**. No es un esqueleto ni un prototipo inicial; es un sistema funcional completo que cumple estrictamente con las premisas de diseño: autocontención, persistencia y ejecución local.
 
-El sistema cumple con la premisa de ser un ejecutable autocontenido (Fat JAR) sin dependencias de infraestructura compleja. La separación entre la lógica de conversación (`ConversationService`) y la consolidación de memoria (`MemoryService`) está claramente definida y operativa.
+La arquitectura "Java-Native" es coherente en todos los módulos. El uso de librerías nativas para control de versiones (`javarcs`) y diferencias (`java-diff-utils`) demuestra un compromiso fuerte con la portabilidad sin dependencias del sistema operativo. El sistema de memoria híbrida está implementado en su totalidad, superando la complejidad de los agentes RAG tradicionales.
 
-El código demuestra una madurez superior a la de un "juguete" típico, evidenciado por el uso de patrones de diseño (Service Locator, Strategy), manejo de concurrencia (Virtual Threads, AtomicBoolean) y una estrategia robusta de persistencia mixta (Relacional + BLOBs Vectoriales).
-
+Aunque es un proyecto personal, la calidad del código, la separación de responsabilidades y la robustez de los mecanismos de seguridad (sandbox, RCS automático) están al nivel de software de producción.
 
 ## 2. Análisis de Completitud por Bloques Funcionales
 
 ### A. Núcleo y Arquitectura (95% Completo)
-El andamiaje del sistema es sólido y está desacoplado.
-
-*   **Inyección de Dependencias:** Implementada manualmente mediante `AgentLocator` y `AgentManagerImpl`. Es simple, efectiva y evita el peso de Spring.
-*   **Ciclo de Vida:** El `AgentImpl` orquesta correctamente el arranque de servicios (`startAllServices`) y la carga de configuraciones.
-*   **Configuración:** Sistema robusto basado en `AgentSettingsImpl` (Properties) con persistencia en disco y recarga.
-*   **Seguridad (Sandbox):** `AgentAccessControlImpl` está implementado y protege contra *Path Traversal*.
-*   **Faltante:** Sistema de logs centralizado más robusto (actualmente mezcla `System.err` con `AgentConsole`).
-*   **Limitaciones:** La adición de nuevos servicios requiere modificar `AgentManagerImpl` (no hay descubrimiento dinámico de plugins), lo cual es aceptable para un proyecto personal.
+*   **Inyección de Dependencias:** Implementada manualmente vía `AgentLocator` y `AgentManagerImpl`. Es simple, efectiva y libre de "magia" (reflexión excesiva), ideal para el arranque rápido.
+*   **Ciclo de Vida:** Gestión correcta de arranque (`start()`) y parada. Los servicios implementan la interfaz `AgentService` y tienen sus propias factorías (`AgentServiceFactory`) que validan la configuración antes de arrancar.
+*   **Configuración:** Sistema flexible basado en `AgentSettings`. La interfaz de configuración dinámica (`settingsui.json`) es un punto muy fuerte, permitiendo editar la configuración desde la UI sin recompilar.
+*   **Faltante:** Sistema centralizado de gestión de errores críticos (actualmente se loguean y se imprimen en consola, pero no hay estrategias de recuperación automática de servicios caídos).
+*   **Limitaciones:** La arquitectura es monoproceso (Single-Tenant) por diseño, lo cual se alinea con los requisitos.
 
 ### B. Motor de Conversación y Herramientas (90% Completo)
-El bucle cognitivo está operativo y es capaz de usar herramientas.
+*   **Bucle ReAct:** El método `ConversationService.executeReasoningLoop` implementa correctamente el ciclo Pensamiento -> Acción -> Observación. Maneja respuestas de texto y ejecución de herramientas.
+*   **Herramientas:** El catálogo es extenso y cubre todas las necesidades planteadas:
 
-*   **Bucle ReAct:** Implementado en `ConversationService.executeReasoningLoop`. Gestiona correctamente la llamada al LLM, la detección de `ToolExecutionRequest`, la ejecución y la retroalimentación al modelo.
-*   **Gestión de Eventos:** El mecanismo de "inyección de estímulos" (`Event`, `PoolEventTool`) para simular proactividad (Email/Telegram) es ingenioso y está funcional.
-*   **Herramientas:** Muy completo.
-
-    *   *Sistema de archivos:* Lectura, escritura, búsqueda (glob), grep, patch.
-    *   *Web:* Búsqueda (Brave), Extracción de contenido (Tika + Jsoup "lite"), Clima, Ubicación.
-    *   *Tiempo:* Reloj y alarmas (Natty).
+    *   *Sistema de archivos:* Lectura paginada (`FileReadTool`), escritura con backup (`FileWriteTool`), búsqueda (`FileFindTool`, `FileGrepTool`), parcheado (`FilePatchTool`) y recuperación (`FileRecoveryTool`).
+    *   *Web:* Búsqueda (`WebSearchTool`), Extracción limpia (`WebGetTikaTool`), Clima y Ubicación.
+    *   *Sistema:* Ejecución de Shell segura (`ShellExecuteTool`) con detección de Firejail.
+    *   *Proactividad:* Consulta de eventos (`PoolEventTool`).
     
-*   **Faltante:** Gestión de errores recuperables dentro del bucle (ej: si el LLM alucina un JSON inválido, el sistema captura el error pero podría no reintentar automáticamente con una corrección).
-*   **Limitaciones:** La estimación de tokens (`estimateToolsTokenCount`) tiene un overhead fijo (`OVERHEAD_IN_ESTIMATE_TOOLS_TOKEN_COUNT`), lo que es una aproximación válida pero no exacta.
+*   **Faltante:** Gestión más sofisticada del truncado de salidas de herramientas masivas. Aunque existe lógica de recorte, una estrategia de resumen automático por LLM para salidas largas sería una mejora.
+*   **Limitaciones:** La herramienta `ShellExecuteTool` es no interactiva (no soporta `sudo` o prompts de usuario en tiempo real), aunque esto está documentado como restricción de diseño.
 
-### C. Gestión de Memoria (90% Completo)
-El corazón del proyecto. La implementación coincide con la documentación teórica (`AGENT_CONTEXT.md`).
-
-*   **Persistencia:** `SourceOfTruthImpl` maneja H2 correctamente. La tabla `turnos` almacena vectores en BLOBs y la tabla `checkpoints` gestiona los hitos.
-*   **Compactación:** `MemoryService` implementa la lógica de llamar a un LLM dedicado para generar el resumen narrativo ("El Viaje"). El prompt `memory-compact.md` está diseñado para esto.
-*   **Recuperación (Recall):**
-
-    *   `LookupTurnTool`: Recuperación determinista por ID. Funcional.
-    *   `SearchFullHistoryTool`: Búsqueda semántica. Funcional.
-*   **Vectorización:** `EmbeddingsService` usa `AllMiniLmL6V2` local (ONNX). La búsqueda se hace en memoria (`EmbeddingFilterImpl`), iterando y calculando coseno.
-*   **Faltante:** Mecanismos de "olvido" o purga. Dado que es una sesión infinita, la BBDD crecerá indefinidamente (aunque H2 aguanta mucho).
-*   **Limitaciones:** La búsqueda vectorial itera sobre todos los registros con embedding (`SELECT * ...`). Para un proyecto personal es aceptable hasta varias decenas de miles de turnos, pero se degradará con el uso intensivo a muy largo plazo (años).
-
-### D. Document Mapper / RAG (85% Completo)
-Implementación avanzada de RAG Estructural.
-
-*   **Ingesta:** `DocumentStructureExtractor` procesa el fichero, usa un LLM para extraer la TOC (CSV) y otro para resumir secciones.
-*   **Estructura:** La clase `DocumentStructure` maneja la jerarquía y la persistencia en `.struct` (JSON).
-*   **Búsqueda:** Soporta búsqueda híbrida (categoría SQL + vector resumen).
-*   **Faltante:** Manejo de re-indexación si el fichero cambia (actualmente parece ser `insertOrReplace` manual). No hay paginación automática para documentos *extremadamente* grandes que no quepan en memoria al leerlos para indexar (aunque usa `BoundedInputStream` para lectura parcial, la carga inicial en `TextContent` carga todo en RAM).
-*   **Limitaciones:** Depende fuertemente de la capacidad del modelo "Reasoning" para entender el CSV de líneas.
-
-### E. Interfaces de Usuario (80% Completo)
-Funcionales y estéticamente cuidadas.
-
-*   **Consola:** Basada en JLine3. Funcional, soporta historial y edición de línea.
-*   **Swing:** Uso de FlatLaf (Dark Mode). Incluye un renderizador de Markdown (`JMarkdownPanel`) y un editor de texto básico (`SimpleTextEditor`).
-*   **Configuración UI:** Sistema dinámico generado desde JSON (`settingsui.json`) que crea menús y formularios en ambas interfaces. Muy flexible.
+### C. Gestión de Memoria (85% Completo)
+*   **Persistencia:** La base de datos H2 está correctamente configurada con tablas para `turnos` (incluyendo BLOBs para vectores) y `checkpoints`.
+*   **Compactación:** El `MemoryService` implementa el protocolo de compactación narrativa ("El Viaje"). La lógica para invocar al LLM y generar el resumen está completa.
+*   **Recuperación:** Las herramientas `LookupTurnTool` (por ID específico) y `SearchFullHistoryTool` (semántica) están operativas.
 *   **Faltante:**
 
-    *   **Streaming:** No hay evidencia de soporte para *streaming* de la respuesta del LLM (token a token). La UI parece bloquearse o esperar hasta que el turno completo (o la respuesta de la herramienta) finalice. Esto afecta la percepción de latencia.
-    *   Feedback visual de "Pensando" más detallado en la GUI (actualmente hay un Timer simple).
-*   **Limitaciones:** La mezcla de lógica de presentación en controladores Swing es aceptable para este alcance.
+    *   Lógica avanzada para "rehidratar" el estado de las herramientas al recuperar un turno antiguo (mencionado como TODO en el código).
+    *   Mecanismo para trocear la compactación si el número de turnos excede la ventana de contexto del modelo de memoria (TODO en `MemoryService`).
+    
+*   **Limitaciones:** La búsqueda vectorial (`EmbeddingFilterImpl`) itera sobre todos los registros en memoria para calcular la similitud coseno. Esto es aceptable para un uso personal (miles de turnos), pero degradará el rendimiento con historias de años (cientos de miles).
+
+### D. Document Mapper / RAG (80% Completo)
+*   **Ingesta:** `DocumentStructureExtractor` utiliza una estrategia de dos pasos (Estructura -> Resumen) muy potente. Funciona asíncronamente con *Virtual Threads*.
+*   **Estructura:** Persiste la estructura en archivos `.struct` (JSON) y los metadatos en H2.
+*   **Faltante:**
+
+    *   No parece haber soporte explícito para OCR en documentos escaneados (aunque Tika hace lo que puede).
+    *   Las herramientas de búsqueda de documentos están implementadas (`DocumentSearchTool`) pero algunas están comentadas en `DocumentsServiceImpl.getTools()` (posiblemente desactivadas temporalmente para pruebas).
+    
+*   **Limitaciones:** La edición de la estructura del documento una vez indexado no parece estar implementada; si el documento cambia, probablemente haya que reindexar todo.
+
+### E. Interfaces de Usuario (90% Completo)
+*   **Consola:** Implementación robusta con `JLine3`, soporte de historial y edición de línea.
+*   **Swing:** Interfaz moderna (`FlatLaf`) con soporte de Markdown (`JMarkdownPanel`), resaltado de sintaxis (`RSyntaxTextArea`) y una cápsula de entrada estilo chat moderno. Incluye editores de configuración visuales.
+*   **Faltante:** Visualización gráfica del árbol de documentos o de la línea temporal de la memoria (aunque se pueden consultar por chat).
+*   **Limitaciones:** La renderización de HTML/Markdown en Swing es básica (aunque suficiente).
 
 
-## 3. Valoración de la Documentación
+## 3. Valoración de la seguridad
 
-La documentación interna (`AGENT_CONTEXT.md`) es **excelente**. Describe la arquitectura, la filosofía y los mecanismos con precisión. El código está razonablemente comentado y sigue convenciones de nombrado claras.
+La seguridad es uno de los puntos más fuertes del proyecto, sorprendente para un "juguete":
 
-## 4. Resumen de Deuda Técnica Identificada
+1.  **Sandbox de Archivos (`AgentAccessControlImpl`):** Implementación estricta que impide *Path Traversal* (`../`). Resuelve todas las rutas contra la raíz del proyecto.
+2.  **Backup Automático (RCS):** La integración de `javarcs` en las herramientas de escritura (`FileWriteTool`, `FilePatchTool`, etc.) garantiza que el agente no puede destruir información irreversiblemente. Cada cambio genera una revisión recuperable.
+3.  **Confirmación Humana:** El `ConversationService` intercepta las herramientas de escritura (`MODE_WRITE`) y ejecución (`MODE_EXECUTION`) solicitando confirmación explícita al usuario.
+4.  **Aislamiento de Procesos:** La herramienta de Shell detecta automáticamente si `firejail` está instalado y envuelve los comandos para restringir el acceso a red y ficheros.
 
-1.  **Búsqueda Vectorial "Brute Force":** `EmbeddingFilterImpl` carga y compara todos los vectores en memoria. Es la deuda técnica explícita y aceptada del proyecto.
-2.  **Manejo de Strings en Prompts:** La construcción de prompts (concatenación de Strings en `ConversationService` y `MemoryService`) es propensa a errores si los inputs no se sanean perfectamente, aunque se usa CSV escapado.
-3.  **Bloqueo de UI:** Al usar `thread.ofVirtual()`, el backend no bloquea, pero la actualización de la UI de Swing (append de mensajes) se hace en bloques grandes al finalizar la generación, no en streaming.
-4.  **Recuperación de Errores en Herramientas:** Si una herramienta como `file_patch` falla, devuelve un JSON de error. Depende enteramente del LLM saber corregirse. No hay lógica de reintento automático o "auto-healing" en el código Java.
+**Nivel de Seguridad:** 🟢 **Alto** (para un entorno local).
 
+## 4. Valoración de la Documentación
 
-## 5. Próximos Hitos (Roadmap Sugerido)
+1.  **Código:** El código está bien comentado, especialmente en las interfaces y en los puntos complejos (`SourceOfTruthImpl`, `Session`).
+2.  **Arquitectura:** El archivo `AGENT_CONTEXT.md` es una pieza de documentación técnica excelente, que explica el "porqué" de las decisiones.
+3.  **Usuario:** Los prompts del sistema (`conversation-system.md`, `memory-compact.md`) actúan como documentación funcional del comportamiento del agente.
+4.  **Faltante:** No hay un manual de usuario final o guía de comandos de consola (`/help` en la UI de consola).
 
-Dado el objetivo de ser un "compañero de investigación de larga duración":
+**Nivel de Documentación:** 🟡 **Medio-Alto** (Excelente para desarrolladores/IA, escasa para usuario final).
 
-1.  **Hito 1: Experiencia de Usuario (Streaming)**
-    *   Implementar `StreamingResponseHandler` de LangChain4j para que el texto aparezca en la consola/Swing a medida que se genera. Esto es vital para "charlas" largas donde la latencia de respuesta completa es alta.
+## 5. Resumen de Deuda Técnica Identificada
 
-2.  **Hito 2: Robustez de la Memoria**
-    *   Implementar una tarea programada (Scheduler) que verifique la integridad de los CheckPoints o realice backups automáticos de la carpeta `data/`. Perder la base de datos H2 sería catastrófico para una sesión única de larga duración.
+A pesar de la alta calidad, se han identificado puntos específicos marcados en el código o deducidos:
 
-3.  **Hito 3: Herramientas de "Reflexión Pasiva"**
-    *   Aprovechar el `SchedulerService` para que el agente pueda programarse "momentos de reflexión" cuando el usuario no está, releyendo logs antiguos y generando notas internas (sin interacción del usuario) para mejorar su contexto futuro.
+1.  **Concurrencia en Eventos:** En `ConversationService.putEvent`, hay un comentario `//FIXME: falta gestionar correctamente isBusy`. Esto podría causar condiciones de carrera si llegan eventos mientras el agente está pensando.
+2.  **Búsqueda Vectorial H2:** Implementada en Java (`EmbeddingFilterImpl`). Es funcional pero no escalable a largo plazo. *Nota: Aceptado como restricción del proyecto.*
+3.  **Hardcoding de Recursos:** Algunos recursos se cargan asumiendo rutas relativas en `./data` que se despliegan desde el JAR. Aunque funciona, es un punto frágil si cambia la estructura.
+4.  **Truncado de Salidas:** La lógica de recorte de salidas grandes (ej: `WebGetTool` max 10000 chars) es fija. Debería ser dinámica o paginada de forma más inteligente.
+5.  **Herramientas Comentadas:** En `DocumentsServiceImpl`, varias herramientas están comentadas en el código fuente, lo que indica que el módulo de documentos no está 100% expuesto al agente aún.
 
+## 6. Próximos Hitos (Roadmap Sugerido)
 
-## 6. Resumen del Estado
+Considerando el objetivo de ser un "compañero de investigación":
+
+1.  **Hito 1: Estabilización de Eventos:** Solucionar el FIXME de `isBusy` en el gestor de conversación para asegurar que los eventos asíncronos (telegram, email, timer) no rompan el flujo de pensamiento.
+2.  **Hito 2: Exposición del DocMapper:** Descomentar y probar las herramientas de búsqueda de documentos para habilitar la capacidad RAG completa sobre bibliotecas de PDFs.
+3.  **Hito 3: Refinamiento de Memoria:** Implementar la rehidratación de herramientas en el `MemoryService` para que, al recordar un turno antiguo, el agente sepa qué herramienta se usó y con qué resultado exacto (si es relevante).
+4.  **Hito 4: Mejora de UI:** Añadir indicadores visuales en la UI de Swing para mostrar cuándo hay eventos pendientes en la cola o cuando el sistema está realizando tareas de mantenimiento (como compactar memoria).
+
+## 7. Resumen del Estado
 
 | Área | Estado | Calidad del Código | Riesgo |
 | :--- | :---: | :---: | :---: |
-| **Arquitectura Core** | 🟢 Estable | Alta | Bajo |
-| **Persistencia** | 🟡 Funcional | Media (H2 Vector limit) | Medio (Escalabilidad) |
-| **Integración LLM** | 🟢 Completa | Alta | Bajo |
-| **Herramientas** | 🟢 Completa | Alta | Bajo |
-| **Interfaz Usuario** | 🟡 Pulible | Media (Falta Streaming) | Bajo |
-| **Documentación** | 🟢 Excelente | Alta | Bajo |
+| **Arquitectura Core** | 🟢 Completo | Alta (Modular, Limpia) | Bajo |
+| **Persistencia** | 🟡 Estable | Media (H2 + Vectores en RAM) | Medio (Escalabilidad) |
+| **Integración LLM** | 🟢 Completo | Alta (LangChain4j) | Bajo |
+| **Herramientas** | 🟢 Completo | Alta (Muy robustas) | Bajo |
+| **Seguridad** | 🟢 Excelente | Alta (Sandbox + RCS) | Muy Bajo |
+| **Interfaz Usuario** | 🟡 Funcional | Media (Swing cumple, pero básico) | Bajo |
+| **Documentación** | 🟡 Técnica | Alta (Contexto), Baja (Usuario) | Bajo |
 
 **Conclusión**
 
-El proyecto **no es un juguete**, es una pieza de ingeniería de software sólida. Está listo para ser usado ("dogfooding") por su creador.
+El proyecto **ChatAgent** es un éxito técnico dentro de sus restricciones. Ha logrado implementar un sistema de **memoria a largo plazo funcional** y un entorno de **ejecución seguro** sin depender de bases de datos vectoriales externas ni contenedores Docker.
 
-El código refleja fielmente los objetivos: no hay excesos de ingeniería (como microservicios o bases de datos complejas) pero tampoco atajos peligrosos en la lógica core (la memoria está muy bien pensada).
-
-La limitación más relevante para el objetivo de "charlas de larga duración" no es técnica, sino de **coste/contexto**: a medida que la sesión crece, la calidad del resumen (`CheckPoint`) será crítica. El código para generarlo está ahí, pero su eficacia dependerá de la calidad del modelo LLM usado para la compactación (`MEMORY_MODEL_ID`).
-
-**Estado Final:** Ready for Alpha Testing (Uso personal diario).
+El estado actual es de **"Feature Complete"** para el núcleo. El trabajo restante se centra en pulir la concurrencia de los eventos proactivos y reactivar el set completo de herramientas documentales. Es una base excepcionalmente sólida para la experimentación en IA personal.

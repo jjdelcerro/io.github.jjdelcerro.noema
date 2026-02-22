@@ -48,7 +48,7 @@ public class AgentImpl implements Agent {
   private AgentConsole console;
   private final AgentSettings settings;
   private final AgentActions actions;
-  private final File dataFolder;
+  private final File agentFolder;
   private final SourceOfTruth sourceOfTruth;
 
   private final AgentAccessControl accessControl;
@@ -58,8 +58,8 @@ public class AgentImpl implements Agent {
 
   private final Map<String, AgentService> services;
 
-  public AgentImpl(ConnectionSupplier memoryDatabase, ConnectionSupplier servicesDatabase, File dataFolder, AgentSettings settings, AgentConsole console) {
-    this.dataFolder = dataFolder;
+  public AgentImpl(ConnectionSupplier memoryDatabase, ConnectionSupplier servicesDatabase, File agentFolder, AgentSettings settings, AgentConsole console) {
+    this.agentFolder = agentFolder;
     this.settings = settings;
     this.console = console;
     this.services = new LinkedHashMap<>();
@@ -68,6 +68,8 @@ public class AgentImpl implements Agent {
     this.servicesDatabase = servicesDatabase;
     this.memoryDatabase = memoryDatabase;
     this.sourceOfTruth = SourceOfTruthImpl.from(this);
+    
+    this.accessControl.addNonReadablePath(this.getDataFolder().toPath());
 
     AgentManager manager = AgentLocator.getAgentManager();
     for (Supplier<AgentActions.AgentAction> actionFactory : manager.getActions()) {
@@ -107,13 +109,18 @@ public class AgentImpl implements Agent {
   }
 
   @Override
+  public File getAgentFolder() {
+    return this.agentFolder;
+  }
+
+  @Override
   public File getDataFolder() {
-    return this.dataFolder;
+    return new File(this.agentFolder,"data");
   }
 
   @Override
   public File getDataFolder(String name) {
-    File file = this.dataFolder.toPath().resolve(name).normalize().toFile();
+    File file = this.getDataFolder().toPath().resolve(name).normalize().toFile();
     return file;
   }
 
@@ -266,7 +273,7 @@ public class AgentImpl implements Agent {
   @Override
   public void installResource(String resPath) {
     String resourceBase = "/io/github/jjdelcerro/chatagent/lib/impl/resources/";
-    Path targetPath = this.dataFolder.toPath().resolve(resPath);
+    Path targetPath = this.getDataFolder().toPath().resolve(resPath);
     if (!Files.exists(targetPath)) {
       try {
         Files.createDirectories(targetPath.getParent());
@@ -297,7 +304,7 @@ public class AgentImpl implements Agent {
    */
   @Override
   public String getResourceAsString(String resname) {
-    Path path = this.dataFolder.toPath().resolve(resname);
+    Path path = this.getDataFolder().toPath().resolve(resname);
     try {
       if (Files.exists(path)) {
         return Files.readString(path, StandardCharsets.UTF_8);

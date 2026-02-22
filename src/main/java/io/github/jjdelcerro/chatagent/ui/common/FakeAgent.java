@@ -23,18 +23,18 @@ import java.util.function.Supplier;
  */
 public class FakeAgent implements Agent {
 
-  private final File dataFolder;
+  private final File agentFolder;
   private final AgentSettings settings;
   private AgentConsole console;
   private final AgentActions actions;
 
-  public FakeAgent(File dataFolder, AgentConsole console) {
-    this.dataFolder = dataFolder;
+  public FakeAgent(File agentFolder, AgentConsole console) {
+    this.agentFolder = agentFolder;
     AgentManager agentManager = AgentLocator.getAgentManager();
     this.settings = agentManager.createSettings();
     this.actions = new FakeAgentActions(agentManager.createActions());
     this.console = console;
-    this.settings.load(new File(dataFolder,"settings.properties"));
+    this.settings.load(new File(agentFolder,"data/settings.properties"));
 
     AgentManager manager = AgentLocator.getAgentManager();
     for (Supplier<AgentActions.AgentAction> actionFactory : manager.getActions()) {
@@ -45,14 +45,19 @@ public class FakeAgent implements Agent {
   }
 
   @Override
+  public File getAgentFolder() {
+    return this.agentFolder;
+  }
+
+  @Override
   public File getDataFolder() {
-    return dataFolder;
+    return new File(this.agentFolder,"data");
   }
 
   @Override
   public File getDataFolder(String name) {
-      File file = this.dataFolder.toPath().resolve(name).normalize().toFile();
-      return file;
+    File file = this.getDataFolder().toPath().resolve(name).normalize().toFile();
+    return file;
   }
 
   @Override

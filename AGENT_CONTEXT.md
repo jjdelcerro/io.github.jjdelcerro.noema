@@ -1,178 +1,183 @@
+Aquí tienes un informe técnico detallado basado en el análisis profundo del código fuente proporcionado.
 
-# Informe Técnico: Arquitectura de Agente Conversacional de Memoria Híbrida
+---
+
+### Informe Técnico de Proyecto: ChatAgent (io.github.jjdelcerro.chatagent)
+
+**Versión Analizada:** 1.0.0
+**Fecha de Análisis:** 22 de Febrero de 2026
+**Autor del Informe:** Gemini (IA), basado en la inspección estática del código fuente.
+
+---
 
 ## 1. Visión General
 
-El proyecto `io.github.jjdelcerro.chatagent` es una implementación de referencia de un **Agente Cognitivo Autónomo** desarrollado en Java 21. A diferencia de los sistemas RAG (Retrieval-Augmented Generation) convencionales o chatbots efímeros, este sistema está diseñado para la **persistencia cognitiva a largo plazo** y la **agencia operativa real** en entornos locales.
+El proyecto `ChatAgent` es una implementación avanzada de un **Agente Cognitivo Autónomo y Persistente** escrito en Java. A diferencia de los chatbots convencionales o asistentes de codificación efímeros, este sistema está diseñado como un **compañero de investigación de largo recorrido**. Su filosofía central es la **autocontención** (funciona como un único JAR sin dependencias de infraestructura externa compleja) y la **persistencia narrativa**, resolviendo el problema del "olvido catastrófico" de los LLMs mediante un sistema de memoria híbrida.
 
-Su arquitectura resuelve el problema del "olvido catastrófico" mediante un ciclo de memoria híbrido que consolida interacciones en una narrativa coherente ("El Viaje"). Además, opera como un sistema totalmente **autocontenido (Self-Contained)**: se despliega como un único JAR que incluye todas las capacidades necesarias (base de datos, motor de búsqueda, control de versiones y utilidades de parcheado) sin requerir software externo instalado en el sistema operativo anfitrión.
+El agente no solo responde a estímulos reactivos (chat), sino que posee capacidades proactivas (sensores de eventos) y una percepción del paso del tiempo, lo que le permite mantener una "única sesión" que evoluciona con el usuario.
 
 ## 2. Stack Tecnológico
 
-El proyecto prioriza la portabilidad y la independencia, utilizando una arquitectura "Java-Native" para todas las operaciones críticas.
+El proyecto apuesta por una arquitectura "Java-Native" robusta y portable:
 
-*   **Lenguaje:** Java 21 (Uso intensivo de *Virtual Threads* para concurrencia ligera).
-*   **Orquestación IA:** `LangChain4j` (v0.35.0) como capa de abstracción para modelos de chat y embeddings.
-*   **Persistencia:**
-    *   **Base de Datos:** `H2 Database` (v2.2.224) en modo embebido. Se utiliza en configuración mixta: Tablas relacionales para metadatos + almacenamiento de Vectores en columnas `BLOB`.
-    *   **Archivos:** Sistema de archivos local para almacenamiento de Checkpoints (Markdown) y logs.
-*   **Operaciones de Archivos y Código (Java Nativo):**
-    *   **Parcheado:** `java-diff-utils` (v4.12). Permite aplicar parches *Unified Diff* generados por el LLM directamente en memoria JVM, sin depender del comando `patch` de Unix.
-    *   **Control de Versiones:** `io.github.jjdelcerro.javarcs`. Una implementación nativa en Java del sistema RCS, permitiendo al agente versionar los archivos que modifica sin instalar binarios externos.
-*   **Procesamiento de Datos:**
-    *   `Apache Tika`: Extracción de texto y metadatos de documentos binarios (PDF, DOCX, HTML).
-    *   `Natty`: Procesador de lenguaje natural para fechas (usado en el Scheduler).
-    *   `Gson`: Serialización y protocolo JSON.
-*   **Interfaz de Usuario:**
-    *   **GUI:** Swing con `FlatLaf` para una estética moderna y `RSyntaxTextArea` para editores de código.
-    *   **TUI:** `JLine 3` para una experiencia de terminal rica.
+*   **Lenguaje:** Java 21 (Aprovechamiento de *Virtual Threads* para concurrencia ligera en servicios como `DocumentStructureExtractor` o `ShellExecuteTool`).
+*   **Orquestación IA:** `LangChain4j` (v0.35.0) como abstracción para interactuar con modelos (OpenAI/OpenRouter).
+*   **Persistencia (Base de Datos):** `H2 Database` (Embebida). Se utiliza de forma híbrida:
+    *   Relacional para metadatos (`turnos`, `checkpoints`).
+    *   Vectorial (simulada) almacenando embeddings en columnas `BLOB` y realizando cálculos de distancia coseno en memoria/Java (a través de `EmbeddingFilterImpl`).
+*   **Control de Versiones & Parcheado:**
+    *   `io.github.jjdelcerro.javarcs`: Implementación **nativa en Java** de RCS (Revision Control System). Esto es crítico para permitir al agente versionar sus propios cambios sin depender de binarios `git` o `rcs` del sistema operativo.
+    *   `java-diff-utils`: Para aplicar parches *Unified Diff* de forma programática.
+*   **Procesamiento de Documentos:** `Apache Tika` (extracción de texto de binarios), `Natty` (procesamiento de lenguaje natural para fechas), `Gson` (JSON).
+*   **Interfaz de Usuario:** Soporte dual para GUI (`Swing` con `FlatLaf` y `RSyntaxTextArea`) y TUI (`JLine 3`).
+*   **Gestión de Dependencias:** Maven (con `maven-shade-plugin` para generar el Fat JAR).
 
 ## 3. Estructura y Arquitectura
 
-El diseño sigue una arquitectura estrictamente modular basada en **Interfaces** y el patrón **Service Locator**, evitando la sobrecarga de frameworks de inyección de dependencias como Spring.
+La arquitectura sigue un patrón modular basado en **Interfaces** y **Service Locator**, evitando la inyección de dependencias pesada (como Spring) para mantener el inicio rápido y la ligereza.
 
 ### Estructura de Paquetes
-*   **`io.github.jjdelcerro.chatagent.lib`**: Contratos e interfaces públicas (`Agent`, `SourceOfTruth`, `AgentTool`). Es el núcleo agnóstico.
-*   **`io.github.jjdelcerro.chatagent.lib.impl`**: Implementaciones concretas.
-    *   `persistence`: Lógica de H2, gestión de `Turn` y `CheckPoint`.
-    *   `services`: Lógica de negocio por dominios (`conversation`, `memory`, `documents`, `scheduler`, `email`, `telegram`).
-*   **`io.github.jjdelcerro.chatagent.ui`**: Capa de abstracción de UI (Consola vs Swing).
-*   **`io.github.jjdelcerro.chatagent.main`**: Bootstrap, detección de argumentos y configuración inicial.
+*   **`lib` (Core):** Define los contratos (`Agent`, `AgentService`, `SourceOfTruth`, `AgentTool`). Es el núcleo agnóstico.
+*   **`lib.impl` (Implementación):**
+    *   `persistence`: Lógica de H2, mapeo de `Turn` y `CheckPoint`.
+    *   `services`: División funcional por dominios (`conversation`, `memory`, `documents`, `scheduler`, `email`, `telegram`). Cada servicio tiene su propia factoría.
+*   **`ui`:** Capa de abstracción para la interfaz (Consola vs Swing), permitiendo cambiar de UI sin tocar la lógica del agente.
+*   **`main`:** Punto de entrada y utilidades de inicialización (`AgentUtils`).
 
 ### Diseño Arquitectónico
-1.  **Service Locator:** `AgentLocator` centraliza el acceso a servicios singleton, facilitando el desacoplamiento.
-2.  **Hexagonal (Puertos y Adaptadores):** Los servicios de negocio no dependen directamente de la infraestructura externa; usan interfaces para persistencia (`SourceOfTruth`) y comunicación.
-3.  **Strategy:** El mecanismo de herramientas (`AgentTool`) permite que el LLM seleccione dinámicamente qué estrategia ejecutar (leer archivo, buscar en web, recordar) en tiempo de ejecución.
-4.  **Observer/Event Loop:** Implementado para la detección de estímulos externos (Email, Telegram) e inyección en el flujo cognitivo.
+1.  **Service Locator (`AgentLocator`):** Centraliza el acceso a los servicios singleton.
+2.  **Hexagonal / Puertos y Adaptadores:** El núcleo del agente (`AgentImpl`) orquesta servicios que encapsulan la lógica de negocio. La persistencia (`SourceOfTruth`) es una interfaz clara que desacopla el almacenamiento del razonamiento.
+3.  **Event Loop Simulado:** Aunque los LLM son síncronos, el sistema implementa una cola de eventos concurrente (`pendingEvents` en `ConversationService`) para inyectar estímulos asíncronos en el flujo de pensamiento.
 
-## 4. Análisis Detallado de Mecanismos
+## 4. Herramientas del Agente (Toolset)
 
-### A. Gestión de Memoria (Híbrida y Determinista)
-El sistema gestiona la memoria en tres niveles para equilibrar precisión, contexto y coste:
+El agente dispone de un arsenal exhaustivo (+30 herramientas) clasificadas por dominio. Es destacable que **todas** se ejecutan localmente en la JVM.
 
-1.  **Memoria de Trabajo (Session - RAM):**
-    *   Mantiene los mensajes de la conversación activa (`ChatMessage`).
-    *   **Backfill:** Asocia mensajes volátiles con IDs persistentes (`TurnID`) para rastrear qué se ha guardado ya en base de datos.
-    *   Persiste en `active_session.json` para sobrevivir a reinicios.
-2.  **Memoria Episódica (Turnos - H2):**
-    *   Cada interacción (Usuario/Modelo/Herramienta) se guarda como un `Turn` inmutable.
-    *   **Vectorización:** Se calcula y almacena un embedding del contenido textual.
-    *   **Optimización:** Si el resultado de una herramienta es masivo (>2KB), se trunca en la BD (guardando metadatos) para no inflar el almacenamiento, aunque se mantiene en la RAM de la sesión actual.
-3.  **Memoria Semántica (CheckPoints - Narrativa):**
-    *   Al superar un umbral de turnos (~40), el `MemoryService` invoca a un LLM especializado.
-    *   **Protocolo de Compactación:** El LLM recibe el resumen anterior y los nuevos turnos en CSV. Genera un documento narrativo ("El Viaje") que integra los nuevos eventos.
-    *   **Trazabilidad:** El LLM inserta referencias explícitas `{cite:ID}` en el texto. Esto permite que el agente use posteriormente la herramienta `lookup_turn` para recuperar el dato crudo exacto referenciado en la narrativa.
+### Sistema de Archivos y Código (Java Nativo)
+1.  `file_read`: Lectura de texto con paginación inteligente y "hints" para continuar leyendo.
+2.  `file_write`: Escritura atómica de archivos (con backup automático RCS).
+3.  `file_mkdir`: Creación de directorios recursiva.
+4.  `file_find`: Búsqueda por patrón GLOB.
+5.  `file_grep`: Búsqueda de contenido por Regex.
+6.  `file_read_selectors`: Lectura masiva de múltiples archivos o patrones.
+7.  `file_extract_text`: Extracción de texto de binarios (PDF, DOCX) vía Tika.
+8.  `file_patch`: Aplicación de parches *Unified Diff*.
+9.  `file_search_and_replace`: Reemplazo de cadenas literales (más seguro que diffs para cambios pequeños).
+10. `file_history`: Consulta de historial de versiones (vía `javarcs`).
+11. `file_recovery`: Reversión de archivos a versiones anteriores (vía `javarcs`).
+
+### Conectividad y Web
+12. `web_search`: Búsqueda en internet (API Brave).
+13. `web_get_content`: Descarga y limpieza de HTML (Tika) con soporte de user-agent.
+14. `get_weather`: Consulta climática (Open-Meteo).
+15. `get_current_location`: Geolocalización por IP.
+16. `get_current_time`: Fecha, hora y zona horaria actual.
+
+### Memoria y Sistema
+17. `lookup_turn`: Recuperación precisa de un evento pasado por ID (`{cite:ID}`).
+18. `search_full_history`: Búsqueda semántica en toda la base de datos de turnos.
+19. `pool_event`: Herramienta "virtual" para consumir la cola de eventos asíncronos.
+20. `shell_execute`: Ejecución de comandos Bash (con soporte opcional de sandbox **Firejail**).
+21. `shell_read_output`: Lectura paginada de salidas de comandos largos guardados en `/tmp`.
+
+### Documentación (DocMapper)
+22. `document_index`: Iniciar el proceso de ingestión de un documento.
+23. `document_search`: Búsqueda híbrida (categoría + semántica).
+24. `document_search_by_categories`: Filtrado por etiquetas.
+25. `document_search_by_sumaries`: Búsqueda vectorial pura en resúmenes.
+26. `get_document_structure`: Obtener el índice (TOC) del documento.
+27. `get_partial_document`: Leer contenido real de secciones específicas.
+
+### Comunicación y Agenda
+28. `telegram_send`: Enviar mensajes proactivos al usuario.
+29. `email_list_inbox`: Listar cabeceras de correo.
+30. `email_read`: Leer cuerpo de correo (saneado con Tika).
+31. `email_send`: Enviar correos SMTP.
+32. `schedule_alarm`: Programar recordatorios en lenguaje natural (Natty).
+
+## 5. Descripción Detallada de Mecanismos
+
+### A. Gestión de Memoria (Híbrida y Narrativa)
+El sistema rechaza el enfoque de "ventana deslizante" simple en favor de una **memoria estructurada**:
+
+1.  **Session (Memoria de Trabajo):** Mantiene los mensajes `ChatMessage` en RAM para el contexto inmediato. Se sincroniza con el disco (`active_session.json`) para sobrevivir a reinicios. Implementa un sistema de "Backfill" para asociar mensajes en memoria con IDs persistentes una vez guardados en BD.
+2.  **Episódica (Turnos - H2):** Cada interacción se guarda como un `Turn` inmutable.
+    *   **Vectorización:** Se calcula un embedding del contenido combinado (User + Thinking + Model + Tool).
+    *   **Optimización:** Si la salida de una herramienta supera los 2KB, se trunca en la BD (guardando un metadato JSON) para no inflar el almacenamiento, aunque se mantiene íntegra en la RAM de la sesión actual.
+3.  **Semántica (CheckPoints - "El Viaje"):**
+    *   Al superar un umbral de turnos (~40), el `MemoryService` invoca un LLM dedicado.
+    *   **Protocolo de Compactación:** El LLM recibe el resumen anterior y los nuevos turnos en CSV. Debe generar una narrativa continua ("El Viaje") que integre lo nuevo con lo viejo.
+    *   **Citas Explícitas:** El sistema obliga al LLM a mantener referencias `{cite:ID}`. Esto permite que el agente use posteriormente `lookup_turn` para "rehidratar" un recuerdo específico con precisión de bit, mitigando la alucinación.
 
 ### B. Gestión de Eventos (Proactividad)
-El sistema permite al agente reaccionar a estímulos asíncronos en un entorno LLM síncrono (Request-Response):
+Permite al agente reaccionar al mundo exterior (Emails, Telegram, Alarmas) rompiendo el ciclo síncrono Request-Response.
 
-1.  **Sensores:** Hilos independientes (`EmailService`, `TelegramService`) escuchan cambios.
-2.  **Cola de Eventos:** Los sensores depositan objetos `Event` en una cola concurrente en `ConversationService`.
-3.  **Inyección Cognitiva:**
-    *   Si el agente está ocioso, el bucle se activa.
-    *   El evento se inyecta en el historial simulando ser el resultado de una herramienta virtual llamada `pool_event`.
-    *   Para el LLM, parece que él solicitó ver los eventos, manteniendo la coherencia del chat y forzando una evaluación de la información.
+1.  **Sensores:** Hilos independientes (`EmailService`, `TelegramService`) o Timers (`SchedulerService`) detectan cambios.
+2.  **Inyección (Spoofing):**
+    *   Se crea un objeto `Event` y se encola.
+    *   El `ConversationService` detecta el evento y lo inyecta en el historial **simulando** que el modelo ejecutó la herramienta `pool_event` y que el sistema devolvió el evento como resultado.
+    *   Esto engaña "benignamente" al LLM, haciéndole creer que él solicitó la información, manteniendo la coherencia del diálogo.
 
 ### C. Percepción Temporal
-El agente posee consciencia del paso del tiempo y contexto cronológico:
+El agente no vive en un "ahora" estático.
 
-1.  **System Prompt Dinámico:** La fecha y hora actual `{NOW}` se inyectan en cada interacción.
-2.  **Marcas de Silencio (Timer):**
-    *   El sistema calcula el delta de tiempo entre el último mensaje y el actual.
-    *   Si el tiempo > 1 hora, se inyecta artificialmente un mensaje de sistema: *"Ha pasado [tiempo] desde la última interacción..."*.
-    *   Esto permite al agente ajustar su saludo o reevaluar la validez del contexto inmediato.
+1.  **System Prompt Dinámico:** `{NOW}` se inyecta en cada interacción.
+2.  **Marcas de Silencio (Time Gaps):**
+    *   En `Session.getContextMessages`, se calcula la diferencia temporal entre el último mensaje y el actual.
+    *   Si delta > 1 hora, se inyecta un mensaje de sistema artificial: *"Ha pasado [tiempo] desde la última interacción..."*.
+    *   Esto da al agente contexto sobre si la conversación es una continuación inmediata o si ha pasado un fin de semana.
 
 ### D. Document Mapper (RAG Estructural)
-Un sistema avanzado de ingestión de documentos que supera al RAG tradicional ("chunking plano"):
+Una implementación sofisticada de RAG que evita el "chunking" ciego.
 
-1.  **Fase 1 (Razonamiento):** Un LLM potente lee el documento crudo (con números de línea) para generar un Árbol de Contenidos (JSON) identificando secciones lógicas.
-2.  **Fase 2 (Síntesis):** Se itera sobre las secciones detectadas. Un LLM más rápido genera un resumen y etiquetas para cada sección.
-3.  **Recuperación:**
-    *   **Búsqueda Híbrida:** SQL para filtrar por categorías + Similitud Vectorial sobre los resúmenes.
-    *   **Lectura bajo demanda:** La herramienta `get_partial_document` permite al agente leer el texto original completo de una sección específica, ahorrando tokens al no leer todo el documento.
+1.  **Fase 1 (Estructura):** Un modelo de razonamiento lee el documento crudo (con números de línea) para generar un Árbol de Contenidos (JSON) identificando secciones lógicas (Títulos, Capítulos).
+2.  **Fase 2 (Síntesis):** Itera sobre las secciones. Un modelo más rápido genera un resumen y categorías para cada sección.
+3.  **Persistencia:** La estructura se guarda en un fichero `.struct` (JSON) y los metadatos/vectores en H2.
+4.  **Recuperación:** Permite al agente navegar el índice (`get_document_structure`) y solicitar selectivamente el texto completo de secciones relevantes (`get_partial_document`), optimizando el uso de tokens.
 
-### E. Seguridad (Sandbox)
-La clase `AgentAccessControlImpl` protege el sistema anfitrión:
-*   Todas las rutas de archivo se resuelven contra un directorio raíz (`rootPath`).
-*   Se bloquean intentos de *Path Traversal* (`../`) fuera de la raíz.
-*   **Confirmación Humana:** Las herramientas marcadas con `MODE_WRITE` (escritura, borrado, parches) pausan la ejecución y solicitan confirmación explícita del usuario en la consola antes de proceder.
+### E. Seguridad y Sandbox
+El sistema implementa una seguridad multicapa:
+
+1.  **Sandbox de Archivos (`AgentAccessControlImpl`):**
+    *   Todas las rutas se resuelven contra un `rootPath`.
+    *   Se bloquean intentos de *Path Traversal* (`../`).
+    *   Se prohíbe explícitamente la escritura en carpetas sensibles (ej: `.git`, archivos de backup `.jv`).
+2.  **Confirmación Humana:**
+    *   Las herramientas marcadas con `MODE_WRITE` o `MODE_EXECUTION` pausan el hilo del agente y solicitan confirmación `[Y/n]` en la consola del usuario.
+3.  **Control de Versiones Automático (CI):**
+    *   Antes de cualquier escritura (`file_write`, `file_patch`), el sistema usa `javarcs` para hacer un `ci -l` (check-in and lock) del archivo. Esto garantiza que siempre hay un camino de retorno ante errores del LLM.
+4.  **Aislamiento de Procesos:**
+    *   La herramienta `shell_execute` detecta si `firejail` está instalado. Si lo está, envuelve automáticamente los comandos en una sandbox estricta, protegiendo el sistema anfitrión.
 
 ### F. Flujo del Conversation Manager
-El núcleo de decisión (`executeReasoningLoop`) implementa un ciclo **ReAct**:
+El ciclo `executeReasoningLoop` implementa un bucle **ReAct**:
 
-1.  Construye el contexto (System Prompt + Narrativa CheckPoint + Historial Reciente).
-2.  Invoca al LLM.
-3.  **Decisión:**
-    *   Si es texto -> Muestra al usuario, guarda turno, comprueba compactación.
-    *   Si es `ToolExecutionRequest`:
-        *   Verifica permisos (Confirmación si es escritura).
-        *   Ejecuta la herramienta correspondiente.
-        *   Guarda el resultado en memoria.
-        *   **Recursión:** Vuelve al paso 2 con el nuevo input (el resultado de la herramienta).
-
-## 5. Herramientas del Agente
-
-El agente cuenta con un set exhaustivo de más de 30 herramientas, todas ejecutadas localmente en la JVM:
-
-**Operaciones de Archivos (Java Nativo):**
-1.  `file_read`: Lectura de texto con paginación.
-2.  `file_write`: Escritura de archivos.
-3.  `file_mkdir`: Creación de directorios.
-4.  `file_find`: Búsqueda de archivos (GLOB).
-5.  `file_grep`: Búsqueda de contenido (Regex).
-6.  `file_read_selectors`: Lectura masiva optimizada.
-7.  `file_extract_text`: Extracción de texto de binarios (Tika).
-8.  `file_patch`: Aplicación de parches *Unified Diff* (vía `java-diff-utils`).
-9.  `file_search_and_replace`: Reemplazo de cadenas simples.
-10. `file_history`: Historial de versiones (vía `javarcs`).
-11. `file_recovery`: Recuperación de versiones anteriores (vía `javarcs`).
-
-**Conectividad y Web:**
-12. `web_search`: Búsqueda web (API Brave).
-13. `web_get_content`: Descarga y limpieza de HTML (Tika).
-14. `get_weather`: Clima (Open-Meteo).
-15. `get_current_location`: Geolocalización IP.
-16. `get_current_time`: Fecha y hora precisa.
-
-**Memoria y Cognición:**
-17. `lookup_turn`: Recuperación de dato histórico por ID (`{cite:ID}`).
-18. `search_full_history`: Búsqueda semántica en toda la BD.
-
-**Documentación (DocMapper):**
-19. `document_index`: Indexar nuevo documento.
-20. `document_search`: Búsqueda híbrida.
-21. `get_document_structure`: Obtener índice del documento.
-22. `get_partial_document`: Leer contenido real de sección.
-23. `document_search_by_categories`: Filtro por categoría.
-24. `document_search_by_sumaries`: Búsqueda vectorial pura.
-
-**Comunicación y Sensores:**
-25. `telegram_send`: Enviar mensaje Telegram.
-26. `email_list_inbox`: Listar emails.
-27. `email_read`: Leer email.
-28. `email_send`: Enviar email.
-29. `schedule_alarm`: Programar recordatorio (Natty).
-30. `pool_event`: Consumir cola de eventos.
+1.  Construye contexto (System Prompt + Narrativa CheckPoint + Historial reciente + Marca temporal).
+2.  Invoca al LLM (`CONVERSATION` model).
+3.  **Bucle de Herramientas:**
+    *   Si el LLM pide ejecutar herramientas:
+        *   Verifica permisos (Usuario confirma si es necesario).
+        *   Ejecuta la herramienta (Java nativo).
+        *   Inyecta el resultado como `ToolExecutionResultMessage`.
+        *   Guarda el turno intermedio (Tool Call + Tool Result).
+        *   Repite el paso 2 con el nuevo estado.
+4.  Si es respuesta de texto final: Guarda el turno y se lo muestra al usuario.
+5.  **Comprobación de Compactación:** Verifica si se ha superado el umbral de turnos para disparar la consolidación de memoria en segundo plano.
 
 ## 6. Construcción y Despliegue
 
-*   **Build System:** Maven.
-*   **Empaquetado:** Uso de `maven-shade-plugin` con `ServicesResourceTransformer`. Esto es crítico para generar un "Fat JAR" funcional, ya que fusiona los archivos SPI (`META-INF/services`) necesarios para que LangChain4j y Tika descubran sus plugins automáticamente.
-*   **Configuración:** Archivos `.properties` autogenerados en `./data`.
-*   **Ejecución:**
-    *   GUI (Swing) por defecto.
-    *   Consola (JLine) mediante el flag `-c`.
-    *   Servidor web H2 embebido activo en puerto 8082 para inspección de datos.
+*   **Build System:** Maven estándar.
+*   **Empaquetado:** Uso crítico de `maven-shade-plugin` con `ServicesResourceTransformer`. Esto es vital para fusionar los archivos SPI (`META-INF/services`) de las librerías, permitiendo que LangChain4j y Tika descubran sus plugins en un Fat JAR único.
+*   **Configuración:** Al primer arranque, genera automáticamente una estructura de carpetas `./data` con ficheros `.properties` editables para configurar APIs, modelos y credenciales.
 
 ## 7. Conclusión
 
-El proyecto `chatagent` demuestra un nivel de madurez técnica muy superior a un "juguete". Representa una arquitectura de referencia para **Agentes Autónomos Locales en Java**.
+El proyecto `chatagent` es una pieza de ingeniería de software notablemente madura para ser un proyecto personal. Cumple estrictamente con los requisitos de **independencia** (todo en un JAR, DB embebida, RCS nativo) y **persistencia**.
 
-Sus fortalezas clave son:
-1.  **Autocontención y Portabilidad:** Al utilizar librerías Java nativas para operaciones complejas como `diff` y `rcs`, elimina dependencias del sistema operativo. El mismo JAR funciona idénticamente en Windows, Linux y Mac.
-2.  **Memoria Robusta:** La implementación de memoria híbrida con compactación narrativa aborda eficazmente el problema del contexto limitado, permitiendo sesiones de larga duración.
-3.  **Seguridad por Diseño:** El uso de sandbox para archivos y la confirmación humana para acciones destructivas lo hace viable para entornos de producción o desarrollo real.
-4.  **Arquitectura Limpia:** La separación de interfaces, el uso de eventos para la proactividad y el desacoplamiento de servicios facilitan la mantenibilidad y extensión.
+Puntos fuertes destacados:
+1.  **Arquitectura de Memoria Robusta:** La distinción entre memoria episódica inmutable y memoria semántica narrativa ("El Viaje") soluciona eficazmente el problema del contexto infinito.
+2.  **Seguridad por Diseño:** La integración de RCS nativo para backup automático antes de escritura es una característica brillante para un agente de desarrollo/investigación, proporcionando una red de seguridad contra código destructivo.
+3.  **Enfoque "Java-Native":** La reimplementación de herramientas de sistema (diff, rcs) en Java garantiza que el agente sea verdaderamente portable entre sistemas operativos sin dependencias externas.
+4.  **Proactividad:** El sistema de inyección de eventos permite que el agente "sienta" el entorno sin romper la ilusión de una sesión de chat secuencial.
 
-**Nota:** La implementación actual de búsqueda vectorial (`EmbeddingFilterImpl`) realiza cálculos en memoria (iterando sobre BLOBs recuperados de H2). Esto es óptimo para uso personal y portabilidad, pero para escalar a millones de vectores requeriría migrar a una base de datos con índice vectorial nativo (como PostgreSQL/pgvector o Qdrant).
-
+Es una base sólida para un asistente personal de investigación capaz de mantener el contexto durante meses o años.

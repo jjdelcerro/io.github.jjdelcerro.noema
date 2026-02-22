@@ -10,36 +10,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.Map;
 import io.github.jjdelcerro.chatagent.lib.AgentTool;
+import io.github.jjdelcerro.chatagent.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.javarcs.lib.RCSCommand;
+import io.github.jjdelcerro.javarcs.lib.RCSLocator;
+import io.github.jjdelcerro.javarcs.lib.RCSManager;
+import io.github.jjdelcerro.javarcs.lib.commands.CheckinOptions;
 
-public class FileWriteTool implements AgentTool {
-
-  /*
-    TODO: Para las herramientas de escritura deberia de preguntar antes de usarlas.
-    TODO: Hay que tener en cuenta estas consideraciones.
-    
-
-### ¿Por qué esta herramienta es "peligrosa" en tu arquitectura?
-
-Al integrar esta herramienta en tu sistema de **Memoria Híbrida Determinista**, debes tener en cuenta un par de cosas que justifican tu recelo:
-
-1.  **El problema del "Estado Real" vs "Memoria":** Si el agente escribe un archivo y luego la compactación falla o hay un error de base de datos, el archivo en el disco habrá cambiado pero el agente podría "olvidar" que lo hizo (o cómo lo hizo). Esto rompe el determinismo.
-2.  **Truncamiento en la persistencia:** Como el contenido escrito puede ser muy grande, tu `SourceOfTruthImpl` lo truncará en la BD (el límite de 2KB). El `MemoryManager` verá en el historial que se escribió algo, pero no sabrá exactamente *qué* se escribió a menos que el agente lo haya mencionado antes en su `text_model_thinking`.
-
-### Mi sugerencia de "Arquitecto": El patrón de Pre-lectura
-
-Para que esta herramienta no rompa la coherencia de tu experimento con **Devstral**, yo le añadiría una instrucción al `SystemPrompt` del `ConversationAgent`:
-
-> *"Antes de usar `file_write`, debes usar `file_read` sobre el archivo (si existe) para tener una copia del estado anterior en el historial. Esto garantiza que la memoria consolidada pueda reconstruir la evolución del código."*
-
-De esta forma, el `MemoryManager` (DeepSeek R1) podrá narrar en "El Viaje": *"El agente leyó el fichero X {cite: 200}, identificó un error en la línea 40, y procedió a sobrescribirlo con la versión corregida {cite: 201}"*.
-   */
-
-  private final Gson gson = new Gson();
-
-  private final Agent agent;
+public class FileWriteTool extends AbstractAgentTool {
 
   public FileWriteTool(Agent agent) {
-    this.agent = agent;
+    super(agent);
   }
 
   @Override
@@ -77,6 +57,14 @@ De esta forma, el `MemoryManager` (DeepSeek R1) podrá narrar en "El Viaje": *"E
         Files.createDirectories(filePath.getParent());
       }
 
+      if( Files.exists(filePath) ) {
+        RCSManager rcsmanager = RCSLocator.getRCSManager();
+        CheckinOptions opciones = rcsmanager.createCheckinOptions(filePath);
+        opciones.setAuthor(this.getConversationService().getModelName());
+        opciones.setInit(true);
+        RCSCommand ci = rcsmanager.create(opciones);
+        ci.execute(opciones);
+      }
       // Escritura atómica (opcionalmente podrías usar StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
       Files.writeString(filePath, content, StandardCharsets.UTF_8);
 
@@ -92,4 +80,5 @@ De esta forma, el `MemoryManager` (DeepSeek R1) podrá narrar en "El Viaje": *"E
       return gson.toJson(Map.of("status", "error", "message", e.getClass().getSimpleName() + ": " + e.getMessage()));
     }
   }
+  
 }

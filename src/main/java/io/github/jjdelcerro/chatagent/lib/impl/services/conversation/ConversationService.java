@@ -42,11 +42,15 @@ import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.event
 import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file.FileExtractTextTool;
 import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file.FileFindTool;
 import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file.FileGrepTool;
+import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file.FileHistoryTool;
 import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file.FileMkdirTool;
 import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file.FilePatchTool;
 import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file.FileReadTool;
+import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file.FileRecoveryTool;
 import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file.FileSearchAndReplaceTool;
 import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file.FileWriteTool;
+import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file.ShellExecuteTool;
+import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file.ShellReadOutputTool;
 import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.web.LocationTool;
 import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.web.TimeTool;
 import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.web.WeatherTool;
@@ -81,7 +85,7 @@ public class ConversationService implements AgentService {
 
     public AvailableAgentTool(AgentTool tool) {
       this.tool = tool;
-      this.active = true;
+      this.active = tool.isAvailableByDefault();
     }
   }
 
@@ -417,7 +421,10 @@ public class ConversationService implements AgentService {
       new WebGetTikaTool(this.agent),
       new WeatherTool(this.agent),
       new LocationTool(this.agent),
-      new TimeTool(this.agent)
+      new TimeTool(this.agent),
+      new ShellExecuteTool(this.agent),
+      new ShellReadOutputTool(this.agent),
+      new FileRecoveryTool(this.agent)            
     };
     List<AgentTool> tools = new ArrayList<>(Arrays.asList(tools0));
 

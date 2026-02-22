@@ -121,6 +121,8 @@ public class MemoryService implements AgentService {
 
     String generatedText = response.text();
 
+    // TODO: Comprobar aqui que las citas del nuevo "viaje" son correctas.
+    
     // 3. Calcular metadatos del nuevo rango
     int firstId = newTurns.getFirst().getId();
     int lastId = newTurns.getLast().getId();
@@ -157,6 +159,16 @@ public class MemoryService implements AgentService {
     // Cabecera compatible con Turn.toCSVLine()
     sb.append("code,timestamp,contenttype,text_user,text_model_thinking,text_model,tool_call,tool_result\n");
 
+    // TODO: Falta por implementar correctamente la rehidratacion del las herramienta de memoria.
+    
+    // TODO: Habria que implementar el troceado de los turnos generando mas de un punto
+    // de guardado, cuando estos no entren en el contexto del LLM encargado de compactarlos.
+    
+    // TODO: Ver hasta que punto es necesario (hacerlo optativo) la implementacion
+    // de la gestion de estado al realizar las compactaciones. Probablemente habria
+    // que hacerlo en una segunda llamada al LLM para evitar problemas cognitivos y que
+    // luego el agente se encargue de montarlo todo en un solo punto de guardado.
+    
     for (Turn turn : newTurns) {
       sb.append(turn.toCSVLine()).append("\n");
     }

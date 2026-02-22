@@ -1,5 +1,6 @@
 package io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file;
 
+import io.github.jjdelcerro.chatagent.lib.impl.AbstractAgentTool;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.chatagent.lib.Agent;
@@ -20,9 +21,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.github.jjdelcerro.chatagent.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
+import java.util.HashMap;
 
 public class FileReadTool extends AbstractAgentTool {
 
+  // TODO: gestionar que pasa con lineas muy largas, por ejemplo de 1Mb.
+  
   private static final int DEFAULT_MAX_LINES = 1000;
   private static final int CACHE_SIZE = 30;
   public static final String TOOL_NAME = "file_read";
@@ -91,6 +95,11 @@ public class FileReadTool extends AbstractAgentTool {
   }
 
   public String execute(Path thePath, String originalPath, String toolName, int theOffset, int theLimit) throws IOException {
+    Map<String,Object> args = Map.of("path", originalPath);
+    return this.execute(thePath, originalPath, toolName, args, theOffset, theLimit);
+  }
+  
+  public String execute(Path thePath, String originalPath, String toolName, Map<String,Object> args, int theOffset, int theLimit) throws IOException {
     if (!Files.exists(thePath) || !Files.isRegularFile(thePath)) {
       return error("El archivo no existe o es un directorio: " + thePath);
     }
@@ -103,11 +112,17 @@ public class FileReadTool extends AbstractAgentTool {
     long totalLines = getLineCountWithCache(thePath);
 
     try (Stream<String> lines = Files.lines(thePath, StandardCharsets.UTF_8)) {
-      return this.execute(lines, originalPath, toolName, totalLines, theOffset, theLimit);
+      return this.execute(lines, originalPath, toolName, args, totalLines, theOffset, theLimit);
     }
   }
 
   public String execute(Stream<String> lines, String originalPath, String toolName, long totalLines, int theOffset, int theLimit) throws IOException {
+    Map<String,Object> args = new HashMap<>();
+    args.put("path", originalPath);
+    return execute(lines, originalPath, toolName, args, totalLines, theOffset, theLimit);
+  }
+  
+  public String execute(Stream<String> lines, String originalPath, String toolName, Map<String,Object> args, long totalLines, int theOffset, int theLimit) throws IOException {
 
     int offset = theOffset > 0 ? theOffset : 0;
     int limit = theLimit > 0 ? theLimit : getDefaultMaxLines();
@@ -143,10 +158,9 @@ public class FileReadTool extends AbstractAgentTool {
 
     // Hint solo si queda contenido por leer
     if (isTruncated) {
-      String nextArgs = String.format(
-              "{\"path\": \"%s\", \"offset\": %d, \"limit\": %d}",
-              originalPath, nextOffset, limit
-      );
+      args.put("offset", nextOffset);
+      args.put("limit", limit);
+      String nextArgs = gson.toJson(args);
       sb.append("[HINT: To read the next block, call tool '")
               .append(toolName)
               .append("' with args: ")
