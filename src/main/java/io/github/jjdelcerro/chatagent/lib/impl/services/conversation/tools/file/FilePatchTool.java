@@ -1,5 +1,6 @@
 package io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file;
 
+import io.github.jjdelcerro.chatagent.lib.impl.AbstractAgentTool;
 import com.github.difflib.DiffUtils;
 import com.github.difflib.UnifiedDiffUtils;
 import com.github.difflib.patch.Patch;
@@ -14,24 +15,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import io.github.jjdelcerro.chatagent.lib.AgentTool;
+import io.github.jjdelcerro.javarcs.lib.RCSCommand;
+import io.github.jjdelcerro.javarcs.lib.RCSLocator;
+import io.github.jjdelcerro.javarcs.lib.RCSManager;
+import io.github.jjdelcerro.javarcs.lib.commands.CheckinOptions;
 
 public class FilePatchTool extends AbstractAgentTool {
 
+  public static final String TOOL_NAME = "file_patch";
+  
   /*
-
-    TODO: ¿Cómo instruir al Agente para que elija entre FilePatchTool y FileSearchAndReplaceTool?
-
-Para que tu PoC funcione bien, te sugiero añadir esto al `getBaseSystemPrompt()` de tu `ConversationAgent`:
-
-> **Estrategia de Edición:**
-> 1. Para cambios simples (una línea, un valor, un nombre): usa `file_search_replace`. Es más rápido y seguro.
-> 2. Para refactorizaciones, añadir métodos o cambios en múltiples bloques: usa `file_patch`. Proporciona suficiente contexto en las líneas del parche para que sea robusto.
-
-### Un pequeño "hack" de visualización:
-Si quieres que tu consola en Java se vea como la de **Gemini CLI**, puedes interceptar la respuesta de la herramienta en tu `ConversationAgent` y, si es un `file_patch`, imprimir por consola el String del parche usando códigos de color ANSI (Rojo para `-`, Verde para `+`). 
-
-¡Ver cómo el agente "parchea" su propio código fuente en tiempo real es la mejor forma de validar que tu PoC tiene "vida"! 
-
 ### Una nota sobre el formato del parche
 Los LLM a veces envían el parche "desnudo" (solo el bloque `@@ ... @@`). Para que `UnifiedDiffUtils` no proteste, a veces es necesario que el parche incluya las líneas de cabecera:
 ```diff
@@ -41,7 +34,9 @@ Los LLM a veces envían el parche "desnudo" (solo el bloque `@@ ... @@`). Para q
 -viejo
 +nuevo
 ```
-Si ves que **Devstral** te da errores de parseo, podemos añadir una pequeña lógica en Java que le "pegue" unas cabeceras genéricas al principio del String si no las tiene. Pero por ahora, prueba así; los modelos de 2025 suelen ser bastante buenos siguiendo el estándar.
+Si vemos que Devstral o modelos "pequeñós" nos dan errores de parseo, podemos añadir una pequeña lógica 
+en Java que le "pegue" unas cabeceras genéricas al principio del String si no las tiene. 
+Pero por ahora, prueba así; los modelos de 2025 suelen ser bastante buenos siguiendo el estándar.
     
    */
   public FilePatchTool(Agent agent) {
@@ -51,8 +46,11 @@ Si ves que **Devstral** te da errores de parseo, podemos añadir una pequeña l�
   @Override
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
-            .name("file_patch")
-            .description("Aplica un parche en formato Unified Diff (@@ ... @@) a un archivo.")
+            .name(TOOL_NAME)
+            .description("Aplica un parche en formato Unified Diff (@@ ... @@) a un archivo.\n"
+                    + "Usa esta herramienta para refactorizaciones, añadir métodos o cambios en múltiples bloques.\n"
+                    + "Proporciona suficiente contexto en las líneas del parche para que sea robusto."
+            )
             .addParameter("path", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Ruta relativa del archivo"))
             .addParameter("patch", JsonSchemaProperty.STRING, JsonSchemaProperty.description("El parche en formato unified diff"))
             .build();
@@ -86,6 +84,14 @@ Si ves que **Devstral** te da errores de parseo, podemos añadir una pequeña l�
       // 3. Aplicar el parche usando DiffUtils
       List<String> patchedLines = DiffUtils.patch(originalLines, patch);
 
+      if( Files.exists(filePath) ) {
+        RCSManager rcsmanager = RCSLocator.getRCSManager();
+        CheckinOptions opciones = rcsmanager.createCheckinOptions(filePath);
+        opciones.setAuthor(this.getConversationService().getModelName());
+        opciones.setInit(true);
+        RCSCommand ci = rcsmanager.create(opciones);
+        ci.execute(opciones);
+      }
       // 4. Guardar resultado
       Files.write(filePath, patchedLines);
 

@@ -1,10 +1,11 @@
-package io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file;
+package io.github.jjdelcerro.chatagent.lib.impl;
 
 import com.google.gson.Gson;
 import io.github.jjdelcerro.chatagent.lib.Agent;
 import io.github.jjdelcerro.chatagent.lib.AgentAccessControl.AccessMode;
 import static io.github.jjdelcerro.chatagent.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
 import io.github.jjdelcerro.chatagent.lib.AgentTool;
+import io.github.jjdelcerro.chatagent.lib.impl.services.conversation.ConversationService;
 import java.nio.file.Path;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -37,5 +38,9 @@ public abstract class AbstractAgentTool implements AgentTool {
   protected Path resolvePathOrNull(String path, AccessMode access) {
     Path x = this.agent.getAccessControl().resolvePathOrNull(path, access);
     return x;
+  }
+  
+  protected ConversationService getConversationService() {
+    return (ConversationService) agent.getService(ConversationService.NAME);
   }
 }

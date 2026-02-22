@@ -1,6 +1,5 @@
 package io.github.jjdelcerro.chatagent.lib.impl.services.conversation.tools.file;
 
-import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.chatagent.lib.Agent;
@@ -11,27 +10,27 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import io.github.jjdelcerro.chatagent.lib.AgentTool;
+import io.github.jjdelcerro.chatagent.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.javarcs.lib.RCSCommand;
+import io.github.jjdelcerro.javarcs.lib.RCSLocator;
+import io.github.jjdelcerro.javarcs.lib.RCSManager;
+import io.github.jjdelcerro.javarcs.lib.commands.CheckinOptions;
 
-public class FileSearchAndReplaceTool implements AgentTool {
-
-  /*
-TODO: Para que el modelo no se frustre (porque a veces fallan por un espacio o un tabulador al copiar el oldText), es recomendable añadir una pequeña instrucción en el System Prompt:
-
-"Cuando uses file_edit, asegúrate de incluir al menos 2 o 3 líneas de contexto en el oldText para que sea único. Copia el texto exactamente como aparece en el archivo, respetando cada espacio y salto de línea."   
-   */
-  private final Gson gson = new Gson();
-
-  private final Agent agent;
+public class FileSearchAndReplaceTool extends AbstractAgentTool {
 
   public FileSearchAndReplaceTool(Agent agent) {
-    this.agent = agent;
+    super(agent);
   }
 
   @Override
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
             .name("file_search_and_replace")
-            .description("Edita un archivo reemplazando un bloque de texto específico por otro.")
+            .description("Edita un archivo reemplazando un bloque de texto específico por otro.\n"
+                    + "Usa esta herramienta para cambios simples (una línea, un valor, un nombre), es más rápido y seguro que "+FilePatchTool.TOOL_NAME+".\n" +
+"\n"
+                    + "Asegúrate de incluir al menos 2 o 3 líneas de contexto en el oldText para que sea único. Copia el texto exactamente como aparece en el archivo, respetando cada espacio y salto de línea."
+            )
             .addParameter("path", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Ruta relativa del archivo."))
             .addParameter("oldText", JsonSchemaProperty.STRING, JsonSchemaProperty.description("El bloque de texto EXACTO que se desea cambiar (debe ser único en el archivo)."))
             .addParameter("newText", JsonSchemaProperty.STRING, JsonSchemaProperty.description("El nuevo texto que reemplazará al anterior."))
@@ -49,7 +48,7 @@ TODO: Para que el modelo no se frustre (porque a veces fallan por un espacio o u
       Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
       String oldText = args.get("oldText");
       String newText = args.get("newText");
-      Path filePath = this.agent.getAccessControl().resolvePathOrNull(args.get("path"),PATH_ACCESS_WRITE);
+      Path filePath = this.agent.getAccessControl().resolvePathOrNull(args.get("path"), PATH_ACCESS_WRITE);
       if (filePath == null) {
         return gson.toJson(Map.of("status", "error", "message", "Acceso denegado."));
       }
@@ -71,6 +70,14 @@ TODO: Para que el modelo no se frustre (porque a veces fallan por un espacio o u
 
       // Realizamos el reemplazo
       String newContent = content.replace(oldText, newText);
+      if (Files.exists(filePath)) {
+        RCSManager rcsmanager = RCSLocator.getRCSManager();
+        CheckinOptions opciones = rcsmanager.createCheckinOptions(filePath);
+        opciones.setAuthor(this.getConversationService().getModelName());
+        opciones.setInit(true);
+        RCSCommand ci = rcsmanager.create(opciones);
+        ci.execute(opciones);
+      }
       Files.writeString(filePath, newContent, StandardCharsets.UTF_8);
 
       return gson.toJson(Map.of(

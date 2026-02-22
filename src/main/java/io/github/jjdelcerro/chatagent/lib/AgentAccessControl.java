@@ -16,6 +16,10 @@ public interface AgentAccessControl {
 
   void addAllowedPath(Path path);
 
+  void addNonWritablePath(Path path);
+  
+  void addNonReadablePath(Path path);
+  
   /**
    * Verifica si el path es seguro y accesible para el modo solicitado.
    *

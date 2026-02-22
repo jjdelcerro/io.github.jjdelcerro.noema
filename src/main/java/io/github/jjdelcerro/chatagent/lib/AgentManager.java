@@ -12,7 +12,7 @@ import java.util.function.Supplier;
  */
 public interface AgentManager {
   
-  public Agent createAgent(ConnectionSupplier memoryDatabase, ConnectionSupplier servicesDatabase, File dataFolder, AgentSettings settings, AgentConsole console);
+  public Agent createAgent(ConnectionSupplier memoryDatabase, ConnectionSupplier servicesDatabase, File agentFolder, AgentSettings settings, AgentConsole console);
   
   public AgentActions createActions();
   

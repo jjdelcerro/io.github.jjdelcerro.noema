@@ -21,6 +21,8 @@ public interface Agent {
         double temperature
   ) { }
   
+  public File getAgentFolder();
+
   public File getDataFolder();
 
   public File getDataFolder(String name);

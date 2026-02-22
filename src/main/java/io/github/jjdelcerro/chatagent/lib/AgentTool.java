@@ -28,6 +28,10 @@ public interface AgentTool {
         return MODE_READ;
     }
     
+    default boolean isAvailableByDefault() {
+      return true;
+    }
+    
     // Ejecución de la lógica (recibe JSON args, devuelve String result)
     String execute(String jsonArguments);
 }
