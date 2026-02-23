@@ -4,6 +4,7 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
+import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentSettings;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
@@ -18,6 +19,7 @@ import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import org.apache.commons.io.FileUtils;
 import org.h2.tools.Server;
 
 /**
@@ -25,37 +27,24 @@ import org.h2.tools.Server;
  * @author jjdelcerro
  */
 @SuppressWarnings("UseSpecificCatch")
-public class AgentUtils {
+public class BootUtils {
 
-  private AgentUtils() {
+  private BootUtils() {
 
   }
 
-  public static Agent init(File agentFolder) {
+  public static Agent init(AgentSettings settings) {
     try {
-      // Preparar Directorios
-      agentFolder = agentFolder.getCanonicalFile();
-      Files.createDirectories(agentFolder.toPath());
-
-      File dataFolder = new File(agentFolder, "data");
-
-      // Inicializar la consola y settings del agente
       AgentConsole console = AgentUILocator.getAgentUIManager().createConsole();
-      console.printSystemLog("Iniciando Agente de Memoria narrativa trazable...");
-      AgentUtils.initSettings(console, dataFolder);
-      AgentUtils.askSettings(console, dataFolder);
-
-      // Cargamos los settings del agente
-      File settingsFile = new File(dataFolder, "settings.properties");
-      AgentSettings settings = AgentLocator.getAgentManager().createSettings();
-      settings.load(settingsFile);
-
+      
+      AgentPaths paths = settings.getPaths();
+      
       // Iniciar el servidor web de H2 (Consola)
       Server webServer = Server.createWebServer("-webPort", settings.getProperty("H2_WEBPORT"), "-webAllowOthers").start();
       console.printSystemLog("H2 Web Console activa en: " + webServer.getURL());
 
       // Conexión a Base de Datos (H2)
-      File memoryFile = new File(dataFolder, "memory").getCanonicalFile();
+      File memoryFile = paths.getDataFolder().resolve("memory").normalize().toRealPath().toFile();
       ConnectionSupplier memoryDatabase = new ConnectionSupplier() {
         @Override
         public Connection get() {
@@ -71,7 +60,7 @@ public class AgentUtils {
           return "H2";
         }
       };
-      File servicesFile = new File(dataFolder, "service").getCanonicalFile();
+      File servicesFile = paths.getDataFolder().resolve("service").normalize().toRealPath().toFile();
       ConnectionSupplier servicesDatabase = new ConnectionSupplier() {
         @Override
         public Connection get() {
@@ -111,7 +100,6 @@ public class AgentUtils {
       Agent agent = AgentLocator.getAgentManager().createAgent(
               memoryDatabase,
               servicesDatabase,
-              agentFolder,
               settings,
               console
       );
@@ -121,13 +109,8 @@ public class AgentUtils {
     }
   }
 
-  private static boolean areSettingsValid(AgentConsole console, File settingsFile) {
-    if (!settingsFile.exists()) {
-      return false;
-    }
+  public static boolean areSettingsValid(AgentSettings settings) {
     AgentManager agentManager = AgentLocator.getAgentManager();
-    AgentSettings settings = agentManager.createSettings();
-    settings.load(settingsFile);
 
     AgentServiceFactory[] services = {
       agentManager.getServiceFactory("MEMORY"),
@@ -141,29 +124,14 @@ public class AgentUtils {
     return true;
   }
 
-  private static void askSettings(AgentConsole console, File dataFolder) {
-    File settingsFile = new File(dataFolder, "settings.properties");
-    if (!AgentUtils.areSettingsValid(console, settingsFile)) {
-      console.printSystemLog("Configuración incompleta. Abriendo asistente...");
-      // Usamos el constructor que creará un FakeAgent para la UI inicial
-      AgentUISettings settingsUI = AgentUILocator.getAgentUIManager().createSettings(dataFolder, console);
-      settingsUI.showWindow();
-
-      if (!AgentUtils.areSettingsValid(console, settingsFile)) {
-        console.printSystemError("Configuración cancelada. Saliendo de la aplicacion.");
-        System.exit(1);
-      }
-    }
-  }
-
   private static void installResource(AgentConsole console, File dataFolder, String resPath) {
-    String resourceBase = "/io/github/jjdelcerro/chatagent/main/";
+    String resourceBase = "/io/github/jjdelcerro/noema/main/";
     Path targetPath = dataFolder.toPath().resolve(resPath);
     if (!Files.exists(targetPath)) {
       try {
         Files.createDirectories(targetPath.getParent());
 
-        try (InputStream is = AgentUtils.class.getResourceAsStream(resourceBase + resPath)) {
+        try (InputStream is = BootUtils.class.getResourceAsStream(resourceBase + resPath)) {
           if (is != null) {
             Files.copy(is, targetPath, StandardCopyOption.REPLACE_EXISTING);
             console.printSystemLog("Recurso instalado en data " + resPath);
@@ -177,7 +145,7 @@ public class AgentUtils {
     }
   }
 
-  private static void initSettings(AgentConsole console, File dataFolder) {
+  public static void initSettings(AgentConsole console, File localConfig) {
     String[] resources = new String[]{
       "models.properties",
       "providers_apikeys.properties",
@@ -186,7 +154,7 @@ public class AgentUtils {
       "settingsui.json"
     };
     for (String resPath : resources) {
-      installResource(console, dataFolder, resPath);
+      installResource(console, localConfig, resPath);
     }
   }
 

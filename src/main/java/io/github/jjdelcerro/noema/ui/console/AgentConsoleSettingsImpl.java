@@ -4,13 +4,13 @@ import io.github.jjdelcerro.noema.ui.common.FakeAgent;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentConsole;
+import io.github.jjdelcerro.noema.lib.AgentSettings;
 import io.github.jjdelcerro.noema.ui.AgentUIManager;
 import io.github.jjdelcerro.noema.ui.AgentUISettings;
 import io.github.jjdelcerro.noema.ui.common.AbstractAgentSettingsItem;
 import io.github.jjdelcerro.noema.ui.common.AgentSettingsItem;
-import java.io.File;
 import java.io.FileReader;
+import java.nio.file.Path;
 import java.util.List;
 import org.jline.reader.LineReader;
 
@@ -254,7 +254,7 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
 
       return (AgentSettingsItemConsole) getParent();
     }
-    
+
   }
 
   private static class ValueItem extends AbstractAgentSettingsItemConsole {
@@ -276,9 +276,9 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
   }
 
   public AgentConsoleSettingsImpl(AgentUIManager agentUIManager, Agent agent) {
-    File settingsUIFile = new File(agent.getDataFolder(), "settingsui.json");
+    Path settingsUIPath = agent.getPaths().getConfigFolder().resolve("settingsui.json");
     JsonObject uiroot = null;
-    try (FileReader reader = new FileReader(settingsUIFile)) {
+    try (FileReader reader = new FileReader(settingsUIPath.toFile())) {
       uiroot = JsonParser.parseReader(reader).getAsJsonObject();
     } catch (Exception e) {
       // Fallback minimo si el fichero no existe o es corrupto
@@ -289,8 +289,8 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
     this.root = new MenuItem(null, agent, uiroot);
   }
 
-  public AgentConsoleSettingsImpl(AgentUIManager agentUIManager, File dataFolder, AgentConsole console) {
-    this(agentUIManager, new FakeAgent(dataFolder, console));
+  public AgentConsoleSettingsImpl(AgentUIManager agentUIManager, AgentSettings settings) {
+    this(agentUIManager, new FakeAgent(settings));
   }
 
   public void showWindow() {

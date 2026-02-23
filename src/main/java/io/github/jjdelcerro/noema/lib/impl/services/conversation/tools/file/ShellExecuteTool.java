@@ -6,7 +6,6 @@ import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationService;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -39,7 +38,7 @@ public class ShellExecuteTool extends AbstractAgentTool {
 
   // Mapa de salidas: ID (UUID) -> Path al fichero .out
   private final Map<String, Path> outputRegistry;
-  private final File tmpFolder;
+//  private final File tmpFolder;
 
   /**
    * Extensión de LRUMap para gestionar el borrado físico de archivos al
@@ -66,7 +65,7 @@ public class ShellExecuteTool extends AbstractAgentTool {
   public ShellExecuteTool(Agent agent) {
     super(agent);
     this.outputRegistry = Collections.synchronizedMap(new OutputLRUMap(MAX_SAVED_OUTPUTS));
-    this.tmpFolder = new File(agent.getDataFolder(), "tmp");
+//    this.tmpFolder = agent.getPaths().getTempFolder();
     loadOutputsInformation();
   }
 
@@ -75,13 +74,13 @@ public class ShellExecuteTool extends AbstractAgentTool {
    * supera la cuota.
    */
   private void loadOutputsInformation() {
-    if (!tmpFolder.exists()) {
+    if (!Files.exists(agent.getPaths().getTempFolder())) {
       return;
     }
 
     try {
       // Listar archivos .out ordenados por fecha de modificación (viejos primero)
-      List<Path> files = Files.list(tmpFolder.toPath())
+      List<Path> files = Files.list(agent.getPaths().getTempFolder())
               .filter(p -> p.toString().endsWith(".out"))
               .sorted(Comparator.comparingLong(p -> p.toFile().lastModified()))
               .toList();
@@ -138,21 +137,21 @@ Ejecuta comandos de sistema en una shell de Bash.
   public boolean isAvailableByDefault() {
     return this.isSecureShellExecutionAvailable();
   }
-  
+
   @Override
   public String execute(String jsonArguments) {
     String executionId = "out_" + UUID.randomUUID().toString().substring(0, 8);
-    Path outputFile = tmpFolder.toPath().resolve(executionId + ".out");
+    Path outputFile = agent.getPaths().getTempFolder().resolve(executionId + ".out");
 
     try {
       Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
       String command = args.get("command");
 
       ProcessBuilder pb = new ProcessBuilder("bash", "-c", this.getSecuredCommand(command));
-      pb.directory(agent.getDataFolder().getParentFile());
+      pb.directory(agent.getPaths().getWorkspaceFolder().toFile());
       pb.redirectErrorStream(true);
 
-      Files.createDirectories(tmpFolder.toPath());
+      Files.createDirectories(agent.getPaths().getTempFolder());
       Process process = pb.start();
       process.getOutputStream().close();
 
@@ -245,19 +244,18 @@ Ejecuta comandos de sistema en una shell de Bash.
 
   /**
    * Construye el comando final envuelto en Firejail siguiendo la arquitectura:
-   * - agent/data: Blindada (Blacklist) 
-   * - agent/home: Home persistente (Private)
+   * - agent/data: Blindada (Blacklist) - agent/home: Home persistente (Private)
    * - project_root: Visible (Whitelist)
    */
   private String getSecuredCommand(String command) {
-    if( !this.isSecureShellExecutionAvailable() ) {
+    if (!this.isSecureShellExecutionAvailable()) {
       return command;
     }
     // 1. Resolución de rutas absolutas
     // Asumimos que getAgentFolder() devuelve la carpeta "agent/"
-    Path agentFolder = agent.getLocalConfigFolder().toPath().toAbsolutePath().normalize();
-    Path dataFolder = agent.getDataFolder().toPath().toAbsolutePath().normalize();
-    
+    Path agentFolder = agent.getPaths().getSandboxHomeFolder().toAbsolutePath().normalize();
+    Path dataFolder = agent.getPaths().getDataFolder().toAbsolutePath().normalize();
+
     Path projectRoot = agentFolder.getParent();
     Path homeFolder = agentFolder.resolve("home");
 
@@ -290,7 +288,8 @@ Ejecuta comandos de sistema en una shell de Bash.
   /**
    * Verifica si el binario 'firejail' está instalado y disponible en el PATH
    * del sistema.Cachea el resultado para optimizar ejecuciones posteriores.
-   * @return 
+   *
+   * @return
    */
   public synchronized boolean isSecureShellExecutionAvailable() {
     if (firejailAvailable != null) {

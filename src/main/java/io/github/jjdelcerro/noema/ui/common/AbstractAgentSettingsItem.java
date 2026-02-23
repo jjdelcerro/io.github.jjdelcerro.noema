@@ -8,11 +8,12 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-import okio.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -153,9 +154,9 @@ public abstract class AbstractAgentSettingsItem implements AgentSettingsItem {
    */
   private JsonArray loadDomainFromProperties(String relativePath) {
     try {
-      File file = Path.get(agent.getDataFolder()).resolve(relativePath, true).toFile();
-      if (!file.exists()) {
-        agent.getConsole().printSystemError("Fichero de dominio no encontrado: " + file.getAbsolutePath());
+      Path path = agent.getPaths().getConfigFolder().resolve(relativePath).toAbsolutePath();
+      if (!Files.exists(path)) {
+        agent.getConsole().printSystemError("Fichero de dominio no encontrado: " + path.toString());
         return new JsonArray(); // Devolvemos lista vacía para no romper la UI
       }
 
@@ -164,7 +165,7 @@ public abstract class AbstractAgentSettingsItem implements AgentSettingsItem {
 
       Properties props = new Properties();
       try (Reader reader = new InputStreamReader(
-              new java.io.FileInputStream(file), StandardCharsets.UTF_8)) {
+              new java.io.FileInputStream(path.toFile()), StandardCharsets.UTF_8)) {
         props.load(reader);
       } catch (java.io.IOException e) {
         agent.getConsole().printSystemError("Error leyendo dominio externo (" + relativePath + "): " + e.getMessage());

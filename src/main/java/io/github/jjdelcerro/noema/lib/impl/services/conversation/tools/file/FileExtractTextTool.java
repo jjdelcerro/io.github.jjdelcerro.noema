@@ -89,6 +89,6 @@ public class FileExtractTextTool extends AbstractAgentTool {
   }
 
   private Path getTemporaryFolder() {
-    return agent.getDataFolder().toPath().resolve("cache/" + TOOL_NAME);
+    return agent.getPaths().getCacheFolder().resolve(TOOL_NAME);
   }
 }

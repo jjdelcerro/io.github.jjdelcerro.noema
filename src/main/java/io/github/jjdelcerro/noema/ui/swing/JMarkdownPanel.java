@@ -75,7 +75,7 @@ public class JMarkdownPanel extends JTextPane {
     JButton btn = new JButton();
     try {
       // Usamos FlatSVGIcon si está disponible, si no, texto
-      btn.setIcon(new FlatSVGIcon("io/github/jjdelcerro/chatagent/ui/swing/copy.svg", 8, 8));
+      btn.setIcon(new FlatSVGIcon("io/github/jjdelcerro/noema/ui/swing/copy.svg", 8, 8));
     } catch (Exception e) {
       btn.setText("C");
     }

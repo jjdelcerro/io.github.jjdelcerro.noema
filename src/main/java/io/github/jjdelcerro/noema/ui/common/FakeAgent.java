@@ -11,8 +11,10 @@ import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
 import java.io.File;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.AgentManager;
+import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
+import java.nio.file.Path;
 import java.util.function.Supplier;
 
 /**
@@ -23,18 +25,20 @@ import java.util.function.Supplier;
  */
 public class FakeAgent implements Agent {
 
-  private final File agentFolder;
+//  private final AgentPaths paths;
   private final AgentSettings settings;
   private AgentConsole console;
   private final AgentActions actions;
 
-  public FakeAgent(File agentFolder, AgentConsole console) {
-    this.agentFolder = agentFolder;
+//  public FakeAgent(AgentPaths paths) {
+  public FakeAgent(AgentSettings settings) {
     AgentManager agentManager = AgentLocator.getAgentManager();
-    this.settings = agentManager.createSettings();
+//    this.paths = paths;
+//    this.settings = agentManager.createSettings(paths);
+    this.settings = settings;
     this.actions = new FakeAgentActions(agentManager.createActions());
-    this.console = console;
-    this.settings.load(new File(agentFolder,"data/settings.properties"));
+    this.console = new FakeConsole();
+    this.settings.load();
 
     AgentManager manager = AgentLocator.getAgentManager();
     for (Supplier<AgentActions.AgentAction> actionFactory : manager.getActions()) {
@@ -42,22 +46,6 @@ public class FakeAgent implements Agent {
       action.setAgent(this);
       this.actions.addAction(action);
     }
-  }
-
-  @Override
-  public File getLocalConfigFolder() {
-    return this.agentFolder;
-  }
-
-  @Override
-  public File getDataFolder() {
-    return new File(this.agentFolder,"data");
-  }
-
-  @Override
-  public File getDataFolder(String name) {
-    File file = this.getDataFolder().toPath().resolve(name).normalize().toFile();
-    return file;
   }
 
   @Override
@@ -155,16 +143,36 @@ public class FakeAgent implements Agent {
   }
 
   @Override
-  public File getGlobalConfigFolder() {
-    throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+  public AgentPaths getPaths() {
+    return settings.getPaths();
   }
 
-  @Override
-  public File getSandboxHomeFolder() {
-    throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-  }
+  private static class FakeConsole implements AgentConsole {
 
-  private class FakeAgentActions implements AgentActions {
+    @Override
+    public boolean confirm(String message) {
+      throw new UnsupportedOperationException("Not supported yet."); 
+    }
+
+    @Override
+    public void printSystemError(String message) {
+    }
+
+    @Override
+    public void printSystemLog(String message) {
+    }
+
+    @Override
+    public void printUserMessage(String message) {
+    }
+
+    @Override
+    public void printModelResponse(String message) {
+    }
+    
+  }
+  
+  private static class FakeAgentActions implements AgentActions {
 
     private final AgentActions delegate;
 

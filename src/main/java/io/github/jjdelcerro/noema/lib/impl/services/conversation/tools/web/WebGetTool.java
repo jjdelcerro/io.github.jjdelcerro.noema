@@ -49,7 +49,7 @@ public class WebGetTool implements AgentTool {
       }
       HttpRequest request = HttpRequest.newBuilder()
               .uri(url)
-              .header("User-Agent", "ChatAgent-Bot/1.0 (Pragmatic Architecture Experiment)")
+              .header("User-Agent", "Noema-Bot/1.0 (Pragmatic Architecture Experiment)")
               .GET()
               .build();
 

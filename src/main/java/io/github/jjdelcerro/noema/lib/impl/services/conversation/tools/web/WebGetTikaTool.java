@@ -52,7 +52,7 @@ public class WebGetTikaTool implements AgentTool { // FIXME: alguna forma de pag
       }
       HttpRequest request = HttpRequest.newBuilder()
               .uri(url)
-              .header("User-Agent", "ChatAgent-Bot/1.0")
+              .header("User-Agent", "Noema-Bot/1.0")
               .GET()
               .build();
 

@@ -7,7 +7,6 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.persistence.CheckPoint;
 import io.github.jjdelcerro.noema.lib.persistence.Turn;
 
-import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.sql.Connection;
@@ -23,6 +22,8 @@ import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
 import io.github.jjdelcerro.noema.lib.impl.SQLProvider;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingFilter;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsService;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +33,7 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressWarnings("UseSpecificCatch")
 public class SourceOfTruthImpl implements SourceOfTruth {
-  
+
   private static final Logger LOGGER = LoggerFactory.getLogger(SourceOfTruthImpl.class);
 
   private static final int MAX_DB_TEXT_SIZE = 2048; // 2KB
@@ -67,8 +68,8 @@ public class SourceOfTruthImpl implements SourceOfTruth {
     return this.agent.getServicesDatabase();
   }
 
-  private File getDataFolder() {
-    return this.agent.getDataFolder();
+  private Path getDataFolder() {
+    return this.agent.getPaths().getDataFolder();
   }
 
   private AgentConsole getConsole() {
@@ -178,9 +179,9 @@ public class SourceOfTruthImpl implements SourceOfTruth {
   }
 
   private void log2csv(Turn turn) {
-    File csvFile = new File(getDataFolder(), CSVLOG_FILE);
-    boolean exists = csvFile.exists();
-    try (PrintWriter pw = new PrintWriter(new FileWriter(csvFile, true))) {
+    Path csvPath = getDataFolder().resolve(CSVLOG_FILE);
+    boolean exists = Files.exists(csvPath);
+    try (PrintWriter pw = new PrintWriter(new FileWriter(csvPath.toFile(), true))) {
       if (!exists) {
         pw.println("code,timestamp,contenttype,text_user,text_model_thinking,text_model,tool_call,tool_result");
       }
@@ -420,13 +421,13 @@ public class SourceOfTruthImpl implements SourceOfTruth {
             rs.getInt("cp_first"),
             rs.getInt("cp_last"),
             rs.getTimestamp("timestamp"),
-            new File(this.getDataFolder(), CHECKPOINTS_FOLDER)
+            this.getDataFolder().resolve(CHECKPOINTS_FOLDER)
     );
   }
 
   @Override
   public synchronized CheckPoint createCheckPoint(int turnFirst, int turnLast, Timestamp timestamp, String text) {
-    CheckPoint cp = CheckPointImpl.create(-1, turnFirst, turnLast, timestamp, text, new File(getDataFolder(), CHECKPOINTS_FOLDER));
+    CheckPoint cp = CheckPointImpl.create(-1, turnFirst, turnLast, timestamp, text, getDataFolder().resolve(CHECKPOINTS_FOLDER));
     return cp;
   }
 

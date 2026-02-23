@@ -1,10 +1,10 @@
 package io.github.jjdelcerro.noema.lib.impl.persistence;
 
 import io.github.jjdelcerro.noema.lib.persistence.CheckPoint;
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Timestamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,13 +24,13 @@ public class CheckPointImpl implements CheckPoint {
   private final int turnFirst;
   private final int turnLast;
   private final Timestamp timestamp;
-  private final File storageFolder; // Carpeta donde se guardan los ficheros
+  private final Path storageFolder; // Carpeta donde se guardan los ficheros
 
   // Cache del contenido textual. Null hasta que se llama a getText()
   private String cachedText;
 
   // Constructor privado
-  private CheckPointImpl(int id, int turnFirst, int turnLast, Timestamp timestamp, File storageFolder) {
+  private CheckPointImpl(int id, int turnFirst, int turnLast, Timestamp timestamp, Path storageFolder) {
     this.id = id;
     this.turnFirst = turnFirst;
     this.turnLast = turnLast;
@@ -42,7 +42,7 @@ public class CheckPointImpl implements CheckPoint {
    * Factoría para rehidratar un CheckPoint desde los metadatos de la Base de
    * Datos. No carga el texto del disco inmediatamente (Lazy Loading).
    */
-  /*friend*/ static CheckPointImpl from(int id, int turnFirst, int turnLast, Timestamp timestamp, File storageFolder) {
+  /*friend*/ static CheckPointImpl from(int id, int turnFirst, int turnLast, Timestamp timestamp, Path storageFolder) {
     return new CheckPointImpl(id, turnFirst, turnLast, timestamp, storageFolder);
   }
 
@@ -51,7 +51,7 @@ public class CheckPointImpl implements CheckPoint {
    * contador. - Retorna la instancia para que SourceOfTruth guarde los
    * metadatos en BD.
    */
-  /*friend*/ static CheckPointImpl create(int id, int turnFirst, int turnLast, Timestamp timestamp, String text, File storageFolder) {
+  /*friend*/ static CheckPointImpl create(int id, int turnFirst, int turnLast, Timestamp timestamp, String text, Path storageFolder) {
     CheckPointImpl cp = new CheckPointImpl(id, turnFirst, turnLast, timestamp, storageFolder);
 
     // Inyectamos el texto en cache
@@ -72,18 +72,18 @@ public class CheckPointImpl implements CheckPoint {
 
   /*friend*/ void saveTextToDisk() {
     try {
-      if (!storageFolder.exists()) {
-        storageFolder.mkdirs();
+      if (!Files.exists(storageFolder)) {
+        Files.createDirectories(storageFolder);
       }
-      Files.writeString(getStorageFile(storageFolder).toPath(), cachedText, StandardCharsets.UTF_8);
+      Files.writeString(getStoragePath(storageFolder), cachedText, StandardCharsets.UTF_8);
     } catch (IOException e) {
       throw new RuntimeException("No se pudo persistir el CheckPoint en disco: " + getCode(), e);
     }
   }
 
-  private File getStorageFile(File storageFolder) {
+  private Path getStoragePath(Path storageFolder) {
     // Usamos extensión .md para facilitar el debug (Resumen + El Viaje)
-    return new File(storageFolder, getCode() + ".md");
+    return storageFolder.resolve(getCode() + ".md");
   }
 
   /**
@@ -96,14 +96,14 @@ public class CheckPointImpl implements CheckPoint {
       return cachedText;
     }
 
-    File file = getStorageFile(this.storageFolder);
-    if (!file.exists()) {
-      LOGGER.warn("No se ha podido localizar el checkpoint en '" + file.getName() + "'.");
-      return "Error: El archivo de memoria " + file.getName() + " no existe.";
+    Path path = getStoragePath(this.storageFolder);
+    if (!Files.exists(path)) {
+      LOGGER.warn("No se ha podido localizar el checkpoint en '" + path.getFileName().toString() + "'.");
+      return "Error: El archivo de memoria " + path.getFileName().toString() + " no existe.";
     }
 
     try {
-      cachedText = Files.readString(file.toPath(), StandardCharsets.UTF_8);
+      cachedText = Files.readString(path, StandardCharsets.UTF_8);
       return cachedText;
     } catch (IOException e) {
       throw new RuntimeException("Error crítico leyendo CheckPoint del disco: " + getCode(), e);
