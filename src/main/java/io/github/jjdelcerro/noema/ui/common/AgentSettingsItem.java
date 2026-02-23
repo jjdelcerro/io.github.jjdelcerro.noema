@@ -14,5 +14,6 @@ public interface AgentSettingsItem {
     String getValue();
     List<AgentSettingsItem> getChilds();
     AgentSettingsItem getParent();
+    public boolean isRequired();
      
 }

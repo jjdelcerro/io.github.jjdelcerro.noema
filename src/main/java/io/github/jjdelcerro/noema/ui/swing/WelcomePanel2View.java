@@ -127,6 +127,7 @@ public class WelcomePanel2View extends JPanel
       btnBrowse.setText("Seleccionar");
       jpanel1.add(btnBrowse,cc.xy(4,4));
 
+      txtDisclaimer.setEditable(false);
       txtDisclaimer.setName("txtDisclaimer");
       txtDisclaimer.setOpaque(false);
       LineBorder lineborder1 = new LineBorder(new Color(128,128,128),1,false);
@@ -148,6 +149,7 @@ public class WelcomePanel2View extends JPanel
       btnContinue.setText("Continuar");
       jpanel1.add(btnContinue,cc.xy(4,16));
 
+      txtConfigSummary.setEditable(false);
       txtConfigSummary.setName("txtConfigSummary");
       txtConfigSummary.setOpaque(false);
       LineBorder lineborder2 = new LineBorder(new Color(128,128,128),1,true);

@@ -10,6 +10,7 @@ import io.github.jjdelcerro.noema.ui.common.AbstractAgentSettingsItem;
 import io.github.jjdelcerro.noema.ui.common.AgentSettingsItem;
 import io.github.jjdelcerro.noema.ui.common.FakeAgent;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Frame;
@@ -123,8 +124,7 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
   @Override
   public void showWindow() {
     // Envolvemos el panel en un JDialog modal
-//    Window parent = SwingUtilities.getWindowAncestor(this);
-    Window parent = ((AgentSwingConsoleControllerUsingMultipleJTextPane) (this.agent.getConsole())).getRoot();
+    Window parent = null; // FIXME ((AgentSwingConsoleControllerUsingMultipleJTextPane) (this.agent.getConsole())).getRoot();
     JDialog dialog = new JDialog((Frame) (parent instanceof Frame ? parent : null), "Ajustes", true);
     dialog.getContentPane().add(this);
     dialog.setSize(1024, 600);
@@ -270,7 +270,11 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
       gbc.fill = GridBagConstraints.HORIZONTAL;
       gbc.anchor = GridBagConstraints.NORTHWEST;
 
-      p.add(new JLabel("<html><b>" + getLabel() + "</b></html>"), gbc);
+      JLabel label = new JLabel("<html><b>" + getLabel() + "</b></html>");
+      if( this.isRequired() ) {
+        label.setForeground(Color.RED.darker());
+      }
+      p.add(label, gbc);
 
       String current = agent.getSettings().getProperty(getVariableName());
       JTextField field = new JTextField(current != null ? current : "", 30);
@@ -327,7 +331,11 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
     public JComponent getComponent() {
       JPanel p = new JPanel(new BorderLayout(10, 10));
       p.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-      p.add(new JLabel("<html><b>" + getLabel() + "</b></html>"), BorderLayout.NORTH);
+      JLabel label = new JLabel("<html><b>" + getLabel() + "</b></html>");
+      if( this.isRequired() ) {
+        label.setForeground(Color.RED.darker());
+      }
+      p.add(label, BorderLayout.NORTH);
       DefaultListModel<AgentSettingsItem> model = new DefaultListModel<>();
       for (AgentSettingsItem child : getChilds()) {
         model.addElement(child);
@@ -377,7 +385,11 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
       gbc.weightx = 1.0;
       gbc.fill = GridBagConstraints.HORIZONTAL;
 
-      p.add(new JLabel("<html><b>" + getLabel() + "</b></html>"), gbc);
+      JLabel label = new JLabel("<html><b>" + getLabel() + "</b></html>");
+      if( this.isRequired() ) {
+        label.setForeground(Color.RED.darker());
+      }
+      p.add(label, gbc);
 
       // Cargamos las opciones (childs)
       DefaultComboBoxModel<AgentSettingsItem> model = new DefaultComboBoxModel<>();
