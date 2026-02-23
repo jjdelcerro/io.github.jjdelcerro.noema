@@ -5,8 +5,7 @@ import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
 import java.io.File;
-import java.sql.Connection;
-import java.util.function.Supplier;
+import java.nio.file.Path;
 
 /**
  *
@@ -21,19 +20,8 @@ public interface Agent {
         double temperature
   ) { }
   
-  /** Carpeta global en el home del usuario (~/.noema-agent) */
-  public File getGlobalConfigFolder();
-
-  /** Carpeta base del agente en el workspace actual (.noema-agent) */  
-  public File getLocalConfigFolder();
+  public AgentPaths getPaths();
   
-  /** Subcarpeta para el sandbox de procesos (.noema-agent/home) */
-  public File getSandboxHomeFolder();
-
-  public File getDataFolder();
-
-  public File getDataFolder(String name);
-
   public AgentActions getActions();
 
   public AgentSettings getSettings();

@@ -5,6 +5,7 @@ import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.AgentSettings;
 import java.io.File;
+import java.nio.file.Path;
 import javax.swing.SwingUtilities;
 
 /**
@@ -27,10 +28,10 @@ public class OpenEditorAction extends AbstractAgentAction {
 
   @Override
   public boolean perform(AgentSettings settings) {
-    File target = this.getAgent().getDataFolder(this.fname);
+    Path target = this.getAgent().getPaths().getConfigFolder().resolve(this.fname);
     SwingUtilities.invokeLater(() -> {
       SimpleTextEditor editor = new SimpleTextEditor();
-      editor.load(target);
+      editor.load(target.toFile());
       editor.showWindow("Editor");
     });
     return true;

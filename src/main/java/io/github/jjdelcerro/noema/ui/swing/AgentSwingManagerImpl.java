@@ -2,11 +2,10 @@ package io.github.jjdelcerro.noema.ui.swing;
 
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.ui.AgentUIManager;
-import org.jline.reader.LineReader;
-import org.jline.terminal.Terminal;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
+import io.github.jjdelcerro.noema.lib.AgentPaths;
+import io.github.jjdelcerro.noema.lib.AgentSettings;
 import io.github.jjdelcerro.noema.ui.AgentUISettings;
-import java.io.File;
 
 /**
  *
@@ -31,8 +30,8 @@ public class AgentSwingManagerImpl implements AgentUIManager {
   }
   
   @Override
-  public AgentUISettings createSettings(File dataFolder, AgentConsole console) {
-    return new AgentSwingSettingsImpl(this, dataFolder, console);
+  public AgentUISettings createSettings(AgentSettings settings) {
+    return new AgentSwingSettingsImpl(this, settings);
   }
   
 }

@@ -42,7 +42,6 @@ import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.events.Po
 import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file.FileExtractTextTool;
 import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file.FileFindTool;
 import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file.FileGrepTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file.FileHistoryTool;
 import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file.FileMkdirTool;
 import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file.FilePatchTool;
 import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file.FileReadTool;
@@ -110,7 +109,7 @@ public class ConversationService implements AgentService {
     this.agent = agent;
     this.sourceOfTruth = agent.getSourceOfTruth();
     this.console = agent.getConsole();
-    this.session = new Session(agent.getDataFolder().toPath(), agent.getSettings());
+    this.session = new Session(agent.getPaths().getDataFolder(), agent.getSettings());
     this.running = false;
     try {
       this.activeCheckPoint = sourceOfTruth.getLatestCheckPoint();

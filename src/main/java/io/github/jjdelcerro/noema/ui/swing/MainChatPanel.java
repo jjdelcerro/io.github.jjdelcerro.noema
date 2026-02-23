@@ -154,7 +154,7 @@ public class MainChatPanel extends JPanel {
 
   private void initIcons() {
     try {
-      String iconPath = "io/github/jjdelcerro/chatagent/ui/swing/";
+      String iconPath = "io/github/jjdelcerro/noema/ui/swing/";
       settingsBtn.setIcon(new FlatSVGIcon(iconPath + "settings.svg", 16, 16));
       btnSave.setIcon(new FlatSVGIcon(iconPath + "save.svg", 16, 16));
       btnCopy.setIcon(new FlatSVGIcon(iconPath + "copy.svg", 16, 16));
@@ -165,7 +165,7 @@ public class MainChatPanel extends JPanel {
   private JButton createCapsuleButton(String iconName, String tooltip) {
     JButton btn = new JButton();
     try {
-      btn.setIcon(new FlatSVGIcon("io/github/jjdelcerro/chatagent/ui/swing/" + iconName, 8, 8));
+      btn.setIcon(new FlatSVGIcon("io/github/jjdelcerro/noema/ui/swing/" + iconName, 8, 8));
     } catch (Exception e) {
       btn.setText(iconName.replace(".svg", ""));
     }

@@ -21,7 +21,7 @@ public class EmbeddingsService implements AgentService {
     Notas sobre H2.
     
     ```sql
-    CREATE ALIAS COSINE_DISTANCE FOR "cio.github.jjdelcerro.chatagent.lib.impl.services.embeddings.H2VectorUtils.cosineDistance";
+    CREATE ALIAS COSINE_DISTANCE FOR "cio.github.jjdelcerro.noema.lib.impl.services.embeddings.H2VectorUtils.cosineDistance";
     ```
     
     Para definir una tabla con un campo embedding seria:

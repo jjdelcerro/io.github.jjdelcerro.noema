@@ -1,6 +1,11 @@
 package io.github.jjdelcerro.noema.main;
 
 import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.AgentLocator;
+import io.github.jjdelcerro.noema.lib.AgentManager;
+import io.github.jjdelcerro.noema.lib.AgentPaths;
+import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
+import io.github.jjdelcerro.noema.lib.AgentSettings;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
@@ -12,12 +17,12 @@ import org.jline.terminal.TerminalBuilder;
 
 import java.io.File;
 import io.github.jjdelcerro.noema.ui.AgentUILocator;
+import io.github.jjdelcerro.noema.ui.AgentUISettings;
 import io.github.jjdelcerro.noema.ui.console.AgentConsoleInitializer;
+import java.nio.file.Path;
 
 public class MainConsole {
 
-  // Configuración de rutas
-  private static final String DATA_FOLDER = "./data";
 
   public static void main(String[] args) {
     Agent agent = null;
@@ -47,13 +52,29 @@ public class MainConsole {
       }
       AgentConsoleInitializer.init(terminal, lineReader);
       
-      agent = AgentUtils.init(new File(DATA_FOLDER));
+      
+      AgentManager manager = AgentLocator.getAgentManager();
+      AgentPaths paths = manager.createAgentPaths(Path.of("."));
+      AgentSettings settings = manager.createSettings(paths);
+
+      settings.setupSettings();
+      
+      if( !BootUtils.areSettingsValid(settings) ) {
+        AgentUISettings settingsUI = AgentUILocator.getAgentUIManager().createSettings(settings);
+        settingsUI.showWindow();        
+        if( !BootUtils.areSettingsValid(settings) ) {
+          System.err.println("Configuración cancelada. Saliendo de la aplicacion.");
+          System.exit(1);        
+        }
+      }
+      
+      agent = BootUtils.init(settings);
       agent.start();
       agent.getConsole().printSystemLog("Sistema listo. Escribe '/quit' para terminar.");
 
       // Bucle de Chat (REPL con JLine)
       while (true) {
-        String input = null;
+        String input;
         try {
           input = lineReader.readLine("\nUsuario: ");
         } catch (UserInterruptException e) {

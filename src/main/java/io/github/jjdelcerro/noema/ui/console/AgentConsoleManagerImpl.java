@@ -5,6 +5,7 @@ import io.github.jjdelcerro.noema.ui.AgentUIManager;
 import org.jline.reader.LineReader;
 import org.jline.terminal.Terminal;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
+import io.github.jjdelcerro.noema.lib.AgentSettings;
 import io.github.jjdelcerro.noema.ui.AgentUISettings;
 import java.io.File;
 
@@ -33,8 +34,8 @@ public class AgentConsoleManagerImpl implements AgentUIManager {
   }
   
   @Override
-  public AgentUISettings createSettings(File dataFolder, AgentConsole console) {
-    return new AgentConsoleSettingsImpl(this, dataFolder, console);
+  public AgentUISettings createSettings(AgentSettings settings) {
+    return new AgentConsoleSettingsImpl(this, settings);
   }
   
 }

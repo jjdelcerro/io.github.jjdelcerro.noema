@@ -10,10 +10,10 @@ import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentSettings;
 import io.github.jjdelcerro.noema.lib.impl.persistence.SourceOfTruthImpl;
 import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
-import java.io.File;
 import java.nio.file.Paths;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.AgentManager;
+import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentTool;
@@ -41,14 +41,12 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressWarnings("UseSpecificCatch")
 public class AgentImpl implements Agent {
-  
+
   private static final Logger LOGGER = LoggerFactory.getLogger(AgentImpl.class);
-  
 
   private AgentConsole console;
   private final AgentSettings settings;
   private final AgentActions actions;
-  private final File agentFolder;
   private final SourceOfTruth sourceOfTruth;
 
   private final AgentAccessControl accessControl;
@@ -58,8 +56,7 @@ public class AgentImpl implements Agent {
 
   private final Map<String, AgentService> services;
 
-  public AgentImpl(ConnectionSupplier memoryDatabase, ConnectionSupplier servicesDatabase, File agentFolder, AgentSettings settings, AgentConsole console) {
-    this.agentFolder = agentFolder;
+  public AgentImpl(ConnectionSupplier memoryDatabase, ConnectionSupplier servicesDatabase, AgentSettings settings, AgentConsole console) {
     this.settings = settings;
     this.console = console;
     this.services = new LinkedHashMap<>();
@@ -68,8 +65,8 @@ public class AgentImpl implements Agent {
     this.servicesDatabase = servicesDatabase;
     this.memoryDatabase = memoryDatabase;
     this.sourceOfTruth = SourceOfTruthImpl.from(this);
-    
-    this.accessControl.addNonReadablePath(this.getDataFolder().toPath());
+
+    this.accessControl.addNonReadablePath(this.getPaths().getAgentFolder());
 
     AgentManager manager = AgentLocator.getAgentManager();
     for (Supplier<AgentActions.AgentAction> actionFactory : manager.getActions()) {
@@ -109,30 +106,8 @@ public class AgentImpl implements Agent {
   }
 
   @Override
-  public File getLocalConfigFolder() {
-    return this.agentFolder;
-  }
-
-  @Override
-  public File getDataFolder() {
-    return new File(this.agentFolder,"data");
-  }
-
-  @Override
-  public File getDataFolder(String name) {
-    File file = this.getDataFolder().toPath().resolve(name).normalize().toFile();
-    return file;
-  }
-
-
-  @Override
-  public File getGlobalConfigFolder() {
-    return null; // FIXME IMPORTANTE!!! implemenar
-  }
-
-  @Override
-  public File getSandboxHomeFolder() {
-    return null; // FIXME IMPORTANTE!!! implemenar
+  public AgentPaths getPaths() {
+    return this.settings.getPaths();
   }
 
   @Override
@@ -220,10 +195,11 @@ public class AgentImpl implements Agent {
   /**
    * Realiza una llamada al modelo y parsea la respuesta como un JsonObject de
    * GSON.Incluye limpieza automática de bloques de código Markdown.
+   *
    * @param llmid
    * @param systemPrompt
    * @param message
-   * @return 
+   * @return
    */
   @Override
   public JsonObject callChatModelAsJson(String llmid, String systemPrompt, String message) {
@@ -246,9 +222,9 @@ public class AgentImpl implements Agent {
       return com.google.gson.JsonParser.parseString(cleanJson).getAsJsonObject();
 
     } catch (Exception e) {
-      LOGGER.warn("Error en callChatModelAsJson (" + llmid + "), response: "+ rawResponse, e);
+      LOGGER.warn("Error en callChatModelAsJson (" + llmid + "), response: " + rawResponse, e);
       console.printSystemError("Error parseando JSON de " + llmid + ": " + e.getMessage());
-      console.printSystemError("Contenido que falló: " + StringUtils.abbreviate(rawResponse,100));
+      console.printSystemError("Contenido que falló: " + StringUtils.abbreviate(rawResponse, 100));
       return null;
     }
   }
@@ -283,8 +259,8 @@ public class AgentImpl implements Agent {
 
   @Override
   public void installResource(String resPath) {
-    String resourceBase = "/io/github/jjdelcerro/chatagent/lib/impl/resources/";
-    Path targetPath = this.getDataFolder().toPath().resolve(resPath);
+    String resourceBase = "/io/github/jjdelcerro/noema/lib/impl/resources/";
+    Path targetPath = this.getPaths().getConfigFolder().resolve(resPath);
     if (!Files.exists(targetPath)) {
       try {
         Files.createDirectories(targetPath.getParent());
@@ -299,7 +275,7 @@ public class AgentImpl implements Agent {
           }
         }
       } catch (Exception e) {
-        LOGGER.warn("No se ha podido instalar el recurso '"+resPath+"'.",e);
+        LOGGER.warn("No se ha podido instalar el recurso '" + resPath + "'.", e);
         console.printSystemError("Error al inicializar recurso " + resPath + ": " + e.getMessage());
       }
     }
@@ -315,7 +291,7 @@ public class AgentImpl implements Agent {
    */
   @Override
   public String getResourceAsString(String resname) {
-    Path path = this.getDataFolder().toPath().resolve(resname);
+    Path path = this.getPaths().getConfigFolder().resolve(resname);
     try {
       if (Files.exists(path)) {
         return Files.readString(path, StandardCharsets.UTF_8);

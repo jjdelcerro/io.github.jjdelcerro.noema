@@ -5,6 +5,7 @@ import io.github.jjdelcerro.noema.lib.AgentActions;
 import io.github.jjdelcerro.noema.lib.AgentActions.AgentAction;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentManager;
+import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentSettings;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
@@ -16,6 +17,7 @@ import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.scheduler.SchedulerServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.telegram.TelegramServiceFactory;
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -70,13 +72,13 @@ public class AgentManagerImpl implements AgentManager {
   }
 
   @Override
-  public AgentSettings createSettings() {
-    return new AgentSettingsImpl();
+  public AgentSettings createSettings(AgentPaths paths) {
+    return new AgentSettingsImpl(paths);
   }
 
   @Override
-  public Agent createAgent(ConnectionSupplier memoryDatabase, ConnectionSupplier servicesDatabase, File agentFolder, AgentSettings settings, AgentConsole console) {
-    Agent agent = new AgentImpl(memoryDatabase, servicesDatabase, agentFolder, settings, console);
+  public Agent createAgent(ConnectionSupplier memoryDatabase, ConnectionSupplier servicesDatabase, AgentSettings settings, AgentConsole console) {
+    Agent agent = new AgentImpl(memoryDatabase, servicesDatabase, settings, console);
     return agent;
   }
   
@@ -99,5 +101,11 @@ public class AgentManagerImpl implements AgentManager {
   public Collection<Supplier<AgentActions.AgentAction>> getActions() {
     return this.actions;
   }
+
+  @Override
+  public AgentPaths createAgentPaths(Path workspacetFolder) {
+    return new AgentPathsImpl(workspacetFolder);
+  }
+  
   
 }

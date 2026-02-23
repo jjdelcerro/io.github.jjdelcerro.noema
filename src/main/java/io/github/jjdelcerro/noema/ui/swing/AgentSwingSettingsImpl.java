@@ -3,7 +3,7 @@ package io.github.jjdelcerro.noema.ui.swing;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentConsole;
+import io.github.jjdelcerro.noema.lib.AgentSettings;
 import io.github.jjdelcerro.noema.ui.AgentUIManager;
 import io.github.jjdelcerro.noema.ui.AgentUISettings;
 import io.github.jjdelcerro.noema.ui.common.AbstractAgentSettingsItem;
@@ -20,8 +20,8 @@ import java.awt.Window;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
-import java.io.File;
 import java.io.FileReader;
+import java.nio.file.Path;
 import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
@@ -57,8 +57,9 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
     loadConfiguration();
   }
 
-  public AgentSwingSettingsImpl(AgentUIManager agentUIManager, File dataFolder, AgentConsole console) {
-    this(agentUIManager, new FakeAgent(dataFolder, console));
+//  public AgentSwingSettingsImpl(AgentUIManager agentUIManager, AgentPaths paths) {
+  public AgentSwingSettingsImpl(AgentUIManager agentUIManager, AgentSettings settings) {
+    this(agentUIManager, new FakeAgent(settings));
   }
 
   private void initUI() {
@@ -94,8 +95,8 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
   }
 
   private void loadConfiguration() {
-    File settingsUIFile = new File(agent.getDataFolder(), "settingsui.json");
-    try (FileReader reader = new FileReader(settingsUIFile)) {
+    Path settingsUIPath = agent.getPaths().getConfigFolder().resolve("settingsui.json");
+    try (FileReader reader = new FileReader(settingsUIPath.toFile())) {
       JsonObject uiroot = JsonParser.parseReader(reader).getAsJsonObject();
       this.rootItem = new MenuItem(null, agent, uiroot);
 
