@@ -9,17 +9,10 @@ import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentSettings;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
 import io.github.jjdelcerro.noema.ui.AgentUILocator;
-import io.github.jjdelcerro.noema.ui.AgentUISettings;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import org.apache.commons.io.FileUtils;
 import org.h2.tools.Server;
 
 /**
@@ -124,38 +117,38 @@ public class BootUtils {
     return true;
   }
 
-  private static void installResource(AgentConsole console, File dataFolder, String resPath) {
-    String resourceBase = "/io/github/jjdelcerro/noema/main/";
-    Path targetPath = dataFolder.toPath().resolve(resPath);
-    if (!Files.exists(targetPath)) {
-      try {
-        Files.createDirectories(targetPath.getParent());
-
-        try (InputStream is = BootUtils.class.getResourceAsStream(resourceBase + resPath)) {
-          if (is != null) {
-            Files.copy(is, targetPath, StandardCopyOption.REPLACE_EXISTING);
-            console.printSystemLog("Recurso instalado en data " + resPath);
-          } else {
-            console.printSystemError("Error: Recurso no encontrado en el classpath: " + resourceBase + resPath);
-          }
-        }
-      } catch (IOException e) {
-        console.printSystemError("Error al inicializar recurso " + resPath + ": " + e.getMessage());
-      }
-    }
-  }
-
-  public static void initSettings(AgentConsole console, File localConfig) {
-    String[] resources = new String[]{
-      "models.properties",
-      "providers_apikeys.properties",
-      "providers_urls.properties",
-      "settings.properties",
-      "settingsui.json"
-    };
-    for (String resPath : resources) {
-      installResource(console, localConfig, resPath);
-    }
-  }
+//  private static void installResource(AgentConsole console, File dataFolder, String resPath) {
+//    String resourceBase = "/io/github/jjdelcerro/noema/main/";
+//    Path targetPath = dataFolder.toPath().resolve(resPath);
+//    if (!Files.exists(targetPath)) {
+//      try {
+//        Files.createDirectories(targetPath.getParent());
+//
+//        try (InputStream is = BootUtils.class.getResourceAsStream(resourceBase + resPath)) {
+//          if (is != null) {
+//            Files.copy(is, targetPath, StandardCopyOption.REPLACE_EXISTING);
+//            console.printSystemLog("Recurso instalado en data " + resPath);
+//          } else {
+//            console.printSystemError("Error: Recurso no encontrado en el classpath: " + resourceBase + resPath);
+//          }
+//        }
+//      } catch (IOException e) {
+//        console.printSystemError("Error al inicializar recurso " + resPath + ": " + e.getMessage());
+//      }
+//    }
+//  }
+//
+//  public static void initSettings(AgentConsole console, File localConfig) {
+//    String[] resources = new String[]{
+//      "models.properties",
+//      "providers_apikeys.properties",
+//      "providers_urls.properties",
+//      "settings.properties",
+//      "settingsui.json"
+//    };
+//    for (String resPath : resources) {
+//      installResource(console, localConfig, resPath);
+//    }
+//  }
 
 }

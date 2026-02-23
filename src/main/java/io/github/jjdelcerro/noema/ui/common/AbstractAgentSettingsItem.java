@@ -53,6 +53,15 @@ public abstract class AbstractAgentSettingsItem implements AgentSettingsItem {
   }
 
   @Override
+  public boolean isRequired() {
+    JsonElement x = this.item.get("required");
+    if( x == null ) {
+      return false;
+    }
+    return x.getAsBoolean();
+  }
+
+  @Override
   public String getVariableName() {
     if (!this.item.has("variableName")) {
       return null;
@@ -198,6 +207,9 @@ public abstract class AbstractAgentSettingsItem implements AgentSettingsItem {
 
   @Override
   public String toString() {
+    if( this.isRequired() ) {
+      return "<html><b>"+this.getLabel()+"</b></html>";
+    }
     return getLabel();
   }
 

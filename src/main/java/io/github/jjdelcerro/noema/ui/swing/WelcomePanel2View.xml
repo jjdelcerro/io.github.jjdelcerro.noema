@@ -140,10 +140,11 @@
              </object>
             </at>
             <at name="opaque">false</at>
+            <at name="editable">false</at>
             <at name="scrollableTracksViewportHeight">true</at>
             <at name="scrollableTracksViewportWidth">true</at>
             <at name="name">txtDisclaimer</at>
-            <at name="width">1577</at>
+            <at name="width">1510</at>
             <at name="scollBars">
              <object classname="com.jeta.forms.store.properties.ScrollBarsProperty">
               <at name="name">scollBars</at>
@@ -228,7 +229,7 @@
             <at name="editable">true</at>
             <at name="requestFocusEnabled">false</at>
             <at name="name">comboWorkspace</at>
-            <at name="width">1468</at>
+            <at name="width">1401</at>
             <at name="items">
              <object classname="com.jeta.forms.store.properties.ItemsProperty">
               <at name="name">items</at>
@@ -352,8 +353,8 @@
              </object>
             </at>
             <at name="opaque">false</at>
+            <at name="editable">false</at>
             <at name="scrollableTracksViewportHeight">true</at>
-            <at name="scrollableTracksViewportWidth">true</at>
             <at name="name">txtConfigSummary</at>
             <at name="width">1577</at>
             <at name="scollBars">
@@ -383,7 +384,7 @@
               </at>
              </object>
             </at>
-            <at name="height">337</at>
+            <at name="height">322</at>
            </object>
           </at>
          </object>
@@ -436,7 +437,7 @@
              </object>
             </at>
             <at name="name"></at>
-            <at name="width">1468</at>
+            <at name="width">1401</at>
             <at name="text">Seleccione la carpeta de trabajo</at>
             <at name="fill">
              <object classname="com.jeta.forms.store.properties.effects.PaintProperty">
@@ -496,7 +497,7 @@
              </object>
             </at>
             <at name="name"></at>
-            <at name="width">1468</at>
+            <at name="width">1401</at>
             <at name="text">Configuracion basica</at>
             <at name="fill">
              <object classname="com.jeta.forms.store.properties.effects.PaintProperty">
@@ -556,7 +557,7 @@
              </object>
             </at>
             <at name="name"></at>
-            <at name="width">1468</at>
+            <at name="width">1401</at>
             <at name="text">Aviso legal y condiciones</at>
             <at name="fill">
              <object classname="com.jeta.forms.store.properties.effects.PaintProperty">

@@ -16,6 +16,7 @@
           "childs": "LLM_PROVIDERS_URL",
           "label": "URL del proveedor (conversación)",
           "variableName": "CONVERSATION_PROVIDER_URL",
+          "required": true,
           "actionName": "CHANGE_CONVERSATION_PROVIDER"
         },
         {
@@ -23,6 +24,7 @@
           "label": "API Key (conversación)",
           "variableName": "CONVERSATION_PROVIDER_API_KEY",
           "actionName": "CHANGE_CONVERSATION_PROVIDER",
+          "required": true,
           "childs": "LLM_PROVIDERS_APIKEY"
         },
         {
@@ -30,6 +32,7 @@
           "label": "Seleccionar Modelo (conversación)",
           "variableName": "CONVERSATION_MODEL_ID",
           "actionName": "CHANGE_CONVERSATION_MODEL",
+          "required": true,
           "childs": "LLM_MODELS"
         }
       ]
@@ -43,6 +46,7 @@
           "childs": "LLM_PROVIDERS_URL",
           "label": "URL del proveedor (memoria)",
           "variableName": "MEMORY_PROVIDER_URL",
+          "required": true,
           "actionName": "CHANGE_MEMORY_PROVIDER"
         },
         {
@@ -50,6 +54,7 @@
           "label": "API Key (memoria)",
           "variableName": "MEMORY_PROVIDER_API_KEY",
           "actionName": "CHANGE_MEMORY_PROVIDER",
+          "required": true,
           "childs": "LLM_PROVIDERS_APIKEY"
         },
         {
@@ -57,6 +62,7 @@
           "label": "Seleccionar Modelo (memoria)",
           "variableName": "MEMORY_MODEL_ID",
           "actionName": "CHANGE_MEMORY_MODEL",
+          "required": true,
           "childs": "LLM_MODELS"
         }
       ]

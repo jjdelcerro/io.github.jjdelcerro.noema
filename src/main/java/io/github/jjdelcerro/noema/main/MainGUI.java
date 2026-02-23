@@ -10,7 +10,7 @@ import io.github.jjdelcerro.noema.ui.swing.AgentSwingInitializer;
 import io.github.jjdelcerro.noema.ui.swing.MainChatPanel;
 import io.github.jjdelcerro.noema.ui.swing.OpenEditorAction;
 import io.github.jjdelcerro.noema.ui.swing.WelcomePanel;
-import io.github.jjdelcerro.noema.ui.swing.WelcomePanel2;
+import io.github.jjdelcerro.noema.ui.swing.WelcomePanel;
 import java.awt.Image;
 import javax.swing.*;
 import java.util.List;
@@ -27,7 +27,7 @@ public class MainGUI {
       AgentManager manager = AgentLocator.getAgentManager();
       AgentSettings settings = manager.createSettings(null);
 
-      WelcomePanel2 welcomePanel = new WelcomePanel2(settings);
+      WelcomePanel welcomePanel = new WelcomePanel(settings);
       welcomePanel.showWindow();
 
       JFrame frame = new JFrame("Noema v0.1.0");

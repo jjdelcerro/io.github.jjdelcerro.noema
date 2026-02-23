@@ -194,8 +194,8 @@ public class AgentSettingsImpl implements AgentSettings {
   @Override
   public void setupSettings(AgentPaths paths) {
     this.paths = paths;
+    this.paths.setupHierarchy();
     this.setupSettings();
-
   }
 
   @Override
