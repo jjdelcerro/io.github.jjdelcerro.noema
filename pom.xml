@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>io.github.jjdelcerro.chatagent.main</artifactId>
+  <artifactId>io.github.jjdelcerro.noema.main</artifactId>
   <packaging>jar</packaging>
   <name>${project.artifactId}</name>
-  <version>1.0.0</version>
+  <version>0.1.0</version>
   <groupId>io.github.jjdelcerro</groupId>
 
   <properties>
@@ -29,7 +29,7 @@
                 <!-- Esto es vital: combina los ficheros de servicios de todas las dependencias -->
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>io.github.jjdelcerro.chatagent.main.Main</mainClass>
+                  <mainClass>io.github.jjdelcerro.noema.main.Main</mainClass>
                 </transformer>
               </transformers>
               <!-- Evita problemas de firmas de JARs de terceros -->
@@ -55,14 +55,14 @@
   
   <dependencies>
         
-    <!-- Núcleo de LangChain4j -->
+    <!-- Nucleo de LangChain4j -->
     <dependency>
       <groupId>dev.langchain4j</groupId>
       <artifactId>langchain4j</artifactId>
       <version>0.35.0</version>
     </dependency>
         
-    <!-- Integración con OpenAI -->
+    <!-- Integracion con OpenAI -->
     <dependency>
       <groupId>dev.langchain4j</groupId>
       <artifactId>langchain4j-open-ai</artifactId>
@@ -102,7 +102,7 @@
     </dependency>
     -->        
         
-    <!-- Motor de logs: Log4j 2 a través de SLF4J -->
+    <!-- Motor de logs: Log4j 2 a traves de SLF4J -->
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-slf4j2-impl</artifactId>
@@ -188,7 +188,6 @@
       <version>5.0.7.Final</version>
     </dependency>     
         
-    <!-- En la secci�n <dependencies> -->
     <dependency>
       <groupId>com.formdev</groupId>
       <artifactId>flatlaf</artifactId>
@@ -231,8 +230,7 @@
     <dependency>
       <groupId>io.github.jjdelcerro</groupId>
       <artifactId>io.github.jjdelcerro.javarcs</artifactId>
-      <version>1.0-SNAPSHOT</version>
-      <type>jar</type>
+      <version>0.1.0-SNAPSHOT</version>
     </dependency>
   </dependencies>
 </project>

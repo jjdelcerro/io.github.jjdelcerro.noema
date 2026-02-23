@@ -1,4 +1,4 @@
-# Informe de Estado del Proyecto: ChatAgent
+# Informe de Estado del Proyecto: Noema
 
 **Versión Analizada:** 1.0.0 (según pom.xml)
 
@@ -119,6 +119,6 @@ Considerando el objetivo de ser un "compañero de investigación":
 
 **Conclusión**
 
-El proyecto **ChatAgent** es un éxito técnico dentro de sus restricciones. Ha logrado implementar un sistema de **memoria a largo plazo funcional** y un entorno de **ejecución seguro** sin depender de bases de datos vectoriales externas ni contenedores Docker.
+El proyecto **Noema** es un éxito técnico dentro de sus restricciones. Ha logrado implementar un sistema de **memoria a largo plazo funcional** y un entorno de **ejecución seguro** sin depender de bases de datos vectoriales externas ni contenedores Docker.
 
 El estado actual es de **"Feature Complete"** para el núcleo. El trabajo restante se centra en pulir la concurrencia de los eventos proactivos y reactivar el set completo de herramientas documentales. Es una base excepcionalmente sólida para la experimentación en IA personal.

@@ -28,7 +28,7 @@ No uses ideas como "memoria infinita" para referirte a como gestiona la memoria 
 Sigue la siguiente estructura:
 ```
 
-# Informe de Estado del Proyecto: ChatAgent
+# Informe de Estado del Proyecto: Noema
 
 **Versión Analizada:** XXX
 
