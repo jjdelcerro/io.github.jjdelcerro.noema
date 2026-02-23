@@ -2,17 +2,19 @@ Aquí tienes un informe técnico detallado basado en el análisis profundo del c
 
 ---
 
-### Informe Técnico de Proyecto: ChatAgent (io.github.jjdelcerro.chatagent)
+### Informe Técnico de Proyecto: Noema (io.github.jjdelcerro.noema)
 
 **Versión Analizada:** 1.0.0
+
 **Fecha de Análisis:** 22 de Febrero de 2026
+
 **Autor del Informe:** Gemini (IA), basado en la inspección estática del código fuente.
 
 ---
 
 ## 1. Visión General
 
-El proyecto `ChatAgent` es una implementación avanzada de un **Agente Cognitivo Autónomo y Persistente** escrito en Java. A diferencia de los chatbots convencionales o asistentes de codificación efímeros, este sistema está diseñado como un **compañero de investigación de largo recorrido**. Su filosofía central es la **autocontención** (funciona como un único JAR sin dependencias de infraestructura externa compleja) y la **persistencia narrativa**, resolviendo el problema del "olvido catastrófico" de los LLMs mediante un sistema de memoria híbrida.
+El proyecto `Noema` es una implementación avanzada de un **Agente Cognitivo Autónomo y Persistente** escrito en Java. A diferencia de los chatbots convencionales o asistentes de codificación efímeros, este sistema está diseñado como un **compañero de investigación de largo recorrido**. Su filosofía central es la **autocontención** (funciona como un único JAR sin dependencias de infraestructura externa compleja) y la **persistencia narrativa**, resolviendo el problema del "olvido catastrófico" de los LLMs mediante un sistema de memoria híbrida.
 
 El agente no solo responde a estímulos reactivos (chat), sino que posee capacidades proactivas (sensores de eventos) y una percepción del paso del tiempo, lo que le permite mantener una "única sesión" que evoluciona con el usuario.
 
@@ -172,7 +174,7 @@ El ciclo `executeReasoningLoop` implementa un bucle **ReAct**:
 
 ## 7. Conclusión
 
-El proyecto `chatagent` es una pieza de ingeniería de software notablemente madura para ser un proyecto personal. Cumple estrictamente con los requisitos de **independencia** (todo en un JAR, DB embebida, RCS nativo) y **persistencia**.
+El proyecto `Noema` es una pieza de ingeniería de software notablemente madura para ser un proyecto personal. Cumple estrictamente con los requisitos de **independencia** (todo en un JAR, DB embebida, RCS nativo) y **persistencia**.
 
 Puntos fuertes destacados:
 1.  **Arquitectura de Memoria Robusta:** La distinción entre memoria episódica inmutable y memoria semántica narrativa ("El Viaje") soluciona eficazmente el problema del contexto infinito.

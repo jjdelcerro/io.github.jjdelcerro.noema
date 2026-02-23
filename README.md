@@ -1,4 +1,4 @@
-# ChatAgent: Implementación de Referencia para Memoria Híbrida Determinista
+# Noema: Implementación de Referencia para Memoria narrativa trazable
 
 > ⚠️ **Estado del Proyecto: Prototipo de Investigación (Alpha)**
 >
@@ -18,11 +18,11 @@ Implementa los conceptos teóricos de:
 
 ## Interfaz de Usuario
 
-ChatAgent no solo procesa texto; interactúa con su entorno. En la siguiente captura se observa cómo 
+Noema no solo procesa texto; interactúa con su entorno. En la siguiente captura se observa cómo 
 el agente, ante una consulta meteorológica, decide de forma autónoma localizar al usuario y consultar 
 una API de clima externa antes de responder:
 
-![ChatAgent en acción](./screenshot.png)
+![Noema en acción](./screenshot.png)
 
 *   **Razonamiento y Herramientas:** Visualización clara de la ejecución de `AgentTools`.
 *   **Diseño Moderno:** Interfaz con la estética de los asistentes de IA actuales con soporte para Markdown.
@@ -108,13 +108,13 @@ El sistema está diseñado para ser autónomo. No necesitas crear los ficheros d
     *   **Modo Gráfico (Swing):**
 
         ```bash
-        java -jar target/io.github.jjdelcerro.chatagent.main-1.0.0.jar
+        java -jar target/io.github.jjdelcerro.noema.main-1.0.0.jar
         ```
 
     *   **Modo Consola (JLine):**
 
         ```bash
-        java -jar target/io.github.jjdelcerro.chatagent.main-1.0.0.jar -c
+        java -jar target/io.github.jjdelcerro.noema.main-1.0.0.jar -c
         ```
         
 2.  **Asistente de Configuración:**
@@ -133,7 +133,7 @@ Recomiendo lanzar el agente exponiendo el puerto JDWP. He incluido un script de 
 ```bash
 #!/bin/bash
 # Lanza el agente permitiendo la conexión remota de un depurador (NetBeans, IntelliJ, VS Code) en el puerto 8765
-exec java -agentlib:jdwp=transport=dt_socket,address=8765,server=y,suspend=n -jar target/io.github.jjdelcerro.chatagent.main-1.0.0.jar $@
+exec java -agentlib:jdwp=transport=dt_socket,address=8765,server=y,suspend=n -jar target/io.github.jjdelcerro.noema.main-1.0.0.jar $@
 ```
 
 *   **`suspend=n`**: La aplicación arranca inmediatamente sin esperar al debugger.
