@@ -1,7 +1,10 @@
 package io.github.jjdelcerro.noema.lib.impl;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationService;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentActions;
@@ -21,6 +24,10 @@ import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
 import static io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationService.CONVERSATION_MODEL_ID;
 import static io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryService.MEMORY_MODEL_ID;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -55,6 +62,8 @@ public class AgentImpl implements Agent {
   private final ConnectionSupplier memoryDatabase;
 
   private final Map<String, AgentService> services;
+  
+  private JsonObject openRouterModels = null;
 
   public AgentImpl(ConnectionSupplier memoryDatabase, ConnectionSupplier servicesDatabase, AgentSettings settings, AgentConsole console) {
     this.settings = settings;
@@ -174,7 +183,7 @@ public class AgentImpl implements Agent {
   @Override
   public String callChatModel(String llmid, String systemPrompt, String message) {
     try {
-      OpenAiChatModel model = this.createChatModel(llmid);
+      ChatModel model = this.createChatModel(llmid);
 
       List<dev.langchain4j.data.message.ChatMessage> messages = new ArrayList<>();
       if (org.apache.commons.lang3.StringUtils.isNotBlank(systemPrompt)) {
@@ -230,7 +239,7 @@ public class AgentImpl implements Agent {
   }
 
   @Override
-  public OpenAiChatModel createChatModel(String name) {
+  public ChatModel createChatModel(String name) {
     name = name.toUpperCase();
 
     ModelParameters params = this.getModelParameters(name);
@@ -243,7 +252,7 @@ public class AgentImpl implements Agent {
             .logRequests(false)
             .logResponses(false)
             .build();
-    return model;
+    return new ChatModelImpl(model,params);
   }
 
   @Override
@@ -251,6 +260,7 @@ public class AgentImpl implements Agent {
     for (AgentService service : this.services.values()) {
       ModelParameters params = service.getModelParameters(name);
       if (params != null) {
+        updateContextSize(params);
         return params;
       }
     }
@@ -334,4 +344,58 @@ public class AgentImpl implements Agent {
       conversation.showSession();
     }
   }
+
+  private void updateContextSize(ModelParameters params) {
+    if (!StringUtils.startsWith(params.providerUrl(), "https://openrouter.ai/api/v1")) {
+      return;
+    }
+
+    if (this.openRouterModels == null) {
+      try {
+        HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .build();
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("https://openrouter.ai/api/v1/models"))
+                .header("Accept", "application/json")
+                .GET()
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 200) {
+          this.openRouterModels = JsonParser.parseString(response.body()).getAsJsonObject();
+        } else {
+          System.err.println("Error al obtener modelos de OpenRouter: Código " + response.statusCode());
+          return; 
+        }
+      } catch (Exception e) {
+        LOGGER.warn("No se ha podido obtener informacion de los modelos de OpenRouter", e);
+        return;
+      }
+    }
+
+    if (this.openRouterModels != null && this.openRouterModels.has("data")) {
+      JsonArray data = this.openRouterModels.getAsJsonArray("data");
+      String targetModelId = params.modelId();
+
+      for (JsonElement element : data) {
+        JsonObject modelObj = element.getAsJsonObject();
+        if (modelObj.has("id") && StringUtils.equals(modelObj.get("id").getAsString(), targetModelId)) {
+          if (modelObj.has("context_length")) {
+            int contextSize = modelObj.get("context_length").getAsInt();
+            params.setContextSize(contextSize);
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  @Override
+  public int getConversationContextSize() {
+    ConversationService conversation = (ConversationService) this.getService(ConversationService.NAME);
+    return conversation.getModel().getContextSize();
+  }
+
 }

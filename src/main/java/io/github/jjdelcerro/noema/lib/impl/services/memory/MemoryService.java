@@ -3,7 +3,6 @@ package io.github.jjdelcerro.noema.lib.impl.services.memory;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.model.chat.ChatLanguageModel;
 import io.github.jjdelcerro.noema.lib.AbstractAgentAction;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.Agent.ModelParameters;
@@ -21,6 +20,7 @@ import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentSettings;
 import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ModelParametersImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.LookupTurnTool;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.SearchFullHistoryTool;
 import java.util.Arrays;
@@ -44,7 +44,7 @@ public class MemoryService implements AgentService {
   private final Agent agent;
   private final SourceOfTruth sourceOfTruth;
   private AgentConsole console;
-  private ChatLanguageModel model;
+  private Agent.ChatModel model;
   private String systemPrompt;
   private boolean running;
   private final AgentServiceFactory factory;
@@ -188,7 +188,7 @@ public class MemoryService implements AgentService {
     AgentSettings settings = this.agent.getSettings();
     switch (name) {
       case "MEMORY":
-        return new ModelParameters(
+        return new ModelParametersImpl(
                 settings.getProperty(MEMORY_PROVIDER_URL),
                 settings.getProperty(MEMORY_PROVIDER_API_KEY),
                 settings.getProperty(MEMORY_MODEL_ID),
