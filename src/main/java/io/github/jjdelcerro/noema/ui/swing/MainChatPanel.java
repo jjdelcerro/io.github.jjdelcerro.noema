@@ -1,20 +1,31 @@
 package io.github.jjdelcerro.noema.ui.swing;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.formdev.flatlaf.extras.FlatSVGUtils;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
+import io.github.jjdelcerro.noema.lib.AgentLocator;
+import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.AgentSettings;
 import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationService;
+import io.github.jjdelcerro.noema.main.MainGUI;
 import io.github.jjdelcerro.noema.ui.AgentUILocator;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GraphicsConfiguration;
+import java.awt.Image;
 import java.awt.Insets;
+import java.awt.MouseInfo;
+import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
+import java.util.List;
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -150,6 +161,9 @@ public class MainChatPanel extends JPanel {
     initIcons();
     setupActions();
     setupThinkingTimer();
+
+    this.setPreferredSize(new Dimension(1000, 700));
+
   }
 
   private void initIcons() {
@@ -301,4 +315,31 @@ public class MainChatPanel extends JPanel {
 
     return btn;
   }
+
+  public void showWindow() {
+    AgentManager manager = AgentLocator.getAgentManager();
+
+    GraphicsConfiguration config = MouseInfo.getPointerInfo().getDevice().getDefaultConfiguration();
+    Rectangle bounds = config.getBounds();
+
+    JFrame frame = new JFrame(manager.getName() + " v" + manager.getVersion());
+    frame.getContentPane().add(this);
+    frame.pack(); // Importante para que el frame tenga tamaño antes de calcular la posición
+    int x = bounds.x + (bounds.width - frame.getWidth()) / 2;
+    int y = bounds.y + (bounds.height - frame.getHeight()) / 2;
+    frame.setLocation(x, y);
+    try {
+      List<Image> icons = FlatSVGUtils.createWindowIconImages(
+              MainGUI.class.getResource("/io/github/jjdelcerro/noema/ui/swing/app_icon.svg")
+      );
+      frame.setIconImages(icons);
+    } catch (Exception e) {
+      System.err.println("No se pudo cargar el icono de la aplicación: " + e.getMessage());
+    }
+    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+    frame.add(this);
+    frame.setVisible(true);
+  }
+
 }

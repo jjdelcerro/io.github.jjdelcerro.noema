@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -163,7 +164,7 @@ public abstract class AbstractAgentSettingsItem implements AgentSettingsItem {
    */
   private JsonArray loadDomainFromProperties(String relativePath) {
     try {
-      Path path = agent.getPaths().getConfigFolder().resolve(relativePath).toAbsolutePath();
+      Path path = agent.getPaths().getConfigFolder(relativePath).toAbsolutePath();
       if (!Files.exists(path)) {
         agent.getConsole().printSystemError("Fichero de dominio no encontrado: " + path.toString());
         return new JsonArray(); // Devolvemos lista vacía para no romper la UI
@@ -207,7 +208,7 @@ public abstract class AbstractAgentSettingsItem implements AgentSettingsItem {
 
   @Override
   public String toString() {
-    if( this.isRequired() ) {
+    if( this.isRequired() && StringUtils.isBlank(this.getValue()) ) {
       return "<html><b>"+this.getLabel()+"</b></html>";
     }
     return getLabel();

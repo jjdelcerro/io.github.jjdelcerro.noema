@@ -8,16 +8,20 @@ import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentSettings;
 import io.github.jjdelcerro.noema.main.BootUtils;
 import io.github.jjdelcerro.noema.main.MainGUI;
-import io.github.jjdelcerro.noema.ui.AgentUILocator;
-import io.github.jjdelcerro.noema.ui.AgentUISettings;
-import java.awt.Color;
-import java.awt.Frame;
+import java.awt.Dimension;
+import java.awt.GraphicsConfiguration;
 import java.awt.Image;
+import java.awt.MouseInfo;
+import java.awt.Rectangle;
+import java.awt.SecondaryLoop;
+import java.awt.Toolkit;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import static java.lang.System.exit;
 import java.nio.file.Path;
 import java.util.List;
-import javax.swing.BorderFactory;
-import javax.swing.JDialog;
 import javax.swing.JFileChooser;
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import org.apache.commons.lang3.StringUtils;
 
@@ -25,13 +29,16 @@ import org.apache.commons.lang3.StringUtils;
  * Panel de bienvenida para la selección de workspace y validación de
  * configuración.
  */
-public class WelcomePanel extends WelcomePanel2View {
+public class WelcomePanel extends WelcomePanelView {
 
   private AgentSettings settings;
 
-  private JDialog dialog;
+  private SecondaryLoop loop;
+  private JFrame window;
+  private boolean returnValue;
 
   public WelcomePanel(AgentSettings workspaceSettings) {
+    this.returnValue = true;
     this.settings = workspaceSettings;
     this.initUI();
     loadRecentWorkspaces();
@@ -41,13 +48,9 @@ public class WelcomePanel extends WelcomePanel2View {
   private void initUI() {
     comboWorkspace.addActionListener(e -> refreshWorkspaceConfig());
     btnBrowse.addActionListener(e -> handleBrowse());
+    btnCancelar.addActionListener(e -> handleCancel());
 
     txtConfigSummary.setContentType("text/html");
-//    txtConfigSummary.setBorder(BorderFactory.createCompoundBorder(
-//            BorderFactory.createLineBorder(Color.GRAY),
-//            BorderFactory.createEmptyBorder(10, 10, 10, 10)));
-
-//    txtConfigSummary.putClientProperty(FlatClientProperties.STYLE, "arc: 10");
     txtDisclaimer.setText(
             """
 Noema es un agente aut\u00f3nomo con capacidad de modificar archivos y ejecutar comandos.
@@ -58,14 +61,20 @@ Aseg\u00farese de ejecutar el agente en un entorno controlado o con backups actu
     txtDisclaimer.setWrapStyleWord(true);
 
     btnConfigure.addActionListener(e -> handleConfigure());
-    btnContinue.addActionListener(e -> doContinue());
+    btnContinue.addActionListener(e -> handleContinue());
 
     btnContinue.setEnabled(false);
+
+    this.setPreferredSize(new Dimension(800, 700));
   }
 
-  private void doContinue() {
-    this.dialog.setVisible(false);
-    this.settings.setLastWorkspacePath(this.settings.getPaths().getAgentFolder().toString());
+  private void handleContinue() {
+    this.closeWindow(true);
+    this.settings.setLastWorkspacePath(this.settings.getPaths().getWorkspaceFolder().toString());
+  }
+
+  private void handleCancel() {
+    closeWindow(false);
   }
 
   /**
@@ -110,7 +119,16 @@ Aseg\u00farese de ejecutar el agente en un entorno controlado o con backups actu
     updateConfigSummaryUI(convOk, memOk);
 
     // Habilitar continuar solo si ambos motores están listos
-    btnContinue.setEnabled(BootUtils.areSettingsValid(settings));
+    boolean canContinue = BootUtils.areSettingsValid(settings);
+    btnContinue.setEnabled(canContinue);
+    if (this.window != null && this.window.getRootPane() != null) {
+      if (canContinue) {
+        this.window.getRootPane().setDefaultButton(btnContinue);
+      } else {
+        this.window.getRootPane().setDefaultButton(null);
+      }
+    }
+    this.repaint();
   }
 
   private void updateConfigSummaryUI(boolean convOk, boolean memOk) {
@@ -172,8 +190,8 @@ Aseg\u00farese de ejecutar el agente en un entorno controlado o con backups actu
     }
     this.settings.setupSettings(paths);
 //    AgentUISettings settingsUI = AgentUILocator.getAgentUIManager().createSettings(this.settings); FIXME Por que no va?
-    AgentUISettings settingsUI = new AgentSwingSettingsImpl(null, settings);
-    settingsUI.showWindow();
+    AgentSwingSettingsImpl settingsUI = new AgentSwingSettingsImpl(null, settings);
+    settingsUI.showWindow(this.window);
 
     // Al volver, refrescamos los datos para ver si ya podemos habilitar "Continuar"
     refreshWorkspaceConfig();
@@ -189,20 +207,54 @@ Aseg\u00farese de ejecutar el agente en un entorno controlado o con backups actu
     return paths;
   }
 
-  public void showWindow() {
-    this.dialog = new JDialog((Frame) null, "Noema v0.1.0", true);
-    dialog.getContentPane().add(this);
-    dialog.setSize(800, 700);
+  public boolean showWindow() {
+    AgentManager manager = AgentLocator.getAgentManager();
+
+    GraphicsConfiguration config = MouseInfo.getPointerInfo().getDevice().getDefaultConfiguration();
+    Rectangle bounds = config.getBounds();
+
+    JFrame frame = new JFrame(manager.getName() + " v" + manager.getVersion());
+    frame.getContentPane().add(this);
+    frame.pack(); // Importante para que el frame tenga tamaño antes de calcular la posición
+    int x = bounds.x + (bounds.width - frame.getWidth()) / 2;
+    int y = bounds.y + (bounds.height - frame.getHeight()) / 2;
+    frame.setLocation(x, y);
     try {
       List<Image> icons = FlatSVGUtils.createWindowIconImages(
               MainGUI.class.getResource("/io/github/jjdelcerro/noema/ui/swing/app_icon.svg")
       );
-      dialog.setIconImages(icons);
+      frame.setIconImages(icons);
     } catch (Exception e) {
       // FIXME: log error
       System.err.println("No se pudo cargar el icono de la aplicación: " + e.getMessage());
     }
-    dialog.setVisible(true);
+
+    this.loop = Toolkit.getDefaultToolkit().getSystemEventQueue().createSecondaryLoop();
+    frame.addWindowListener(new WindowAdapter() {
+      @Override
+      public void windowClosed(WindowEvent e) {
+        loop.exit();
+      }
+    });
+    frame.setVisible(true);
+    this.window = frame;
+
+    boolean canContinue = BootUtils.areSettingsValid(settings);
+    if (canContinue) {
+      this.window.getRootPane().setDefaultButton(btnContinue);
+    }
+    if (!this.loop.enter()) {
+      // FIXME: log error
+      System.err.println("No se pudo iniciar la aplicación");
+      exit(2);
+    }
+    this.window.setVisible(false);
+    return this.returnValue;
+  }
+
+  private void closeWindow(boolean returnValue) {
+    this.loop.exit();
+    this.returnValue = returnValue;
   }
 
 }

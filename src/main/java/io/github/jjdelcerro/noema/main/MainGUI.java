@@ -1,7 +1,6 @@
 package io.github.jjdelcerro.noema.main;
 
 import com.formdev.flatlaf.FlatDarkLaf;
-import com.formdev.flatlaf.extras.FlatSVGUtils;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
@@ -10,10 +9,8 @@ import io.github.jjdelcerro.noema.ui.swing.AgentSwingInitializer;
 import io.github.jjdelcerro.noema.ui.swing.MainChatPanel;
 import io.github.jjdelcerro.noema.ui.swing.OpenEditorAction;
 import io.github.jjdelcerro.noema.ui.swing.WelcomePanel;
-import io.github.jjdelcerro.noema.ui.swing.WelcomePanel;
-import java.awt.Image;
+import static java.lang.System.exit;
 import javax.swing.*;
-import java.util.List;
 
 public class MainGUI {
 
@@ -28,24 +25,13 @@ public class MainGUI {
       AgentSettings settings = manager.createSettings(null);
 
       WelcomePanel welcomePanel = new WelcomePanel(settings);
-      welcomePanel.showWindow();
+      boolean ok = welcomePanel.showWindow();
 
-      JFrame frame = new JFrame("Noema v0.1.0");
-      try {
-        List<Image> icons = FlatSVGUtils.createWindowIconImages(
-                MainGUI.class.getResource("/io/github/jjdelcerro/noema/ui/swing/app_icon.svg")
-        );
-        frame.setIconImages(icons);
-      } catch (Exception e) {
-        System.err.println("No se pudo cargar el icono de la aplicación: " + e.getMessage());
+      if( !ok || !BootUtils.areSettingsValid(settings) ) {
+        exit(1);        
       }
-      frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-      frame.setSize(800, 700);
-
       MainChatPanel chatPanel = new MainChatPanel(settings);
-      frame.add(chatPanel);
-      frame.setLocationRelativeTo(null);
-      frame.setVisible(true);
+      chatPanel.showWindow();
 
       AgentSwingInitializer.init(chatPanel.getConsole());
 

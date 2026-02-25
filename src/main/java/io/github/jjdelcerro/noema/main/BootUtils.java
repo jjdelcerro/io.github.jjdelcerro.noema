@@ -37,7 +37,7 @@ public class BootUtils {
       console.printSystemLog("H2 Web Console activa en: " + webServer.getURL());
 
       // Conexión a Base de Datos (H2)
-      File memoryFile = paths.getDataFolder().resolve("memory").normalize().toRealPath().toFile();
+      File memoryFile = paths.getDataFolder().resolve("memory").normalize().toAbsolutePath().toFile();
       ConnectionSupplier memoryDatabase = new ConnectionSupplier() {
         @Override
         public Connection get() {
@@ -53,7 +53,7 @@ public class BootUtils {
           return "H2";
         }
       };
-      File servicesFile = paths.getDataFolder().resolve("service").normalize().toRealPath().toFile();
+      File servicesFile = paths.getDataFolder().resolve("service").normalize().toAbsolutePath().toFile();
       ConnectionSupplier servicesDatabase = new ConnectionSupplier() {
         @Override
         public Connection get() {

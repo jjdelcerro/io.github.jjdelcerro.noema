@@ -40,6 +40,7 @@ import javax.swing.JTextField;
 import javax.swing.JTree;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
+import org.apache.commons.lang3.StringUtils;
 
 public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
 
@@ -123,9 +124,11 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
 
   @Override
   public void showWindow() {
-    // Envolvemos el panel en un JDialog modal
-    Window parent = null; // FIXME ((AgentSwingConsoleControllerUsingMultipleJTextPane) (this.agent.getConsole())).getRoot();
-    JDialog dialog = new JDialog((Frame) (parent instanceof Frame ? parent : null), "Ajustes", true);
+    showWindow(null);
+  }
+  
+  public void showWindow(Frame parent) {
+    JDialog dialog = new JDialog(parent, "Ajustes", true);
     dialog.getContentPane().add(this);
     dialog.setSize(1024, 600);
     dialog.setLocationRelativeTo(parent);
@@ -271,7 +274,7 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
       gbc.anchor = GridBagConstraints.NORTHWEST;
 
       JLabel label = new JLabel("<html><b>" + getLabel() + "</b></html>");
-      if( this.isRequired() ) {
+      if( this.isRequired() && StringUtils.isBlank(this.getValue())) {
         label.setForeground(Color.RED.darker());
       }
       p.add(label, gbc);
@@ -332,7 +335,7 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
       JPanel p = new JPanel(new BorderLayout(10, 10));
       p.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
       JLabel label = new JLabel("<html><b>" + getLabel() + "</b></html>");
-      if( this.isRequired() ) {
+      if( this.isRequired() && StringUtils.isBlank(this.getValue())) {
         label.setForeground(Color.RED.darker());
       }
       p.add(label, BorderLayout.NORTH);
@@ -386,7 +389,7 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
       gbc.fill = GridBagConstraints.HORIZONTAL;
 
       JLabel label = new JLabel("<html><b>" + getLabel() + "</b></html>");
-      if( this.isRequired() ) {
+      if( this.isRequired() && StringUtils.isBlank(this.getValue())) {
         label.setForeground(Color.RED.darker());
       }
       p.add(label, gbc);
