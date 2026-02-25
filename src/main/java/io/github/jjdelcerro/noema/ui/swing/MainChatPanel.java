@@ -275,7 +275,7 @@ public class MainChatPanel extends JPanel {
     ConversationService conv = (ConversationService) agent.getService(ConversationService.NAME);
     SwingUtilities.invokeLater(() -> {
       lblModelInfo.setText(conv.getModelName());
-      lblTokens.setText(conv.estimateToolsTokenCount() + "+" + conv.estimateMessagesTokenCount());
+      lblTokens.setText(conv.estimateToolsTokenCount() + "+" + conv.estimateMessagesTokenCount()+ "/"+agent.getConversationContextSize());
     });
   }
 

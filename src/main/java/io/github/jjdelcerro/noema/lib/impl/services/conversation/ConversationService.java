@@ -6,8 +6,6 @@ import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.model.chat.ChatLanguageModel;
-import dev.langchain4j.model.chat.TokenCountEstimator;
 import dev.langchain4j.model.output.Response;
 import io.github.jjdelcerro.noema.lib.AbstractAgentAction;
 import io.github.jjdelcerro.noema.lib.Agent;
@@ -38,6 +36,7 @@ import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentSettings;
 import static io.github.jjdelcerro.noema.lib.AgentSettings.BRAVE_SEARCH_API_KEY;
 import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ModelParametersImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.events.PoolEventTool;
 import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file.FileExtractTextTool;
 import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file.FileFindTool;
@@ -92,7 +91,7 @@ public class ConversationService implements AgentService {
   private final SourceOfTruth sourceOfTruth;
   private AgentConsole console;
   private final Session session;
-  private ChatLanguageModel model;
+  private Agent.ChatModel model;
   private boolean running;
 
   private CheckPoint activeCheckPoint;
@@ -385,12 +384,16 @@ public class ConversationService implements AgentService {
     this.console = console;
   }
 
+  public Agent.ChatModel getModel() {
+    return model;
+  }
+  
   @Override
   public Agent.ModelParameters getModelParameters(String name) {
     AgentSettings settings = this.agent.getSettings();
     switch (name) {
       case "CONVERSATION":
-        return new Agent.ModelParameters(
+        return new ModelParametersImpl(
                 settings.getProperty(CONVERSATION_PROVIDER_URL),
                 settings.getProperty(CONVERSATION_PROVIDER_API_KEY),
                 settings.getProperty(CONVERSATION_MODEL_ID),
@@ -450,25 +453,23 @@ public class ConversationService implements AgentService {
   }
 
   public int estimateToolsTokenCount() {
-    if (this.model == null || !(this.model instanceof TokenCountEstimator)) {
+    if (this.model == null ) {
       return 0;
     }
-    TokenCountEstimator tokenCountEstimator = (TokenCountEstimator) this.model;
     int n = 0;
     for (ToolSpecification toolSpecification : this.getToolSpecifications()) {
       String s = toolSpecification.toString();
-      n += tokenCountEstimator.estimateTokenCount(s) + OVERHEAD_IN_ESTIMATE_TOOLS_TOKEN_COUNT;
+      n += this.model.estimateTokenCount(s) + OVERHEAD_IN_ESTIMATE_TOOLS_TOKEN_COUNT;
     }
     return n;
   }
 
   public int estimateMessagesTokenCount() {
-    if (this.model == null || !(this.model instanceof TokenCountEstimator)) {
+    if (this.model == null ) {
       return 0;
     }
-    TokenCountEstimator tokenCountEstimator = (TokenCountEstimator) this.model;
     List<ChatMessage> messages = this.session.getContextMessages(this.activeCheckPoint, getBaseSystemPrompt());
-    return tokenCountEstimator.estimateTokenCount(messages);
+    return this.model.estimateTokenCount(messages);
   }
 
   public String getModelName() {

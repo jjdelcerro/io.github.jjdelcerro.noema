@@ -1,11 +1,14 @@
 package io.github.jjdelcerro.noema.lib;
 
 import com.google.gson.JsonObject;
+import dev.langchain4j.agent.tool.ToolSpecification;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import dev.langchain4j.model.output.Response;
 import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
-import java.io.File;
-import java.nio.file.Path;
+import java.util.List;
 
 /**
  *
@@ -13,15 +16,26 @@ import java.nio.file.Path;
  */
 public interface Agent {
 
-  public record ModelParameters(
-        String providerUrl, 
-        String providerApiKey,
-        String modelId,
-        double temperature
-  ) { }
+  public interface ModelParameters {
+    public String providerUrl();
+    public String providerApiKey();
+    public String modelId();
+    public double temperature();
+    public int contextSize();
+    public void setContextSize(int contextSize);
+  }
   
+  public interface ChatModel {
+    public int getContextSize();
+    public Response<AiMessage> generate(ChatMessage systemPrompt, ChatMessage message);
+    public Response<AiMessage> generate(List<ChatMessage> messages);
+    public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications);
+    public int estimateTokenCount(String text);
+    public int estimateTokenCount(List<ChatMessage> messages);
+  }
+
   public AgentPaths getPaths();
-  
+
   public AgentActions getActions();
 
   public AgentSettings getSettings();
@@ -81,21 +95,21 @@ public interface Agent {
   public AgentAccessControl getAccessControl();
 
   public void setConsole(AgentConsole console);
-  
+
   public ConnectionSupplier getServicesDatabase();
 
   public ConnectionSupplier getMemoryDatabase();
 
   public AgentService getService(String name);
-  
+
   public void start();
-  
+
   public String getResourceAsString(String resname);
-  
-  public OpenAiChatModel createChatModel(String name);
-  
+
+  public ChatModel createChatModel(String name);
+
   public ModelParameters getModelParameters(String name);
-  
+
   public String callChatModel(String docmapper_reasoning_llm, String extractStructureSystemPrompt, String doc_csv);
 
   public JsonObject callChatModelAsJson(String docmapper_basic_llm, String summaryAndCategorizeSystemPrompt, String contents);
@@ -103,4 +117,6 @@ public interface Agent {
   public void installResource(String resPath);
 
   public void showSession();
+  
+  public int getConversationContextSize();
 }

@@ -1,20 +1,17 @@
 package io.github.jjdelcerro.noema.ui.common;
 
 import com.google.gson.JsonObject;
-import dev.langchain4j.model.openai.OpenAiChatModel;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentActions;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentSettings;
 import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
-import java.io.File;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
-import java.nio.file.Path;
 import java.util.function.Supplier;
 
 /**
@@ -25,16 +22,12 @@ import java.util.function.Supplier;
  */
 public class FakeAgent implements Agent {
 
-//  private final AgentPaths paths;
   private final AgentSettings settings;
   private AgentConsole console;
   private final AgentActions actions;
 
-//  public FakeAgent(AgentPaths paths) {
   public FakeAgent(AgentSettings settings) {
     AgentManager agentManager = AgentLocator.getAgentManager();
-//    this.paths = paths;
-//    this.settings = agentManager.createSettings(paths);
     this.settings = settings;
     this.actions = new FakeAgentActions(agentManager.createActions());
     this.console = new FakeConsole();
@@ -80,7 +73,7 @@ public class FakeAgent implements Agent {
 
   @Override
   public AgentAccessControl getAccessControl() {
-    throw new UnsupportedOperationException("Not supported yet."); 
+    throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
@@ -99,42 +92,42 @@ public class FakeAgent implements Agent {
 
   @Override
   public String getResourceAsString(String resname) {
-    throw new UnsupportedOperationException("Not supported yet."); 
+    throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
-  public OpenAiChatModel createChatModel(String name) {
-    throw new UnsupportedOperationException("Not supported yet."); 
+  public ChatModel createChatModel(String name) {
+    throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
   public ModelParameters getModelParameters(String name) {
-    throw new UnsupportedOperationException("Not supported yet."); 
+    throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
   public String callChatModel(String docmapper_reasoning_llm, String extractStructureSystemPrompt, String doc_csv) {
-    throw new UnsupportedOperationException("Not supported yet."); 
+    throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
   public JsonObject callChatModelAsJson(String docmapper_basic_llm, String summaryAndCategorizeSystemPrompt, String contents) {
-    throw new UnsupportedOperationException("Not supported yet."); 
+    throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
   public ConnectionSupplier getMemoryDatabase() {
-    throw new UnsupportedOperationException("Not supported yet."); 
+    throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
   public ConnectionSupplier getServicesDatabase() {
-    throw new UnsupportedOperationException("Not supported yet."); 
+    throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
   public void installResource(String resPath) {
-    throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
@@ -147,11 +140,16 @@ public class FakeAgent implements Agent {
     return settings.getPaths();
   }
 
+  @Override
+  public int getConversationContextSize() {
+    throw new UnsupportedOperationException("Not supported yet.");
+  }
+
   private static class FakeConsole implements AgentConsole {
 
     @Override
     public boolean confirm(String message) {
-      throw new UnsupportedOperationException("Not supported yet."); 
+      throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
@@ -169,9 +167,9 @@ public class FakeAgent implements Agent {
     @Override
     public void printModelResponse(String message) {
     }
-    
+
   }
-  
+
   private static class FakeAgentActions implements AgentActions {
 
     private final AgentActions delegate;
@@ -179,7 +177,7 @@ public class FakeAgent implements Agent {
     public FakeAgentActions(AgentActions delegate) {
       this.delegate = delegate;
     }
-    
+
     @Override
     public void addAction(AgentAction action) {
       this.delegate.addAction(action);
@@ -190,6 +188,6 @@ public class FakeAgent implements Agent {
       delegate.call(name, settings);
       return true;
     }
-    
+
   }
 }

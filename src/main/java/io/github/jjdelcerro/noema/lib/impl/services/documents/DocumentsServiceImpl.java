@@ -7,6 +7,7 @@ import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentSettings;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
+import io.github.jjdelcerro.noema.lib.impl.ModelParametersImpl;
 import io.github.jjdelcerro.noema.lib.impl.SQLProvider;
 import io.github.jjdelcerro.noema.lib.impl.persistence.Counter;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingFilter;
@@ -323,7 +324,7 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
     AgentSettings settings = this.agent.getSettings();
     switch (name) {
       case "DOCMAPPER_REASONING" -> {
-        return new ModelParameters(
+        return new ModelParametersImpl(
                 settings.getProperty(DOCMAPPER_REASONING_PROVIDER_URL),
                 settings.getProperty(DOCMAPPER_REASONING_PROVIDER_API_KEY),
                 settings.getProperty(DOCMAPPER_REASONING_MODEL_ID),
@@ -331,7 +332,7 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
         );
       }
       case "DOCMAPPER_BASIC" -> {
-        return new ModelParameters(
+        return new ModelParametersImpl(
                 settings.getProperty(DOCMAPPER_BASIC_PROVIDER_URL),
                 settings.getProperty(DOCMAPPER_BASIC_PROVIDER_API_KEY),
                 settings.getProperty(DOCMAPPER_BASIC_MODEL_ID),
