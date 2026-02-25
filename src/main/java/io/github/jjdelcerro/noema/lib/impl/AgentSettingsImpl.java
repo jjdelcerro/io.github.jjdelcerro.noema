@@ -1,6 +1,7 @@
 package io.github.jjdelcerro.noema.lib.impl;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentSettings;
 import java.io.FileInputStream;
@@ -14,14 +15,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.lang3.StringUtils;
 import com.google.gson.annotations.SerializedName;
 import edu.emory.mathcs.backport.java.util.Collections;
-import io.github.jjdelcerro.noema.lib.AgentConsole;
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -44,14 +41,14 @@ public class AgentSettingsImpl implements AgentSettings {
     public String getLastWorkspacePath() {
       return lastWorkspacePath;
     }
-    
+
     public void setLastWorkspacesPaths(List<String> lastWorkspacesPaths) {
-        this.lastWorkspacesPaths = lastWorkspacesPaths;
+      this.lastWorkspacesPaths = lastWorkspacesPaths;
     }
 
     public void setLastWorkspacePath(String lastWorkspacePath) {
-        this.lastWorkspacePath = lastWorkspacePath;
-    }    
+      this.lastWorkspacePath = lastWorkspacePath;
+    }
   }
 
   private final Map<String, String> values;
@@ -71,7 +68,7 @@ public class AgentSettingsImpl implements AgentSettings {
         String json = Files.readString(this.paths.getGlobalConfigFolder().resolve("settings.json"), StandardCharsets.UTF_8);
         this.globalSettings = gson.fromJson(json, GlobalSettingsData.class);
         List<String> lastWorkspacesPaths = this.globalSettings.getLastWorkspacesPaths();
-        if( lastWorkspacesPaths!=null ) {
+        if (lastWorkspacesPaths != null) {
           Collections.sort(lastWorkspacesPaths);
         }
       } catch (IOException ex) {
@@ -81,20 +78,27 @@ public class AgentSettingsImpl implements AgentSettings {
     }
     return this.globalSettings;
   }
-  
+
   private void saveGlobalSettings() {
     try {
-      Gson gson = new Gson();
+      Gson gson = new GsonBuilder()
+              .setPrettyPrinting()
+              .disableHtmlEscaping()
+              .serializeNulls()
+              .create();
+
       String json = gson.toJson(this.getGlobalSettings());
+
       Files.writeString(
               this.paths.getGlobalConfigFolder().resolve("settings.json"),
               json,
               StandardCharsets.UTF_8,
-              StandardOpenOption.WRITE
+              StandardOpenOption.WRITE,
+              StandardOpenOption.CREATE,
+              StandardOpenOption.TRUNCATE_EXISTING
       );
     } catch (IOException ex) {
-      // FIXME: log error
-      throw new RuntimeException("Can't save global settings",ex);
+      throw new RuntimeException("Can't save global settings", ex);
     }
   }
 
@@ -168,21 +172,21 @@ public class AgentSettingsImpl implements AgentSettings {
   public String getLastWorkspacePath() {
     return this.getGlobalSettings().getLastWorkspacePath();
   }
-  
+
   public void setLastWorkspacePath(String lastWorkspacePath) {
     this.getGlobalSettings().setLastWorkspacePath(lastWorkspacePath);
     List<String> lastWorkspacesPaths = this.globalSettings.getLastWorkspacesPaths();
-    if( lastWorkspacesPaths==null ) {
+    if (lastWorkspacesPaths == null) {
       lastWorkspacesPaths = new ArrayList<>();
       lastWorkspacesPaths.add(lastWorkspacePath);
       this.globalSettings.setLastWorkspacesPaths(lastWorkspacesPaths);
     } else {
-      if( !lastWorkspacesPaths.contains(lastWorkspacePath) ) {
+      if (!lastWorkspacesPaths.contains(lastWorkspacePath)) {
         lastWorkspacesPaths.add(lastWorkspacePath);
         Collections.sort(lastWorkspacesPaths);
         this.globalSettings.setLastWorkspacesPaths(lastWorkspacesPaths);
       }
-    }  
+    }
     this.saveGlobalSettings();
   }
 
@@ -203,7 +207,7 @@ public class AgentSettingsImpl implements AgentSettings {
     // Instala lo minimo para poder iniciar el agente.
     String[] resources = new String[]{
       "models.properties",
-      "providers_apikeys.properties",
+      //      "providers_apikeys.properties",
       "providers_urls.properties",
       "settings.properties",
       "settingsui.json"

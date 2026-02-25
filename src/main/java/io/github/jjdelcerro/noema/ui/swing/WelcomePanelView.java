@@ -19,7 +19,7 @@ import javax.swing.JTextArea;
 import javax.swing.border.LineBorder;
 
 
-public class WelcomePanel2View extends JPanel
+public class WelcomePanelView extends JPanel
 {
    JButton btnBrowse = new JButton();
    JTextArea txtDisclaimer = new JTextArea();
@@ -27,11 +27,12 @@ public class WelcomePanel2View extends JPanel
    JButton btnContinue = new JButton();
    JEditorPane txtConfigSummary = new JEditorPane();
    JButton btnConfigure = new JButton();
+   JButton btnCancelar = new JButton();
 
    /**
     * Default constructor
     */
-   public WelcomePanel2View()
+   public WelcomePanelView()
    {
       initializePanel();
    }
@@ -118,14 +119,14 @@ public class WelcomePanel2View extends JPanel
    public JPanel createPanel()
    {
       JPanel jpanel1 = new JPanel();
-      FormLayout formlayout1 = new FormLayout("FILL:8DLU:NONE,FILL:DEFAULT:GROW(1.0),FILL:DEFAULT:NONE,FILL:DEFAULT:NONE,FILL:8DLU:NONE","CENTER:4DLU:NONE,CENTER:DEFAULT:NONE,CENTER:4DLU:NONE,CENTER:DEFAULT:NONE,CENTER:4DLU:NONE,CENTER:DEFAULT:NONE,CENTER:4DLU:NONE,FILL:DEFAULT:GROW(0.5),CENTER:4DLU:NONE,CENTER:DEFAULT:NONE,CENTER:2DLU:NONE,CENTER:DEFAULT:NONE,CENTER:4DLU:NONE,FILL:DEFAULT:GROW(0.5),CENTER:4DLU:NONE,CENTER:DEFAULT:NONE,CENTER:4DLU:NONE");
+      FormLayout formlayout1 = new FormLayout("FILL:8DLU:NONE,FILL:MAX(12DLU;DEFAULT):GROW(1.0),FILL:DEFAULT:NONE,FILL:DEFAULT:NONE,FILL:DEFAULT:NONE,FILL:DEFAULT:NONE,FILL:8DLU:NONE","CENTER:4DLU:NONE,CENTER:DEFAULT:NONE,CENTER:4DLU:NONE,CENTER:DEFAULT:NONE,CENTER:4DLU:NONE,CENTER:DEFAULT:NONE,CENTER:4DLU:NONE,FILL:DEFAULT:GROW(0.5),CENTER:4DLU:NONE,CENTER:DEFAULT:NONE,CENTER:2DLU:NONE,CENTER:DEFAULT:NONE,CENTER:4DLU:NONE,FILL:DEFAULT:GROW(0.5),CENTER:4DLU:NONE,CENTER:DEFAULT:NONE,CENTER:4DLU:NONE");
       CellConstraints cc = new CellConstraints();
       jpanel1.setLayout(formlayout1);
 
       btnBrowse.setActionCommand("Seleccionar");
       btnBrowse.setName("btnBrowse");
       btnBrowse.setText("Seleccionar");
-      jpanel1.add(btnBrowse,cc.xy(4,4));
+      jpanel1.add(btnBrowse,cc.xy(6,4));
 
       txtDisclaimer.setEditable(false);
       txtDisclaimer.setName("txtDisclaimer");
@@ -136,18 +137,18 @@ public class WelcomePanel2View extends JPanel
       jscrollpane1.setViewportView(txtDisclaimer);
       jscrollpane1.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
       jscrollpane1.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-      jpanel1.add(jscrollpane1,cc.xywh(2,14,3,1));
+      jpanel1.add(jscrollpane1,cc.xywh(2,14,5,1));
 
       comboWorkspace.setEditable(true);
       comboWorkspace.setName("comboWorkspace");
       comboWorkspace.setOpaque(false);
       comboWorkspace.setRequestFocusEnabled(false);
-      jpanel1.add(comboWorkspace,cc.xy(2,4));
+      jpanel1.add(comboWorkspace,cc.xywh(2,4,3,1));
 
       btnContinue.setActionCommand("Continuar");
       btnContinue.setName("btnContinue");
       btnContinue.setText("Continuar");
-      jpanel1.add(btnContinue,cc.xy(4,16));
+      jpanel1.add(btnContinue,cc.xy(6,16));
 
       txtConfigSummary.setEditable(false);
       txtConfigSummary.setName("txtConfigSummary");
@@ -158,7 +159,7 @@ public class WelcomePanel2View extends JPanel
       jscrollpane2.setViewportView(txtConfigSummary);
       jscrollpane2.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
       jscrollpane2.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-      jpanel1.add(jscrollpane2,cc.xywh(2,8,3,1));
+      jpanel1.add(jscrollpane2,cc.xywh(2,8,5,1));
 
       JLabel jlabel1 = new JLabel();
       jlabel1.setText("Seleccione la carpeta de trabajo");
@@ -169,15 +170,20 @@ public class WelcomePanel2View extends JPanel
       jpanel1.add(jlabel2,cc.xy(2,6));
 
       JLabel jlabel3 = new JLabel();
-      jlabel3.setText("Aviso legal y condiciones");
+      jlabel3.setText("Aviso");
       jpanel1.add(jlabel3,cc.xy(2,12));
 
       btnConfigure.setActionCommand("Configurar");
       btnConfigure.setName("btnConfigure");
       btnConfigure.setText("Configurar");
-      jpanel1.add(btnConfigure,cc.xy(4,10));
+      jpanel1.add(btnConfigure,cc.xy(6,10));
 
-      addFillComponents(jpanel1,new int[]{ 1,2,3,4,5 },new int[]{ 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17 });
+      btnCancelar.setActionCommand("Cancelar");
+      btnCancelar.setName("btnCancelar");
+      btnCancelar.setText("Cancelar");
+      jpanel1.add(btnCancelar,cc.xy(4,16));
+
+      addFillComponents(jpanel1,new int[]{ 1,2,3,4,5,6,7 },new int[]{ 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17 });
       return jpanel1;
    }
 

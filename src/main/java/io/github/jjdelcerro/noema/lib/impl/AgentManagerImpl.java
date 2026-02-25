@@ -106,6 +106,15 @@ public class AgentManagerImpl implements AgentManager {
   public AgentPaths createAgentPaths(Path workspacetFolder) {
     return new AgentPathsImpl(workspacetFolder);
   }
-  
+
+  @Override
+  public String getName() {
+     return AGENT_NAME;
+  }
+
+  @Override
+  public String getVersion() {
+    return "0.1.0";
+  }
   
 }

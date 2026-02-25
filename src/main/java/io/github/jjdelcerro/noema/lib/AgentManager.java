@@ -2,7 +2,6 @@ package io.github.jjdelcerro.noema.lib;
 
 import io.github.jjdelcerro.noema.lib.AgentActions.AgentAction;
 import io.github.jjdelcerro.noema.lib.impl.SQLProvider;
-import java.io.File;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.function.Supplier;
@@ -34,4 +33,7 @@ public interface AgentManager {
   
   public Collection<Supplier<AgentActions.AgentAction>> getActions();
   
+  public String getName();
+  
+  public String getVersion();
 }

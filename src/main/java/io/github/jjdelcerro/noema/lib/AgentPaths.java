@@ -8,13 +8,15 @@ import java.nio.file.Path;
  */
 public interface AgentPaths {
 
-  String AGENT_FOLDER_NAME = "_noema-agent"; // de momento, un "_" al inicio por comodida, pero deberia ser un "."
+  String AGENT_FOLDER_NAME = "noema-agent";
 
   void setupHierarchy();
 
   Path getAgentFolder();
 
   Path getConfigFolder();
+  
+  Path getConfigFolder(String name);
   
   Path getCacheFolder();
   

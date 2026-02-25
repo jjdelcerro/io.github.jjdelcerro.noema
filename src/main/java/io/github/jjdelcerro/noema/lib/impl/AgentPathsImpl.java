@@ -41,9 +41,18 @@ public class AgentPathsImpl implements AgentPaths {
       Files.createDirectories(this.getCacheFolder());
       Files.createDirectories(this.getTempFolder());
       Files.createDirectories(this.getSandboxHomeFolder());
+      Files.createDirectories(this.getGlobalConfigFolder());
     } catch (IOException ex) {
       throw new RuntimeException("Can't create " + AGENT_NAME + " agent folder Hierarchy", ex);
     }
+  }
+  
+  private String getLocalAgentFolderName() {
+    return "_" + AGENT_FOLDER_NAME;
+  }
+
+  private String getGlobalAgentFolderName() {
+    return "." + AGENT_FOLDER_NAME;
   }
 
   @Override
@@ -51,7 +60,7 @@ public class AgentPathsImpl implements AgentPaths {
     if( workspaceFolder == null ) {
       return null;
     }
-    return this.workspaceFolder.resolve(AGENT_FOLDER_NAME);
+    return this.workspaceFolder.resolve(getLocalAgentFolderName());
   }
 
   @Override
@@ -59,15 +68,28 @@ public class AgentPathsImpl implements AgentPaths {
     if( workspaceFolder == null ) {
       return null;
     }
-    return this.workspaceFolder.resolve(Path.of(AGENT_FOLDER_NAME, "var", "config"));
+    return this.workspaceFolder.resolve(Path.of(getLocalAgentFolderName(), "var", "config"));
   }
 
+  @Override
+  public Path getConfigFolder(String name) {
+    Path x1 = this.getConfigFolder().resolve(name);
+    if( Files.exists(x1) )  {
+      return x1;
+    }
+    Path x2 = this.getGlobalConfigFolder().resolve(name);
+    if( Files.exists(x2) )  {
+      return x2;
+    }
+    return x1;
+  }
+  
   @Override
   public Path getDataFolder() {
     if( workspaceFolder == null ) {
       return null;
     }
-    return this.workspaceFolder.resolve(Path.of(AGENT_FOLDER_NAME, "var", "lib"));
+    return this.workspaceFolder.resolve(Path.of(getLocalAgentFolderName(), "var", "lib"));
   }
 
   @Override
@@ -75,7 +97,7 @@ public class AgentPathsImpl implements AgentPaths {
     if( workspaceFolder == null ) {
       return null;
     }
-    return this.workspaceFolder.resolve(Path.of(AGENT_FOLDER_NAME, "var", "cache"));
+    return this.workspaceFolder.resolve(Path.of(getLocalAgentFolderName(), "var", "cache"));
   }
 
   @Override
@@ -83,7 +105,7 @@ public class AgentPathsImpl implements AgentPaths {
     if( workspaceFolder == null ) {
       return null;
     }
-    return this.workspaceFolder.resolve(Path.of(AGENT_FOLDER_NAME, "var", "tmp"));
+    return this.workspaceFolder.resolve(Path.of(getLocalAgentFolderName(), "var", "tmp"));
   }
 
   @Override
@@ -91,7 +113,7 @@ public class AgentPathsImpl implements AgentPaths {
     if( workspaceFolder == null ) {
       return null;
     }
-    return this.workspaceFolder.resolve(Path.of(AGENT_FOLDER_NAME, "var", "log"));
+    return this.workspaceFolder.resolve(Path.of(getLocalAgentFolderName(), "var", "log"));
   }
 
   @Override
@@ -99,11 +121,11 @@ public class AgentPathsImpl implements AgentPaths {
     if( workspaceFolder == null ) {
       return null;
     }
-    return this.workspaceFolder.resolve(Path.of(AGENT_FOLDER_NAME, "home"));
+    return this.workspaceFolder.resolve(Path.of(getLocalAgentFolderName(), "home"));
   }
 
   @Override
   public Path getGlobalConfigFolder() {
-    return Path.of(System.getProperty("user.home"),AGENT_FOLDER_NAME);
+    return Path.of(System.getProperty("user.home"),getGlobalAgentFolderName());
   }
 }
