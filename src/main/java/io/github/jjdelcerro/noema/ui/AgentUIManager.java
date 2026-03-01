@@ -2,7 +2,7 @@ package io.github.jjdelcerro.noema.ui;
 
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
-import io.github.jjdelcerro.noema.lib.AgentSettings;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 
 /**
  *

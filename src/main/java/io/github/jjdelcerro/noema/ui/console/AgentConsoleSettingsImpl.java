@@ -4,11 +4,11 @@ import io.github.jjdelcerro.noema.ui.common.FakeAgent;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentSettings;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.ui.AgentUIManager;
 import io.github.jjdelcerro.noema.ui.AgentUISettings;
-import io.github.jjdelcerro.noema.ui.common.AbstractAgentSettingsItem;
-import io.github.jjdelcerro.noema.ui.common.AgentSettingsItem;
+import io.github.jjdelcerro.noema.ui.common.AbstractAgentSettingsItemUI;
+import io.github.jjdelcerro.noema.ui.common.AgentSettingsItemUI;
 import java.io.FileReader;
 import java.nio.file.Path;
 import java.util.List;
@@ -22,7 +22,7 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
 
   private final MenuItem root;
 
-  private interface AgentSettingsItemConsole extends AgentSettingsItem {
+  private interface AgentSettingsItemConsole extends AgentSettingsItemUI {
 
     AgentSettingsItemConsole show();  // Muestra el UI
 
@@ -30,15 +30,15 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
   }
 
   private static abstract class AbstractAgentSettingsItemConsole
-          extends AbstractAgentSettingsItem
+          extends AbstractAgentSettingsItemUI
           implements AgentSettingsItemConsole {
 
-    protected AbstractAgentSettingsItemConsole(AgentSettingsItem parent, Agent agent, JsonObject item) {
+    protected AbstractAgentSettingsItemConsole(AgentSettingsItemUI parent, Agent agent, JsonObject item) {
       super(parent, agent, item);
     }
 
     @Override
-    protected AgentSettingsItem createItem(AgentSettingsItem parent, Agent agent, JsonObject jsonItem) {
+    protected AgentSettingsItemUI createItem(AgentSettingsItemUI parent, Agent agent, JsonObject jsonItem) {
       switch (jsonItem.get("type").getAsString().toLowerCase()) {
         case "menu":
           return new MenuItem(this, this.agent, jsonItem);
@@ -65,13 +65,13 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
     public AgentSettingsItemConsole show() {
       AgentConsoleImpl console = (AgentConsoleImpl) agent.getConsole();
       console.printSystemLog("\n--- " + getLabel() + " ---");
-      List<AgentSettingsItem> childs = getChilds();
+      List<AgentSettingsItemUI> childs = getChilds();
       if (childs != null) {
         for (int i = 0; i < childs.size(); i++) {
-          AgentSettingsItem child = childs.get(i);
+          AgentSettingsItemUI child = childs.get(i);
           String value = "";
           if (child.getVariableName() != null) {
-            String v = agent.getSettings().getProperty(child.getVariableName());
+            String v = agent.getSettings().getPropertyAsString(child.getVariableName());
             value = " [" + (v == null ? "no definido" : v) + "]";
           }
           console.printSystemLog("[" + (i + 1) + "] " + child.getLabel() + value);
@@ -91,7 +91,7 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
         if (choice == 0) {
           return (AgentSettingsItemConsole) getParent();
         }
-        List<AgentSettingsItem> childs = getChilds();
+        List<AgentSettingsItemUI> childs = getChilds();
         if (childs != null && choice > 0 && choice <= childs.size()) {
           return (AgentSettingsItemConsole) childs.get(choice - 1);
         }
@@ -105,14 +105,14 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
 
   private static class InputStringItem extends AbstractAgentSettingsItemConsole {
 
-    public InputStringItem(AgentSettingsItem parent, Agent agent, JsonObject item) {
+    public InputStringItem(AgentSettingsItemUI parent, Agent agent, JsonObject item) {
       super(parent, agent, item);
     }
 
     @Override
     public AgentSettingsItemConsole show() {
       AgentConsoleImpl console = (AgentConsoleImpl) agent.getConsole();
-      String current = agent.getSettings().getProperty(getVariableName());
+      String current = agent.getSettings().getPropertyAsString(getVariableName());
       console.printSystemLog("\nModificando: " + getLabel());
       console.printSystemLog("Valor actual: " + (current == null ? "(vacio)" : current));
       return this;
@@ -137,7 +137,7 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
 
   private static class SelectOptionItem extends AbstractAgentSettingsItemConsole {
 
-    public SelectOptionItem(AgentSettingsItem parent, Agent agent, JsonObject item) {
+    public SelectOptionItem(AgentSettingsItemUI parent, Agent agent, JsonObject item) {
       super(parent, agent, item);
     }
 
@@ -145,7 +145,7 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
     public AgentSettingsItemConsole show() {
       AgentConsoleImpl console = (AgentConsoleImpl) agent.getConsole();
       console.printSystemLog("\n--- " + getLabel() + " ---");
-      List<AgentSettingsItem> childs = getChilds();
+      List<AgentSettingsItemUI> childs = getChilds();
       if (childs != null) {
         for (int i = 0; i < childs.size(); i++) {
           console.printSystemLog("[" + (i + 1) + "] " + childs.get(i).getLabel());
@@ -165,9 +165,9 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
         if (choice == 0) {
           return (AgentSettingsItemConsole) getParent();
         }
-        List<AgentSettingsItem> childs = getChilds();
+        List<AgentSettingsItemUI> childs = getChilds();
         if (childs != null && choice > 0 && choice <= childs.size()) {
-          AgentSettingsItem selected = childs.get(choice - 1);
+          AgentSettingsItemUI selected = childs.get(choice - 1);
           agent.getSettings().setProperty(getVariableName(), selected.getValue());
           if (getActionName() != null) {
             agent.getActions().call(getActionName(), agent.getSettings());
@@ -185,20 +185,20 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
 
   private static class ComboItemConsole extends AbstractAgentSettingsItemConsole {
 
-    public ComboItemConsole(AgentSettingsItem parent, Agent agent, JsonObject item) {
+    public ComboItemConsole(AgentSettingsItemUI parent, Agent agent, JsonObject item) {
       super(parent, agent, item);
     }
 
     @Override
     public AgentSettingsItemConsole show() {
       AgentConsoleImpl console = (AgentConsoleImpl) agent.getConsole();
-      String current = agent.getSettings().getProperty(getVariableName());
+      String current = agent.getSettings().getPropertyAsString(getVariableName());
 
       console.printSystemLog("\n--- " + getLabel() + " ---");
       console.printSystemLog("Valor actual: " + (current == null ? "(no definido)" : current));
       console.printSystemLog("Sugerencias:");
 
-      List<AgentSettingsItem> childs = getChilds();
+      List<AgentSettingsItemUI> childs = getChilds();
       for (int i = 0; i < childs.size(); i++) {
         console.printSystemLog("[" + (i + 1) + "] " + childs.get(i).getLabel() + " (" + childs.get(i).getValue() + ")");
       }
@@ -231,7 +231,7 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
         String trimmed = rawInput.trim();
         try {
           int choice = Integer.parseInt(trimmed);
-          List<AgentSettingsItem> childs = getChilds();
+          List<AgentSettingsItemUI> childs = getChilds();
 
           if (choice > 0 && choice <= childs.size()) {
             // Es una opción de la lista
@@ -259,7 +259,7 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
 
   private static class ValueItem extends AbstractAgentSettingsItemConsole {
 
-    public ValueItem(AgentSettingsItem parent, Agent agent, JsonObject item) {
+    public ValueItem(AgentSettingsItemUI parent, Agent agent, JsonObject item) {
       super(parent, agent, item);
     }
 

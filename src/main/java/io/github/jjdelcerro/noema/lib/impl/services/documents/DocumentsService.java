@@ -10,12 +10,12 @@ import java.util.List;
  */
 public interface DocumentsService extends AgentService {
   
-  public static final String DOCMAPPER_REASONING_PROVIDER_URL = "DOCMAPPER_REASONING_PROVIDER_URL";
-  public static final String DOCMAPPER_REASONING_PROVIDER_API_KEY = "DOCMAPPER_REASONING_PROVIDER_API_KEY";
-  public static final String DOCMAPPER_REASONING_MODEL_ID = "DOCMAPPER_REASONING_MODEL_ID";
-  public static final String DOCMAPPER_BASIC_PROVIDER_URL = "DOCMAPPER_BASIC_PROVIDER_URL";
-  public static final String DOCMAPPER_BASIC_PROVIDER_API_KEY = "DOCMAPPER_BASIC_PROVIDER_API_KEY";
-  public static final String DOCMAPPER_BASIC_MODEL_ID = "DOCMAPPER_BASIC_MODEL_ID";
+  public static final String DOCMAPPER_REASONING_PROVIDER_URL = "document/reasoning/provider/url";
+  public static final String DOCMAPPER_REASONING_PROVIDER_API_KEY = "document/reasoning/provider/api_key";
+  public static final String DOCMAPPER_REASONING_MODEL_ID = "document/reasoning/provider/model_id";
+  public static final String DOCMAPPER_BASIC_PROVIDER_URL = "document/basic/provider/url";
+  public static final String DOCMAPPER_BASIC_PROVIDER_API_KEY = "document/basic/provider/api_key";
+  public static final String DOCMAPPER_BASIC_MODEL_ID = "document/basic/provider/model_id";
 
   public String NAME = "Document";
 

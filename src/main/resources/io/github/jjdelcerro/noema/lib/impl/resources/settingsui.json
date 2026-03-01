@@ -4,55 +4,79 @@
   "domains": {
     "LLM_MODELS": "models.properties",
     "LLM_PROVIDERS_URL": "providers_urls.properties",
-    "LLM_PROVIDERS_APIKEY": "providers_apikeys.properties"
+    "LLM_PROVIDERS_APIKEY": "providers_apikeys.properties",
+    "AVAILABLE_TOOLS": "available_tools.properties" 
   },  
   "childs": [
     {
       "type": "menu",
-      "label": "Configuración - modelo de conversación",
+      "label": "Conversación",
       "childs": [
         {
-          "type": "combo",
-          "childs": "LLM_PROVIDERS_URL",
-          "label": "URL del proveedor (conversación)",
-          "variableName": "CONVERSATION_PROVIDER_URL",
-          "required": true,
-          "actionName": "CHANGE_CONVERSATION_PROVIDER"
+          "type": "menu",
+          "label": "Modelo",
+          "childs": [
+            {
+              "type": "combo",
+              "childs": "LLM_PROVIDERS_URL",
+              "label": "URL del proveedor (conversación)",
+              "variableName": "conversation/provider/url",
+              "required": true,
+              "actionName": "CHANGE_CONVERSATION_PROVIDER"
+            },
+            {
+              "type": "combo",
+              "label": "API Key (conversación)",
+              "variableName": "conversation/provider/api_key",
+              "actionName": "CHANGE_CONVERSATION_PROVIDER",
+              "required": true,
+              "childs": "LLM_PROVIDERS_APIKEY"
+            },
+            {
+              "type": "selectoption",
+              "label": "Seleccionar Modelo (conversación)",
+              "variableName": "conversation/provider/model_id",
+              "actionName": "CHANGE_CONVERSATION_MODEL",
+              "required": true,
+              "childs": "LLM_MODELS"
+            }
+          ]
         },
         {
-          "type": "combo",
-          "label": "API Key (conversación)",
-          "variableName": "CONVERSATION_PROVIDER_API_KEY",
-          "actionName": "CHANGE_CONVERSATION_PROVIDER",
-          "required": true,
-          "childs": "LLM_PROVIDERS_APIKEY"
+          "type": "inputstring",
+          "label": "Turnos para compactar conversación",
+          "actionName": "conversation/compaction_turns"
         },
         {
-          "type": "selectoption",
-          "label": "Seleccionar Modelo (conversación)",
-          "variableName": "CONVERSATION_MODEL_ID",
-          "actionName": "CHANGE_CONVERSATION_MODEL",
-          "required": true,
-          "childs": "LLM_MODELS"
-        }
+          "type": "inputstring",
+          "label": "Tokens para compactar conversación",
+          "actionName": "conversation/compaction_tokens"
+        },
+        {
+          "type": "checkedlist",
+          "label": "Capacidades del Agente",
+          "variableName": "conversation/active_tools",
+          "actionName": "REFRESH_CONVERSATION_TOOLS",
+          "childs": "AVAILABLE_TOOLS"
+        }    
       ]
     },
     {
       "type": "menu",
-      "label": "Configuracion - modelo memoria",
+      "label": "Compactacion de memoria",
       "childs": [
         {
           "type": "combo",
           "childs": "LLM_PROVIDERS_URL",
           "label": "URL del proveedor (memoria)",
-          "variableName": "MEMORY_PROVIDER_URL",
+          "variableName": "memory/provider/url",
           "required": true,
           "actionName": "CHANGE_MEMORY_PROVIDER"
         },
         {
           "type": "combo",
           "label": "API Key (memoria)",
-          "variableName": "MEMORY_PROVIDER_API_KEY",
+          "variableName": "memory/provider/api_key",
           "actionName": "CHANGE_MEMORY_PROVIDER",
           "required": true,
           "childs": "LLM_PROVIDERS_APIKEY"
@@ -60,7 +84,7 @@
         {
           "type": "selectoption",
           "label": "Seleccionar Modelo (memoria)",
-          "variableName": "MEMORY_MODEL_ID",
+          "variableName": "memory/provider/model_id",
           "actionName": "CHANGE_MEMORY_MODEL",
           "required": true,
           "childs": "LLM_MODELS"
@@ -69,54 +93,54 @@
     },
     {
       "type": "menu",
-      "label": "Configuración de Telegram",
+      "label": "Telegram",
       "childs": [
         {
           "type": "inputstring",
           "label": "Telegram API Key",
-          "variableName": "TELEGRAM_API_KEY"
+          "variableName": "telegram/api_key"
         },
         {
           "type": "inputstring",
           "label": "ID de Chat Autorizado (User ID)",
-          "variableName": "TELEGRAM_CHAT_ID"
+          "variableName": "telegram/chat_id"
         }
       ]
     },
     {
       "type": "menu",
-      "label": "Configuración de Email",
+      "label": "Correo electronico",
       "childs": [
         {
           "type": "inputstring",
           "label": "Servidor IMAP (Entrada)",
-          "variableName": "EMAIL_IMAP_HOST"
+          "variableName": "email/imap_host"
         },
         {
           "type": "inputstring",
           "label": "Servidor SMTP (Salida)",
-          "variableName": "EMAIL_SMTP_HOST"
+          "variableName": "email/smtp_host"
         },
         {
           "type": "inputstring",
           "label": "Usuario / Email",
-          "variableName": "EMAIL_USER"
+          "variableName": "email/user"
         },
         {
           "type": "inputstring",
           "label": "Contraseña",
-          "variableName": "EMAIL_PASSWORD"
+          "variableName": "email/password"
         },
         {
           "type": "inputstring",
           "label": "Email del Dueño (Remitente Autorizado)",
-          "variableName": "EMAIL_AUTHORIZED_SENDER"
+          "variableName": "email/authorized_sender"
         }
       ]
     },
     {
       "type": "menu",
-      "label": "Configuracion para el DocMapper",
+      "label": "Ingesta de documentos",
       "childs": [
         {
           "type": "menu",
@@ -126,18 +150,18 @@
               "type": "combo",
               "childs": "LLM_PROVIDERS_URL",
               "label": "URL del proveedor (documentos razonamiento)",
-              "variableName": "DOCMAPPER_REASONING_PROVIDER_URL"
+              "variableName": "document/reasoning/provider/url"
             },
             {
               "type": "combo",
               "label": "API Key (documentos razonamiento)",
-              "variableName": "DOCMAPPER_REASONING_PROVIDER_API_KEY",
+              "variableName": "document/reasoning/provider/api_key",
               "childs": "LLM_PROVIDERS_APIKEY"
             },
             {
               "type": "selectoption",
               "label": "Seleccionar Modelo (documentos razonamiento)",
-              "variableName": "DOCMAPPER_REASONING_MODEL_ID",
+              "variableName": "document/reasoning/provider/model_id",
               "childs": "LLM_MODELS"
             }
           ]
@@ -150,18 +174,18 @@
               "type": "combo",
               "childs": "LLM_PROVIDERS_URL",
               "label": "URL del proveedor (documentos basico)",
-              "variableName": "DOCMAPPER_BASIC_PROVIDER_URL"
+              "variableName": "document/basic/provider/url"
             },
             {
               "type": "combo",
               "label": "API Key (documentos basico)",
-              "variableName": "DOCMAPPER_BASIC_PROVIDER_API_KEY",
+              "variableName": "document/basic/provider/api_key",
               "childs": "LLM_PROVIDERS_APIKEY"
             },
             {
               "type": "selectoption",
               "label": "Seleccionar Modelo (documentos basico)",
-              "variableName": "DOCMAPPER_BASIC_MODEL_ID",
+              "variableName": "document/basic/provider/model_id",
               "childs": "LLM_MODELS"
             }
           ]
@@ -170,23 +194,29 @@
     },
     {
       "type": "inputstring",
-      "label": "Brave Search API Key",
-      "variableName": "BRAVE_SEARCH_API_KEY"
+      "label": "Web search, Brave API Key",
+      "variableName": "websearch/brave_api_key"
     },
     {
-      "type": "action",
-      "label": "Modelos",
-      "actionName": "OPEN_MODELS_EDITOR"
-    },
-    {
-      "type": "action",
-      "label": "Proveedores",
-      "actionName": "OPEN_PROVIDERS_URL_EDITOR"
-    },
-    {
-      "type": "action",
-      "label": "API Keys",
-      "actionName": "OPEN_PROVIDERS_APIKEY_EDITOR"
+      "type": "menu",
+      "label": "Editar dominios",
+      "childs": [
+        {
+          "type": "action",
+          "label": "Editar modelos",
+          "actionName": "OPEN_MODELS_EDITOR"
+        },
+        {
+          "type": "action",
+          "label": "Editar proveedores",
+          "actionName": "OPEN_PROVIDERS_URL_EDITOR"
+        },
+        {
+          "type": "action",
+          "label": "Editar API Keys",
+          "actionName": "OPEN_PROVIDERS_APIKEY_EDITOR"
+        }
+      ]
     },
     {
       "type": "menu",
@@ -195,12 +225,31 @@
         {
           "type": "inputstring",
           "label": "Puerto del servicio web de H2",
-          "variableName": "H2_WEBPORT"
+          "variableName": "debug/h2_webport"
+        }
+      ]
+    },
+    {
+      "type": "menu",
+      "label": "Control de acceso",
+      "childs": [
+        {
+          "type": "paths",
+          "label": "Rutas Externas Permitidas (Whitelist)",
+          "variableName": "access_control/allowed_external_paths",
+          "actionName": "RELOAD_ACCESS_CONTROL"
         },
         {
-          "type": "action",
-          "label": "Compactar conversación",
-          "actionName": "COMPACT_CONVERSATION"
+          "type": "paths",
+          "label": "Rutas de Solo Lectura (No Escribibles)",
+          "variableName": "access_control/nom_writable_paths",
+          "actionName": "RELOAD_ACCESS_CONTROL"
+        },
+        {
+          "type": "paths",
+          "label": "Rutas Prohibidas (No Leíbles)",
+          "variableName": "access_control/nom_readable_paths",
+          "actionName": "RELOAD_ACCESS_CONTROL"
         }
       ]
     }

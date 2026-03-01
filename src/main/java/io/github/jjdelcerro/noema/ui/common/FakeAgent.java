@@ -5,7 +5,7 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentActions;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
-import io.github.jjdelcerro.noema.lib.AgentSettings;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.AgentManager;
@@ -67,7 +67,7 @@ public class FakeAgent implements Agent {
   }
 
   @Override
-  public void putEvent(String channel, String priority, String eventText) {
+  public void putEvent(String channel, String status, String priority, String eventText) {
     // No hace nada
   }
 

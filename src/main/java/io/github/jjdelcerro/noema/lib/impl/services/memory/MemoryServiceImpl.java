@@ -1,5 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.services.memory;
 
+import io.github.jjdelcerro.noema.lib.services.memory.MemoryService;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
@@ -18,7 +19,7 @@ import java.util.List;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
-import io.github.jjdelcerro.noema.lib.AgentSettings;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.ModelParametersImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.LookupTurnTool;
@@ -31,15 +32,10 @@ import org.slf4j.LoggerFactory;
  * Componente cognitivo encargado de la consolidación de la memoria. Ejecuta el
  * "Protocolo de Generación de Puntos de Guardado" utilizando un LLM.
  */
-public class MemoryService implements AgentService {
+public class MemoryServiceImpl implements MemoryService {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(MemoryService.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MemoryServiceImpl.class);
 
-  public static final String NAME = "Memory";
-
-  public static final String MEMORY_PROVIDER_URL = "MEMORY_PROVIDER_URL";
-  public static final String MEMORY_PROVIDER_API_KEY = "MEMORY_PROVIDER_API_KEY";
-  public static final String MEMORY_MODEL_ID = "MEMORY_MODEL_ID";
 
   private final Agent agent;
   private final SourceOfTruth sourceOfTruth;
@@ -49,7 +45,7 @@ public class MemoryService implements AgentService {
   private boolean running;
   private final AgentServiceFactory factory;
 
-  public MemoryService(AgentServiceFactory factory, Agent agent) {
+  public MemoryServiceImpl(AgentServiceFactory factory, Agent agent) {
     this.factory = factory;
     this.agent = agent;
     this.sourceOfTruth = agent.getSourceOfTruth();
@@ -103,6 +99,7 @@ public class MemoryService implements AgentService {
    * @param newTurns La lista de turnos recientes a consolidar.
    * @return Un nuevo CheckPoint TRANSITORIO (ID -1) con el texto generado.
    */
+  @Override
   public CheckPoint compact(CheckPoint previous, List<Turn> newTurns) {
     if (newTurns == null || newTurns.isEmpty()) {
       throw new IllegalArgumentException("No hay turnos para compactar.");
@@ -189,10 +186,10 @@ public class MemoryService implements AgentService {
     switch (name) {
       case "MEMORY":
         return new ModelParametersImpl(
-                settings.getProperty(MEMORY_PROVIDER_URL),
-                settings.getProperty(MEMORY_PROVIDER_API_KEY),
-                settings.getProperty(MEMORY_MODEL_ID),
-                0.7
+                settings.getPropertyAsString(MEMORY_PROVIDER_URL),
+                settings.getPropertyAsString(MEMORY_PROVIDER_API_KEY),
+                settings.getPropertyAsString(MEMORY_MODEL_ID),
+                0.7d
         );
     }
     return null;

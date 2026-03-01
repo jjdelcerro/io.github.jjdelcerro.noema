@@ -7,7 +7,7 @@ import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
-import io.github.jjdelcerro.noema.lib.AgentSettings;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
 import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsServiceFactory;
@@ -16,6 +16,7 @@ import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsService
 import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.scheduler.SchedulerServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.telegram.TelegramServiceFactory;
+import io.github.jjdelcerro.noema.lib.impl.settings.AgentSettingsImpl;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;

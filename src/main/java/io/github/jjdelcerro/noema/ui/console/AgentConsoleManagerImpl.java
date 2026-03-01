@@ -5,7 +5,7 @@ import io.github.jjdelcerro.noema.ui.AgentUIManager;
 import org.jline.reader.LineReader;
 import org.jline.terminal.Terminal;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
-import io.github.jjdelcerro.noema.lib.AgentSettings;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.ui.AgentUISettings;
 import java.io.File;
 

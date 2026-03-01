@@ -4,7 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.github.jjdelcerro.noema.lib.Agent;
-import java.io.File;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
@@ -22,16 +21,16 @@ import org.slf4j.LoggerFactory;
  *
  * @author jjdelcerro
  */
-public abstract class AbstractAgentSettingsItem implements AgentSettingsItem {
+public abstract class AbstractAgentSettingsItemUI implements AgentSettingsItemUI {
 
-  public static final Logger LOGGER = LoggerFactory.getLogger(AbstractAgentSettingsItem.class);
+  public static final Logger LOGGER = LoggerFactory.getLogger(AbstractAgentSettingsItemUI.class);
   
   protected final Agent agent;
   protected final JsonObject item;
-  private final AgentSettingsItem parent;
-  private List<AgentSettingsItem> childs;
+  private final AgentSettingsItemUI parent;
+  private List<AgentSettingsItemUI> childs;
 
-  protected AbstractAgentSettingsItem(AgentSettingsItem parent, Agent agent, JsonObject item) {
+  protected AbstractAgentSettingsItemUI(AgentSettingsItemUI parent, Agent agent, JsonObject item) {
     this.parent = parent;
     this.agent = agent;
     this.item = item;
@@ -39,7 +38,7 @@ public abstract class AbstractAgentSettingsItem implements AgentSettingsItem {
   }
 
   @Override
-  public AgentSettingsItem getParent() {
+  public AgentSettingsItemUI getParent() {
     return this.parent;
   }
 
@@ -87,14 +86,14 @@ public abstract class AbstractAgentSettingsItem implements AgentSettingsItem {
   }
 
   @Override
-  public List<AgentSettingsItem> getChilds() {
+  public List<AgentSettingsItemUI> getChilds() {
     if (this.childs == null) {
       if (!this.item.has("childs")) {
         return null;
       }
 
       JsonElement childsElement = this.item.get("childs");
-      List<AgentSettingsItem> theChilds = new ArrayList<>();
+      List<AgentSettingsItemUI> theChilds = new ArrayList<>();
 
       if (childsElement.isJsonArray()) {
         // Es una lista de objetos directa
@@ -132,9 +131,9 @@ public abstract class AbstractAgentSettingsItem implements AgentSettingsItem {
    * definición del dominio solicitado.
    */
   private JsonArray findDomainInTree(String name) {
-    AgentSettingsItem current = this;
+    AgentSettingsItemUI current = this;
     while (current != null) {
-      if (current instanceof AbstractAgentSettingsItem abstractItem) {
+      if (current instanceof AbstractAgentSettingsItemUI abstractItem) {
         JsonObject json = abstractItem.item;
         if (json.has("domains")) {
           JsonObject domains = json.getAsJsonObject("domains");
@@ -221,5 +220,5 @@ public abstract class AbstractAgentSettingsItem implements AgentSettingsItem {
     }
   }
 
-  protected abstract AgentSettingsItem createItem(AgentSettingsItem parent, Agent agent, JsonObject jsonItem);
+  protected abstract AgentSettingsItemUI createItem(AgentSettingsItemUI parent, Agent agent, JsonObject jsonItem);
 }

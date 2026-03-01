@@ -5,9 +5,9 @@ import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
-import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.output.Response;
 import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import java.util.List;
 
 /**
@@ -90,7 +90,7 @@ public interface Agent {
    * </ul>
    * @see #processPendingEvents()
    */
-  public void putEvent(String channel, String priority, String eventText);
+  public void putEvent(String channel, String status, String priority, String eventText);
 
   public AgentAccessControl getAccessControl();
 

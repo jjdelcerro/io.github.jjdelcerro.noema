@@ -2,6 +2,7 @@ package io.github.jjdelcerro.noema.lib;
 
 import io.github.jjdelcerro.noema.lib.AgentActions.AgentAction;
 import io.github.jjdelcerro.noema.lib.impl.SQLProvider;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.function.Supplier;

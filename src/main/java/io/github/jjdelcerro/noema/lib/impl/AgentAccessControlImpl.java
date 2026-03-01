@@ -1,25 +1,44 @@
 package io.github.jjdelcerro.noema.lib.impl;
 
+import io.github.jjdelcerro.noema.lib.AbstractAgentAction;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl;
+import io.github.jjdelcerro.noema.lib.AgentActions;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import java.net.URI;
 
 /**
  * Gestiona el acceso seguro al sistema de ficheros (Sandbox).
  */
+@SuppressWarnings("UseSpecificCatch")
 public class AgentAccessControlImpl implements AgentAccessControl {
 
+  public static final String RELOAD_ACTION_NAME = "RELOAD_ACCESS_CONTROL";
+
   private final Path rootPath;
+  private final AgentSettings settings;
+  private final AgentActions actions;
+
   // Lista de rutas adicionales permitidas fuera del root (ej: carpetas temporales)
   private final List<Path> allowedExternalPaths = new ArrayList<>();
   private final List<Path> nomWritablePaths = new ArrayList<>();
   private final List<Path> nomReadablePaths = new ArrayList<>();
 
-  public AgentAccessControlImpl(Path rootPath) {
+  public AgentAccessControlImpl(AgentSettings settings, AgentActions actions, Path rootPath) {
     this.rootPath = rootPath.toAbsolutePath().normalize();
+    this.settings = settings;
+    this.actions = actions;
+    this.actions.addAction(new AbstractAgentAction(RELOAD_ACTION_NAME) {
+      @Override
+      public boolean perform(AgentSettings settings) {
+        loadConfig();
+        return true;
+      }
+    });
+    loadConfig();
   }
 
   @Override
@@ -32,6 +51,7 @@ public class AgentAccessControlImpl implements AgentAccessControl {
     this.nomWritablePaths.add(path.toAbsolutePath().normalize());
   }
 
+  @Override
   public void addNonReadablePath(Path path) {
     this.nomReadablePaths.add(path.toAbsolutePath().normalize());
   }
@@ -79,11 +99,11 @@ public class AgentAccessControlImpl implements AgentAccessControl {
     }
 
     for (Path nonReadablePath : this.nomReadablePaths) {
-      if( target.startsWith(nonReadablePath.toString())) {
+      if (target.startsWith(nonReadablePath.toString())) {
         throw new SecurityException("ACCESO DENEGADO: Ruta no permitida: " + rawPath);
       }
     }
-    
+
     // 2. Verificar Jailbreak (Path Traversal)
     // Comprobamos si la ruta final empieza por el rootPath
     boolean isUnderRoot = target.startsWith(rootPath);
@@ -105,12 +125,12 @@ public class AgentAccessControlImpl implements AgentAccessControl {
 
     // 3. Lógica específica de Escritura (Opcional)
     if (mode == AccessMode.PATH_ACCESS_WRITE) {
-      
+
       // Nunca se permitirse el acceso en escritura a los archivos ",jv".
       // Son la copia de respaldo de la informacion cuando hay modificacion de archivos
       // por parte del LLM, asi que no se puede tocar, solo leer.
       String target_s = target.toString();
-      if( target_s.endsWith(",jv") ) {
+      if (target_s.endsWith(",jv")) {
         throw new SecurityException("ACCESO DENEGADO: No se permite escribir en archivos ',jv'");
       }
 
@@ -118,9 +138,9 @@ public class AgentAccessControlImpl implements AgentAccessControl {
       if (target_s.contains("/.git/")) {
         throw new SecurityException("ACCESO DENEGADO: No se permite escribir en la carpeta .git");
       }
-      
+
       for (Path nonWritablePath : this.nomWritablePaths) {
-        if( target_s.startsWith(nonWritablePath.toString())) {
+        if (target_s.startsWith(nonWritablePath.toString())) {
           throw new SecurityException("ACCESO DENEGADO: Ruta no permitida para escritura: " + rawPath);
         }
       }
@@ -158,6 +178,35 @@ public class AgentAccessControlImpl implements AgentAccessControl {
     // habria que ver si es intersante restringir el protocolo.
     String lower = url.toString().toLowerCase();
     return lower.contains("localhost") || lower.contains("127.0.0.1") || lower.contains("192.168.");
+  }
+
+  /**
+   * Sincroniza las listas en memoria con lo definido en la configuracion
+   */
+  private synchronized void loadConfig() {
+
+    // Limpiar reglas actuales
+    allowedExternalPaths.clear();
+    nomWritablePaths.clear();
+    nomReadablePaths.clear();
+
+    // Cargar Whitelist (Rutas externas permitidas)
+    List<Path> whitelist = settings.getPropertyAsPaths("access_control/allowed_external_paths");
+    for (Path p : whitelist) {
+      allowedExternalPaths.add(p.toAbsolutePath().normalize());
+    }
+
+    // Cargar Blacklist de Escritura (Solo lectura)
+    List<Path> readOnly = settings.getPropertyAsPaths("access_control/nom_writable_paths");
+    for (Path p : readOnly) {
+      nomWritablePaths.add(p.toAbsolutePath().normalize());
+    }
+
+    // Cargar Blacklist de Lectura (Prohibidas)
+    List<Path> forbidden = settings.getPropertyAsPaths("access_control/nom_readable_paths");
+    for (Path p : forbidden) {
+      nomReadablePaths.add(p.toAbsolutePath().normalize());
+    }
   }
 
 }

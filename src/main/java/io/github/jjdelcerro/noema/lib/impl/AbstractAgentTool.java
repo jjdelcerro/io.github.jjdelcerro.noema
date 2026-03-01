@@ -5,7 +5,7 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl.AccessMode;
 import static io.github.jjdelcerro.noema.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationService;
+import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationServiceImpl;
 import java.nio.file.Path;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -40,7 +40,7 @@ public abstract class AbstractAgentTool implements AgentTool {
     return x;
   }
   
-  protected ConversationService getConversationService() {
-    return (ConversationService) agent.getService(ConversationService.NAME);
+  protected ConversationServiceImpl getConversationService() {
+    return (ConversationServiceImpl) agent.getService(ConversationServiceImpl.NAME);
   }
 }

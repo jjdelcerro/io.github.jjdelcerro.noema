@@ -6,14 +6,14 @@ import java.util.List;
  *
  * @author jjdelcerro
  */
-public interface AgentSettingsItem {
+public interface AgentSettingsItemUI {
     String getType();
     String getLabel();
     String getVariableName();
     String getActionName();
     String getValue();
-    List<AgentSettingsItem> getChilds();
-    AgentSettingsItem getParent();
+    List<AgentSettingsItemUI> getChilds();
+    AgentSettingsItemUI getParent();
     public boolean isRequired();
      
 }

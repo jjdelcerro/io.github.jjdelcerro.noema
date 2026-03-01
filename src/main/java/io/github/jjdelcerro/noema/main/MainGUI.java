@@ -4,7 +4,7 @@ import com.formdev.flatlaf.FlatDarkLaf;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
-import io.github.jjdelcerro.noema.lib.AgentSettings;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.ui.swing.AgentSwingInitializer;
 import io.github.jjdelcerro.noema.ui.swing.MainChatPanel;
 import io.github.jjdelcerro.noema.ui.swing.OpenEditorAction;

@@ -3,7 +3,7 @@ package io.github.jjdelcerro.noema.lib.impl.services.documents;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
-import io.github.jjdelcerro.noema.lib.AgentSettings;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import static io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsService.DOCMAPPER_BASIC_MODEL_ID;
 import static io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsService.DOCMAPPER_BASIC_PROVIDER_API_KEY;
 import static io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsService.DOCMAPPER_BASIC_PROVIDER_URL;
@@ -39,7 +39,7 @@ public class DocumentsServiceFactory implements AgentServiceFactory {
       DOCMAPPER_BASIC_MODEL_ID
     };
     for (String name : names) {
-      String v = settings.getProperty(name);
+      String v = settings.getPropertyAsString(name);
       if (StringUtils.isBlank(v)) {
         return false;
       }

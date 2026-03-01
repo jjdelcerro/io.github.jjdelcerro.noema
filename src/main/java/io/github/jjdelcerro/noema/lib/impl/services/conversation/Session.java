@@ -19,9 +19,10 @@ import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
-import io.github.jjdelcerro.noema.lib.AgentSettings;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.persistence.CheckPoint;
 import io.github.jjdelcerro.noema.lib.persistence.Turn;
+import static io.github.jjdelcerro.noema.lib.services.conversarion.ConversationService.MEMORY_COMPACTION_TURNS;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -169,7 +170,7 @@ public class Session {
           PrettyTime pt = new PrettyTime(Locale.of("es"));
           String timeAgo = pt.format(this.lastInteractionTime);
           String content = "Ha pasado " + timeAgo + " desde la última interacción con el usuario.";
-          Event timerEvent = new Event("timer", "normal", content);
+          Event timerEvent = new Event("reloj", "A pasado el tiempo", "normal", content);
           this.messages.add(timerEvent.getAiMessage());
           this.messages.add(timerEvent.getResponseMessage());
         }
@@ -213,9 +214,9 @@ public class Session {
   }
 
   private int getCompactationThreshold() {
-    int x = (int) this.settings.getPropertyAsLong("MEMORY_COMPACTION_THRESHOLD", -1);
+    int x = (int) this.settings.getPropertyAsLong(MEMORY_COMPACTION_TURNS, -1);
     if (x < 0) {
-      this.settings.setProperty("MEMORY_COMPACTION_THRESHOLD", String.valueOf(DEFAULT_COMPACTION_THRESHOLD));
+      this.settings.setProperty(MEMORY_COMPACTION_TURNS, String.valueOf(DEFAULT_COMPACTION_THRESHOLD));
       x = DEFAULT_COMPACTION_THRESHOLD;
     }
     return x;

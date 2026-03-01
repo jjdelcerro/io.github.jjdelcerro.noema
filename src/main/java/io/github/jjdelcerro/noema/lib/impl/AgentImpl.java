@@ -2,7 +2,7 @@ package io.github.jjdelcerro.noema.lib.impl;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationService;
+import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationServiceImpl;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.langchain4j.model.openai.OpenAiChatModel;
@@ -10,7 +10,6 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentActions;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
-import io.github.jjdelcerro.noema.lib.AgentSettings;
 import io.github.jjdelcerro.noema.lib.impl.persistence.SourceOfTruthImpl;
 import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
 import java.nio.file.Paths;
@@ -21,8 +20,9 @@ import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
-import static io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationService.CONVERSATION_MODEL_ID;
-import static io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryService.MEMORY_MODEL_ID;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
+import static io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationServiceImpl.CONVERSATION_MODEL_ID;
+import static io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryServiceImpl.MEMORY_MODEL_ID;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -62,15 +62,19 @@ public class AgentImpl implements Agent {
   private final ConnectionSupplier memoryDatabase;
 
   private final Map<String, AgentService> services;
-  
+
   private JsonObject openRouterModels = null;
 
   public AgentImpl(ConnectionSupplier memoryDatabase, ConnectionSupplier servicesDatabase, AgentSettings settings, AgentConsole console) {
+    this.actions = AgentLocator.getAgentManager().createActions();
     this.settings = settings;
     this.console = console;
     this.services = new LinkedHashMap<>();
-    this.accessControl = new AgentAccessControlImpl(Paths.get(".").toAbsolutePath().normalize());
-    this.actions = AgentLocator.getAgentManager().createActions();
+    this.accessControl = new AgentAccessControlImpl(
+            this.settings,
+            this.actions,
+            Paths.get(".").toAbsolutePath().normalize()
+    );
     this.servicesDatabase = servicesDatabase;
     this.memoryDatabase = memoryDatabase;
     this.sourceOfTruth = SourceOfTruthImpl.from(this);
@@ -94,7 +98,7 @@ public class AgentImpl implements Agent {
 
     this.startAllServices();
 
-    ConversationService conversation = (ConversationService) this.getService(ConversationService.NAME);
+    ConversationServiceImpl conversation = (ConversationServiceImpl) this.getService(ConversationServiceImpl.NAME);
     for (AgentService service : this.services.values()) {
       if (service.canStart()) {
         List<AgentTool> tools = service.getTools();
@@ -109,8 +113,8 @@ public class AgentImpl implements Agent {
       }
     }
 
-    console.printSystemLog("MemoryManager " + settings.getProperty(MEMORY_MODEL_ID));
-    console.printSystemLog("ConversationManager " + settings.getProperty(CONVERSATION_MODEL_ID));
+    console.printSystemLog("MemoryManager " + settings.getPropertyAsString(MEMORY_MODEL_ID));
+    console.printSystemLog("ConversationManager " + settings.getPropertyAsString(CONVERSATION_MODEL_ID));
 
   }
 
@@ -141,14 +145,14 @@ public class AgentImpl implements Agent {
 
   @Override
   public String processTurn(String input) {
-    ConversationService conversation = (ConversationService) this.getService(ConversationService.NAME);
+    ConversationServiceImpl conversation = (ConversationServiceImpl) this.getService(ConversationServiceImpl.NAME);
     return conversation.processTurn(input);
   }
 
   @Override
-  public void putEvent(String status, String priority, String eventText) {
-    ConversationService conversation = (ConversationService) this.getService(ConversationService.NAME);
-    conversation.putEvent(status, priority, eventText);
+  public void putEvent(String channel, String status, String priority, String eventText) {
+    ConversationServiceImpl conversation = (ConversationServiceImpl) this.getService(ConversationServiceImpl.NAME);
+    conversation.putEvent(channel, status, priority, eventText);
   }
 
   @Override
@@ -252,7 +256,7 @@ public class AgentImpl implements Agent {
             .logRequests(false)
             .logResponses(false)
             .build();
-    return new ChatModelImpl(model,params);
+    return new ChatModelImpl(model, params);
   }
 
   @Override
@@ -339,7 +343,7 @@ public class AgentImpl implements Agent {
 
   @Override
   public void showSession() {
-    ConversationService conversation = (ConversationService) this.getService(ConversationService.NAME);
+    ConversationServiceImpl conversation = (ConversationServiceImpl) this.getService(ConversationServiceImpl.NAME);
     if (conversation != null) {
       conversation.showSession();
     }
@@ -367,7 +371,7 @@ public class AgentImpl implements Agent {
           this.openRouterModels = JsonParser.parseString(response.body()).getAsJsonObject();
         } else {
           System.err.println("Error al obtener modelos de OpenRouter: Código " + response.statusCode());
-          return; 
+          return;
         }
       } catch (Exception e) {
         LOGGER.warn("No se ha podido obtener informacion de los modelos de OpenRouter", e);
@@ -394,7 +398,7 @@ public class AgentImpl implements Agent {
 
   @Override
   public int getConversationContextSize() {
-    ConversationService conversation = (ConversationService) this.getService(ConversationService.NAME);
+    ConversationServiceImpl conversation = (ConversationServiceImpl) this.getService(ConversationServiceImpl.NAME);
     return conversation.getModel().getContextSize();
   }
 

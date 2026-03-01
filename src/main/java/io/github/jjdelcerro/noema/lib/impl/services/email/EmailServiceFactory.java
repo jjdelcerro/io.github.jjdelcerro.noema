@@ -3,7 +3,7 @@ package io.github.jjdelcerro.noema.lib.impl.services.email;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
-import io.github.jjdelcerro.noema.lib.AgentSettings;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import static io.github.jjdelcerro.noema.lib.impl.services.email.EmailService.EMAIL_AUTHORIZED_SENDER;
 import static io.github.jjdelcerro.noema.lib.impl.services.email.EmailService.EMAIL_IMAP_HOST;
 import static io.github.jjdelcerro.noema.lib.impl.services.email.EmailService.EMAIL_PASSWORD;
@@ -37,7 +37,7 @@ public class EmailServiceFactory implements AgentServiceFactory {
       EMAIL_AUTHORIZED_SENDER
     };
     for (String name : names) {
-      String v = settings.getProperty(name);
+      String v = settings.getPropertyAsString(name);
       if (StringUtils.isBlank(v)) {
         return false;
       }

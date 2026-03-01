@@ -6,7 +6,7 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.Agent.ModelParameters;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
-import io.github.jjdelcerro.noema.lib.AgentSettings;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import java.util.Arrays;
 import java.util.List;
@@ -25,8 +25,8 @@ public class TelegramService implements AgentService {
 
   public static final String NAME = "Telegram";
 
-  public static final String TELEGRAM_CHAT_ID = "TELEGRAM_CHAT_ID";
-  public static final String TELEGRAM_API_KEY = "TELEGRAM_API_KEY";
+  public static final String TELEGRAM_CHAT_ID = "telegram/chat_id";
+  public static final String TELEGRAM_API_KEY = "telegram/api_key";
 
   private final Agent agent;
   private String apiKeyTelegram;
@@ -69,7 +69,7 @@ public class TelegramService implements AgentService {
     }
     AgentSettings settings = agent.getSettings();
 
-    this.apiKeyTelegram = settings.getProperty(TELEGRAM_API_KEY);
+    this.apiKeyTelegram = settings.getPropertyAsString(TELEGRAM_API_KEY);
     this.authorizedChatId = settings.getPropertyAsLong(TELEGRAM_CHAT_ID, -1);
     if (StringUtils.isBlank(apiKeyTelegram) || authorizedChatId < 0) {
       return;
@@ -82,7 +82,7 @@ public class TelegramService implements AgentService {
           long chatId = update.message().chat().id();
           // Seguridad: Solo hacemos caso si eres tú (chatId configurado)
           if (chatId == authorizedChatId) {
-            agent.putEvent("TELEGRAM MESSAGE RECEIVED", "normal", update.message().text());
+            agent.putEvent("telegram", "TELEGRAM MESSAGE RECEIVED", "normal", update.message().text());
           }
         }
       });

@@ -1,5 +1,7 @@
 package io.github.jjdelcerro.noema.lib;
 
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
+
 /**
  *
  * @author jjdelcerro
