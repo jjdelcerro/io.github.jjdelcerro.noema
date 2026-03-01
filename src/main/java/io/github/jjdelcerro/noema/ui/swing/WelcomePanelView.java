@@ -15,14 +15,13 @@ import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
 import javax.swing.border.LineBorder;
 
 
 public class WelcomePanelView extends JPanel
 {
    JButton btnBrowse = new JButton();
-   JTextArea txtDisclaimer = new JTextArea();
+   JEditorPane txtDisclaimer = new JEditorPane();
    JComboBox comboWorkspace = new JComboBox();
    JButton btnContinue = new JButton();
    JEditorPane txtConfigSummary = new JEditorPane();

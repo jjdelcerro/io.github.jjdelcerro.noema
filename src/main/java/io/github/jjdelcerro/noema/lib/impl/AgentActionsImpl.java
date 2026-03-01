@@ -1,7 +1,7 @@
 package io.github.jjdelcerro.noema.lib.impl;
 
 import io.github.jjdelcerro.noema.lib.AgentActions;
-import io.github.jjdelcerro.noema.lib.AgentSettings;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;

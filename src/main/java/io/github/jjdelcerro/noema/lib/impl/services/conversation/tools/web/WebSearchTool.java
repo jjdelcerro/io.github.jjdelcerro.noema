@@ -18,6 +18,8 @@ import io.github.jjdelcerro.noema.lib.AgentTool;
 
 public class WebSearchTool implements AgentTool {
 
+  public static final String BRAVE_SEARCH_API_KEY = "websearch/brave_api_key";
+
   private final String apiKey;
   private final HttpClient httpClient;
   private final Gson gson = new Gson();
@@ -26,7 +28,7 @@ public class WebSearchTool implements AgentTool {
 
   public WebSearchTool(Agent agent) {
     this.agent = agent;
-    this.apiKey = agent.getSettings().getProperty("BRAVE_SEARCH_API_KEY");
+    this.apiKey = agent.getSettings().getPropertyAsString(BRAVE_SEARCH_API_KEY);
     this.httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .build();

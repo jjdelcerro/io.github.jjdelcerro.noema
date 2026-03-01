@@ -52,11 +52,11 @@ public class EmailService implements AgentService {
 
   public static final String NAME = "Email";
 
-  public static final String EMAIL_IMAP_HOST = "EMAIL_IMAP_HOST";
-  public static final String EMAIL_SMTP_HOST = "EMAIL_SMTP_HOST";
-  public static final String EMAIL_USER = "EMAIL_USER";
-  public static final String EMAIL_PASSWORD = "EMAIL_PASSWORD";
-  public static final String EMAIL_AUTHORIZED_SENDER = "EMAIL_AUTHORIZED_SENDER";
+  public static final String EMAIL_IMAP_HOST = "email/imap_host";
+  public static final String EMAIL_SMTP_HOST = "email/smtp_host";
+  public static final String EMAIL_USER = "email/user";
+  public static final String EMAIL_PASSWORD = "email/password";
+  public static final String EMAIL_AUTHORIZED_SENDER = "email/authorized_sender";
 
   private final Tika tika = new Tika();
   private final Gson gson = new Gson();
@@ -110,7 +110,7 @@ public class EmailService implements AgentService {
       while (!Thread.currentThread().isInterrupted()) {
         try {
           executeInInbox(inbox -> {
-            String authorizedSender = agent.getSettings().getProperty(EMAIL_AUTHORIZED_SENDER);
+            String authorizedSender = agent.getSettings().getPropertyAsString(EMAIL_AUTHORIZED_SENDER);
             int lastCount = inbox.getMessageCount();
             while (inbox.isOpen()) {
               invokeIdleSafely(inbox);
@@ -122,7 +122,7 @@ public class EmailService implements AgentService {
                   long uid = ((UIDFolder) inbox).getUID(m);
                   // INYECTAMOS SOLO LA NOTIFICACIÓN
                   String notify = String.format("NUEVO EMAIL [UID:%d] de %s. Asunto: %s", uid, from, m.getSubject());
-                  agent.putEvent("EMAIL RECEIVED", "normal", notify);
+                  agent.putEvent("email", "EMAIL RECEIVED", "normal", notify);
                 }
                 lastCount = current;
               }
@@ -145,9 +145,9 @@ public class EmailService implements AgentService {
 
   public String send(String to, String subject, String body) {
     try {
-      String smtpHost = agent.getSettings().getProperty(EMAIL_SMTP_HOST);
-      String user = agent.getSettings().getProperty(EMAIL_USER);
-      String password = agent.getSettings().getProperty(EMAIL_PASSWORD);
+      String smtpHost = agent.getSettings().getPropertyAsString(EMAIL_SMTP_HOST);
+      String user = agent.getSettings().getPropertyAsString(EMAIL_USER);
+      String password = agent.getSettings().getPropertyAsString(EMAIL_PASSWORD);
 
       Properties props = new Properties();
       props.put("mail.smtp.auth", "true");
@@ -213,9 +213,9 @@ public class EmailService implements AgentService {
 
   // Helper para gestionar la apertura/cierre de sesión IMAP
   private <T> T executeInInbox(FolderAction<T> action) throws Exception {
-    String imapHost = agent.getSettings().getProperty(EMAIL_IMAP_HOST);
-    String user = agent.getSettings().getProperty(EMAIL_USER);
-    String password = agent.getSettings().getProperty(EMAIL_PASSWORD);
+    String imapHost = agent.getSettings().getPropertyAsString(EMAIL_IMAP_HOST);
+    String user = agent.getSettings().getPropertyAsString(EMAIL_USER);
+    String password = agent.getSettings().getPropertyAsString(EMAIL_PASSWORD);
 
     Properties props = new Properties();
     props.put("mail.store.protocol", "imaps");

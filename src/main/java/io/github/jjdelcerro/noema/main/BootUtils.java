@@ -6,8 +6,8 @@ import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
-import io.github.jjdelcerro.noema.lib.AgentSettings;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.ui.AgentUILocator;
 import java.io.File;
 import java.sql.Connection;
@@ -33,7 +33,7 @@ public class BootUtils {
       AgentPaths paths = settings.getPaths();
       
       // Iniciar el servidor web de H2 (Consola)
-      Server webServer = Server.createWebServer("-webPort", settings.getProperty("H2_WEBPORT"), "-webAllowOthers").start();
+      Server webServer = Server.createWebServer("-webPort", settings.getPropertyAsString("debug/h2_webport"), "-webAllowOthers").start();
       console.printSystemLog("H2 Web Console activa en: " + webServer.getURL());
 
       // Conexión a Base de Datos (H2)
@@ -116,39 +116,5 @@ public class BootUtils {
     }
     return true;
   }
-
-//  private static void installResource(AgentConsole console, File dataFolder, String resPath) {
-//    String resourceBase = "/io/github/jjdelcerro/noema/main/";
-//    Path targetPath = dataFolder.toPath().resolve(resPath);
-//    if (!Files.exists(targetPath)) {
-//      try {
-//        Files.createDirectories(targetPath.getParent());
-//
-//        try (InputStream is = BootUtils.class.getResourceAsStream(resourceBase + resPath)) {
-//          if (is != null) {
-//            Files.copy(is, targetPath, StandardCopyOption.REPLACE_EXISTING);
-//            console.printSystemLog("Recurso instalado en data " + resPath);
-//          } else {
-//            console.printSystemError("Error: Recurso no encontrado en el classpath: " + resourceBase + resPath);
-//          }
-//        }
-//      } catch (IOException e) {
-//        console.printSystemError("Error al inicializar recurso " + resPath + ": " + e.getMessage());
-//      }
-//    }
-//  }
-//
-//  public static void initSettings(AgentConsole console, File localConfig) {
-//    String[] resources = new String[]{
-//      "models.properties",
-//      "providers_apikeys.properties",
-//      "providers_urls.properties",
-//      "settings.properties",
-//      "settingsui.json"
-//    };
-//    for (String resPath : resources) {
-//      installResource(console, localConfig, resPath);
-//    }
-//  }
 
 }

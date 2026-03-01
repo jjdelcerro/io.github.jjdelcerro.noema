@@ -4,7 +4,7 @@ import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationService;
+import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationServiceImpl;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.tika.Tika;
 
@@ -55,7 +55,7 @@ public class FileExtractTextTool extends AbstractAgentTool {
       Path cachedTextPath = getCachedTextPath(sourcePath);
 
       // 2. Delegar lectura a FileReadTool
-      ConversationService conv = (ConversationService) agent.getService(ConversationService.NAME);
+      ConversationServiceImpl conv = (ConversationServiceImpl) agent.getService(ConversationServiceImpl.NAME);
       FileReadTool fileRead = (FileReadTool) conv.getAvailableTool(FileReadTool.TOOL_NAME);
 
       // Usamos el execute interno con el nombre de esta herramienta (para el HINT) y la ruta original

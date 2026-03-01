@@ -6,8 +6,8 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
-import io.github.jjdelcerro.noema.lib.AgentSettings;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationService;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
+import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationServiceImpl;
 import io.github.jjdelcerro.noema.main.MainGUI;
 import io.github.jjdelcerro.noema.ui.AgentUILocator;
 import java.awt.BorderLayout;
@@ -272,7 +272,7 @@ public class MainChatPanel extends JPanel {
     if (agent == null) {
       return;
     }
-    ConversationService conv = (ConversationService) agent.getService(ConversationService.NAME);
+    ConversationServiceImpl conv = (ConversationServiceImpl) agent.getService(ConversationServiceImpl.NAME);
     SwingUtilities.invokeLater(() -> {
       lblModelInfo.setText(conv.getModelName());
       lblTokens.setText(conv.estimateToolsTokenCount() + "+" + conv.estimateMessagesTokenCount()+ "/"+agent.getConversationContextSize());

@@ -5,7 +5,7 @@ import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationService;
+import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationServiceImpl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -218,7 +218,7 @@ Ejecuta comandos de sistema en una shell de Bash.
       int exitCode = process.isAlive() ? -1 : process.exitValue();
 
       // DELEGACIÓN: Usamos FileReadTool para generar la respuesta paginada
-      ConversationService conv = (ConversationService) agent.getService(ConversationService.NAME);
+      ConversationServiceImpl conv = (ConversationServiceImpl) agent.getService(ConversationServiceImpl.NAME);
       FileReadTool fileRead = (FileReadTool) conv.getAvailableTool(FileReadTool.TOOL_NAME);
 
       // Inyectamos el código de salida en el prefijo de la respuesta

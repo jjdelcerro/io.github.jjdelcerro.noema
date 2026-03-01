@@ -5,7 +5,13 @@ import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
-import io.github.jjdelcerro.noema.lib.AgentSettings;
+import static io.github.jjdelcerro.noema.lib.services.conversarion.ConversationService.CONVERSATION_MODEL_ID;
+import static io.github.jjdelcerro.noema.lib.services.conversarion.ConversationService.CONVERSATION_PROVIDER_API_KEY;
+import static io.github.jjdelcerro.noema.lib.services.conversarion.ConversationService.CONVERSATION_PROVIDER_URL;
+import static io.github.jjdelcerro.noema.lib.services.memory.MemoryService.MEMORY_MODEL_ID;
+import static io.github.jjdelcerro.noema.lib.services.memory.MemoryService.MEMORY_PROVIDER_API_KEY;
+import static io.github.jjdelcerro.noema.lib.services.memory.MemoryService.MEMORY_PROVIDER_URL;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.main.BootUtils;
 import io.github.jjdelcerro.noema.main.MainGUI;
 import java.awt.Dimension;
@@ -51,14 +57,15 @@ public class WelcomePanel extends WelcomePanelView {
     btnCancelar.addActionListener(e -> handleCancel());
 
     txtConfigSummary.setContentType("text/html");
+    txtDisclaimer.setContentType("text/html");
     txtDisclaimer.setText(
             """
-Noema es un agente aut\u00f3nomo con capacidad de modificar archivos y ejecutar comandos.
-El uso de esta herramienta implica la aceptaci\u00f3n de los riesgos asociados.
-Aseg\u00farese de ejecutar el agente en un entorno controlado o con backups actualizados.
+Noema es un agente <b>experimental</b> aut\u00f3nomo con capacidad de modificar archivos y ejecutar comandos.<br>
+El uso de esta herramienta implica la aceptaci\u00f3n de los riesgos asociados.<br>
+Aseg\u00farese de ejecutar el agente en un entorno controlado o con backups actualizados.<br>
 """);
-    txtDisclaimer.setLineWrap(true);
-    txtDisclaimer.setWrapStyleWord(true);
+//    txtDisclaimer.setLineWrap(true);
+//    txtDisclaimer.setWrapStyleWord(true);
 
     btnConfigure.addActionListener(e -> handleConfigure());
     btnContinue.addActionListener(e -> handleContinue());
@@ -134,15 +141,15 @@ Aseg\u00farese de ejecutar el agente en un entorno controlado o con backups actu
   private void updateConfigSummaryUI(boolean convOk, boolean memOk) {
     StringBuilder sb = new StringBuilder("<html><body>");
 
-    sb.append("<b>LLM de Conversación:</b> ").append(getStatusIcon(convOk)).append("<br>");
-    sb.append("&nbsp;&nbsp;- Proveedor: ").append(getProperty("CONVERSATION_PROVIDER_URL")).append("<br>");
-    sb.append("&nbsp;&nbsp;- Modelo: ").append(getProperty("CONVERSATION_MODEL_ID")).append("<br>");
-    sb.append("&nbsp;&nbsp;- API Key: ").append(getMaskedApiKey("CONVERSATION_PROVIDER_API_KEY")).append("<br><br>");
+    sb.append("<b>Model de conversación:</b> ").append(getStatusIcon(convOk)).append("<br>");
+    sb.append("&nbsp;&nbsp;- Proveedor: ").append(getProperty(CONVERSATION_PROVIDER_URL)).append("<br>");
+    sb.append("&nbsp;&nbsp;- Modelo: ").append(getProperty(CONVERSATION_MODEL_ID)).append("<br>");
+    sb.append("&nbsp;&nbsp;- API Key: ").append(getMaskedApiKey(CONVERSATION_PROVIDER_API_KEY)).append("<br><br>");
 
-    sb.append("<b>LLM de Memoria:</b> ").append(getStatusIcon(memOk)).append("<br>");
-    sb.append("&nbsp;&nbsp;- Proveedor: ").append(getProperty("MEMORY_PROVIDER_URL")).append("<br>");
-    sb.append("&nbsp;&nbsp;- Modelo: ").append(getProperty("MEMORY_MODEL_ID")).append("<br>");
-    sb.append("&nbsp;&nbsp;- API Key: ").append(getMaskedApiKey("MEMORY_PROVIDER_API_KEY")).append("<br>");
+    sb.append("<b>Modelo de compactación de memoria:</b> ").append(getStatusIcon(memOk)).append("<br>");
+    sb.append("&nbsp;&nbsp;- Proveedor: ").append(getProperty(MEMORY_PROVIDER_URL)).append("<br>");
+    sb.append("&nbsp;&nbsp;- Modelo: ").append(getProperty(MEMORY_MODEL_ID)).append("<br>");
+    sb.append("&nbsp;&nbsp;- API Key: ").append(getMaskedApiKey(MEMORY_PROVIDER_API_KEY)).append("<br>");
 
     sb.append("</body></html>");
     txtConfigSummary.setText(sb.toString());
@@ -153,7 +160,7 @@ Aseg\u00farese de ejecutar el agente en un entorno controlado o con backups actu
   }
 
   private String getMaskedApiKey(String key) {
-    String val = settings.getProperty(key);
+    String val = settings.getPropertyAsString(key);
     if (val == null || val.isBlank()) {
       return "<font color='#ffb86c'>no configurada</font>";
     }
@@ -161,7 +168,7 @@ Aseg\u00farese de ejecutar el agente en un entorno controlado o con backups actu
   }
 
   private String getProperty(String key) {
-    String val = settings.getProperty(key);
+    String val = settings.getPropertyAsString(key);
     return val != null ? val : "no definido";
   }
 

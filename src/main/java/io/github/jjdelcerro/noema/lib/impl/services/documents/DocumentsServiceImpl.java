@@ -4,7 +4,6 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.Agent.ModelParameters;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
-import io.github.jjdelcerro.noema.lib.AgentSettings;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
 import io.github.jjdelcerro.noema.lib.impl.ModelParametersImpl;
@@ -12,6 +11,7 @@ import io.github.jjdelcerro.noema.lib.impl.SQLProvider;
 import io.github.jjdelcerro.noema.lib.impl.persistence.Counter;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingFilter;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsService;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import java.nio.file.Path;
 import java.sql.*;
 import java.time.Instant;
@@ -325,17 +325,17 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
     switch (name) {
       case "DOCMAPPER_REASONING" -> {
         return new ModelParametersImpl(
-                settings.getProperty(DOCMAPPER_REASONING_PROVIDER_URL),
-                settings.getProperty(DOCMAPPER_REASONING_PROVIDER_API_KEY),
-                settings.getProperty(DOCMAPPER_REASONING_MODEL_ID),
+                settings.getPropertyAsString(DOCMAPPER_REASONING_PROVIDER_URL),
+                settings.getPropertyAsString(DOCMAPPER_REASONING_PROVIDER_API_KEY),
+                settings.getPropertyAsString(DOCMAPPER_REASONING_MODEL_ID),
                 0.0
         );
       }
       case "DOCMAPPER_BASIC" -> {
         return new ModelParametersImpl(
-                settings.getProperty(DOCMAPPER_BASIC_PROVIDER_URL),
-                settings.getProperty(DOCMAPPER_BASIC_PROVIDER_API_KEY),
-                settings.getProperty(DOCMAPPER_BASIC_MODEL_ID),
+                settings.getPropertyAsString(DOCMAPPER_BASIC_PROVIDER_URL),
+                settings.getPropertyAsString(DOCMAPPER_BASIC_PROVIDER_API_KEY),
+                settings.getPropertyAsString(DOCMAPPER_BASIC_MODEL_ID),
                 0.0
         );
       }

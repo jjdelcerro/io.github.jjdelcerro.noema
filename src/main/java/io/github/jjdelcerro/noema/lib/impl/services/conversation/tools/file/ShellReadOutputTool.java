@@ -5,7 +5,7 @@ import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationService;
+import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationServiceImpl;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -58,7 +58,7 @@ public class ShellReadOutputTool extends AbstractAgentTool {
       }
 
       // 1. Localizar el "Gestor" (ShellExecuteTool) a través del servicio de conversación
-      ConversationService conv = (ConversationService) agent.getService(ConversationService.NAME);
+      ConversationServiceImpl conv = (ConversationServiceImpl) agent.getService(ConversationServiceImpl.NAME);
       ShellExecuteTool shellTool = (ShellExecuteTool) conv.getAvailableTool(ShellExecuteTool.TOOL_NAME);
 
       if (shellTool == null) {

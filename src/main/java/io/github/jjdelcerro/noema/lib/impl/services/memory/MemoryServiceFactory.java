@@ -3,10 +3,10 @@ package io.github.jjdelcerro.noema.lib.impl.services.memory;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
-import io.github.jjdelcerro.noema.lib.AgentSettings;
-import static io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryService.MEMORY_MODEL_ID;
-import static io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryService.MEMORY_PROVIDER_API_KEY;
-import static io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryService.MEMORY_PROVIDER_URL;
+import static io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryServiceImpl.MEMORY_MODEL_ID;
+import static io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryServiceImpl.MEMORY_PROVIDER_API_KEY;
+import static io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryServiceImpl.MEMORY_PROVIDER_URL;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -17,12 +17,12 @@ public class MemoryServiceFactory implements AgentServiceFactory {
 
   @Override
   public String getName() {
-    return MemoryService.NAME;
+    return MemoryServiceImpl.NAME;
   }
 
   @Override
   public AgentService createService(Agent agent) {
-    return new MemoryService(this, agent);
+    return new MemoryServiceImpl(this, agent);
   }
 
   @Override
@@ -33,7 +33,7 @@ public class MemoryServiceFactory implements AgentServiceFactory {
       MEMORY_MODEL_ID
     };
     for (String name : names) {
-      String v = settings.getProperty(name);
+      String v = settings.getPropertyAsString(name);
       if (StringUtils.isBlank(v)) {
         return false;
       }

@@ -13,6 +13,7 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class Event {
 
+  private final String channel;
   private final String status;
   private final String priority;
   private final String contents;
@@ -20,8 +21,9 @@ public class Event {
   private AiMessage aimessage;
   private ToolExecutionResultMessage response;
 
-  public Event(String status, String priority, String contents) {
-    this.event_time = ConversationService.now();
+  public Event(String channel, String status, String priority, String contents) {
+    this.event_time = ConversationServiceImpl.now();
+    this.channel = channel;
     this.status = status;
     this.priority = priority;
     this.contents = contents;
@@ -29,7 +31,8 @@ public class Event {
 
   @Override
   public String toString() {
-    return "[status:" + this.status
+    return "[channel:" + this.channel
+            + ",status:" + this.status
             + ",priority:" + this.priority
             + ",text:" + StringUtils.abbreviate(StringUtils.replace(contents, "\n", " "), 40)
             + "]";
@@ -38,8 +41,9 @@ public class Event {
   public final String toJson() {
     Gson gson = new Gson();
     return gson.toJson(Map.of(
-            "current_time", ConversationService.now(),
+            "current_time", ConversationServiceImpl.now(),
             "event_time", this.event_time,
+            "channel", channel,
             "status", status,
             "priority", priority,
             "contents", contents

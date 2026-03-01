@@ -48,7 +48,7 @@ public class DocumentStructureExtractor {
         doProcessDocument(document);
 
         // Al terminar, inyectamos un evento para que el Agente se entere proactivamente
-        agent.putEvent("DOCUMENT INDEXATION FINALIZED", "normal",
+        agent.putEvent("document", "DOCUMENT INDEXATION FINALIZED", "normal",
                 "Ha terminado la indexacion del documento: `" + document.getFileName()
                 + "`. Ya está disponible para búsquedas y consultas detalladas.");
         LOGGER.info("Inferencia de  la estrutura de documento '" + Objects.toString(document) + "' finalizada.");

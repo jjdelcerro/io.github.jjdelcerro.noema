@@ -1,5 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.services.conversation;
 
+import io.github.jjdelcerro.noema.lib.services.conversarion.ConversationService;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.AiMessage;
@@ -31,10 +32,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.lang3.StringUtils;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
-import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
-import io.github.jjdelcerro.noema.lib.AgentSettings;
-import static io.github.jjdelcerro.noema.lib.AgentSettings.BRAVE_SEARCH_API_KEY;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.ModelParametersImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.events.PoolEventTool;
@@ -54,7 +53,8 @@ import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.web.TimeT
 import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.web.WeatherTool;
 import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.web.WebGetTikaTool;
 import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.web.WebSearchTool;
-import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryService;
+import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryServiceImpl;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettingsCheckedList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import org.slf4j.Logger;
@@ -64,15 +64,9 @@ import org.slf4j.LoggerFactory;
  * Orquestador principal del sistema. Gestiona el bucle de razonamiento, la
  * ejecucion de herramientas y la interaccion con el LLM.
  */
-public class ConversationService implements AgentService {
+public class ConversationServiceImpl implements ConversationService {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ConversationService.class);
-
-  public static final String NAME = "Conversation";
-
-  public static final String CONVERSATION_PROVIDER_URL = "CONVERSATION_PROVIDER_URL";
-  public static final String CONVERSATION_PROVIDER_API_KEY = "CONVERSATION_PROVIDER_API_KEY";
-  public static final String CONVERSATION_MODEL_ID = "CONVERSATION_MODEL_ID";
+  private static final Logger LOGGER = LoggerFactory.getLogger(ConversationServiceImpl.class);
 
   private static final int OVERHEAD_IN_ESTIMATE_TOOLS_TOKEN_COUNT = 15;
 
@@ -103,7 +97,7 @@ public class ConversationService implements AgentService {
   private final AtomicBoolean isBusy = new AtomicBoolean(false);
   private final AgentServiceFactory factory;
 
-  public ConversationService(AgentServiceFactory factory, Agent agent) {
+  public ConversationServiceImpl(AgentServiceFactory factory, Agent agent) {
     this.factory = factory;
     this.agent = agent;
     this.sourceOfTruth = agent.getSourceOfTruth();
@@ -157,16 +151,29 @@ public class ConversationService implements AgentService {
         }
       }
     });
+    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, "REFRESH_CONVERSATION_TOOLS") {
+      @Override
+      public boolean perform(AgentSettings settings) {
+        try {
+          refresh_available_tools();
+          return true;
+        } catch (Exception ex) {
+          LOGGER.warn("Can't refresh active tools", ex);
+          return false;
+        }
+      }
+    });
     this.model = this.agent.createChatModel("CONVERSATION");
     this.running = true;
   }
 
+  @Override
   public void addTool(AgentTool tool) {
     this.availableTools.put(tool.getName(), new AvailableAgentTool(tool));
   }
 
-  public synchronized void putEvent(String status, String priority, String eventText) {
-    pendingEvents.offer(new Event(status, priority, eventText));
+  public synchronized void putEvent(String channel, String status, String priority, String eventText) {
+    pendingEvents.offer(new Event(channel, status, priority, eventText));
 
     // Si el agente no está trabajando en un turno, lanzamos el procesador de cola
     if (!isBusy.get()) { //FIXME: falta gestionar correctamente isBusy
@@ -229,6 +236,9 @@ public class ConversationService implements AgentService {
         if (aiMessage.hasToolExecutionRequests()) {
           // --- MODO HERRAMIENTA ---
           for (ToolExecutionRequest request : aiMessage.toolExecutionRequests()) {
+            // FIXME: Estudiar como podriamos interrumpir aqui flujo de ejecucion 
+            // de llamadas a herramientas para introducir un evento.
+            
             String result = executeToolLogic(request);
             String contentType = "tool_execution";
             if (isMemoryTool(request.name())) {
@@ -247,6 +257,7 @@ public class ConversationService implements AgentService {
             this.sourceOfTruth.add(toolTurn);
             this.session.add(ToolExecutionResultMessage.from(request, result));
             this.session.consolideTurn(toolTurn);
+            
           }
 
         } else {
@@ -365,7 +376,7 @@ public class ConversationService implements AgentService {
     }
 
     // 3. MemoryManager crea el CheckPoint
-    MemoryService memory = (MemoryService) this.agent.getService(MemoryService.NAME);
+    MemoryServiceImpl memory = (MemoryServiceImpl) this.agent.getService(MemoryServiceImpl.NAME);
     CheckPoint newCheckPoint = memory.compact(this.activeCheckPoint, compactTurns);
 
     // 4. SourceOfTruth persiste
@@ -384,19 +395,20 @@ public class ConversationService implements AgentService {
     this.console = console;
   }
 
+  @Override
   public Agent.ChatModel getModel() {
     return model;
   }
-  
+
   @Override
   public Agent.ModelParameters getModelParameters(String name) {
     AgentSettings settings = this.agent.getSettings();
     switch (name) {
       case "CONVERSATION":
         return new ModelParametersImpl(
-                settings.getProperty(CONVERSATION_PROVIDER_URL),
-                settings.getProperty(CONVERSATION_PROVIDER_API_KEY),
-                settings.getProperty(CONVERSATION_MODEL_ID),
+                settings.getPropertyAsString(CONVERSATION_PROVIDER_URL),
+                settings.getPropertyAsString(CONVERSATION_PROVIDER_API_KEY),
+                settings.getPropertyAsString(CONVERSATION_MODEL_ID),
                 0.7
         );
     }
@@ -426,11 +438,11 @@ public class ConversationService implements AgentService {
       new TimeTool(this.agent),
       new ShellExecuteTool(this.agent),
       new ShellReadOutputTool(this.agent),
-      new FileRecoveryTool(this.agent)            
+      new FileRecoveryTool(this.agent)
     };
     List<AgentTool> tools = new ArrayList<>(Arrays.asList(tools0));
 
-    String braveApiKey = this.agent.getSettings().getProperty(BRAVE_SEARCH_API_KEY);
+    String braveApiKey = this.agent.getSettings().getPropertyAsString(WebSearchTool.BRAVE_SEARCH_API_KEY);
     if (StringUtils.isNotBlank(braveApiKey)) {
       tools.add(new WebSearchTool(this.agent));
     }
@@ -452,8 +464,9 @@ public class ConversationService implements AgentService {
     return LocalDateTime.now().format(formatter);
   }
 
+  @Override
   public int estimateToolsTokenCount() {
-    if (this.model == null ) {
+    if (this.model == null) {
       return 0;
     }
     int n = 0;
@@ -464,16 +477,18 @@ public class ConversationService implements AgentService {
     return n;
   }
 
+  @Override
   public int estimateMessagesTokenCount() {
-    if (this.model == null ) {
+    if (this.model == null) {
       return 0;
     }
     List<ChatMessage> messages = this.session.getContextMessages(this.activeCheckPoint, getBaseSystemPrompt());
     return this.model.estimateTokenCount(messages);
   }
 
+  @Override
   public String getModelName() {
-    return this.agent.getSettings().getProperty(CONVERSATION_MODEL_ID);
+    return this.agent.getSettings().getPropertyAsString(CONVERSATION_MODEL_ID);
   }
 
   public void showSession() {
@@ -511,6 +526,7 @@ public class ConversationService implements AgentService {
     return toolSpecifications;
   }
 
+  @Override
   public List<AgentTool> getAvailableTools() {
     List<AgentTool> tools = new ArrayList<>();
     for (AvailableAgentTool tool : this.availableTools.values()) {
@@ -519,20 +535,49 @@ public class ConversationService implements AgentService {
     return tools;
   }
 
+  @Override
   public AgentTool getAvailableTool(String name) {
     for (AvailableAgentTool tool : this.availableTools.values()) {
-      if( StringUtils.equals(name, tool.tool.getName())) {
+      if (StringUtils.equals(name, tool.tool.getName())) {
         return tool.tool;
       }
     }
     return null;
   }
 
+  @Override
   public boolean isToolActive(String name) {
     return this.availableTools.get(name).active;
   }
 
+  @Override
   public void setToolActive(String name, boolean active) {
     this.availableTools.get(name).active = active;
   }
+
+  /**
+   * Sincroniza el estado de activación de las herramientas con lo definido por
+   * el usuario en la configuración.
+   * Si una herramienta no figura en la configuracion, conserva su estado actual en memoria.
+   */
+  private void refresh_available_tools() {
+    AgentSettingsCheckedList persistedList = agent.getSettings().getPropertyAsCheckedList(ACTIVE_TOOLS);
+    if (persistedList == null) {
+        return;
+    }
+    for (AgentSettingsCheckedList.CheckedItem item : persistedList.getItems()) {
+        String technicalName = item.getValue();
+        // Buscamos si la herramienta referenciada en el JSON está cargada en el servicio
+        AvailableAgentTool available = availableTools.get(technicalName);
+        if (available != null) {
+            // Sincronizamos el estado: lo que diga el usuario manda sobre el valor en memoria
+            available.active = item.isChecked();
+            LOGGER.debug("Herramienta '{}' sincronizada desde configuración: {}", 
+                         technicalName, available.active ? "ACTIVA" : "INACTIVA");
+        }
+    }
+    // Nota: Las herramientas que están en 'availableTools' pero NO en 'persistedList' 
+    // mantienen el valor 'active' que recibieron al ser añadidas (isAvailableByDefault).
+  }
+
 }
