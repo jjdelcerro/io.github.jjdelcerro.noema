@@ -15,6 +15,8 @@ public interface AgentService {
   
   public void start();
   
+  public void stop();
+  
   public boolean canStart();
 
   public boolean isRunning();

@@ -197,4 +197,9 @@ public class EmbeddingsService implements AgentService {
     return filter;
   }
   
+  @Override
+  public void stop() {
+    this.running = false;
+  }
+
 }

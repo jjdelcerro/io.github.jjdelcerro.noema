@@ -8,6 +8,8 @@ import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationServiceImpl;
+import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
+import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.SensorEventCallback;
 import io.github.jjdelcerro.noema.main.MainGUI;
 import io.github.jjdelcerro.noema.ui.AgentUILocator;
 import java.awt.BorderLayout;
@@ -232,15 +234,19 @@ public class MainChatPanel extends JPanel {
     startThinking();
 
     Thread.ofVirtual().start(() -> {
-      try {
-        String response = agent.processTurn(text);
-        consoleController.printModelResponse(response);
-      } catch (Exception e) {
-        consoleController.printSystemError("Error: " + e.getMessage());
-      } finally {
-        stopThinking();
-        updateMetadata();
-      }
+      agent.putUsersMessage(text, new SensorEventCallback() {
+        @Override
+        public void onComplete(String response) {
+          try {
+            consoleController.printModelResponse(response);
+          } catch (Exception e) {
+            consoleController.printSystemError("Error: " + e.getMessage());
+          } finally {
+            stopThinking();
+            updateMetadata();
+          }
+        }
+      });
     });
   }
 

@@ -12,6 +12,9 @@ import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
+import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
+import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
+import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
 import java.util.function.Supplier;
 
 /**
@@ -59,11 +62,6 @@ public class FakeAgent implements Agent {
   @Override
   public SourceOfTruth getSourceOfTruth() {
     throw new UnsupportedOperationException("FakeAgent no tiene SourceOfTruth.");
-  }
-
-  @Override
-  public String processTurn(String input) {
-    throw new UnsupportedOperationException("FakeAgent no puede procesar turnos.");
   }
 
   @Override
@@ -143,6 +141,21 @@ public class FakeAgent implements Agent {
   @Override
   public int getConversationContextSize() {
     throw new UnsupportedOperationException("Not supported yet.");
+  }
+
+  @Override
+  public void stop() {
+
+  }
+
+  @Override
+  public void putUsersMessage(String text, SensorsService.SensorEventCallback callback) {
+
+  }
+
+  @Override
+  public SensorInformation registerSensor(String channel, String label, SensorNature nature, String description) {
+    return null;
   }
 
   private static class FakeConsole implements AgentConsole {

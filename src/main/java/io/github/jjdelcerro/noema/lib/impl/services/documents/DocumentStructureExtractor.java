@@ -5,6 +5,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentStructure.DocumentStructureEntry;
+import static io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsServiceImpl.SENSOR_NAME;
+import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
+import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -48,9 +51,13 @@ public class DocumentStructureExtractor {
         doProcessDocument(document);
 
         // Al terminar, inyectamos un evento para que el Agente se entere proactivamente
-        agent.putEvent("document", "DOCUMENT INDEXATION FINALIZED", "normal",
+        agent.putEvent(
+                SENSOR_NAME, 
+                "DOCUMENT INDEXATION FINALIZED", 
+                PRIORITY_NORMAL,
                 "Ha terminado la indexacion del documento: `" + document.getFileName()
-                + "`. Ya está disponible para búsquedas y consultas detalladas.");
+                + "`. Ya está disponible para búsquedas y consultas detalladas."
+        );
         LOGGER.info("Inferencia de  la estrutura de documento '" + Objects.toString(document) + "' finalizada.");
       } catch (Exception ex) {
         LOGGER.warn("Error infiriendo la estrutura del documento '" + Objects.toString(document) + "'.", ex);

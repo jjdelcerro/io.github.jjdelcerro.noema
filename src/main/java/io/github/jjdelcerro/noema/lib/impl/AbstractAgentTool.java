@@ -20,16 +20,21 @@ public abstract class AbstractAgentTool implements AgentTool {
   protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractAgentTool.class);
 
   protected final Agent agent;
-  protected final Gson gson = new Gson();
+  protected final Gson gson;
 
   public AbstractAgentTool(Agent agent) {
-    this.agent = agent;
+    this(agent, new Gson());
   }
- 
+
+  protected AbstractAgentTool(Agent agent, Gson customGson) {
+    this.agent = agent;
+    this.gson = customGson;
+  }
+
   protected String error(String m) {
     return gson.toJson(Map.of("status", "error", "message", m));
   }
-  
+
   protected Path resolvePathOrNull(String path) {
     Path x = this.agent.getAccessControl().resolvePathOrNull(path, PATH_ACCESS_READ);
     return x;
@@ -39,7 +44,7 @@ public abstract class AbstractAgentTool implements AgentTool {
     Path x = this.agent.getAccessControl().resolvePathOrNull(path, access);
     return x;
   }
-  
+
   protected ConversationServiceImpl getConversationService() {
     return (ConversationServiceImpl) agent.getService(ConversationServiceImpl.NAME);
   }

@@ -7,6 +7,9 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.model.output.Response;
 import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
+import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
+import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
+import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.SensorEventCallback;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import java.util.List;
 
@@ -44,8 +47,6 @@ public interface Agent {
 
   public SourceOfTruth getSourceOfTruth();
 
-  public String processTurn(String input);
-
   /**
    * Inyecta un estímulo externo asíncrono en el flujo de conciencia del agente,
    * permitiendo comportamientos proactivos y reactivos ante eventos del mundo
@@ -77,6 +78,7 @@ public interface Agent {
    *
    * @param channel El origen del evento (ej: "Telegram", "Email", "System").
    * Útil para que el LLM sepa contextualizar la fuente.
+   * @param status
    * @param priority Nivel de urgencia del evento (ej: "normal", "high").
    * Actualmente informativo.
    * @param eventText El contenido del evento.
@@ -91,7 +93,11 @@ public interface Agent {
    * @see #processPendingEvents()
    */
   public void putEvent(String channel, String status, String priority, String eventText);
-
+  
+  public void putUsersMessage(String text, SensorEventCallback callback);
+  
+  public SensorInformation registerSensor(String channel, String label, SensorNature nature, String description);
+  
   public AgentAccessControl getAccessControl();
 
   public void setConsole(AgentConsole console);
@@ -103,6 +109,8 @@ public interface Agent {
   public AgentService getService(String name);
 
   public void start();
+  
+  public void stop();
 
   public String getResourceAsString(String resname);
 
