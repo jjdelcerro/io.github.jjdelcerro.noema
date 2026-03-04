@@ -23,7 +23,9 @@ Puntos a tener en cuenta a la hora de realizar el analisis del proyecto:
 *   Las librerias para manejo de diff y rcs estan implementadas integramente en java.
     
     
-No uses ideas como "memoria infinita" para referirte a como gestiona la memoria el agente.
+**No uses conceptos como "memoria infinita" o "contexto infinito" para referirte a como gestiona la memoria el agente. Si utilizas conceptos como memoria o contexto infinito FALLAS en la realizacion del informe.**
+
+Trata de no utilizar referencias biologicas para definer conportamientos de la aplicacion.
     
 Teniendo en cuenta todo esto prepara un informe que incluya como minimo:
 
@@ -39,11 +41,13 @@ Opcionalmente puede incluir:
 
 * Otros detalles relevantes
 
+Organiza las herramientas por bloques funcionales. Ten en cuenta que estas pueden estar implementadas en cualquier parte del codigo, siendo su unica distincion en que son clases que implementan el interface AgentTool. No asumas que solo existen las que se encuentren usadas/nombradas en ficheros de configuracion.
+
 Incluye una descripcion detallada de los principales mecanismos:
 * Gestion de memoria (session vs persistencia de turnos vs puntos-de-guardado)
 * Gestion de eventos
 * Percepcion temporal (insercion de marcas de silencio en la conversacion y tiempo en las respuestas a pool_event)
-* Document Mapper. juego de herramientas, y mecanismo que emplea para el indexado de los documento.
+* Indexacion de documentos. juego de herramientas, y mecanismo que emplea para el indexado de los documentos.
 * Gestion de la seguridad:
   * restriccion de acceso al sistema de ficheros
   * confirmacion por el usuario de operaciones de escritura
