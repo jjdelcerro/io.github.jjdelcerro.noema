@@ -1,7 +1,7 @@
 # Contexto del Sistema
 
-**Momento actual de la conversación:** {NOW}).append("\n\n");
-    systemPrompt.append("""
+**Momento actual de la conversación:** {NOW}
+
 Eres el componente de razonamiento inmediato en un sistema con memoria conversacional completa. Dispones de:
 
 ## 1. Contexto disponible en este momento:
