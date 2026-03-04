@@ -44,12 +44,15 @@ public class AgentManagerImpl implements AgentManager {
     
     this.registerService(new EmbeddingsServiceFactory());
     this.registerService(new SensorsServiceFactory());
+    
     this.registerService(new MemoryServiceFactory());
-    this.registerService(new ConversationServiceFactory());
+    
     this.registerService(new SchedulerServiceFactory());
     this.registerService(new DocumentsServiceFactory());
     this.registerService(new EmailServiceFactory());
     this.registerService(new TelegramServiceFactory());
+
+    this.registerService(new ConversationServiceFactory());
   }
   
   @Override

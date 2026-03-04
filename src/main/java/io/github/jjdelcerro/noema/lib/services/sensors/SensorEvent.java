@@ -47,7 +47,7 @@ public interface SensorEvent {
     LocalDateTime getEndTimestamp();
 
     /**
-     * Returns the timestamp when the event was delivered to the SNC.
+     * Returns the timestamp when the event was delivered to the ConversationSercices.
      * @return Delivery timestamp in milliseconds.
      */
     LocalDateTime getDeliveryTimestamp();

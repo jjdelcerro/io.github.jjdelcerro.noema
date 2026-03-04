@@ -18,6 +18,7 @@ import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.mergeable.Mer
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.state.StateSensorData;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.user.UserSensorData;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.tools.SensorStartTool;
+import io.github.jjdelcerro.noema.lib.impl.services.sensors.tools.SensorStatusTool;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.tools.SensorStopTool;
 import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorData;
@@ -51,6 +52,10 @@ public class SensorsServiceImpl implements SensorsService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SensorsServiceImpl.class);
 
+  public static final String SYSTEMCLOCK_SENSOR_NAME = "SYSTEMCLOCK";
+  private static final String SYSTEMCLOCK_SENSOR_LABEL = "Reloj del Sistema";
+  private static final String SYSTEMCLOCK_SENSOR_DESCRIPTION = "Sensor interno de paso del tiempo"; 
+
   private final Map<String, SensorData> registeredSensors;
   private final BlockingQueue<SensorEvent> deliveryQueue;
   private final Map<String, ConsumableSensorEvent> stateMap;
@@ -82,6 +87,15 @@ public class SensorsServiceImpl implements SensorsService {
     sensorDataFactory.put(SensorNature.AGGREGATABLE, AggregateSensorData::new);
     sensorDataFactory.put(SensorNature.STATE, StateSensorData::new);
     sensorDataFactory.put(SensorNature.USER, UserSensorData::new);
+    
+    SensorInformation sensorSystemClock = this.createSensorInformation(
+            SYSTEMCLOCK_SENSOR_NAME,
+            SYSTEMCLOCK_SENSOR_LABEL,
+            SensorNature.DISCRETE, 
+            SYSTEMCLOCK_SENSOR_DESCRIPTION
+    );
+    this.registerSensor(sensorSystemClock);
+
   }
 
   @Override
@@ -159,7 +173,7 @@ public class SensorsServiceImpl implements SensorsService {
       stats.incrementActiveEvents();
       stats.updateLastEventTimestamp(timestamp);
 
-      // Procesamos el estímulo en el buffer
+      // Procesamos el evento en el buffer
       if (currentSensor != null && (!currentSensor.getSensorInformation().getChannel().equals(channel)
               || data.getSensorInformation().getNature() == SensorNature.DISCRETE)) {
         flushCurrentSensor();
@@ -173,7 +187,7 @@ public class SensorsServiceImpl implements SensorsService {
         stateMap.put(channel, (ConsumableSensorEvent) event);
       }
 
-      // Avisamos que hay nueva percepción disponible
+      // Avisamos que hay nuevo evento disponible
       sensorLock.notifyAll();
     }
   }
@@ -343,7 +357,7 @@ public class SensorsServiceImpl implements SensorsService {
             stateMap.putAll(memento.stateMap);
           }
 
-          // Restauramos el historial fisiológico (estadísticas)
+          // Restauramos el historial de estadísticas
           if (memento.statisticsMap != null) {
             rehydratedStats.putAll(memento.statisticsMap);
           }
@@ -383,7 +397,8 @@ public class SensorsServiceImpl implements SensorsService {
     AgentTool[] tools = new AgentTool[]{
       new PoolEventTool(this.agent),
       new SensorStartTool(this.agent),
-      new SensorStopTool(this.agent)
+      new SensorStopTool(this.agent),
+      new SensorStatusTool(this.agent)
     };
     return Arrays.asList(tools);
   }

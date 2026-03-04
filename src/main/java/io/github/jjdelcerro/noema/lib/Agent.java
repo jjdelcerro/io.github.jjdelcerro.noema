@@ -48,7 +48,7 @@ public interface Agent {
   public SourceOfTruth getSourceOfTruth();
 
   /**
-   * Inyecta un estímulo externo asíncrono en el flujo de conciencia del agente,
+   * Inyecta un evento externo asíncrono en el flujo de pensamiento del agente,
    * permitiendo comportamientos proactivos y reactivos ante eventos del mundo
    * real (Sensores).
    * <p>

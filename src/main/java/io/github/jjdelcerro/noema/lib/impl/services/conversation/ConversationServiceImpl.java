@@ -71,10 +71,6 @@ public class ConversationServiceImpl implements ConversationService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ConversationServiceImpl.class);
 
-  public static final String SYSTEMCLOCK_SENSOR_NAME = "SYSTEMCLOCK";
-  private static final String SYSTEMCLOCK_SENSOR_LABEL = "Reloj del Sistema";
-  private static final String SYSTEMCLOCK_SENSOR_DESCRIPTION = "Sensor interno de paso del tiempo"; 
-
   private static final int OVERHEAD_IN_ESTIMATE_TOOLS_TOKEN_COUNT = 15;
 
   private static class AvailableAgentTool {
@@ -171,7 +167,6 @@ public class ConversationServiceImpl implements ConversationService {
       }
     });
     this.model = this.agent.createChatModel("CONVERSATION");
-    this.agent.registerSensor(SYSTEMCLOCK_SENSOR_NAME, SYSTEMCLOCK_SENSOR_LABEL, SensorNature.DISCRETE, SYSTEMCLOCK_SENSOR_DESCRIPTION);
     Thread.ofVirtual().name(AgentManager.AGENT_NAME + "-Event-Dispatcher").start(this::eventDispatcher);
     this.running = true;
   }
@@ -471,7 +466,7 @@ public class ConversationServiceImpl implements ConversationService {
   }
 
   /**
-   * Bucle perpetuo de consciencia. Consume señales del SNA y las procesa
+   * Bucle perpetuo de consciencia. Consume señales de los sensores y las procesa
    * íntegramente hasta generar una respuesta o acción.
    */
   @SuppressWarnings("UseSpecificCatch")
