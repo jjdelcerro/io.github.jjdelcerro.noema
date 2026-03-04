@@ -11,7 +11,7 @@ import com.google.gson.reflect.TypeToken;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.events.PoolEventTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.events.PoolEventTool;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.aggregate.AggregateSensorData;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.discrete.DiscreteSensorData;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.mergeable.MergeableSensorData;

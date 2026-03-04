@@ -10,8 +10,8 @@ public interface AgentActions {
 
   public static final String CHANGE_MEMORY_PROVIDER = "CHANGE_MEMORY_PROVIDER";
   public static final String CHANGE_MEMORY_MODEL = "CHANGE_MEMORY_MODEL";
-  public static final String CHANGE_CONVERSATION_PROVIDER = "CHANGE_CONVERSATION_PROVIDER";
-  public static final String CHANGE_CONVERSATION_MODEL = "CHANGE_CONVERSATION_MODEL";
+  public static final String CHANGE_REASONING_PROVIDER = "CHANGE_REASONING_PROVIDER";
+  public static final String CHANGE_REASONING_MODEL = "CHANGE_REASONING_MODEL";
 
   public interface AgentAction {
     public boolean perform(AgentSettings settings);

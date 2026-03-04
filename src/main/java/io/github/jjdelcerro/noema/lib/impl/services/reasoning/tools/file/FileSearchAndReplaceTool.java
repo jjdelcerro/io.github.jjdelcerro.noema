@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file;
+package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
@@ -73,7 +73,7 @@ public class FileSearchAndReplaceTool extends AbstractAgentTool {
       if (Files.exists(filePath)) {
         RCSManager rcsmanager = RCSLocator.getRCSManager();
         CheckinOptions opciones = rcsmanager.createCheckinOptions(filePath);
-        opciones.setAuthor(this.getConversationService().getModelName());
+        opciones.setAuthor(this.getReasoningService().getModelName());
         opciones.setInit(true);
         RCSCommand ci = rcsmanager.create(opciones);
         ci.execute(opciones);

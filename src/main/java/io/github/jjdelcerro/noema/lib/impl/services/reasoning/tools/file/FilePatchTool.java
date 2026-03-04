@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file;
+package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
 import com.github.difflib.DiffUtils;
@@ -87,7 +87,7 @@ Pero por ahora, prueba así; los modelos de 2025 suelen ser bastante buenos sigu
       if( Files.exists(filePath) ) {
         RCSManager rcsmanager = RCSLocator.getRCSManager();
         CheckinOptions opciones = rcsmanager.createCheckinOptions(filePath);
-        opciones.setAuthor(this.getConversationService().getModelName());
+        opciones.setAuthor(this.getReasoningService().getModelName());
         opciones.setInit(true);
         RCSCommand ci = rcsmanager.create(opciones);
         ci.execute(opciones);

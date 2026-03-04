@@ -7,7 +7,7 @@ import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationServiceImpl;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceImpl;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.SensorEventCallback;
 import io.github.jjdelcerro.noema.main.MainGUI;
@@ -278,10 +278,10 @@ public class MainChatPanel extends JPanel {
     if (agent == null) {
       return;
     }
-    ConversationServiceImpl conv = (ConversationServiceImpl) agent.getService(ConversationServiceImpl.NAME);
+    ReasoningServiceImpl reasoning = (ReasoningServiceImpl) agent.getService(ReasoningServiceImpl.NAME);
     SwingUtilities.invokeLater(() -> {
-      lblModelInfo.setText(conv.getModelName());
-      lblTokens.setText(conv.estimateToolsTokenCount() + "+" + conv.estimateMessagesTokenCount()+ "/"+agent.getConversationContextSize());
+      lblModelInfo.setText(reasoning.getModelName());
+      lblTokens.setText(reasoning.estimateToolsTokenCount() + "+" + reasoning.estimateMessagesTokenCount()+ "/"+agent.getConversationContextSize());
     });
   }
 

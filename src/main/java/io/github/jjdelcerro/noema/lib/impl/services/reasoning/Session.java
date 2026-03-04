@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.lib.impl.services.conversation;
+package io.github.jjdelcerro.noema.lib.impl.services.reasoning;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -24,7 +24,7 @@ import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.persistence.CheckPoint;
 import io.github.jjdelcerro.noema.lib.persistence.Turn;
-import static io.github.jjdelcerro.noema.lib.services.conversarion.ConversationService.MEMORY_COMPACTION_TURNS;
+import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.MEMORY_COMPACTION_TURNS;
 import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
 import java.io.IOException;

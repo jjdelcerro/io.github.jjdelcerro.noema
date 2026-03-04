@@ -1,10 +1,10 @@
-package io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file;
+package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationServiceImpl;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceImpl;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections4.map.LRUMap;
 import org.apache.tika.Tika;
@@ -111,8 +111,8 @@ public class FileReadSelectorsTool extends AbstractAgentTool {
       }
 
       // 4. Delegar al motor de FileReadTool pasándole el Stream perezoso
-      ConversationServiceImpl conv = (ConversationServiceImpl) agent.getService(ConversationServiceImpl.NAME);
-      FileReadTool fileRead = (FileReadTool) conv.getAvailableTool(FileReadTool.TOOL_NAME);
+      ReasoningServiceImpl reasoning = (ReasoningServiceImpl) agent.getService(ReasoningServiceImpl.NAME);
+      FileReadTool fileRead = (FileReadTool) reasoning.getAvailableTool(FileReadTool.TOOL_NAME);
 
       // Pasamos un Stream fresco para la lectura real
       try (Stream<String> contentStream = getSelectedContents(resolvedPaths)) {

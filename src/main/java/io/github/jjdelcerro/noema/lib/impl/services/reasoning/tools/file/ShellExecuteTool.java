@@ -1,11 +1,11 @@
-package io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file;
+package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationServiceImpl;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceImpl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -218,8 +218,8 @@ Ejecuta comandos de sistema en una shell de Bash.
       int exitCode = process.isAlive() ? -1 : process.exitValue();
 
       // DELEGACIÓN: Usamos FileReadTool para generar la respuesta paginada
-      ConversationServiceImpl conv = (ConversationServiceImpl) agent.getService(ConversationServiceImpl.NAME);
-      FileReadTool fileRead = (FileReadTool) conv.getAvailableTool(FileReadTool.TOOL_NAME);
+      ReasoningServiceImpl reasoning = (ReasoningServiceImpl) agent.getService(ReasoningServiceImpl.NAME);
+      FileReadTool fileRead = (FileReadTool) reasoning.getAvailableTool(FileReadTool.TOOL_NAME);
 
       // Inyectamos el código de salida en el prefijo de la respuesta
       String statusPrefix = (exitCode == 0) ? "" : "[SYSTEM: Command failed with exit code " + exitCode + "]\n";

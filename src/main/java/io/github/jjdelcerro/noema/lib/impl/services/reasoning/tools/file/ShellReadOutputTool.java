@@ -1,11 +1,11 @@
-package io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file;
+package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationServiceImpl;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceImpl;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -58,8 +58,8 @@ public class ShellReadOutputTool extends AbstractAgentTool {
       }
 
       // 1. Localizar el "Gestor" (ShellExecuteTool) a través del servicio de conversación
-      ConversationServiceImpl conv = (ConversationServiceImpl) agent.getService(ConversationServiceImpl.NAME);
-      ShellExecuteTool shellTool = (ShellExecuteTool) conv.getAvailableTool(ShellExecuteTool.TOOL_NAME);
+      ReasoningServiceImpl reasoning = (ReasoningServiceImpl) agent.getService(ReasoningServiceImpl.NAME);
+      ShellExecuteTool shellTool = (ShellExecuteTool) reasoning.getAvailableTool(ShellExecuteTool.TOOL_NAME);
 
       if (shellTool == null) {
         return error("Servicio de ejecución shell no disponible.");
@@ -74,7 +74,7 @@ public class ShellReadOutputTool extends AbstractAgentTool {
       }
 
       // 3. Delegar la lectura a FileReadTool
-      FileReadTool fileRead = (FileReadTool) conv.getAvailableTool(FileReadTool.TOOL_NAME);
+      FileReadTool fileRead = (FileReadTool) reasoning.getAvailableTool(FileReadTool.TOOL_NAME);
 
       // Pasamos el ID como 'originalPath' para que los HINTs de paginación
       // sigan usando el ID y no una ruta de archivo.

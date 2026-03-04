@@ -2,7 +2,7 @@ package io.github.jjdelcerro.noema.lib.impl;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationServiceImpl;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceImpl;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.langchain4j.model.openai.OpenAiChatModel;
@@ -21,7 +21,6 @@ import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
-import static io.github.jjdelcerro.noema.lib.services.conversarion.ConversationService.CONVERSATION_MODEL_ID;
 import static io.github.jjdelcerro.noema.lib.services.memory.MemoryService.MEMORY_MODEL_ID;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
@@ -46,6 +45,7 @@ import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_MODEL_ID;
 
 /**
  *
@@ -117,13 +117,13 @@ public class AgentImpl implements Agent {
     );
     sensors.registerSensor(sensor);
     
-    ConversationServiceImpl conversation = (ConversationServiceImpl) this.getService(ConversationServiceImpl.NAME);
+    ReasoningServiceImpl reasoning = (ReasoningServiceImpl) this.getService(ReasoningServiceImpl.NAME);
     for (AgentService service : this.services.values()) {
       if (service.canStart()) {
         List<AgentTool> tools = service.getTools();
         if (tools != null) {
           for (AgentTool tool : tools) {
-            conversation.addTool(tool);
+            reasoning.addTool(tool);
           }
           console.printSystemLog(service.getName() + " tools installed");
         }
@@ -135,7 +135,7 @@ public class AgentImpl implements Agent {
     this.startAllServices();
 
     console.printSystemLog("MemoryManager " + settings.getPropertyAsString(MEMORY_MODEL_ID));
-    console.printSystemLog("ConversationManager " + settings.getPropertyAsString(CONVERSATION_MODEL_ID));
+    console.printSystemLog("ConversationManager " + settings.getPropertyAsString(REASONING_MODEL_ID));
 
     this.running = true;
     this.shutdownHook = new Thread(() -> {
@@ -386,9 +386,9 @@ public class AgentImpl implements Agent {
 
   @Override
   public void showSession() {
-    ConversationServiceImpl conversation = (ConversationServiceImpl) this.getService(ConversationServiceImpl.NAME);
-    if (conversation != null) {
-      conversation.showSession();
+    ReasoningServiceImpl reasoning = (ReasoningServiceImpl) this.getService(ReasoningServiceImpl.NAME);
+    if (reasoning != null) {
+      reasoning.showSession();
     }
   }
 
@@ -441,8 +441,8 @@ public class AgentImpl implements Agent {
 
   @Override
   public int getConversationContextSize() {
-    ConversationServiceImpl conversation = (ConversationServiceImpl) this.getService(ConversationServiceImpl.NAME);
-    return conversation.getModel().getContextSize();
+    ReasoningServiceImpl reasoning = (ReasoningServiceImpl) this.getService(ReasoningServiceImpl.NAME);
+    return reasoning.getModel().getContextSize();
   }
 
   @Override

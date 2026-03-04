@@ -1,14 +1,9 @@
 package io.github.jjdelcerro.noema.lib.impl.services.sensors;
 
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.*;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
-import static io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationServiceImpl.CONVERSATION_MODEL_ID;
-import static io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationServiceImpl.CONVERSATION_PROVIDER_API_KEY;
-import static io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationServiceImpl.CONVERSATION_PROVIDER_URL;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  *
