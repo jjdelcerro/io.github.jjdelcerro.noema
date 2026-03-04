@@ -117,8 +117,6 @@ public class AgentImpl implements Agent {
     );
     sensors.registerSensor(sensor);
     
-    this.startAllServices();
-
     ConversationServiceImpl conversation = (ConversationServiceImpl) this.getService(ConversationServiceImpl.NAME);
     for (AgentService service : this.services.values()) {
       if (service.canStart()) {
@@ -133,6 +131,8 @@ public class AgentImpl implements Agent {
         console.printSystemLog(service.getName() + " tools NOT installed");
       }
     }
+
+    this.startAllServices();
 
     console.printSystemLog("MemoryManager " + settings.getPropertyAsString(MEMORY_MODEL_ID));
     console.printSystemLog("ConversationManager " + settings.getPropertyAsString(CONVERSATION_MODEL_ID));
