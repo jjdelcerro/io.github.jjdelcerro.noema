@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.events;
+package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.events;
 
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;

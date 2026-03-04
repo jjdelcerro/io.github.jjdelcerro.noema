@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.web;
+package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;

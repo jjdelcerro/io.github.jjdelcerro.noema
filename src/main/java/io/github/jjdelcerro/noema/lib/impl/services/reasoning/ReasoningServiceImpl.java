@@ -1,6 +1,5 @@
-package io.github.jjdelcerro.noema.lib.impl.services.conversation;
+package io.github.jjdelcerro.noema.lib.impl.services.reasoning;
 
-import io.github.jjdelcerro.noema.lib.services.conversarion.ConversationService;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.AiMessage;
@@ -10,8 +9,6 @@ import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.output.Response;
 import io.github.jjdelcerro.noema.lib.AbstractAgentAction;
 import io.github.jjdelcerro.noema.lib.Agent;
-import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_CONVERSATION_MODEL;
-import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_CONVERSATION_PROVIDER;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.LookupTurnTool;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.SearchFullHistoryTool;
 import io.github.jjdelcerro.noema.lib.persistence.CheckPoint;
@@ -34,23 +31,23 @@ import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.ModelParametersImpl;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.events.PoolEventTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file.FileExtractTextTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file.FileFindTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file.FileGrepTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file.FileMkdirTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file.FilePatchTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file.FileReadTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file.FileRecoveryTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file.FileSearchAndReplaceTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file.FileWriteTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file.ShellExecuteTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.file.ShellReadOutputTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.web.LocationTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.web.TimeTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.web.WeatherTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.web.WebGetTikaTool;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.web.WebSearchTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.events.PoolEventTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileExtractTextTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileFindTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileGrepTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileMkdirTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FilePatchTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileReadTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileRecoveryTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileSearchAndReplaceTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileWriteTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.ShellExecuteTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.ShellReadOutputTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.LocationTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.TimeTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.WeatherTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.WebGetTikaTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.WebSearchTool;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryServiceImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
 import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
@@ -62,14 +59,17 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
+import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_REASONING_MODEL;
+import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_REASONING_PROVIDER;
 
 /**
  * Orquestador principal del sistema. Gestiona el bucle de razonamiento, la
  * ejecucion de herramientas y la interaccion con el LLM.
  */
-public class ConversationServiceImpl implements ConversationService {
+public class ReasoningServiceImpl implements ReasoningService {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ConversationServiceImpl.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ReasoningServiceImpl.class);
 
   private static final int OVERHEAD_IN_ESTIMATE_TOOLS_TOKEN_COUNT = 15;
 
@@ -97,7 +97,7 @@ public class ConversationServiceImpl implements ConversationService {
   private final Map<String, AvailableAgentTool> availableTools = new LinkedHashMap<>();
 
 
-  public ConversationServiceImpl(AgentServiceFactory factory, Agent agent) {
+  public ReasoningServiceImpl(AgentServiceFactory factory, Agent agent) {
     this.factory = factory;
     this.agent = agent;
     this.sourceOfTruth = agent.getSourceOfTruth();
@@ -122,27 +122,27 @@ public class ConversationServiceImpl implements ConversationService {
   @Override
   public void start() {
     String[] resources = new String[]{
-      "prompts/conversation-system.md"
+      "prompts/reasoning-system.md"
     };
     for (String resPath : resources) {
       this.agent.installResource(resPath);
     }
 
-    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_CONVERSATION_PROVIDER) {
+    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_REASONING_PROVIDER) {
       @Override
       public boolean perform(AgentSettings settings) {
-        model = agent.createChatModel("CONVERSATION");
+        model = agent.createChatModel("REASONING");
         return true;
       }
     });
-    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_CONVERSATION_MODEL) {
+    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_REASONING_MODEL) {
       @Override
       public boolean perform(AgentSettings settings) {
-        model = agent.createChatModel("CONVERSATION");
+        model = agent.createChatModel("REASONING");
         return true;
       }
     });
-    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, "COMPACT_CONVERSATION") {
+    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, "COMPACT_REASONING") {
       @Override
       public boolean perform(AgentSettings settings) {
         try {
@@ -154,7 +154,7 @@ public class ConversationServiceImpl implements ConversationService {
         }
       }
     });
-    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, "REFRESH_CONVERSATION_TOOLS") {
+    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, "REFRESH_REASONING_TOOLS") {
       @Override
       public boolean perform(AgentSettings settings) {
         try {
@@ -166,7 +166,7 @@ public class ConversationServiceImpl implements ConversationService {
         }
       }
     });
-    this.model = this.agent.createChatModel("CONVERSATION");
+    this.model = this.agent.createChatModel("REASONING");
     Thread.ofVirtual().name(AgentManager.AGENT_NAME + "-Event-Dispatcher").start(this::eventDispatcher);
     this.running = true;
   }
@@ -177,10 +177,10 @@ public class ConversationServiceImpl implements ConversationService {
   }
 
   private String getBaseSystemPrompt() {
-    String systemPrompt = agent.getResourceAsString("prompts/conversation-system.md");
+    String systemPrompt = agent.getResourceAsString("prompts/reasoning-system.md");
 
     if (systemPrompt.isEmpty()) {
-      LOGGER.warn("No se ha podido cargar el prompt del sistema del ConversationService");
+      LOGGER.warn("No se ha podido cargar el prompt del sistema del ReasoningService");
       throw new RuntimeException("Can't load system prompt from data folder");
     }
     systemPrompt = StringUtils.replace(systemPrompt, "{NOW}", now());
@@ -284,11 +284,11 @@ public class ConversationServiceImpl implements ConversationService {
   public Agent.ModelParameters getModelParameters(String name) {
     AgentSettings settings = this.agent.getSettings();
     switch (name) {
-      case "CONVERSATION":
+      case "REASONING":
         return new ModelParametersImpl(
-                settings.getPropertyAsString(CONVERSATION_PROVIDER_URL),
-                settings.getPropertyAsString(CONVERSATION_PROVIDER_API_KEY),
-                settings.getPropertyAsString(CONVERSATION_MODEL_ID),
+                settings.getPropertyAsString(REASONING_PROVIDER_URL),
+                settings.getPropertyAsString(REASONING_PROVIDER_API_KEY),
+                settings.getPropertyAsString(REASONING_MODEL_ID),
                 0.7
         );
     }
@@ -368,7 +368,7 @@ public class ConversationServiceImpl implements ConversationService {
 
   @Override
   public String getModelName() {
-    return this.agent.getSettings().getPropertyAsString(CONVERSATION_MODEL_ID);
+    return this.agent.getSettings().getPropertyAsString(REASONING_MODEL_ID);
   }
 
   public void showSession() {

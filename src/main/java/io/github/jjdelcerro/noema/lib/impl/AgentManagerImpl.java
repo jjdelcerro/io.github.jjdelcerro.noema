@@ -9,7 +9,7 @@ import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationServiceFactory;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.email.EmailServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsServiceFactory;
@@ -52,7 +52,7 @@ public class AgentManagerImpl implements AgentManager {
     this.registerService(new EmailServiceFactory());
     this.registerService(new TelegramServiceFactory());
 
-    this.registerService(new ConversationServiceFactory());
+    this.registerService(new ReasoningServiceFactory());
   }
   
   @Override

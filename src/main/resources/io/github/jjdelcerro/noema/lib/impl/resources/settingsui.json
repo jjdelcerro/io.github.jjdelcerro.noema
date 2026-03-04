@@ -10,7 +10,7 @@
   "childs": [
     {
       "type": "menu",
-      "label": "Conversación",
+      "label": "Servicio de razonamiento",
       "childs": [
         {
           "type": "menu",
@@ -19,24 +19,24 @@
             {
               "type": "combo",
               "childs": "LLM_PROVIDERS_URL",
-              "label": "URL del proveedor (conversación)",
-              "variableName": "conversation/provider/url",
+              "label": "URL del proveedor (razonamiento)",
+              "variableName": "reasoning/provider/url",
               "required": true,
-              "actionName": "CHANGE_CONVERSATION_PROVIDER"
+              "actionName": "CHANGE_REASONING_PROVIDER"
             },
             {
               "type": "combo",
-              "label": "API Key (conversación)",
-              "variableName": "conversation/provider/api_key",
-              "actionName": "CHANGE_CONVERSATION_PROVIDER",
+              "label": "API Key (razonamiento)",
+              "variableName": "reasoning/provider/api_key",
+              "actionName": "CHANGE_REASONING_PROVIDER",
               "required": true,
               "childs": "LLM_PROVIDERS_APIKEY"
             },
             {
               "type": "selectoption",
-              "label": "Seleccionar Modelo (conversación)",
-              "variableName": "conversation/provider/model_id",
-              "actionName": "CHANGE_CONVERSATION_MODEL",
+              "label": "Seleccionar Modelo (razonamiento)",
+              "variableName": "reasoning/provider/model_id",
+              "actionName": "CHANGE_REASONING_MODEL",
               "required": true,
               "childs": "LLM_MODELS"
             }
@@ -44,26 +44,26 @@
         },
         {
           "type": "inputstring",
-          "label": "Turnos para compactar conversación",
-          "actionName": "conversation/compaction_turns"
+          "label": "Turnos para compactar historial",
+          "actionName": "reasoning/compaction_turns"
         },
         {
           "type": "inputstring",
-          "label": "Tokens para compactar conversación",
-          "actionName": "conversation/compaction_tokens"
+          "label": "Tokens para compactar historial",
+          "actionName": "reasoning/compaction_tokens"
         },
         {
           "type": "checkedlist",
           "label": "Capacidades del Agente",
-          "variableName": "conversation/active_tools",
-          "actionName": "REFRESH_CONVERSATION_TOOLS",
+          "variableName": "reasoning/active_tools",
+          "actionName": "REFRESH_REASONING_TOOLS",
           "childs": "AVAILABLE_TOOLS"
         }    
       ]
     },
     {
       "type": "menu",
-      "label": "Compactacion de memoria",
+      "label": "Servicio de memoria",
       "childs": [
         {
           "type": "combo",

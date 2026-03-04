@@ -1,5 +1,5 @@
 {
-  "conversation": {
+  "reasoning": {
     "provider": {
       "url": "https://openrouter.ai/api/v1",
       "model_id": "z-ai/glm-4.5-air:free",

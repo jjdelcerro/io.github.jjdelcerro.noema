@@ -5,9 +5,6 @@ import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
-import static io.github.jjdelcerro.noema.lib.services.conversarion.ConversationService.CONVERSATION_MODEL_ID;
-import static io.github.jjdelcerro.noema.lib.services.conversarion.ConversationService.CONVERSATION_PROVIDER_API_KEY;
-import static io.github.jjdelcerro.noema.lib.services.conversarion.ConversationService.CONVERSATION_PROVIDER_URL;
 import static io.github.jjdelcerro.noema.lib.services.memory.MemoryService.MEMORY_MODEL_ID;
 import static io.github.jjdelcerro.noema.lib.services.memory.MemoryService.MEMORY_PROVIDER_API_KEY;
 import static io.github.jjdelcerro.noema.lib.services.memory.MemoryService.MEMORY_PROVIDER_URL;
@@ -30,6 +27,9 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import org.apache.commons.lang3.StringUtils;
+import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_PROVIDER_URL;
+import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_PROVIDER_API_KEY;
+import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_MODEL_ID;
 
 /**
  * Panel de bienvenida para la selección de workspace y validación de
@@ -142,9 +142,9 @@ Aseg\u00farese de ejecutar el agente en un entorno controlado o con backups actu
     StringBuilder sb = new StringBuilder("<html><body>");
 
     sb.append("<b>Model de conversación:</b> ").append(getStatusIcon(convOk)).append("<br>");
-    sb.append("&nbsp;&nbsp;- Proveedor: ").append(getProperty(CONVERSATION_PROVIDER_URL)).append("<br>");
-    sb.append("&nbsp;&nbsp;- Modelo: ").append(getProperty(CONVERSATION_MODEL_ID)).append("<br>");
-    sb.append("&nbsp;&nbsp;- API Key: ").append(getMaskedApiKey(CONVERSATION_PROVIDER_API_KEY)).append("<br><br>");
+    sb.append("&nbsp;&nbsp;- Proveedor: ").append(getProperty(REASONING_PROVIDER_URL)).append("<br>");
+    sb.append("&nbsp;&nbsp;- Modelo: ").append(getProperty(REASONING_MODEL_ID)).append("<br>");
+    sb.append("&nbsp;&nbsp;- API Key: ").append(getMaskedApiKey(REASONING_PROVIDER_API_KEY)).append("<br><br>");
 
     sb.append("<b>Modelo de compactación de memoria:</b> ").append(getStatusIcon(memOk)).append("<br>");
     sb.append("&nbsp;&nbsp;- Proveedor: ").append(getProperty(MEMORY_PROVIDER_URL)).append("<br>");

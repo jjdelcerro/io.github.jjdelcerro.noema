@@ -8,7 +8,7 @@ import com.pengrad.telegrambot.response.SendResponse;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationServiceImpl;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceImpl;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 
@@ -26,7 +26,7 @@ import io.github.jjdelcerro.noema.lib.AgentTool;
  * <li><b>Como Sensor (Listener):</b> Mantiene una escucha activa (long-polling)
  * de mensajes entrantes. Cuando se recibe un mensaje, actúa como un sensor que
  * inyecta el contenido directamente en el flujo de conciencia del agente
- * mediante {@link ConversationServiceImpl#putEvent}.</li>
+ * mediante {@link ReasoningServiceImpl#putEvent}.</li>
  * </ul>
  * <p>
  * <b>Seguridad:</b>

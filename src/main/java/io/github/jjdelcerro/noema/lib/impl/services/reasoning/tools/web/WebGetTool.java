@@ -1,11 +1,9 @@
-package io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.web;
+package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web;
 
 import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentAccessControl;
-import org.apache.tika.Tika;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -13,18 +11,17 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Map;
+import java.util.regex.Pattern;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 
-public class WebGetTikaTool implements AgentTool { // FIXME: alguna forma de paginar documentos largos.
+public class WebGetTool implements AgentTool {
 
   private final HttpClient httpClient;
-  private final Tika tika = new Tika();
   private final Gson gson = new Gson();
-  private static final int MAX_CHARS = 10000; // Tu política de recorte
-
+  private static final int MAX_CHARS = 10000; // Límite razonable para no saturar el contexto
   private final Agent agent;
 
-  public WebGetTikaTool(Agent agent) {
+  public WebGetTool(Agent agent) {
     this.agent = agent;
     this.httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(15))
@@ -36,8 +33,8 @@ public class WebGetTikaTool implements AgentTool { // FIXME: alguna forma de pag
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
             .name("web_get_content")
-            .description("Extrae el texto legible de una URL (HTML, PDF, etc). Úsala para leer el contenido detallado de un sitio web.")
-            .addParameter("url", JsonSchemaProperty.STRING, JsonSchemaProperty.description("La URL completa a procesar."))
+            .description("Extrae el texto de una URL específica. Úsala cuando tengas un enlace directo (por ejemplo, de un resultado de búsqueda) y necesites leer su contenido detallado.")
+            .addParameter("url", JsonSchemaProperty.STRING, JsonSchemaProperty.description("La URL completa a leer."))
             .build();
   }
 
@@ -48,45 +45,32 @@ public class WebGetTikaTool implements AgentTool { // FIXME: alguna forma de pag
       URI url = URI.create(args.get("url"));
 
       if( !this.agent.getAccessControl().isAccessible(url) ) {
-        return "{\"status\": \"error\", \"code\": 403}";
+        return "{\"status\": \"error\", \"code\": 403, \"message\": \"Acceso denegado.\"}";
       }
       HttpRequest request = HttpRequest.newBuilder()
               .uri(url)
-              .header("User-Agent", "Noema-Bot/1.0")
+              .header("User-Agent", "Noema-Bot/1.0 (Pragmatic Architecture Experiment)")
               .GET()
               .build();
 
-      // 1. Obtenemos la respuesta como String primero para analizar el tipo
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() != 200) {
         return "{\"status\": \"error\", \"code\": " + response.statusCode() + "}";
       }
 
-      // 2. Analizar el Content-Type
-      String contentType = response.headers().firstValue("Content-Type").orElse("text/plain").toLowerCase();
-      String finalContent;
+      String cleanText = cleanHtml(response.body());
 
-      if (contentType.contains("json") || contentType.contains("xml") || contentType.contains("text/plain")) {
-        // Es un formato estructurado que el LLM entiende nativamente. No tocamos nada.
-        finalContent = response.body();
-      } else {
-        // Es HTML, PDF, DOCX... aquí sí entra Tika para limpiar la "mugre"
-        finalContent = tika.parseToString(new java.io.ByteArrayInputStream(response.body().getBytes()));
-        finalContent = finalContent.replaceAll("\\s+", " ").trim();
-      }
-
-      // 3. Aplicar política de recorte
+      // Aplicar política de recorte
       boolean truncated = false;
-      if (finalContent.length() > MAX_CHARS) {
-        finalContent = finalContent.substring(0, MAX_CHARS);
+      if (cleanText.length() > MAX_CHARS) {
+        cleanText = cleanText.substring(0, MAX_CHARS);
         truncated = true;
       }
 
       return gson.toJson(Map.of(
               "status", "success",
-              "mime_type", contentType,
-              "content", finalContent,
+              "content", cleanText,
               "truncated", truncated
       ));
 
@@ -95,4 +79,19 @@ public class WebGetTikaTool implements AgentTool { // FIXME: alguna forma de pag
     }
   }
 
+  /**
+   * Limpieza ruda pero efectiva para un prototipo sin dependencias externas. En
+   * un sistema de producción, aquí usaríamos Jsoup.
+   */
+  private String cleanHtml(String html) {
+    String text = html;
+    // Eliminar scripts y estilos
+    text = Pattern.compile("<script.*?>.*?</script>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE).matcher(text).replaceAll("");
+    text = Pattern.compile("<style.*?>.*?</style>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE).matcher(text).replaceAll("");
+    // Eliminar todas las etiquetas HTML
+    text = text.replaceAll("<[^>]*>", " ");
+    // Normalizar espacios y saltos de línea
+    text = text.replaceAll("\\s+", " ").trim();
+    return text;
+  }
 }
