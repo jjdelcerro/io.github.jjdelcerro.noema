@@ -21,8 +21,12 @@ import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
-import static io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationServiceImpl.CONVERSATION_MODEL_ID;
-import static io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryServiceImpl.MEMORY_MODEL_ID;
+import static io.github.jjdelcerro.noema.lib.services.conversarion.ConversationService.CONVERSATION_MODEL_ID;
+import static io.github.jjdelcerro.noema.lib.services.memory.MemoryService.MEMORY_MODEL_ID;
+import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
+import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
+import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
+import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -33,6 +37,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -51,6 +56,10 @@ public class AgentImpl implements Agent {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AgentImpl.class);
 
+  public static final String USER_SENSOR_NAME = "USER";
+  private static final String USER_SENSOR_LABEL = "USER";
+  private static final String USER_SENSOR_DESCRIPTION = "USER";
+  
   private AgentConsole console;
   private final AgentSettings settings;
   private final AgentActions actions;
@@ -64,8 +73,11 @@ public class AgentImpl implements Agent {
   private final Map<String, AgentService> services;
 
   private JsonObject openRouterModels = null;
+  private Thread shutdownHook;
+  private boolean running;
 
   public AgentImpl(ConnectionSupplier memoryDatabase, ConnectionSupplier servicesDatabase, AgentSettings settings, AgentConsole console) {
+    this.running = false;
     this.actions = AgentLocator.getAgentManager().createActions();
     this.settings = settings;
     this.console = console;
@@ -90,12 +102,21 @@ public class AgentImpl implements Agent {
   }
 
   @Override
-  public void start() {
+  public synchronized void start() {
     AgentManager manager = AgentLocator.getAgentManager();
     for (AgentServiceFactory serviceFactory : manager.getServiceFactories()) {
       this.services.put(serviceFactory.getName(), serviceFactory.createService(this));
     }
-
+    SensorsService sensors = (SensorsService) this.getService(SensorsService.NAME);
+    SensorInformation sensor = sensors.createSensorInformation(
+            USER_SENSOR_NAME, 
+            USER_SENSOR_LABEL, 
+            SensorNature.DISCRETE, 
+            USER_SENSOR_DESCRIPTION, 
+            false
+    );
+    sensors.registerSensor(sensor);
+    
     this.startAllServices();
 
     ConversationServiceImpl conversation = (ConversationServiceImpl) this.getService(ConversationServiceImpl.NAME);
@@ -116,6 +137,34 @@ public class AgentImpl implements Agent {
     console.printSystemLog("MemoryManager " + settings.getPropertyAsString(MEMORY_MODEL_ID));
     console.printSystemLog("ConversationManager " + settings.getPropertyAsString(CONVERSATION_MODEL_ID));
 
+    this.running = true;
+    this.shutdownHook = new Thread(() -> {
+      // Llamamos al stop del servicio cuando la JVM se cierre
+      this.stop();
+    });
+    Runtime.getRuntime().addShutdownHook(this.shutdownHook);
+  }
+
+  @Override
+  public synchronized void stop() {
+    if (!this.running) {
+      return; 
+    }
+    this.running = false;
+    try {
+      if (shutdownHook != null) {
+        Runtime.getRuntime().removeShutdownHook(shutdownHook);
+        shutdownHook = null;
+      }
+    } catch (IllegalStateException e) {
+      // Si entramos aquí es porque la JVM ya está cerrándose. 
+      // Es normal, simplemente ignoramos la excepción.
+    }
+    for (AgentService service : this.services.values()) {
+      if (service.isRunning()) {
+        service.stop();
+      }
+    }
   }
 
   @Override
@@ -144,15 +193,9 @@ public class AgentImpl implements Agent {
   }
 
   @Override
-  public String processTurn(String input) {
-    ConversationServiceImpl conversation = (ConversationServiceImpl) this.getService(ConversationServiceImpl.NAME);
-    return conversation.processTurn(input);
-  }
-
-  @Override
   public void putEvent(String channel, String status, String priority, String eventText) {
-    ConversationServiceImpl conversation = (ConversationServiceImpl) this.getService(ConversationServiceImpl.NAME);
-    conversation.putEvent(channel, status, priority, eventText);
+    SensorsService sensors = (SensorsService) this.getService(SensorsService.NAME);
+    sensors.putEvent(channel, eventText, priority, status, LocalDateTime.now());
   }
 
   @Override
@@ -320,7 +363,7 @@ public class AgentImpl implements Agent {
     }
   }
 
-  public void startAllServices() {
+  private void startAllServices() {
     for (AgentService service : this.services.values()) {
       if (!service.isRunning()) {
         service.start();
@@ -400,6 +443,20 @@ public class AgentImpl implements Agent {
   public int getConversationContextSize() {
     ConversationServiceImpl conversation = (ConversationServiceImpl) this.getService(ConversationServiceImpl.NAME);
     return conversation.getModel().getContextSize();
+  }
+
+  @Override
+  public void putUsersMessage(String text, SensorsService.SensorEventCallback callback) {
+    SensorsService sensors = (SensorsService) this.getService(SensorsService.NAME);
+    sensors.putEvent(USER_SENSOR_NAME, text, PRIORITY_NORMAL, null, LocalDateTime.now(), callback);
+  }
+
+  @Override
+  public SensorInformation registerSensor(String channel, String label, SensorNature nature, String description) {
+    SensorsService sensors = (SensorsService) this.getService(SensorsService.NAME);
+    SensorInformation sensor = sensors.createSensorInformation(channel, label, nature, description);
+    sensors.registerSensor(sensor);
+    return sensor;
   }
 
 }

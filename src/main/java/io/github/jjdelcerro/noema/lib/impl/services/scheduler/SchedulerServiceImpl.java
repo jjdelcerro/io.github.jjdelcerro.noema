@@ -8,6 +8,8 @@ import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
 import io.github.jjdelcerro.noema.lib.impl.SQLProvider;
 import io.github.jjdelcerro.noema.lib.impl.persistence.Counter;
 import io.github.jjdelcerro.noema.lib.impl.services.scheduler.tools.ScheduleAlarmTool;
+import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
+import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -34,6 +36,10 @@ import org.slf4j.LoggerFactory;
 public class SchedulerServiceImpl implements SchedulerService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SchedulerServiceImpl.class);
+
+  public static final String SENSOR_NAME = "SCHEDULER";
+  private static final String SENSOR_LABEL = "Scheduler";
+  private static final String SENSOR_DESCRIPTION = "Scheduler"; // FIXME: poner una descripcion decente para el LLM.
 
   private final Agent agent;
   private final Gson gson = new Gson();
@@ -62,6 +68,12 @@ public class SchedulerServiceImpl implements SchedulerService {
   public void start() {
     this.scheduler = Executors.newSingleThreadScheduledExecutor(
             Thread.ofVirtual().factory()
+    );
+    this.agent.registerSensor(
+            SENSOR_NAME, 
+            SENSOR_LABEL, 
+            SensorNature.DISCRETE, 
+            SENSOR_DESCRIPTION
     );
     try (
             Connection conn = this.agent.getServicesDatabase().get()) {
@@ -122,7 +134,7 @@ public class SchedulerServiceImpl implements SchedulerService {
             "alarm_time", when.toString(),
             "reason", reason
     ));
-    this.agent.putEvent("scheduler", "ALARM TRIGGERED", "normal", notify);
+    this.agent.putEvent(SENSOR_NAME, "ALARM TRIGGERED", PRIORITY_NORMAL, notify);
   }
 
   private void schedule_alarm(String id, String reason, LocalDateTime alarmTime) {
@@ -205,6 +217,11 @@ public class SchedulerServiceImpl implements SchedulerService {
       new ScheduleAlarmTool(this.agent)
     };
     return Arrays.asList(tools);
+  }
+
+  @Override
+  public void stop() {
+    this.running = false;
   }
 
 }

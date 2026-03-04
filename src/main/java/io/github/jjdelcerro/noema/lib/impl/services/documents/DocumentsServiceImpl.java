@@ -11,11 +11,20 @@ import io.github.jjdelcerro.noema.lib.impl.SQLProvider;
 import io.github.jjdelcerro.noema.lib.impl.persistence.Counter;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingFilter;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsService;
+import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import java.nio.file.Path;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +37,10 @@ import org.slf4j.LoggerFactory;
 public class DocumentsServiceImpl implements AgentService, DocumentsService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DocumentsServiceImpl.class);
+
+  public static final String SENSOR_NAME = "DOCUMENTS";
+  private static final String SENSOR_LABEL = "Documents";
+  private static final String SENSOR_DESCRIPTION = "Documents"; // FIXME: poner una descripcion decente para el LLM.
 
   // Clase de transporte para los resultados
   public static class DocumentResultImpl implements DocumentResult {
@@ -101,6 +114,12 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
     if (!this.canStart()) {
       return;
     }
+    this.agent.registerSensor(
+            SENSOR_NAME, 
+            SENSOR_LABEL, 
+            SensorNature.DISCRETE, 
+            SENSOR_DESCRIPTION
+    );
     String[] resources = new String[]{
       "prompts/documents/extract-structure.md",
       "prompts/documents/sumary-and-categorize.md"
@@ -363,6 +382,11 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
   public void indexDocument(Path docPath) {
     DocumentStructureExtractor mapper = new DocumentStructureExtractor(agent);
     mapper.processDocument(docPath);
+  }
+
+  @Override
+  public void stop() {
+    this.running = false;
   }
 
 }

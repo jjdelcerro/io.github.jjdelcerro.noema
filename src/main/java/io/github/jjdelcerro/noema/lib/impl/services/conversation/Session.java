@@ -19,10 +19,15 @@ import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
+import static io.github.jjdelcerro.noema.lib.impl.services.conversation.ConversationServiceImpl.SYSTEMCLOCK_SENSOR_NAME;
+import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.persistence.CheckPoint;
 import io.github.jjdelcerro.noema.lib.persistence.Turn;
 import static io.github.jjdelcerro.noema.lib.services.conversarion.ConversationService.MEMORY_COMPACTION_TURNS;
+import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
+import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
+import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -83,6 +88,7 @@ public class Session {
 
   private final Path sessionPath;
   private final Path tempPath;
+  private final SensorsServiceImpl sensors;
 
   // ESTADO INTERNO
   private final List<ChatMessage> messages = new ArrayList<>();
@@ -107,7 +113,8 @@ public class Session {
    * @param dataFolder
    * @param settings
    */
-  public Session(Path dataFolder, AgentSettings settings) {
+  public Session(Path dataFolder, AgentSettings settings, SensorsServiceImpl sensors) {
+    this.sensors = sensors;
     this.settings = settings;
     this.sessionPath = dataFolder.resolve("active_session.json");
     this.tempPath = dataFolder.resolve("active_session.json.tmp");
@@ -170,8 +177,15 @@ public class Session {
           PrettyTime pt = new PrettyTime(Locale.of("es"));
           String timeAgo = pt.format(this.lastInteractionTime);
           String content = "Ha pasado " + timeAgo + " desde la última interacción con el usuario.";
-          Event timerEvent = new Event("reloj", "A pasado el tiempo", "normal", content);
-          this.messages.add(timerEvent.getAiMessage());
+          ConsumableSensorEvent timerEvent = this.sensors.createSensorEvent(
+                  SYSTEMCLOCK_SENSOR_NAME,
+                  content, 
+                  PRIORITY_NORMAL,
+                  "A pasado el tiempo",
+                  now, 
+                  null
+          );
+          this.messages.add(timerEvent.getChatMessage());
           this.messages.add(timerEvent.getResponseMessage());
         }
       }

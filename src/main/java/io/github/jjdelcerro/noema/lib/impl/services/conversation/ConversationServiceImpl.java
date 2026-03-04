@@ -27,11 +27,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.lang3.StringUtils;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
+import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.AgentTool;
@@ -54,6 +52,11 @@ import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.web.Weath
 import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.web.WebGetTikaTool;
 import io.github.jjdelcerro.noema.lib.impl.services.conversation.tools.web.WebSearchTool;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryServiceImpl;
+import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
+import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
+import io.github.jjdelcerro.noema.lib.services.sensors.SensorEventUser;
+import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
+import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsCheckedList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -68,6 +71,10 @@ public class ConversationServiceImpl implements ConversationService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ConversationServiceImpl.class);
 
+  public static final String SYSTEMCLOCK_SENSOR_NAME = "SYSTEMCLOCK";
+  private static final String SYSTEMCLOCK_SENSOR_LABEL = "Reloj del Sistema";
+  private static final String SYSTEMCLOCK_SENSOR_DESCRIPTION = "Sensor interno de paso del tiempo"; 
+
   private static final int OVERHEAD_IN_ESTIMATE_TOOLS_TOKEN_COUNT = 15;
 
   private static class AvailableAgentTool {
@@ -81,9 +88,9 @@ public class ConversationServiceImpl implements ConversationService {
     }
   }
 
+  private final AgentServiceFactory factory;
   private final Agent agent;
   private final SourceOfTruth sourceOfTruth;
-  private AgentConsole console;
   private final Session session;
   private Agent.ChatModel model;
   private boolean running;
@@ -93,16 +100,16 @@ public class ConversationServiceImpl implements ConversationService {
   // Registro de herramientas
   private final Map<String, AvailableAgentTool> availableTools = new LinkedHashMap<>();
 
-  private final Queue<Event> pendingEvents = new ConcurrentLinkedQueue<>();
-  private final AtomicBoolean isBusy = new AtomicBoolean(false);
-  private final AgentServiceFactory factory;
 
   public ConversationServiceImpl(AgentServiceFactory factory, Agent agent) {
     this.factory = factory;
     this.agent = agent;
     this.sourceOfTruth = agent.getSourceOfTruth();
-    this.console = agent.getConsole();
-    this.session = new Session(agent.getPaths().getDataFolder(), agent.getSettings());
+    this.session = new Session(
+            agent.getPaths().getDataFolder(), 
+            agent.getSettings(), 
+            (SensorsServiceImpl) agent.getService(SensorsService.NAME)
+    );
     this.running = false;
     try {
       this.activeCheckPoint = sourceOfTruth.getLatestCheckPoint();
@@ -164,136 +171,14 @@ public class ConversationServiceImpl implements ConversationService {
       }
     });
     this.model = this.agent.createChatModel("CONVERSATION");
+    this.agent.registerSensor(SYSTEMCLOCK_SENSOR_NAME, SYSTEMCLOCK_SENSOR_LABEL, SensorNature.DISCRETE, SYSTEMCLOCK_SENSOR_DESCRIPTION);
+    Thread.ofVirtual().name(AgentManager.AGENT_NAME + "-Event-Dispatcher").start(this::eventDispatcher);
     this.running = true;
   }
 
   @Override
   public void addTool(AgentTool tool) {
     this.availableTools.put(tool.getName(), new AvailableAgentTool(tool));
-  }
-
-  public synchronized void putEvent(String channel, String status, String priority, String eventText) {
-    pendingEvents.offer(new Event(channel, status, priority, eventText));
-
-    // Si el agente no está trabajando en un turno, lanzamos el procesador de cola
-    if (!isBusy.get()) { //FIXME: falta gestionar correctamente isBusy
-      processPendingEvents();
-    }
-  }
-
-  private synchronized void processPendingEvents() {
-    while (!pendingEvents.isEmpty()) {
-      Event event = pendingEvents.poll();
-      this.console.printSystemLog("Evento: " + event.toString());
-
-      this.session.add(event.getAiMessage());
-      this.session.add(event.getResponseMessage());
-      String contentType = "tool_execution";
-      Turn toolTurn = this.sourceOfTruth.createTurn(
-              Timestamp.from(Instant.now()),
-              contentType,
-              null,
-              null,
-              null,
-              event.getAiMessage().toString(),
-              event.getResponseMessage().toString(),
-              null
-      );
-      this.sourceOfTruth.add(toolTurn);
-      this.session.consolideTurn(toolTurn);
-
-      String resp = this.executeReasoningLoop(null);
-      if (StringUtils.isNotBlank(resp)) {
-        this.agent.getConsole().printModelResponse(resp);
-      }
-    }
-  }
-
-  public synchronized String processTurn(String textUser) {
-    UserMessage inputMessage = UserMessage.from(textUser);
-    this.session.add(inputMessage);
-    String value = this.executeReasoningLoop(textUser);
-    processPendingEvents();
-    return value;
-  }
-
-  private synchronized String executeReasoningLoop(String textUser) {
-    StringBuilder llmResponse = new StringBuilder();
-    try {
-      boolean turnFinished = false;
-
-      while (!turnFinished) {
-        // Recuperar contexto actualizado (System + Historial Sesion)
-        List<ChatMessage> messages = this.session.getContextMessages(this.activeCheckPoint, getBaseSystemPrompt());
-
-        // Llamada al Modelo
-        Response<AiMessage> response = model.generate(messages, this.getToolSpecifications());
-        AiMessage aiMessage = response.content();
-
-        // Anadir respuesta al historial
-        this.session.add(aiMessage);
-
-        if (aiMessage.hasToolExecutionRequests()) {
-          // --- MODO HERRAMIENTA ---
-          for (ToolExecutionRequest request : aiMessage.toolExecutionRequests()) {
-            // FIXME: Estudiar como podriamos interrumpir aqui flujo de ejecucion 
-            // de llamadas a herramientas para introducir un evento.
-            
-            String result = executeToolLogic(request);
-            String contentType = "tool_execution";
-            if (isMemoryTool(request.name())) {
-              contentType = "lookup_turn";
-            }
-            Turn toolTurn = this.sourceOfTruth.createTurn(
-                    Timestamp.from(Instant.now()),
-                    contentType,
-                    null,
-                    null,
-                    null,
-                    request.toString(),
-                    result,
-                    null
-            );
-            this.sourceOfTruth.add(toolTurn);
-            this.session.add(ToolExecutionResultMessage.from(request, result));
-            this.session.consolideTurn(toolTurn);
-            
-          }
-
-        } else {
-          // --- MODO RESPUESTA FINAL ---
-          String aiText = aiMessage.text();
-          Turn responseTurn = this.sourceOfTruth.createTurn(
-                  Timestamp.from(Instant.now()),
-                  "chat",
-                  textUser, // Guardamos el user text original en el turno final para referencia historica
-                  null,
-                  aiText,
-                  null,
-                  null,
-                  null
-          );
-          llmResponse.append(aiText);
-
-          this.sourceOfTruth.add(responseTurn);
-          this.session.consolideTurn(responseTurn);
-
-          turnFinished = true;
-        }
-      }
-
-      if (this.session.needCompaction()) {
-        performCompaction();
-      }
-
-    } catch (SQLException e) {
-      this.console.printSystemError("Error critico de base de datos en processTurn: " + e.getMessage());
-      LOGGER.warn("Error de base de datos procesando turno.", e);
-    } catch (Exception e) {
-      this.console.printSystemError("Error inesperado en processTurn: " + e.getMessage());
-      LOGGER.warn("Error de inesperado procesando turno.", e);
-    }
-    return llmResponse.toString();
   }
 
   private String getBaseSystemPrompt() {
@@ -309,7 +194,11 @@ public class ConversationServiceImpl implements ConversationService {
     return systemPrompt;
   }
 
-  private String executeToolLogic(ToolExecutionRequest request) {
+  private AgentConsole console() {
+    return this.agent.getConsole();
+  }
+  
+  private String executeTool(ToolExecutionRequest request) {
     String toolName = request.name();
     String args = request.arguments();
 
@@ -318,20 +207,20 @@ public class ConversationServiceImpl implements ConversationService {
     if (availableTool != null && availableTool.tool != null) {
       AgentTool tool = availableTool.tool;
       if (tool.getMode() != AgentTool.MODE_READ) {
-        boolean authorized = this.console.confirm(
+        boolean authorized = this.console().confirm(
                 String.format("El agente quiere ejecutar la herramienta: %s\nArgumentos: %s\n¿Autorizar?", toolName, args)
         );
 
         if (!authorized) {
           String msg = String.format("Ejecucion de herramienta '%s' denegada por el usuario.", toolName);
           LOGGER.info(msg);
-          this.console.printSystemLog(msg);
+          this.console().printSystemLog(msg);
           return msg;
         }
       }
       String msg = String.format("Ejecutando herramienta: %s\n    Argumentos: %s", toolName, args);
       LOGGER.info(msg);
-      this.console.printSystemLog(msg);
+      this.console().printSystemLog(msg);
       try {
         return tool.execute(args);
       } catch (Exception e) {
@@ -352,7 +241,7 @@ public class ConversationServiceImpl implements ConversationService {
   }
 
   private void performCompaction() throws SQLException {
-    this.console.printSystemLog("Iniciando proceso de compactación de memoria...");
+    this.console().printSystemLog("Iniciando proceso de compactación de memoria...");
 
     // 1. Obtener marcas de sesion
     Session.SessionMark mark1 = this.session.getOldestMark();
@@ -361,7 +250,7 @@ public class ConversationServiceImpl implements ConversationService {
     if (mark1 == null || mark2 == null) {
       String msg = "No hay suficientes datos consolidados para compactar.";
       LOGGER.warn(msg);
-      this.console.printSystemLog(msg);
+      this.console().printSystemLog(msg);
       return;
     }
 
@@ -371,7 +260,7 @@ public class ConversationServiceImpl implements ConversationService {
     if (compactTurns.isEmpty()) {
       String msg = String.format("No se han podido recuperar los turnos a compactar (turns[%s:%s]).", mark1.getTurnId(), mark2.getTurnId());
       LOGGER.warn(msg);
-      this.console.printSystemLog(msg);
+      this.console().printSystemLog(msg);
       return;
     }
 
@@ -388,11 +277,7 @@ public class ConversationServiceImpl implements ConversationService {
     // 6. Actualizar punteros del Agente
     this.activeCheckPoint = newCheckPoint;
 
-    this.console.printSystemLog("Memoria compactada con éxito. Nuevo CheckPoint ID: " + newCheckPoint.getId());
-  }
-
-  public void setConsole(AgentConsole console) {
-    this.console = console;
+    this.console().printSystemLog("Memoria compactada con éxito. Nuevo CheckPoint ID: " + newCheckPoint.getId());
   }
 
   @Override
@@ -496,13 +381,13 @@ public class ConversationServiceImpl implements ConversationService {
 
     for (ChatMessage message : history) {
       if (message instanceof UserMessage userMsg) {
-        console.printUserMessage(userMsg.singleText());
+        console().printUserMessage(userMsg.singleText());
 
       } else if (message instanceof AiMessage aiMsg) {
         // 1. Si el modelo pidió ejecutar herramientas, informamos de cada una
         if (aiMsg.hasToolExecutionRequests()) {
           for (ToolExecutionRequest req : aiMsg.toolExecutionRequests()) {
-            console.printSystemLog(String.format("Ejecutando herramienta: %s\n    Argumentos: %s",
+            console().printSystemLog(String.format("Ejecutando herramienta: %s\n    Argumentos: %s",
                     req.name(), req.arguments()));
           }
         }
@@ -510,7 +395,7 @@ public class ConversationServiceImpl implements ConversationService {
         // ya que no se presentan en la consola.
         // 2. Si el modelo respondió con texto, lo mostramos
         if (StringUtils.isNotBlank(aiMsg.text())) {
-          console.printModelResponse(aiMsg.text());
+          console().printModelResponse(aiMsg.text());
         }
       }
     }
@@ -557,27 +442,134 @@ public class ConversationServiceImpl implements ConversationService {
 
   /**
    * Sincroniza el estado de activación de las herramientas con lo definido por
-   * el usuario en la configuración.
-   * Si una herramienta no figura en la configuracion, conserva su estado actual en memoria.
+   * el usuario en la configuración. Si una herramienta no figura en la
+   * configuracion, conserva su estado actual en memoria.
    */
   private void refresh_available_tools() {
     AgentSettingsCheckedList persistedList = agent.getSettings().getPropertyAsCheckedList(ACTIVE_TOOLS);
     if (persistedList == null) {
-        return;
+      return;
     }
     for (AgentSettingsCheckedList.CheckedItem item : persistedList.getItems()) {
-        String technicalName = item.getValue();
-        // Buscamos si la herramienta referenciada en el JSON está cargada en el servicio
-        AvailableAgentTool available = availableTools.get(technicalName);
-        if (available != null) {
-            // Sincronizamos el estado: lo que diga el usuario manda sobre el valor en memoria
-            available.active = item.isChecked();
-            LOGGER.debug("Herramienta '{}' sincronizada desde configuración: {}", 
-                         technicalName, available.active ? "ACTIVA" : "INACTIVA");
-        }
+      String technicalName = item.getValue();
+      // Buscamos si la herramienta referenciada en el JSON está cargada en el servicio
+      AvailableAgentTool available = availableTools.get(technicalName);
+      if (available != null) {
+        // Sincronizamos el estado: lo que diga el usuario manda sobre el valor en memoria
+        available.active = item.isChecked();
+        LOGGER.debug("Herramienta '{}' sincronizada desde configuración: {}",
+                technicalName, available.active ? "ACTIVA" : "INACTIVA");
+      }
     }
     // Nota: Las herramientas que están en 'availableTools' pero NO en 'persistedList' 
     // mantienen el valor 'active' que recibieron al ser añadidas (isAvailableByDefault).
+  }
+
+  @Override
+  public void stop() {
+    this.running = false;
+  }
+
+  /**
+   * Bucle perpetuo de consciencia. Consume señales del SNA y las procesa
+   * íntegramente hasta generar una respuesta o acción.
+   */
+  @SuppressWarnings("UseSpecificCatch")
+  private void eventDispatcher() {
+    SensorsServiceImpl sensors = (SensorsServiceImpl) this.agent.getService(SensorsService.NAME);
+
+    while (this.isRunning()) {
+      try {
+        ConsumableSensorEvent event = sensors.getEvent();
+        if (event == null) {
+          continue;
+        }
+
+        String textUser = null;
+        StringBuilder finalLlmResponse = new StringBuilder();
+
+        if (event instanceof SensorEventUser) {
+          // Caso Usuario: Guardamos el prompt para el turno final 'chat'
+          textUser = event.getContents();
+          this.session.add(event.getChatMessage());
+        } else {
+          // Caso Sensor: Inyectamos el engaño al protocolo y persistimos el turno de observación
+          this.session.add(event.getChatMessage());
+          this.session.add(event.getResponseMessage());
+
+          Turn obsTurn = this.sourceOfTruth.createTurn(
+                  Timestamp.from(Instant.now()),
+                  "tool_execution",
+                  null, null, null,
+                  event.getChatMessage().toString(),
+                  event.getResponseMessage().toString(),
+                  null
+          );
+          this.sourceOfTruth.add(obsTurn);
+          this.session.consolideTurn(obsTurn);
+        }
+
+        boolean turnFinished = false;
+        while (!turnFinished && this.isRunning()) {
+          List<ChatMessage> context = this.session.getContextMessages(this.activeCheckPoint, getBaseSystemPrompt());
+
+          Response<AiMessage> response = model.generate(context, this.getToolSpecifications());
+          AiMessage aiMessage = response.content();
+          this.session.add(aiMessage);
+
+          if (aiMessage.hasToolExecutionRequests()) {
+            for (ToolExecutionRequest request : aiMessage.toolExecutionRequests()) {
+              String result = executeTool(request);
+              String contentType = "tool_execution";
+              if (isMemoryTool(request.name())) {
+                contentType = "lookup_turn";
+              }
+              Turn toolTurn = this.sourceOfTruth.createTurn(
+                      Timestamp.from(Instant.now()),
+                      contentType,
+                      null,
+                      null,
+                      null,
+                      request.toString(),
+                      result,
+                      null
+              );
+              this.sourceOfTruth.add(toolTurn);
+              this.session.add(ToolExecutionResultMessage.from(request, result));
+              this.session.consolideTurn(toolTurn);
+            }
+          } else {
+            String aiText = aiMessage.text();
+            finalLlmResponse.append(aiText);
+            Turn responseTurn = this.sourceOfTruth.createTurn(
+                    Timestamp.from(Instant.now()),
+                    "chat",
+                    textUser, // Original (si fue UserEvent) o null (si fue Sensor)
+                    null,
+                    aiText, // Respuesta final del modelo
+                    null,
+                    null,
+                    null
+            );
+            this.sourceOfTruth.add(responseTurn);
+            this.session.consolideTurn(responseTurn);
+            turnFinished = true;
+          }
+        }
+
+        if (this.session.needCompaction()) {
+          performCompaction();
+        }
+
+        if (event.getCallback() != null) {
+          event.getCallback().onComplete(finalLlmResponse.toString());
+        }
+
+      } catch (Exception e) {
+        LOGGER.error("Error crítico en el bucle de consciencia", e);
+        this.console().printSystemError("Dispatcher Critical Error: " + e.getMessage());
+      }
+    }
   }
 
 }

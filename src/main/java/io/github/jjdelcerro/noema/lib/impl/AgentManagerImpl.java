@@ -15,9 +15,9 @@ import io.github.jjdelcerro.noema.lib.impl.services.email.EmailServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.scheduler.SchedulerServiceFactory;
+import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.telegram.TelegramServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.settings.AgentSettingsImpl;
-import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,6 +43,7 @@ public class AgentManagerImpl implements AgentManager {
     this.actions = new ArrayList<>();
     
     this.registerService(new EmbeddingsServiceFactory());
+    this.registerService(new SensorsServiceFactory());
     this.registerService(new MemoryServiceFactory());
     this.registerService(new ConversationServiceFactory());
     this.registerService(new SchedulerServiceFactory());

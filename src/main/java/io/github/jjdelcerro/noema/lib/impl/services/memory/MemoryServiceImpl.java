@@ -219,4 +219,9 @@ public class MemoryServiceImpl implements MemoryService {
     return this.running;
   }
 
+  @Override
+  public void stop() {
+    this.running = false;
+  }
+
 }

@@ -1,9 +1,11 @@
 package io.github.jjdelcerro.noema.main;
 
 import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
+import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
@@ -24,6 +26,7 @@ public class MainConsole {
 
   public static void main(String[] args) {
     Agent agent = null;
+    AgentConsole console;
     try {
       // Inicialización de JLine (Terminal y LineReader)
       Terminal terminal = TerminalBuilder.builder()
@@ -68,7 +71,8 @@ public class MainConsole {
       
       agent = BootUtils.init(settings);
       agent.start();
-      agent.getConsole().printSystemLog("Sistema listo. Escribe '/quit' para terminar.");
+      console = agent.getConsole();
+      console.printSystemLog("Sistema listo. Escribe '/quit' para terminar.");
 
       // Bucle de Chat (REPL con JLine)
       while (true) {
@@ -95,8 +99,16 @@ public class MainConsole {
         }
 
         // Ejecución del turno completo
-        String response = agent.processTurn(input);
-        agent.getConsole().printModelResponse(response);
+        agent.putUsersMessage(input, new SensorsService.SensorEventCallback() {
+          @Override
+          public void onComplete(String response) {
+            try {
+              console.printModelResponse(response);
+            } catch (Exception e) {
+              console.printSystemError("Error: " + e.getMessage());
+            }
+          }
+        });
       }
 
     } catch (Exception e) {
