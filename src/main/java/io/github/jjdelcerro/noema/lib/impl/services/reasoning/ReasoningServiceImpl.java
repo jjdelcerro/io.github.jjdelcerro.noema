@@ -164,10 +164,10 @@ public class ReasoningServiceImpl implements ReasoningService {
         }
       }
     });
-    for (AgentTool tool : this.getAvailableTools()) {
-      LOGGER.info(tool.getSpecification().toString());
-    }
-//    this.refresh_available_tools();
+//    for (AgentTool tool : this.getAvailableTools()) {
+//      LOGGER.info(tool.getSpecification().toString());
+//    }
+    this.refresh_available_tools();
     this.model = this.agent.createChatModel(ReasoningService.ID);
     Thread.ofVirtual().name(AgentManager.AGENT_NAME + "-Event-Dispatcher").start(this::eventDispatcher);
     this.running = true;
