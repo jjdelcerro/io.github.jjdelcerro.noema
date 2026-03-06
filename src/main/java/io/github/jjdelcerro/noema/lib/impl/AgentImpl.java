@@ -111,7 +111,7 @@ public class AgentImpl implements Agent {
     SensorInformation sensor = sensors.createSensorInformation(
             USER_SENSOR_NAME, 
             USER_SENSOR_LABEL, 
-            SensorNature.DISCRETE, 
+            SensorNature.USER, 
             USER_SENSOR_DESCRIPTION, 
             false
     );

@@ -18,11 +18,8 @@ import io.github.jjdelcerro.noema.lib.persistence.Turn;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
@@ -52,7 +49,6 @@ import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryServiceImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
 import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorEventUser;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsCheckedList;
 import java.util.Arrays;
@@ -62,6 +58,8 @@ import org.slf4j.LoggerFactory;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_REASONING_MODEL;
 import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_REASONING_PROVIDER;
+import io.github.jjdelcerro.noema.lib.impl.DateUtils;
+import java.time.LocalDateTime;
 
 /**
  * Orquestador principal del sistema. Gestiona el bucle de razonamiento, la
@@ -131,14 +129,14 @@ public class ReasoningServiceImpl implements ReasoningService {
     this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_REASONING_PROVIDER) {
       @Override
       public boolean perform(AgentSettings settings) {
-        model = agent.createChatModel("REASONING");
+        model = agent.createChatModel(ReasoningService.ID);
         return true;
       }
     });
     this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_REASONING_MODEL) {
       @Override
       public boolean perform(AgentSettings settings) {
-        model = agent.createChatModel("REASONING");
+        model = agent.createChatModel(ReasoningService.ID);
         return true;
       }
     });
@@ -166,7 +164,11 @@ public class ReasoningServiceImpl implements ReasoningService {
         }
       }
     });
-    this.model = this.agent.createChatModel("REASONING");
+    for (AgentTool tool : this.getAvailableTools()) {
+      LOGGER.info(tool.getSpecification().toString());
+    }
+//    this.refresh_available_tools();
+    this.model = this.agent.createChatModel(ReasoningService.ID);
     Thread.ofVirtual().name(AgentManager.AGENT_NAME + "-Event-Dispatcher").start(this::eventDispatcher);
     this.running = true;
   }
@@ -183,7 +185,7 @@ public class ReasoningServiceImpl implements ReasoningService {
       LOGGER.warn("No se ha podido cargar el prompt del sistema del ReasoningService");
       throw new RuntimeException("Can't load system prompt from data folder");
     }
-    systemPrompt = StringUtils.replace(systemPrompt, "{NOW}", now());
+    systemPrompt = StringUtils.replace(systemPrompt, "{NOW}", DateUtils.now());
     systemPrompt = StringUtils.replace(systemPrompt, "{LOOKUPTURN}", LookupTurnTool.NAME);
     systemPrompt = StringUtils.replace(systemPrompt, "{SEARCHFULLHISTORY}", SearchFullHistoryTool.NAME);
     return systemPrompt;
@@ -284,7 +286,7 @@ public class ReasoningServiceImpl implements ReasoningService {
   public Agent.ModelParameters getModelParameters(String name) {
     AgentSettings settings = this.agent.getSettings();
     switch (name) {
-      case "REASONING":
+      case ReasoningService.ID:
         return new ModelParametersImpl(
                 settings.getPropertyAsString(REASONING_PROVIDER_URL),
                 settings.getPropertyAsString(REASONING_PROVIDER_API_KEY),
@@ -303,7 +305,6 @@ public class ReasoningServiceImpl implements ReasoningService {
   @Override
   public List<AgentTool> getTools() {
     AgentTool[] tools0 = new AgentTool[]{
-      new PoolEventTool(this.agent),
       new FileFindTool(this.agent),
       new FileGrepTool(this.agent),
       new FileReadTool(this.agent),
@@ -337,11 +338,6 @@ public class ReasoningServiceImpl implements ReasoningService {
   @Override
   public boolean isRunning() {
     return this.running;
-  }
-
-  public static String now() {
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, HH:mm", new Locale("es", "ES"));
-    return LocalDateTime.now().format(formatter);
   }
 
   @Override
@@ -474,14 +470,15 @@ public class ReasoningServiceImpl implements ReasoningService {
     SensorsServiceImpl sensors = (SensorsServiceImpl) this.agent.getService(SensorsService.NAME);
 
     while (this.isRunning()) {
+      ConsumableSensorEvent event = null;
+      StringBuilder finalLlmResponse = new StringBuilder();
       try {
-        ConsumableSensorEvent event = sensors.getEvent();
+        event = sensors.getEvent();
         if (event == null) {
           continue;
         }
 
         String textUser = null;
-        StringBuilder finalLlmResponse = new StringBuilder();
 
         if (event instanceof SensorEventUser) {
           // Caso Usuario: Guardamos el prompt para el turno final 'chat'
@@ -493,7 +490,7 @@ public class ReasoningServiceImpl implements ReasoningService {
           this.session.add(event.getResponseMessage());
 
           Turn obsTurn = this.sourceOfTruth.createTurn(
-                  Timestamp.from(Instant.now()),
+                  LocalDateTime.now(),
                   "tool_execution",
                   null, null, null,
                   event.getChatMessage().toString(),
@@ -520,7 +517,7 @@ public class ReasoningServiceImpl implements ReasoningService {
                 contentType = "lookup_turn";
               }
               Turn toolTurn = this.sourceOfTruth.createTurn(
-                      Timestamp.from(Instant.now()),
+                      LocalDateTime.now(),
                       contentType,
                       null,
                       null,
@@ -537,7 +534,7 @@ public class ReasoningServiceImpl implements ReasoningService {
             String aiText = aiMessage.text();
             finalLlmResponse.append(aiText);
             Turn responseTurn = this.sourceOfTruth.createTurn(
-                    Timestamp.from(Instant.now()),
+                    LocalDateTime.now(),
                     "chat",
                     textUser, // Original (si fue UserEvent) o null (si fue Sensor)
                     null,
@@ -551,18 +548,22 @@ public class ReasoningServiceImpl implements ReasoningService {
             turnFinished = true;
           }
         }
-
         if (this.session.needCompaction()) {
           performCompaction();
-        }
-
-        if (event.getCallback() != null) {
-          event.getCallback().onComplete(finalLlmResponse.toString());
         }
 
       } catch (Exception e) {
         LOGGER.error("Error crítico en el bucle de consciencia", e);
         this.console().printSystemError("Dispatcher Critical Error: " + e.getMessage());
+      }
+      
+      try {
+        if (event!=null && event.getCallback() != null) {
+          event.getCallback().onComplete(finalLlmResponse.toString());
+        }
+      } catch(Exception e) {
+        LOGGER.error("Error ejecutando onComplete", e);
+        this.console().printSystemError("Dispatcher error onComplete: " + e.getMessage());
       }
     }
   }

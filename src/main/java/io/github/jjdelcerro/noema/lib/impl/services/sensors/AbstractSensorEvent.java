@@ -6,6 +6,7 @@ import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
+import io.github.jjdelcerro.noema.lib.impl.DateUtils;
 import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorEvent;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Base abstract class for {@link SensorEvent} implementations. Implementa
@@ -46,11 +48,6 @@ public abstract class AbstractSensorEvent implements ConsumableSensorEvent {
     this.endTimestamp = startTimestamp;
   }
 
-  public static String now() {
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, HH:mm", new Locale("es", "ES"));
-    return LocalDateTime.now().format(formatter);
-  }
-  
   public SensorInformation getSensor() {
     return this.sensor;
   }
@@ -103,12 +100,12 @@ public abstract class AbstractSensorEvent implements ConsumableSensorEvent {
   @Override
   public String toJson() {
     return GSON.toJson(Map.of(
-            "event_time", startTimestamp,
-            "current_time", now(),
+            "event_time", DateUtils.toString(startTimestamp),
+            "current_time", DateUtils.now(),
             "channel", this.sensor.getChannel(),
-            "status", status,
+            "status", StringUtils.defaultString(status),
             "priority", priority,
-            "contents", getContents() // Polimórfico: cada subclase aporta su texto digerido
+            "contents", getContents() 
     ));
   }
 

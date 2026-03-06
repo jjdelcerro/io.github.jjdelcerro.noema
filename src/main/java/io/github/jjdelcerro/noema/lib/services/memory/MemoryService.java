@@ -14,7 +14,9 @@ public interface MemoryService extends AgentService {
   String MEMORY_MODEL_ID = "memory/provider/model_id";
   String MEMORY_PROVIDER_API_KEY = "memory/provider/api_key";
   String MEMORY_PROVIDER_URL = "memory/provider/url";
+
   String NAME = "Memory";
+  String ID = "MEMORY";
 
   /**
    * Ejecuta el proceso de compactación.

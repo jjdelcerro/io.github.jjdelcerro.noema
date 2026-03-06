@@ -1,6 +1,7 @@
 package io.github.jjdelcerro.noema.lib.persistence;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 /**
  *
@@ -28,7 +29,7 @@ public interface Turn {
 
   String getTextUser();
 
-  Timestamp getTimestamp();
+  LocalDateTime getTimestamp();
 
   String getToolCall();
 

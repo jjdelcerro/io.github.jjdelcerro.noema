@@ -6,9 +6,15 @@ import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
+import io.github.jjdelcerro.noema.lib.impl.DateUtils;
 import io.github.jjdelcerro.noema.lib.impl.ModelParametersImpl;
 import io.github.jjdelcerro.noema.lib.impl.SQLProvider;
 import io.github.jjdelcerro.noema.lib.impl.persistence.Counter;
+import io.github.jjdelcerro.noema.lib.impl.services.documents.tools.DocumentSearchByCategoriesTool;
+import io.github.jjdelcerro.noema.lib.impl.services.documents.tools.DocumentSearchBySumariesTool;
+import io.github.jjdelcerro.noema.lib.impl.services.documents.tools.DocumentSearchTool;
+import io.github.jjdelcerro.noema.lib.impl.services.documents.tools.GetDocumentStructureTool;
+import io.github.jjdelcerro.noema.lib.impl.services.documents.tools.GetPartialDocumentTool;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingFilter;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsService;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
@@ -19,8 +25,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -115,9 +119,9 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
       return;
     }
     this.agent.registerSensor(
-            SENSOR_NAME, 
-            SENSOR_LABEL, 
-            SensorNature.DISCRETE, 
+            SENSOR_NAME,
+            SENSOR_LABEL,
+            SensorNature.DISCRETE,
             SENSOR_DESCRIPTION
     );
     String[] resources = new String[]{
@@ -192,7 +196,7 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
 
       try (PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setInt(1, structure.getId());
-        ps.setTimestamp(2, Timestamp.from(Instant.now()));
+        ps.setTimestamp(2, DateUtils.timestampNow());
         ps.setString(3, docPath.toAbsolutePath().toString());
         ps.setString(4, structure.getTitle());
         ps.setString(5, structure.getSummary());
@@ -369,11 +373,12 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
 
   @Override
   public List<AgentTool> getTools() {
-    AgentTool[] tools = new AgentTool[]{ //      new DocumentSearchTool(this.agent),
-    //      new DocumentSearchByCategoriesTool(this.agent),
-    //      new DocumentSearchBySumariesTool(this.agent),
-    //      new GetDocumentStructureTool(this.agent),
-    //      new GetPartialDocumentTool(this.agent)
+    AgentTool[] tools = new AgentTool[]{
+      new DocumentSearchTool(this.agent),
+      new DocumentSearchByCategoriesTool(this.agent),
+      new DocumentSearchBySumariesTool(this.agent),
+      new GetDocumentStructureTool(this.agent),
+      new GetPartialDocumentTool(this.agent)
     };
     return Arrays.asList(tools);
   }

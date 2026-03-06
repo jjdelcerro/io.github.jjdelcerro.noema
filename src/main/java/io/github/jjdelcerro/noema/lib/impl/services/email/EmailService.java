@@ -5,6 +5,9 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.impl.services.email.tools.EmailListTool;
+import io.github.jjdelcerro.noema.lib.impl.services.email.tools.EmailReadTool;
+import io.github.jjdelcerro.noema.lib.impl.services.email.tools.EmailSendTool;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
 import jakarta.mail.*;
@@ -98,9 +101,10 @@ public class EmailService implements AgentService {
 
   @Override
   public List<AgentTool> getTools() {
-    AgentTool[] tools = new AgentTool[]{ //      new EmailListTool(this.agent),
-    //      new EmailReadTool(this.agent),
-    //      new EmailSendTool(this.agent)
+    AgentTool[] tools = new AgentTool[]{ 
+      new EmailListTool(this.agent),
+      new EmailReadTool(this.agent),
+      new EmailSendTool(this.agent)
     };
     return Arrays.asList(tools);
   }

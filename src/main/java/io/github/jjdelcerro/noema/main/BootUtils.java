@@ -7,12 +7,16 @@ import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
+import io.github.jjdelcerro.noema.lib.services.memory.MemoryService;
+import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.ui.AgentUILocator;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.h2.tools.Server;
 
 /**
@@ -31,7 +35,9 @@ public class BootUtils {
       AgentConsole console = AgentUILocator.getAgentUIManager().createConsole();
       
       AgentPaths paths = settings.getPaths();
-      
+      System.setProperty("noema.log.path", paths.getLogFolder().toString());
+      Configurator.reconfigure();     
+
       // Iniciar el servidor web de H2 (Consola)
       Server webServer = Server.createWebServer("-webPort", settings.getPropertyAsString("debug/h2_webport"), "-webAllowOthers").start();
       console.printSystemLog("H2 Web Console activa en: " + webServer.getURL());
@@ -106,8 +112,8 @@ public class BootUtils {
     AgentManager agentManager = AgentLocator.getAgentManager();
 
     AgentServiceFactory[] services = {
-      agentManager.getServiceFactory("MEMORY"),
-      agentManager.getServiceFactory("CONVERSATION")
+      agentManager.getServiceFactory(MemoryService.ID),
+      agentManager.getServiceFactory(ReasoningService.ID)
     };
     for (AgentServiceFactory service : services) {
       if (!service.canStart(settings)) {

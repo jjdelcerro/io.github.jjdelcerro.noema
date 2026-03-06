@@ -25,7 +25,10 @@ public class GetPartialDocumentTool implements AgentTool {
             .name("get_partial_document")
             .description("Recupera la estructura completa de un documento inyectando el texto íntegro en las secciones solicitadas. Úsalo para leer el detalle tras haber explorado el índice.")
             .addParameter("docId", JsonSchemaProperty.STRING, JsonSchemaProperty.description("El ID único del documento."))
-            .addParameter("sectionIds", JsonSchemaProperty.ARRAY, JsonSchemaProperty.description("Lista de IDs de secciones a leer (ej: ['SECTION-45', 'SECTION-120'])."))
+            .addParameter("sectionIds", JsonSchemaProperty.type("array"),
+                    JsonSchemaProperty.items(JsonSchemaProperty.STRING),
+                    JsonSchemaProperty.description("Lista de IDs de secciones a leer (ej: ['SECTION-45', 'SECTION-120']).")
+            )
             .build();
   }
 

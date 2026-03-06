@@ -24,6 +24,7 @@ import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingFilter;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsService;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,7 +160,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
 
       try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setInt(1, turn.getId());
-        ps.setTimestamp(2, turn.getTimestamp());
+        ps.setTimestamp(2, Timestamp.valueOf(turn.getTimestamp()));
         ps.setString(3, dbContentType); // Usamos el tipo calculado para DB
         ps.setString(4, turn.getTextUser());
         ps.setString(5, turn.getTextModelThinking());
@@ -235,7 +236,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
         ps.setInt(1, checkpointid);
         ps.setInt(2, checkpoint.getTurnFirst());
         ps.setInt(3, checkpoint.getTurnLast());
-        ps.setTimestamp(4, checkpoint.getTimestamp());
+        ps.setTimestamp(4, Timestamp.valueOf(checkpoint.getTimestamp()));
         ps.executeUpdate();
       }
       ((CheckPointImpl) checkpoint).saveTextToDisk();
@@ -404,7 +405,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
   private Turn mapResultSetToTurn(ResultSet rs, float[] cachedVec) throws SQLException {
     return TurnImpl.from(
             rs.getInt("id"),
-            rs.getTimestamp("timestamp"),
+            rs.getTimestamp("timestamp").toLocalDateTime(),
             rs.getString("contenttype"),
             rs.getString("text_user"),
             rs.getString("text_thinking"),
@@ -420,19 +421,19 @@ public class SourceOfTruthImpl implements SourceOfTruth {
             rs.getInt("id"),
             rs.getInt("cp_first"),
             rs.getInt("cp_last"),
-            rs.getTimestamp("timestamp"),
+            rs.getTimestamp("timestamp").toLocalDateTime(),
             this.getDataFolder().resolve(CHECKPOINTS_FOLDER)
     );
   }
 
   @Override
-  public synchronized CheckPoint createCheckPoint(int turnFirst, int turnLast, Timestamp timestamp, String text) {
+  public synchronized CheckPoint createCheckPoint(int turnFirst, int turnLast, LocalDateTime timestamp, String text) {
     CheckPoint cp = CheckPointImpl.create(-1, turnFirst, turnLast, timestamp, text, getDataFolder().resolve(CHECKPOINTS_FOLDER));
     return cp;
   }
 
   @Override
-  public synchronized Turn createTurn(Timestamp timestamp, String contenttype,
+  public synchronized Turn createTurn(LocalDateTime timestamp, String contenttype,
           String textUser, String textModelThinking, String textModel,
           String toolCall, String toolResult, float[] embedding) {
     return TurnImpl.from(timestamp, contenttype, textUser, textModelThinking,

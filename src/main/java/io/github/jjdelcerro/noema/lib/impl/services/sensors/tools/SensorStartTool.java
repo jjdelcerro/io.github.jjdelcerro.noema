@@ -21,8 +21,9 @@ public class SensorStartTool extends AbstractAgentTool {
     return ToolSpecification.builder()
             .name(NAME)
             .description("Reactiva la recepción de eventos en los canales sensoriales especificados.")
-            .addParameter("channels", JsonSchemaProperty.ARRAY,
-                    JsonSchemaProperty.description("Lista de identificadores de canal a reactivar."))
+            .addParameter("channels", JsonSchemaProperty.type("array"),
+                    JsonSchemaProperty.items(JsonSchemaProperty.STRING),
+                    JsonSchemaProperty.description("Lista de identificadores de canal a iniciar (ej: ['telegram', 'email'])."))
             .build();
   }
 

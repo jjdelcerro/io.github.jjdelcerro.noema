@@ -24,6 +24,7 @@ import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.ModelParametersImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.LookupTurnTool;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.SearchFullHistoryTool;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,18 +69,18 @@ public class MemoryServiceImpl implements MemoryService {
     this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_MEMORY_PROVIDER) {
       @Override
       public boolean perform(AgentSettings settings) {
-        model = agent.createChatModel("MEMORY");
+        model = agent.createChatModel(MemoryService.ID);
         return true;
       }
     });
     this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_MEMORY_MODEL) {
       @Override
       public boolean perform(AgentSettings settings) {
-        model = agent.createChatModel("MEMORY");
+        model = agent.createChatModel(MemoryService.ID);
         return true;
       }
     });
-    this.model = this.agent.createChatModel("MEMORY");
+    this.model = this.agent.createChatModel(MemoryService.ID);
     loadSystemPrompt();
     this.running = true;
   }
@@ -133,7 +134,7 @@ public class MemoryServiceImpl implements MemoryService {
     }
 
     // 4. Crear CheckPoint Transitorio
-    CheckPoint cp = this.sourceOfTruth.createCheckPoint(firstId, lastId, Timestamp.from(Instant.now()), generatedText);
+    CheckPoint cp = this.sourceOfTruth.createCheckPoint(firstId, lastId, LocalDateTime.now(), generatedText);
     LOGGER.info("Compactacion finalizada.");
     return cp;
   }
@@ -184,7 +185,7 @@ public class MemoryServiceImpl implements MemoryService {
   public ModelParameters getModelParameters(String name) {
     AgentSettings settings = this.agent.getSettings();
     switch (name) {
-      case "MEMORY":
+      case MemoryService.ID:
         return new ModelParametersImpl(
                 settings.getPropertyAsString(MEMORY_PROVIDER_URL),
                 settings.getPropertyAsString(MEMORY_PROVIDER_API_KEY),

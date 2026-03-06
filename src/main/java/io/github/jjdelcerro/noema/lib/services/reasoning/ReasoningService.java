@@ -20,6 +20,7 @@ public interface ReasoningService extends AgentService {
   
   
   String NAME = "Reasoning";
+  String ID = "REASONING";
 
   void addTool(AgentTool tool);
 

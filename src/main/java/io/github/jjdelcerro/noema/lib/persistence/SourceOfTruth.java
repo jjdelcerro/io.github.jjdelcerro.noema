@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.persistence;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -9,9 +9,9 @@ import java.util.List;
  */
 public interface SourceOfTruth {
 
-  CheckPoint createCheckPoint(int turnFirst, int turnLast, Timestamp timestamp, String text);
+  CheckPoint createCheckPoint(int turnFirst, int turnLast, LocalDateTime timestamp, String text);
 
-  Turn createTurn(Timestamp timestamp, String contenttype, String textUser, String textModelThinking, String textModel, String toolCall, String toolResult, float[] embedding);
+  Turn createTurn(LocalDateTime timestamp, String contenttype, String textUser, String textModelThinking, String textModel, String toolCall, String toolResult, float[] embedding);
 
   /**
    * Persiste un Turno en la base de datos.
