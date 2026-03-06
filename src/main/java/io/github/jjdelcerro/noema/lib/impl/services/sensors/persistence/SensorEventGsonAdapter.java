@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import io.github.jjdelcerro.noema.lib.impl.DateUtils;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.AbstractSensorEvent;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.aggregate.SensorEventAggregateImpl;
@@ -20,6 +21,7 @@ import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import java.lang.reflect.Type;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import org.h2.mvstore.DataUtils;
 
 public class SensorEventGsonAdapter implements JsonSerializer<SensorEvent>, JsonDeserializer<SensorEvent> {
     private final SensorsServiceImpl service;
@@ -35,8 +37,8 @@ public class SensorEventGsonAdapter implements JsonSerializer<SensorEvent>, Json
         obj.addProperty("priority", src.getPriority());
         obj.addProperty("status", src.getStatus());
         obj.addProperty("contents", src.getContents());
-        obj.addProperty("startTimestamp",  Timestamp.valueOf(src.getStartTimestamp()).toString());
-        obj.addProperty("endTimestamp", Timestamp.valueOf(src.getEndTimestamp()).toString());
+        obj.addProperty("startTimestamp",  DateUtils.toString(src.getStartTimestamp()));
+        obj.addProperty("endTimestamp", DateUtils.toString(src.getEndTimestamp()));
         
         // Discriminador para la deserialización
         SensorNature nature = ((AbstractSensorEvent)src).getSensor().getNature();
@@ -59,8 +61,8 @@ public class SensorEventGsonAdapter implements JsonSerializer<SensorEvent>, Json
         String priority = obj.get("priority").getAsString();
         String status = obj.get("status").getAsString();
         String contents = obj.get("contents").getAsString();
-        LocalDateTime start = Timestamp.valueOf(obj.get("startTimestamp").getAsString()).toLocalDateTime();
-        LocalDateTime end = Timestamp.valueOf(obj.get("endTimestamp").getAsString()).toLocalDateTime();
+        LocalDateTime start = DateUtils.toLocalDateTime(obj.get("startTimestamp").getAsString());
+        LocalDateTime end = DateUtils.toLocalDateTime(obj.get("endTimestamp").getAsString());
 
         SensorInformation info = service.getOrPlaceholderInfo(channel, nature);
 

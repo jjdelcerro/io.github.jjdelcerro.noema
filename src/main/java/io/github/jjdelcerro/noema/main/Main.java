@@ -1,5 +1,8 @@
 package io.github.jjdelcerro.noema.main;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
+
 /**
  * Selector de punto de entrada principal.
  * Uso por defecto: Inicia la interfaz gráfica (GUI).
@@ -9,7 +12,8 @@ public class Main {
 
     public static void main(String[] args) {
         boolean useConsole = false;
-
+        Configurator.setRootLevel(Level.OFF);
+        
         // Comprobamos si existe el parámetro -c entre los argumentos
         for (String arg : args) {
             if ("-c".equalsIgnoreCase(arg)) {

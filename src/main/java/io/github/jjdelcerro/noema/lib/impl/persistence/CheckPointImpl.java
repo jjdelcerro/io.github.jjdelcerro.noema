@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,14 +24,14 @@ public class CheckPointImpl implements CheckPoint {
   private int id;
   private final int turnFirst;
   private final int turnLast;
-  private final Timestamp timestamp;
+  private final LocalDateTime timestamp;
   private final Path storageFolder; // Carpeta donde se guardan los ficheros
 
   // Cache del contenido textual. Null hasta que se llama a getText()
   private String cachedText;
 
   // Constructor privado
-  private CheckPointImpl(int id, int turnFirst, int turnLast, Timestamp timestamp, Path storageFolder) {
+  private CheckPointImpl(int id, int turnFirst, int turnLast, LocalDateTime timestamp, Path storageFolder) {
     this.id = id;
     this.turnFirst = turnFirst;
     this.turnLast = turnLast;
@@ -42,7 +43,7 @@ public class CheckPointImpl implements CheckPoint {
    * Factoría para rehidratar un CheckPoint desde los metadatos de la Base de
    * Datos. No carga el texto del disco inmediatamente (Lazy Loading).
    */
-  /*friend*/ static CheckPointImpl from(int id, int turnFirst, int turnLast, Timestamp timestamp, Path storageFolder) {
+  /*friend*/ static CheckPointImpl from(int id, int turnFirst, int turnLast, LocalDateTime timestamp, Path storageFolder) {
     return new CheckPointImpl(id, turnFirst, turnLast, timestamp, storageFolder);
   }
 
@@ -51,7 +52,7 @@ public class CheckPointImpl implements CheckPoint {
    * contador. - Retorna la instancia para que SourceOfTruth guarde los
    * metadatos en BD.
    */
-  /*friend*/ static CheckPointImpl create(int id, int turnFirst, int turnLast, Timestamp timestamp, String text, Path storageFolder) {
+  /*friend*/ static CheckPointImpl create(int id, int turnFirst, int turnLast, LocalDateTime timestamp, String text, Path storageFolder) {
     CheckPointImpl cp = new CheckPointImpl(id, turnFirst, turnLast, timestamp, storageFolder);
 
     // Inyectamos el texto en cache
@@ -133,7 +134,7 @@ public class CheckPointImpl implements CheckPoint {
   }
 
   @Override
-  public Timestamp getTimestamp() {
+  public LocalDateTime getTimestamp() {
     return timestamp;
   }
 }

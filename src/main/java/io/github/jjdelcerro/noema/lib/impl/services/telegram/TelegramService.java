@@ -8,9 +8,8 @@ import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import static io.github.jjdelcerro.noema.lib.impl.services.scheduler.SchedulerServiceImpl.SENSOR_NAME;
+import io.github.jjdelcerro.noema.lib.impl.services.telegram.tools.TelegramTool;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
 import java.util.Arrays;
 import java.util.List;
@@ -123,7 +122,7 @@ public class TelegramService implements AgentService {
   @Override
   public List<AgentTool> getTools() {
     AgentTool[] tools = new AgentTool[]{
-//      new TelegramTool(this.agent)
+      new TelegramTool(this.agent)
     };
     return Arrays.asList(tools);
   }

@@ -26,7 +26,10 @@ public class DocumentSearchByCategoriesTool implements AgentTool {
     return ToolSpecification.builder()
             .name("document_search_by_categories")
             .description("Lista documentos que pertenecen a categorías específicas. Úsalo para ver qué manuales o archivos hay disponibles de un tipo concreto.")
-            .addParameter("categories", JsonSchemaProperty.ARRAY, JsonSchemaProperty.description("Lista de categorías (ej: ['Hardware', 'PDF'])."))
+            .addParameter("categories", JsonSchemaProperty.type("array"),
+                    JsonSchemaProperty.items(JsonSchemaProperty.STRING),
+                    JsonSchemaProperty.description("Opcional: Lista de categorías exactas para filtrar (ej: ['Manual', 'Proyecto_X']).")
+            )
             .addParameter("limit", JsonSchemaProperty.INTEGER, JsonSchemaProperty.description("Máximo de resultados (Default 10)."))
             .build();
   }

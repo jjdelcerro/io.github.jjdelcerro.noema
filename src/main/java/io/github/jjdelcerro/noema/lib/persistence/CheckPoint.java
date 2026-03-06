@@ -1,6 +1,7 @@
 package io.github.jjdelcerro.noema.lib.persistence;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 /**
  *
@@ -30,6 +31,6 @@ public interface CheckPoint {
    */
   String getText();
 
-  Timestamp getTimestamp();
+  LocalDateTime getTimestamp();
 
 }

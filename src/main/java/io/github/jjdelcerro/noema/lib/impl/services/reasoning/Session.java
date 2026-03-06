@@ -19,6 +19,7 @@ import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
+import io.github.jjdelcerro.noema.lib.impl.DateUtils;
 import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SYSTEMCLOCK_SENSOR_NAME;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
@@ -37,9 +38,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
-import org.ocpsoft.prettytime.PrettyTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -154,9 +153,8 @@ public class Session {
     }
 
     if (checkpoint != null) {
-      DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, HH:mm", new Locale("es", "ES"));
       sb.append("\n\n## Contexto consolidado de la conversacion\n");
-      sb.append("Resumen actualizado hasta: ").append(checkpoint.getTimestamp().toLocalDateTime().format(formatter)).append(".\n\n");
+      sb.append("Resumen actualizado hasta: ").append(DateUtils.toString(checkpoint.getTimestamp())).append(".\n\n");
       sb.append("--- INICIO DEL RELATO ---\\n");
       sb.append(checkpoint.getText()).append("\n");
       sb.append("--- FIN DEL RELATO ---\\n");
@@ -173,9 +171,7 @@ public class Session {
         // Introduccion de la percepcion temporal.
         Duration delta = Duration.between(this.lastInteractionTime, now);
         if (delta.toHours() >= 1) {
-          PrettyTime pt = new PrettyTime(Locale.of("es"));
-          String timeAgo = pt.format(this.lastInteractionTime);
-          String content = "Ha pasado " + timeAgo + " desde la última interacción con el usuario.";
+          String content = "Ha pasado " + DateUtils.timeAgo(this.lastInteractionTime) + " desde la última interacción con el usuario.";
           ConsumableSensorEvent timerEvent = this.sensors.createSensorEvent(
                   SYSTEMCLOCK_SENSOR_NAME,
                   content, 

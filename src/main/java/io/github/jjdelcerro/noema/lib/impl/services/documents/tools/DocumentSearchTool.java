@@ -26,7 +26,10 @@ public class DocumentSearchTool implements AgentTool {
             .name("document_search")
             .description("Busca documentos combinando filtros por categorías y búsqueda semántica en los resúmenes. Devuelve el ID, título y resumen del documento.")
             .addParameter("query", JsonSchemaProperty.STRING, JsonSchemaProperty.description("El concepto o tema a buscar por significado."))
-            .addParameter("categories", JsonSchemaProperty.ARRAY, JsonSchemaProperty.description("Opcional: Lista de categorías exactas para filtrar (ej: ['Manual', 'Proyecto_X'])."))
+            .addParameter("categories", JsonSchemaProperty.type("array"),
+                    JsonSchemaProperty.items(JsonSchemaProperty.STRING),
+                    JsonSchemaProperty.description("Opcional: Lista de categorías exactas para filtrar (ej: ['Manual', 'Proyecto_X']).")
+            )
             .addParameter("limit", JsonSchemaProperty.INTEGER, JsonSchemaProperty.description("Máximo de resultados (Default 5)."))
             .build();
   }

@@ -3,6 +3,7 @@ package io.github.jjdelcerro.noema.lib.impl.persistence;
 import io.github.jjdelcerro.noema.lib.persistence.Turn;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -14,7 +15,7 @@ import java.util.stream.Stream;
 public class TurnImpl implements Turn {
 
   private int id;
-  private final Timestamp timestamp;
+  private final LocalDateTime timestamp;
   private final String contenttype;
   private final String textUser;
   private final String textModelThinking;
@@ -24,7 +25,7 @@ public class TurnImpl implements Turn {
   private final float[] embedding;
 
   // Constructor privado. Usar métodos de factoría estáticos.
-  private TurnImpl(int id, Timestamp timestamp, String contenttype, String textUser,
+  private TurnImpl(int id, LocalDateTime timestamp, String contenttype, String textUser,
           String textModelThinking, String textModel, String toolCall,
           String toolResult, float[] embedding) {
     this.id = id;
@@ -41,7 +42,7 @@ public class TurnImpl implements Turn {
   /**
    * Factoría para rehidratar un Turno desde la base de datos o almacenamiento.
    */
-  /*friend*/ static TurnImpl from(int id, Timestamp timestamp, String contenttype,
+  /*friend*/ static TurnImpl from(int id, LocalDateTime timestamp, String contenttype,
           String textUser, String textModelThinking, String textModel,
           String toolCall, String toolResult, float[] embedding) {
     return new TurnImpl(id, timestamp, contenttype, textUser, textModelThinking,
@@ -51,7 +52,7 @@ public class TurnImpl implements Turn {
   /**
    * Factoría para crear un NUEVO Turno durante la ejecución.
    */
-  /*friend*/ static TurnImpl from(Timestamp timestamp, String contenttype,
+  /*friend*/ static TurnImpl from(LocalDateTime timestamp, String contenttype,
           String textUser, String textModelThinking, String textModel,
           String toolCall, String toolResult, float[] embedding) {
     return new TurnImpl(-1, timestamp, contenttype, textUser, textModelThinking,
@@ -111,7 +112,7 @@ public class TurnImpl implements Turn {
   }
 
   @Override
-  public Timestamp getTimestamp() {
+  public LocalDateTime getTimestamp() {
     return timestamp;
   }
 

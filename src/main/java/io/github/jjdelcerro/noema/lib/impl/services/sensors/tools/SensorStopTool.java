@@ -23,7 +23,8 @@ public class SensorStopTool extends AbstractAgentTool {
             .name(NAME)
             .description("Suspende temporalmente la recepción de eventos de uno o varios canales sensoriales. "
                     + "Úsalo para evitar distracciones durante tareas que requieran alta concentración.")
-            .addParameter("channels", JsonSchemaProperty.ARRAY,
+            .addParameter("channels", JsonSchemaProperty.type("array"),
+                    JsonSchemaProperty.items(JsonSchemaProperty.STRING),
                     JsonSchemaProperty.description("Lista de identificadores de canal a silenciar (ej: ['telegram', 'email'])."))
             .build();
   }
