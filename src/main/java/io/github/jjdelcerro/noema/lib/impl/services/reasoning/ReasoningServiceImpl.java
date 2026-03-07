@@ -16,8 +16,6 @@ import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
 import io.github.jjdelcerro.noema.lib.persistence.Turn;
 
 import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +26,6 @@ import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.ModelParametersImpl;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.events.PoolEventTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileExtractTextTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileFindTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileGrepTool;

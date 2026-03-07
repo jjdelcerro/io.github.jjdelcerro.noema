@@ -45,7 +45,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
   private final Counter turnCounter;
   private final Counter checkpointCounter;
   private final Agent agent;
-
+  
   private SourceOfTruthImpl(Agent agent) {
     this.agent = agent;
     createTables();
@@ -180,6 +180,8 @@ public class SourceOfTruthImpl implements SourceOfTruth {
   }
 
   private void log2csv(Turn turn) {
+    // Nota: El volcado del turno a CSV es solo para temas de depuracion, la 
+    // aplicacion no usa para nada los datos del fichero CSV.
     Path csvPath = getDataFolder().resolve(CSVLOG_FILE);
     boolean exists = Files.exists(csvPath);
     try (PrintWriter pw = new PrintWriter(new FileWriter(csvPath.toFile(), true))) {
