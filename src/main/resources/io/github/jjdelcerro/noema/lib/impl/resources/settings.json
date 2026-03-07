@@ -1,8 +1,8 @@
 {
   "reasoning": {
     "provider": {
-      "url": "https://openrouter.ai/api/v1",
-      "model_id": "z-ai/glm-4.5-air:free",
+      "url": "https://llm.chutes.ai/v1",
+      "model_id": "zai-org/GLM-4.7-FP8",
       "api_key": null
     },
     "compaction_turns": 40,
@@ -10,8 +10,8 @@
   },
   "memory": {
     "provider": {
-      "url": "https://openrouter.ai/api/v1",
-      "model_id": "tngtech/deepseek-r1t2-chimera:free",
+      "url": "https://llm.chutes.ai/v1",
+      "model_id": "tngtech/DeepSeek-TNG-R1T2-Chimera",
       "api_key": null
     }
   },
@@ -35,23 +35,21 @@
 "document": {
     "reasoning": {
       "provider": {
-        "url": "https://openrouter.ai/api/v1",
-        "model_id": "tngtech/deepseek-r1t2-chimera:free",
+        "url": "https://llm.chutes.ai/v1",
+        "model_id": "tngtech/DeepSeek-TNG-R1T2-Chimera",
         "api_key": null
       }
     },
     "basic": {
       "provider": {
-        "url": "https://openrouter.ai/api/v1",
-        "model_id": "z-ai/glm-4.5-air:free",
+        "url": "https://llm.chutes.ai/v1",
+        "model_id": "zai-org/GLM-4.7-FP8",
         "api_key": null
       }
     }
   },  
   "access_control": {
     "allowed_external_paths": [
-      "/tmp/noema_data",
-      "/home/user/shared_docs"
     ],
     "nom_writable_paths": null,
     "nom_readable_paths": null
