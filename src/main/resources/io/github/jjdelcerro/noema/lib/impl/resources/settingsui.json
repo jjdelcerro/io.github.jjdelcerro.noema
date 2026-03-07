@@ -226,6 +226,11 @@
           "type": "inputstring",
           "label": "Puerto del servicio web de H2",
           "variableName": "debug/h2_webport"
+        },
+        {
+          "type": "action",
+          "label": "Mostrar consola H2",
+          "actionName": "OPEN_H2WEBCONSOLE"
         }
       ]
     },

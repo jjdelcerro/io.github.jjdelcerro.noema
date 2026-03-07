@@ -66,7 +66,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
   }
 
   private ConnectionSupplier getConnection() {
-    return this.agent.getServicesDatabase();
+    return this.agent.getMemoryDatabase();
   }
 
   private Path getDataFolder() {

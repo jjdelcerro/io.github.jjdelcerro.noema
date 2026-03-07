@@ -11,8 +11,10 @@ import io.github.jjdelcerro.noema.ui.AgentUISettings;
 import io.github.jjdelcerro.noema.ui.common.AgentSettingsItemUI;
 import io.github.jjdelcerro.noema.ui.common.FakeAgent;
 import java.awt.BorderLayout;
+import java.awt.Dialog;
 import java.awt.FlowLayout;
 import java.awt.Frame;
+import java.awt.Window;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
@@ -111,11 +113,12 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
 
   @Override
   public void showWindow() {
-    showWindow(null);
+    Window top = SwingUtils.getTopWindow();
+    showWindow(top);
   }
 
-  public void showWindow(Frame parent) {
-    JDialog dialog = new JDialog(parent, "Ajustes", true);
+  public void showWindow(Window parent) {
+    JDialog dialog = new JDialog(parent, "Ajustes", Dialog.ModalityType.APPLICATION_MODAL);
     dialog.getContentPane().add(this);
     dialog.setSize(1024, 600);
     dialog.setLocationRelativeTo(parent);

@@ -204,11 +204,13 @@ public class MainChatPanel extends JPanel {
     });
 
     btnSend.addActionListener(e -> handleSend());
-    settingsBtn.addActionListener(e -> {
+    settingsBtn.addActionListener(e -> { handleShowSetting(); });
+  }
+  
+  private void handleShowSetting() {
       if (agent != null) {
         AgentUILocator.getAgentUIManager().createSettings(agent).showWindow();
       }
-    });
   }
 
   private void setupThinkingTimer() {
