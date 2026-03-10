@@ -43,7 +43,8 @@ public class DocumentStructureExtractor {
    * @param document
    */
   public void processDocument(Path document) {
-    Thread.ofVirtual().start(() -> {
+//    Thread.ofVirtual().start(() -> {
+    Thread.ofPlatform().start(() -> {
       try {
         LOGGER.info("Infiriendo la estrutura del documento '" + Objects.toString(document) + "'.");
         agent.getConsole().printSystemLog("Iniciando análisis del documento " + document.getFileName());
@@ -147,12 +148,12 @@ public class DocumentStructureExtractor {
   }
 
   private String getExtractStructureSystemPrompt() {
-    String systemPrompt = agent.getResourceAsString("prompts/documents/extract-structure.md");
+    String systemPrompt = agent.getResourceAsString("var/config/prompts/documents/extract-structure.md");
     return systemPrompt;
   }
 
   private String getSummaryAndCategorizeSystemPrompt() {
-    String systemPrompt = agent.getResourceAsString("prompts/documents/sumary-and-categorize.md");
+    String systemPrompt = agent.getResourceAsString("var/config/prompts/documents/sumary-and-categorize.md");
     return systemPrompt;
   }
 }

@@ -125,8 +125,8 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
             SENSOR_DESCRIPTION
     );
     String[] resources = new String[]{
-      "prompts/documents/extract-structure.md",
-      "prompts/documents/sumary-and-categorize.md"
+      "var/config/prompts/documents/extract-structure.md",
+      "var/config/prompts/documents/sumary-and-categorize.md"
     };
     for (String resPath : resources) {
       this.agent.installResource(resPath);

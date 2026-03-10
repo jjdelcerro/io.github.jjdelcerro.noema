@@ -235,18 +235,19 @@ public class MainChatPanel extends JPanel {
 
     startThinking();
 
-    Thread.ofVirtual().start(() -> {
+//    Thread.ofVirtual().start(() -> {
+    Thread.ofPlatform().start(() -> {
       agent.putUsersMessage(text, new SensorEventCallback() {
         @Override
         public void onComplete(String response) {
-          try {
-            consoleController.printModelResponse(response);
-          } catch (Exception e) {
-            consoleController.printSystemError("Error: " + e.getMessage());
-          } finally {
+//          try {
+//            consoleController.printModelResponse(response);
+//          } catch (Exception e) {
+//            consoleController.printSystemError("Error: " + e.getMessage());
+//          } finally {
             stopThinking();
             updateMetadata();
-          }
+//          }
         }
       });
     });
@@ -290,7 +291,8 @@ public class MainChatPanel extends JPanel {
   public void setAgent(Agent agent) {
     this.agent = agent;
     SwingUtilities.invokeLater(() -> {
-      Thread.ofVirtual().start(() -> agent.showSession());
+//      Thread.ofVirtual().start(() -> agent.showSession());
+      Thread.ofPlatform().start(() -> agent.showSession());
       inputArea.setEnabled(true);
       updateMetadata();
       inputArea.requestFocusInWindow();

@@ -290,16 +290,16 @@ public class AgentImpl implements Agent {
     name = name.toUpperCase();
 
     ModelParameters params = this.getModelParameters(name);
-    OpenAiChatModel model = OpenAiChatModel.builder()
-            .baseUrl(params.providerUrl())
-            .apiKey(params.providerApiKey())
-            .modelName(params.modelId())
-            .temperature(params.temperature())
-            .timeout(Duration.ofSeconds(180))
-            .logRequests(false)
-            .logResponses(false)
-            .build();
-    return new ChatModelImpl(model, params);
+//    OpenAiChatModel model = OpenAiChatModel.builder()
+//            .baseUrl(params.providerUrl())
+//            .apiKey(params.providerApiKey())
+//            .modelName(params.modelId())
+//            .temperature(params.temperature())
+//            .timeout(Duration.ofSeconds(180))
+//            .logRequests(false)
+//            .logResponses(false)
+//            .build();
+    return new ChatModelImpl(params);
   }
 
   @Override
@@ -316,39 +316,40 @@ public class AgentImpl implements Agent {
 
   @Override
   public void installResource(String resPath) {
-    String resourceBase = "/io/github/jjdelcerro/noema/lib/impl/resources/";
-    Path targetPath = this.getPaths().getConfigFolder().resolve(resPath);
-    if (!Files.exists(targetPath)) {
-      try {
-        Files.createDirectories(targetPath.getParent());
-
-        try (InputStream is = getClass().getResourceAsStream(resourceBase + resPath)) {
-          if (is != null) {
-            Files.copy(is, targetPath, StandardCopyOption.REPLACE_EXISTING);
-            console.printSystemLog("Recurso instalado en data " + resPath);
-          } else {
-            LOGGER.warn("Recurso no encontrado en el classpath " + resourceBase + resPath);
-            console.printSystemError("Recurso no encontrado en el classpath: " + resourceBase + resPath);
-          }
-        }
-      } catch (Exception e) {
-        LOGGER.warn("No se ha podido instalar el recurso '" + resPath + "'.", e);
-        console.printSystemError("Error al inicializar recurso " + resPath + ": " + e.getMessage());
-      }
-    }
+      AgentUtils.installResource(this.getPaths(), resPath);
+//    String resourceBase = "/io/github/jjdelcerro/noema/lib/impl/resources/";
+//    Path targetPath = this.getPaths().getAgentFolder().resolve(resPath);
+//    if (!Files.exists(targetPath)) {
+//      try {
+//        Files.createDirectories(targetPath.getParent());
+//
+//        try (InputStream is = getClass().getResourceAsStream(resourceBase + resPath)) {
+//          if (is != null) {
+//            Files.copy(is, targetPath, StandardCopyOption.REPLACE_EXISTING);
+//            console.printSystemLog("Recurso instalado en data " + resPath);
+//          } else {
+//            LOGGER.warn("Recurso no encontrado en el classpath " + resourceBase + resPath);
+//            console.printSystemError("Recurso no encontrado en el classpath: " + resourceBase + resPath);
+//          }
+//        }
+//      } catch (Exception e) {
+//        LOGGER.warn("No se ha podido instalar el recurso '" + resPath + "'.", e);
+//        console.printSystemError("Error al inicializar recurso " + resPath + ": " + e.getMessage());
+//      }
+//    }
   }
 
   /**
    * Carga un recurso de texto desde la carpeta data.
    *
    * @param resname Ruta relativa del recurso (ej:
-   * "prompts/prompt-system-conversationmanager.md")
+   * "var/config/prompts/prompt-system-conversationmanager.md")
    * @return El contenido del archivo como String, o una cadena vacía si hay
    * error.
    */
   @Override
   public String getResourceAsString(String resname) {
-    Path path = this.getPaths().getConfigFolder().resolve(resname);
+    Path path = this.getPaths().getAgentPath(resname);
     try {
       if (Files.exists(path)) {
         return Files.readString(path, StandardCharsets.UTF_8);

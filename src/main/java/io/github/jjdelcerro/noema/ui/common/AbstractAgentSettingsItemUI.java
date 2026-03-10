@@ -163,7 +163,7 @@ public abstract class AbstractAgentSettingsItemUI implements AgentSettingsItemUI
    */
   private JsonArray loadDomainFromProperties(String relativePath) {
     try {
-      Path path = agent.getPaths().getConfigFolder(relativePath).toAbsolutePath();
+      Path path = agent.getPaths().getConfigPath(relativePath).toAbsolutePath();
       if (!Files.exists(path)) {
         agent.getConsole().printSystemError("Fichero de dominio no encontrado: " + path.toString());
         return new JsonArray(); // Devolvemos lista vacía para no romper la UI

@@ -1,6 +1,7 @@
 package io.github.jjdelcerro.noema.lib;
 
 import java.nio.file.Path;
+import java.util.Collection;
 
 /**
  *
@@ -15,11 +16,9 @@ public interface AgentPaths {
   Path getAgentFolder();
 
   Path getConfigFolder();
-  
-  Path getConfigFolder(String name);
-  
+
   Path getCacheFolder();
-  
+
   Path getTempFolder();
 
   Path getDataFolder();
@@ -31,4 +30,10 @@ public interface AgentPaths {
   Path getWorkspaceFolder();
 
   Path getGlobalConfigFolder();
+
+  Path getAgentPath(String name);
+
+  Path getConfigPath(String name);
+
+  Collection<Path> listAgentPath(String name);
 }

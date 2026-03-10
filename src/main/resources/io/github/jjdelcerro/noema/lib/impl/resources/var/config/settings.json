@@ -6,7 +6,12 @@
       "api_key": null
     },
     "compaction_turns": 40,
-    "compaction_tokens": 100000
+    "compaction_tokens": 100000,
+    "identity": {
+            "core": {
+                
+            }
+    }
   },
   "memory": {
     "provider": {
