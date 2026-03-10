@@ -67,7 +67,8 @@ public class SchedulerServiceImpl implements SchedulerService {
   @Override
   public void start() {
     this.scheduler = Executors.newSingleThreadScheduledExecutor(
-            Thread.ofVirtual().factory()
+//            Thread.ofVirtual().factory()
+            Thread.ofPlatform().factory()
     );
     this.agent.registerSensor(
             SENSOR_NAME, 

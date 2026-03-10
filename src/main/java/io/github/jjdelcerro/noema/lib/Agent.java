@@ -12,6 +12,7 @@ import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.SensorEventCallback;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import java.util.List;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 
 /**
  *
@@ -33,6 +34,7 @@ public interface Agent {
     public Response<AiMessage> generate(ChatMessage systemPrompt, ChatMessage message);
     public Response<AiMessage> generate(List<ChatMessage> messages);
     public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications);
+    public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications, MutableBoolean abort) throws Throwable;
     public int estimateTokenCount(String text);
     public int estimateTokenCount(List<ChatMessage> messages);
   }

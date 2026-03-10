@@ -5,7 +5,8 @@
     "LLM_MODELS": "models.properties",
     "LLM_PROVIDERS_URL": "providers_urls.properties",
     "LLM_PROVIDERS_APIKEY": "providers_apikeys.properties",
-    "AVAILABLE_TOOLS": "available_tools.properties" 
+    "AVAILABLE_TOOLS": "available_tools.properties",
+    "IDENTITY_CORE": "identity_core.properties" 
   },  
   "childs": [
     {
@@ -58,6 +59,12 @@
           "variableName": "reasoning/active_tools",
           "actionName": "REFRESH_REASONING_TOOLS",
           "childs": "AVAILABLE_TOOLS"
+        },
+        {
+          "type": "checkedlist",
+          "label": "Identidad",
+          "variableName": "reasoning/identity/core",
+          "childs": "IDENTITY_CORE"
         }    
       ]
     },

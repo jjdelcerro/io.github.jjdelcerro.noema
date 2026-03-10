@@ -61,7 +61,7 @@ public class MemoryServiceImpl implements MemoryService {
   @Override
   public void start() {
     String[] resources = new String[]{
-      "prompts/memory-compact.md"
+      "var/config/prompts/memory-compact.md"
     };
     for (String resPath : resources) {
       this.agent.installResource(resPath);
@@ -86,7 +86,7 @@ public class MemoryServiceImpl implements MemoryService {
   }
 
   private void loadSystemPrompt() {
-    this.systemPrompt = agent.getResourceAsString("prompts/memory-compact.md");
+    this.systemPrompt = agent.getResourceAsString("var/config/prompts/memory-compact.md");
     if (this.systemPrompt.isEmpty()) {
       throw new RuntimeException("No se pudo cargar el prompt del MemoryManager");
     }

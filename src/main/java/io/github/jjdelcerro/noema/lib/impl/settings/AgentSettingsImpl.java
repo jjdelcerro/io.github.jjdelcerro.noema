@@ -164,11 +164,14 @@ public class AgentSettingsImpl extends AgentSettingsGroupImpl implements AgentSe
   public void setupSettings() {
     // Desplegamos los ficheros base si no existen
     String[] resources = {
-      "models.properties",
-      "providers_urls.properties",
-      "available_tools.properties",
-      "settings.json",
-      "settingsui.json"
+      "var/config/models.properties",
+      "var/config/providers_urls.properties",
+      "var/config/available_tools.properties",
+      "var/config/settings.json",
+      "var/config/settingsui.json",
+      "var/skills/readme.md",
+      "var/identity/core/readme.md",
+      "var/identity/environ/readme.md"
     };
     for (String resPath : resources) {
       AgentUtils.installResource(this.paths, resPath);

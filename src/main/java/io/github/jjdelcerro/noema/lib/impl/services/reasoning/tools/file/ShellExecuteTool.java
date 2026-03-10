@@ -160,7 +160,8 @@ Ejecuta comandos de sistema en una shell de Bash.
 
       // HILO LECTOR: Vuelca bytes a disco mientras tenga permiso
       @SuppressWarnings("SleepWhileInLoop")
-      Thread readerThread = Thread.ofVirtual().start(() -> {
+//      Thread readerThread = Thread.ofVirtual().start(() -> {
+      Thread readerThread = Thread.ofPlatform().start(() -> {
         try (InputStream is = process.getInputStream(); OutputStream os = Files.newOutputStream(outputFile)) {
 
           byte[] buffer = new byte[4096];

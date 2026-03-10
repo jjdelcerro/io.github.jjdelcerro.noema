@@ -102,11 +102,11 @@ public class MainConsole {
         agent.putUsersMessage(input, new SensorsService.SensorEventCallback() {
           @Override
           public void onComplete(String response) {
-            try {
-              console.printModelResponse(response);
-            } catch (Exception e) {
-              console.printSystemError("Error: " + e.getMessage());
-            }
+//            try {
+//              console.printModelResponse(response);
+//            } catch (Exception e) {
+//              console.printSystemError("Error: " + e.getMessage());
+//            }
           }
         });
       }

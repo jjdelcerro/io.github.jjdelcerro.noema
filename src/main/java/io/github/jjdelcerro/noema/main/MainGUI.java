@@ -50,7 +50,8 @@ public class MainGUI {
             });
 
             // Carga asíncrona del agente
-            Thread.ofVirtual().start(() -> {
+//            Thread.ofVirtual().start(() -> {
+            Thread.ofPlatform().start(() -> {
                 try {
                     Agent agent = BootUtils.init(settings);
                     agent.start();

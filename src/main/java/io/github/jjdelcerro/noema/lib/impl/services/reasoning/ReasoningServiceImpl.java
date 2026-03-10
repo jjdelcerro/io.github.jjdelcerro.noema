@@ -56,7 +56,13 @@ import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_REASONING_MODEL;
 import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_REASONING_PROVIDER;
 import io.github.jjdelcerro.noema.lib.impl.DateUtils;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.ConsultEnvironTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.ListSkillsTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.LoadSkillTool;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.Collection;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 
 /**
  * Orquestador principal del sistema. Gestiona el bucle de razonamiento, la
@@ -91,14 +97,13 @@ public class ReasoningServiceImpl implements ReasoningService {
   // Registro de herramientas
   private final Map<String, AvailableAgentTool> availableTools = new LinkedHashMap<>();
 
-
   public ReasoningServiceImpl(AgentServiceFactory factory, Agent agent) {
     this.factory = factory;
     this.agent = agent;
     this.sourceOfTruth = agent.getSourceOfTruth();
     this.session = new Session(
-            agent.getPaths().getDataFolder(), 
-            agent.getSettings(), 
+            agent.getPaths().getDataFolder(),
+            agent.getSettings(),
             (SensorsServiceImpl) agent.getService(SensorsService.NAME)
     );
     this.running = false;
@@ -117,7 +122,7 @@ public class ReasoningServiceImpl implements ReasoningService {
   @Override
   public void start() {
     String[] resources = new String[]{
-      "prompts/reasoning-system.md"
+      "var/config/prompts/reasoning-system.md"
     };
     for (String resPath : resources) {
       this.agent.installResource(resPath);
@@ -166,7 +171,8 @@ public class ReasoningServiceImpl implements ReasoningService {
 //    }
     this.refresh_available_tools();
     this.model = this.agent.createChatModel(ReasoningService.ID);
-    Thread.ofVirtual().name(AgentManager.AGENT_NAME + "-Event-Dispatcher").start(this::eventDispatcher);
+//    Thread.ofVirtual().name(AgentManager.AGENT_NAME + "-Event-Dispatcher").start(this::eventDispatcher);
+    Thread.ofPlatform().name(AgentManager.AGENT_NAME + "-Event-Dispatcher").start(this::eventDispatcher);
     this.running = true;
   }
 
@@ -175,23 +181,102 @@ public class ReasoningServiceImpl implements ReasoningService {
     this.availableTools.put(tool.getName(), new AvailableAgentTool(tool));
   }
 
+//  private String getBaseSystemPrompt() {
+//    String systemPrompt = agent.getResourceAsString("var/config/prompts/reasoning-system.md");
+//
+//    if (systemPrompt.isEmpty()) {
+//      LOGGER.warn("No se ha podido cargar el prompt del sistema del ReasoningService");
+//      throw new RuntimeException("Can't load system prompt from data folder");
+//    }
+//    systemPrompt = StringUtils.replace(systemPrompt, "{NOW}", DateUtils.now());
+//    systemPrompt = StringUtils.replace(systemPrompt, "{LOOKUPTURN}", LookupTurnTool.NAME);
+//    systemPrompt = StringUtils.replace(systemPrompt, "{SEARCHFULLHISTORY}", SearchFullHistoryTool.NAME);
+//    return systemPrompt;
+//  }
   private String getBaseSystemPrompt() {
-    String systemPrompt = agent.getResourceAsString("prompts/reasoning-system.md");
+    StringBuilder sb = new StringBuilder();
 
-    if (systemPrompt.isEmpty()) {
-      LOGGER.warn("No se ha podido cargar el prompt del sistema del ReasoningService");
-      throw new RuntimeException("Can't load system prompt from data folder");
+    // --- CAPA 1: Instrucciones Operativas (Sistema Nervioso Autónomo) ---
+    // Cargamos las instrucciones de comportamiento base
+    String basePrompt = agent.getResourceAsString("var/config/prompts/reasoning-system.md");
+    if (StringUtils.isBlank(basePrompt)) {
+      LOGGER.error("No se pudo cargar el recurso base: var/config/prompts/reasoning-system.md");
+      throw new RuntimeException("Error crítico: Prompt de sistema base no encontrado.");
     }
-    systemPrompt = StringUtils.replace(systemPrompt, "{NOW}", DateUtils.now());
-    systemPrompt = StringUtils.replace(systemPrompt, "{LOOKUPTURN}", LookupTurnTool.NAME);
-    systemPrompt = StringUtils.replace(systemPrompt, "{SEARCHFULLHISTORY}", SearchFullHistoryTool.NAME);
-    return systemPrompt;
+    sb.append(basePrompt).append("\n\n");
+
+    // --- CAPA 2a: Constitución (Identidad Core / ADN Técnico) ---
+    // Solo cargamos los módulos que el usuario ha marcado en la configuración
+    sb.append("# CONSTITUCIÓN Y REGLAS OPERATIVAS\n");
+    sb.append("Debes cumplir estrictamente con las siguientes normas técnicas y metodológicas:\n\n");
+
+    AgentSettingsCheckedList coreSettings = agent.getSettings().getPropertyAsCheckedList("reasoning/identity/core");
+    Collection<Path> coreFiles = agent.getPaths().listAgentPath("var/identity/core");
+
+    if (coreFiles != null && !coreFiles.isEmpty()) {
+      for (Path path : coreFiles) {
+        String fileName = path.getFileName().toString();
+        if( StringUtils.equalsIgnoreCase(fileName, "readme.md") ) {
+          continue;
+        }        
+        // Verificamos si el módulo está activo en la CheckedList de configuración
+        boolean isActive = false;
+        if (coreSettings != null) {
+          // "01_stack_tecnico.md" -> "01_stack_tecnico"
+          String baseName = org.apache.commons.io.FilenameUtils.getBaseName(fileName);
+          isActive = coreSettings.getItems().stream()
+                  .filter(item -> baseName.equals(item.getValue()))
+                  .anyMatch(AgentSettingsCheckedList.CheckedItem::isChecked);
+        }
+        if (isActive) {
+          String content = agent.getResourceAsString("var/identity/core/" + fileName);
+          if (StringUtils.isNotBlank(content)) {
+            sb.append("## Módulo: ").append(fileName).append("\n");
+            sb.append(content).append("\n\n");
+          }
+        }
+      }
+    }
+
+    // --- CAPA 2b: Consciencia de Entorno (Índice de Referencias .ref.md) ---
+    // Cargamos todas las anclas semánticas disponibles para que el agente sepa qué "puede recordar"
+    sb.append("# CONSCIENCIA DE ENTORNO (MEMORIA VIRTUAL)\n");
+    sb.append("A continuación se lista un índice de referencias sobre el mundo, biografía y proyectos del usuario. ");
+    sb.append("No posees los detalles en este momento, pero si detectas que un tema es relevante, ");
+    sb.append("DEBES usar la herramienta {CONSULTENVIRON} para recuperar la información completa antes de responder.\n\n");
+
+    Collection<Path> environFiles = agent.getPaths().listAgentPath("var/identity/environ");
+    if (environFiles != null) {
+      for (Path path : environFiles) {
+        String fileName = path.getFileName().toString();
+        if( StringUtils.equalsIgnoreCase(fileName, "readme.md") ) {
+          continue;
+        }
+        // Solo cargamos los archivos de referencia ligera
+        if (fileName.endsWith(".ref.md")) {
+          String refContent = agent.getResourceAsString("var/identity/environ/" + fileName);
+          if (StringUtils.isNotBlank(refContent)) {
+            sb.append(refContent).append("\n");
+            sb.append("---\n"); // Separador visual entre anclas
+          }
+        }
+      }
+    }
+
+    // --- CAPA FINAL: Resolución de Placeholders ---
+    String finalPrompt = sb.toString();
+    finalPrompt = StringUtils.replace(finalPrompt, "{NOW}", DateUtils.now());
+    finalPrompt = StringUtils.replace(finalPrompt, "{LOOKUPTURN}", LookupTurnTool.NAME);
+    finalPrompt = StringUtils.replace(finalPrompt, "{SEARCHFULLHISTORY}", SearchFullHistoryTool.NAME);
+    finalPrompt = StringUtils.replace(finalPrompt, "{CONSULTENVIRON}", ConsultEnvironTool.NAME);
+
+    return finalPrompt;
   }
 
   private AgentConsole console() {
     return this.agent.getConsole();
   }
-  
+
   private String executeTool(ToolExecutionRequest request) {
     String toolName = request.name();
     String args = request.arguments();
@@ -302,6 +387,9 @@ public class ReasoningServiceImpl implements ReasoningService {
   @Override
   public List<AgentTool> getTools() {
     AgentTool[] tools0 = new AgentTool[]{
+      new ConsultEnvironTool(this.agent),
+      new ListSkillsTool(this.agent),
+      new LoadSkillTool(this.agent),
       new FileFindTool(this.agent),
       new FileGrepTool(this.agent),
       new FileReadTool(this.agent),
@@ -459,12 +547,17 @@ public class ReasoningServiceImpl implements ReasoningService {
   }
 
   /**
-   * Bucle perpetuo de consciencia. Consume señales de los sensores y las procesa
-   * íntegramente hasta generar una respuesta o acción.
+   * Bucle perpetuo de consciencia. Consume señales de los sensores y las
+   * procesa íntegramente hasta generar una respuesta o acción.
    */
   @SuppressWarnings("UseSpecificCatch")
   private void eventDispatcher() {
+//      TODO: **IMPORTANTE**. hay que ver que pasa cuando el primer mensaje que se envia al LLM
+//      es un llamada simulda a pool_event. El otro dia me dio la sensacion que peto la llamada
+//      al llm por esto. Habria que ver de reproducirlo y que hecemos si falla.
+//              
     SensorsServiceImpl sensors = (SensorsServiceImpl) this.agent.getService(SensorsService.NAME);
+    MutableBoolean abort = new MutableBoolean(false);
 
     while (this.isRunning()) {
       ConsumableSensorEvent event = null;
@@ -502,7 +595,7 @@ public class ReasoningServiceImpl implements ReasoningService {
         while (!turnFinished && this.isRunning()) {
           List<ChatMessage> context = this.session.getContextMessages(this.activeCheckPoint, getBaseSystemPrompt());
 
-          Response<AiMessage> response = model.generate(context, this.getToolSpecifications());
+          Response<AiMessage> response = model.generate(context, this.getToolSpecifications(), abort);
           AiMessage aiMessage = response.content();
           this.session.add(aiMessage);
 
@@ -529,7 +622,8 @@ public class ReasoningServiceImpl implements ReasoningService {
             }
           } else {
             String aiText = aiMessage.text();
-            finalLlmResponse.append(aiText);
+            finalLlmResponse.append(aiText); // No esta claro que sea necesario mantener el finalLlmResponse
+            this.console().printModelResponse(aiText);
             Turn responseTurn = this.sourceOfTruth.createTurn(
                     LocalDateTime.now(),
                     "chat",
@@ -549,16 +643,16 @@ public class ReasoningServiceImpl implements ReasoningService {
           performCompaction();
         }
 
-      } catch (Exception e) {
+      } catch (Throwable e) {
         LOGGER.error("Error crítico en el bucle de consciencia", e);
         this.console().printSystemError("Dispatcher Critical Error: " + e.getMessage());
       }
-      
+
       try {
-        if (event!=null && event.getCallback() != null) {
+        if (event != null && event.getCallback() != null) {
           event.getCallback().onComplete(finalLlmResponse.toString());
         }
-      } catch(Exception e) {
+      } catch (Exception e) {
         LOGGER.error("Error ejecutando onComplete", e);
         this.console().printSystemError("Dispatcher error onComplete: " + e.getMessage());
       }

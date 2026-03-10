@@ -18,7 +18,7 @@ public class AgentUtils {
   
   public static void installResource(AgentPaths paths, String resPath) {
     String resourceBase = "/io/github/jjdelcerro/noema/lib/impl/resources/";
-    Path targetPath = paths.getConfigFolder().resolve(resPath);
+    Path targetPath = paths.getAgentFolder().resolve(resPath);
     if (!Files.exists(targetPath)) {
       try {
         Files.createDirectories(targetPath.getParent());
