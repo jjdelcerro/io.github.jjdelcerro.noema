@@ -267,6 +267,90 @@ En el **Anexo I (Instrucciones para el LLM)**, asegúrate de enfatizar que el `r
 En relacion a esto si ha desaparecido el fichero cuando se pide una pagina deberia darse un codigo de error adecuado que instruya al LLM que la cache asociada a ese resource_id ha sido borrada y que si la necesita debera volver a pedir el recurso original que dio origen a ese resource_id.
 
 
+# Anexo: Notas implemenatcion AbstractPaginatedAgentTool
+
+Resumen Confirmado:
+getIdFromPath(Path) 
+- Input: Path absoluto obligatorio (retorna null si no lo es)
+- Output: Resource ID opaco según ubicación:
+  - Dentro de getTempFolder() → tmp://[ruta relativa]
+  - Dentro de getCacheFolder() → cache://[ruta relativa]
+  - Cualquier otra ruta → user://[ruta absoluta]
+getPathFromId(String id)
+- Input: Resource ID opaco
+- Output: Path físico con validaciones:
+  - tmp://... → Resuelve dentro de getTempFolder(), error si hace path traversal
+  - cache://... → Resuelve dentro de getCacheFolder(), error si hace path traversal  
+  - user://... → Valida con AgentAccessControl, retorna ruta absoluta o null si inválido
+Plan de Implementación para AbstractPaginatedAgentTool
+Basado en esta lógica clara, el plan para implementar AbstractPaginatedAgentTool sería:
+1. Estructura de la Clase
+public abstract class AbstractPaginatedAgentTool extends AbstractAgentTool {
+    // Constantes
+    private static final String PREFIX_TMP = "tmp://";
+    private static final String PREFIX_CACHE = "cache://";
+    private static final String PREFIX_USER = "user://";
     
+    private static final int DEFAULT_MAX_LINES = 1000;
+    private static final int CACHE_SIZE = 30;
+    
+    // Cache LRU para conteo de líneas
+    private final Map<String, FileMeta> lineCountCache;
+    private record FileMeta(long lineCount, FileTime lastModifiedTime) {}
+    
+    // Constructor
+    protected AbstractPaginatedAgentTool(Agent agent)
+}
+
+2. Métodos Core de Conversión ID ↔ Path 
+
+protected String getIdFromPath(Path path)
+
+- Verifica que path sea absoluto, retorna null si no
+- Comprueba si está dentro de getTempFolder():
+  - Extrae ruta relativa y devuelve tmp://[relativa]
+- Si no, comprueba si está dentro de getCacheFolder():
+  - Extrae ruta relativa y devuelve cache://[relativa]
+- Si no, devuelve user://[ruta absoluta normalizada]
+
+protected Path getPathFromId(String id)
+
+- Si startsWith tmp://:
+  - Extrae ruta relativa
+  - Resuelve contra getTempFolder()
+  - Verifica que el resultado está dentro de getTempFolder() (path traversal check)
+  - Si pasa, retorna el Path
+- Si startsWith cache://:
+  - Mismo proceso con getCacheFolder()
+- Si startsWith user://:
+  - Extrae ruta absoluta
+  - Valida con agent.getAccessControl().resolvePathOrNull(path, PATH_ACCESS_READ)
+  - Retorna el Path validado o null
+- Si no empieza con ningún prefijo conocido, retorna null
+
+3. Métodos de Paginación
+
+protected String servePaginatedResource(String resourceId)
+
+- Convierte ID a Path usando getPathFromId()
+- Si Path es null, retorna error de recurso inválido
+- Llama a servePaginatedResource(path, originalId, 0, getDefaultMaxLines())
+
+protected String servePaginatedResource(String resourceId, int offset, int limit)
+
+- Convierte ID a Path usando getPathFromId()
+- Valida archivo existe y es accesible
+- Ejecuta lógica de paginación (migrada de FileReadTool)
+- Genera respuesta con los 4 patrones del documento
+
+4. Métdos Soporte
+
+- private long getLineCountWithCache(Path filePath) - Sistema cache LRU actual
+- private String formatResponse(...) - Generación de respuesta estandarizada
+- protected String getPaginationSystemInstruction() - Instrucciones para LLM
+
+5. Manejo de Errores Específicos
+   cuando un recurso ya no existe, debe dar código de error que instruya al LLM a regenerar el recurso original.
+
     
     

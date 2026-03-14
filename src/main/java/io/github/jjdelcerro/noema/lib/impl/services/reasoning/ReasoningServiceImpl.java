@@ -38,12 +38,12 @@ import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileRec
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileSearchAndReplaceTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileWriteTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.ShellExecuteTool;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.ShellReadOutputTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.ReadPaginatedResourceTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.LocationTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.TimeTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.WeatherTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.WebGetTikaTool;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.WebSearchTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.BraveWebSearchTool;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryServiceImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
 import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
@@ -61,6 +61,7 @@ import io.github.jjdelcerro.noema.lib.impl.DateUtils;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.ConsultEnvironTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.ListSkillsTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.LoadSkillTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.TavilyWebSearchTool;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -421,15 +422,19 @@ public class ReasoningServiceImpl implements ReasoningService {
       new LocationTool(this.agent),
       new TimeTool(this.agent),
       new ShellExecuteTool(this.agent),
-      new ShellReadOutputTool(this.agent),
+      new ReadPaginatedResourceTool(this.agent),
       new FileRecoveryTool(this.agent)
     };
     List<AgentTool> tools = new ArrayList<>(Arrays.asList(tools0));
 
-    String braveApiKey = this.agent.getSettings().getPropertyAsString(WebSearchTool.BRAVE_SEARCH_API_KEY);
-    if (StringUtils.isNotBlank(braveApiKey)) {
-      tools.add(new WebSearchTool(this.agent));
-    }
+//    String braveApiKey = this.agent.getSettings().getPropertyAsString(BraveWebSearchTool.BRAVE_SEARCH_API_KEY);
+//    if (StringUtils.isNotBlank(braveApiKey)) {
+//      tools.add(new BraveWebSearchTool(this.agent));
+//    }
+    String tavilyApiKey = this.agent.getSettings().getPropertyAsString(TavilyWebSearchTool.TAVILY_API_KEY);
+    if (StringUtils.isNotBlank(tavilyApiKey)) {
+      tools.add(new TavilyWebSearchTool(this.agent));
+    }    
     return tools;
   }
 

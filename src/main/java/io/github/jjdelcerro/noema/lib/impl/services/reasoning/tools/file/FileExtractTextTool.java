@@ -1,21 +1,24 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
-import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceImpl;
+import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.impl.AbstractPaginatedAgentTool;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.tika.Tika;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
 
 import static io.github.jjdelcerro.noema.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
 
-public class FileExtractTextTool extends AbstractAgentTool {
+public class FileExtractTextTool extends AbstractPaginatedAgentTool {
 
   public static final String TOOL_NAME = "file_extract_text";
   private final Tika tika = new Tika();
@@ -28,84 +31,87 @@ public class FileExtractTextTool extends AbstractAgentTool {
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
             .name(TOOL_NAME)
-            .description("""
-Extrae y devuelve el texto de archivos complejos (PDF, DOCX, etc). 
-Soporta paginación. Si el contenido es largo, usa 'offset' y 'limit' para leer por partes.
-El formato de la respuesta es:
-STATUS: ok|error
-EMPTY: true|false
----
-<contenido del fichero, solo presente si EMPTY es es falso>                         
-
-En caso de error devolvera:
-STATUS: error
-ERROR: <error description>
----                                                                           
-"""
-            )
-            .addParameter("path", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Ruta del archivo binario."))
-            .addParameter("offset", JsonSchemaProperty.INTEGER, JsonSchemaProperty.description("Línea inicial del texto extraído."))
-            .addParameter("limit", JsonSchemaProperty.INTEGER, JsonSchemaProperty.description("Líneas a leer."))
+            .description("Extrae el texto de archivos binarios complejos como PDF, DOCX, u otros documentos formateados.\n" +
+                    "RESTRICCIONES:\n" +
+                    "  • Solo archivos dentro del sandbox del proyecto.\n" +
+                    "  • La extracción puede ser costosa computacionalmente para documentos grandes.\n" +
+                    "\n" +
+                    getPaginationSystemInstruction())
+            .addParameter("path", JsonSchemaProperty.STRING, 
+                    JsonSchemaProperty.description("Ruta del archivo binario (PDF, DOCX, etc.)."))
             .build();
   }
 
   @Override
-  public String execute(String jsonArguments) {
-    try {
-      Map<String, Object> args = gson.fromJson(jsonArguments, Map.class);
-      String relPath = (String) args.get("path");
-      int offset = args.get("offset") != null ? ((Double) args.get("offset")).intValue() : 0;
-      int limit = args.get("limit") != null ? ((Double) args.get("limit")).intValue() : 1000;
+  public int getMode() {
+    return AgentTool.MODE_READ;
+  }
 
-      Path sourcePath = this.resolvePathOrNull(relPath, PATH_ACCESS_READ);
-      if (sourcePath == null || !Files.exists(sourcePath)) {
-        return error("Archivo no encontrado o acceso denegado.");
+  @Override
+  @SuppressWarnings("UseSpecificCatch")
+  public String execute(String jsonArguments) {
+    String pathForLog = "unknown";
+    try {
+      ReadArgs args = gson.fromJson(jsonArguments, ReadArgs.class);
+
+      if (args.path == null || args.path.trim().isEmpty()) {
+        return formatErrorResponse("El parámetro 'path' es obligatorio.");
       }
 
-      // 1. Obtener/Crear versión de texto en caché
+      pathForLog = args.path;
+
+      Path sourcePath = this.resolvePathOrNull(args.path, PATH_ACCESS_READ);
+      if (sourcePath == null || !Files.exists(sourcePath)) {
+        return formatErrorResponse("Archivo no encontrado o acceso denegado: " + args.path);
+      }
+
+      if (!Files.isRegularFile(sourcePath)) {
+        return formatErrorResponse("La ruta no corresponde a un archivo regular: " + args.path);
+      }
+
+      if (!Files.isReadable(sourcePath)) {
+        return formatErrorResponse("El archivo no es legible: " + sourcePath);
+      }
+
       Path cachedTextPath = getCachedTextPath(sourcePath);
 
-      // 2. Delegar lectura a FileReadTool
-      ReasoningServiceImpl reasoning = (ReasoningServiceImpl) agent.getService(ReasoningServiceImpl.NAME);
-      FileReadTool fileRead = (FileReadTool) reasoning.getAvailableTool(FileReadTool.TOOL_NAME);
+      String resourceId = getIdFromPath(cachedTextPath);
+      if (resourceId == null) {
+        return formatErrorResponse("Error generando resource_id para el archivo extraído: " + cachedTextPath);
+      }
 
-      // Usamos el execute interno con el nombre de esta herramienta (para el HINT) y la ruta original
-      return fileRead.execute(cachedTextPath, relPath, TOOL_NAME, offset, limit);
+      return servePaginatedResource(resourceId);
 
     } catch (Exception e) {
-      return error("Error extrayendo texto: " + e.getMessage());
+      LOGGER.warn("Error extrayendo texto, path=" + pathForLog, e);
+      return formatErrorResponse("Error extrayendo texto: " + e.getMessage());
     }
   }
 
   private Path getCachedTextPath(Path sourcePath) throws Exception {
-    Path cacheDir = getTemporaryFolder();
+    Path cacheDir = agent.getPaths().getCacheFolder().resolve(TOOL_NAME);
     if (!Files.exists(cacheDir)) {
       Files.createDirectories(cacheDir);
     }
 
-    // Nombre basado en Hash de la ruta absoluta para evitar colisiones
     String fileHash = DigestUtils.sha256Hex(sourcePath.toAbsolutePath().toString());
     Path cachedFile = cacheDir.resolve(fileHash + ".txt");
 
-    // Invalida si el origen es más nuevo que la caché
     if (!Files.exists(cachedFile)
             || Files.getLastModifiedTime(sourcePath).toMillis() > Files.getLastModifiedTime(cachedFile).toMillis()) {
 
       LOGGER.info("Extrayendo texto (Tika) de: " + sourcePath);
-      String text = tika.parseToString(sourcePath);
-      Files.writeString(cachedFile, text, StandardCharsets.UTF_8);
+
+      try (Reader reader = tika.parse(sourcePath);
+           Writer writer = Files.newBufferedWriter(cachedFile, StandardCharsets.UTF_8)) {
+        IOUtils.copy(reader, writer);
+      }
     }
 
     return cachedFile;
   }
 
-  private Path getTemporaryFolder() {
-    return agent.getPaths().getCacheFolder().resolve(TOOL_NAME);
+  private static class ReadArgs {
+    String path;
   }
-
-  @Override
-  protected String error(String m) {
-      return "STATUS: ERROR\nERROR: "+m+"\n---\n";
-  }
-  
 }
