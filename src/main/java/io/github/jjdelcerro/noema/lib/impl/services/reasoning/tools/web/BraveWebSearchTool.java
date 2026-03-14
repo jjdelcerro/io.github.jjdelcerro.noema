@@ -16,7 +16,7 @@ import java.time.Duration;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 
-public class WebSearchTool implements AgentTool {
+public class BraveWebSearchTool implements AgentTool {
 
   public static final String BRAVE_SEARCH_API_KEY = "websearch/brave_api_key";
 
@@ -26,7 +26,7 @@ public class WebSearchTool implements AgentTool {
 
   private final Agent agent;
 
-  public WebSearchTool(Agent agent) {
+  public BraveWebSearchTool(Agent agent) {
     this.agent = agent;
     this.apiKey = agent.getSettings().getPropertyAsString(BRAVE_SEARCH_API_KEY);
     this.httpClient = HttpClient.newBuilder()

@@ -4,7 +4,7 @@
   "domains": {
     "LLM_MODELS": "models.properties",
     "LLM_PROVIDERS_URL": "providers_urls.properties",
-    "LLM_PROVIDERS_APIKEY": "providers_apikeys.properties",
+    "APIKEYS": "apikeys.properties",
     "AVAILABLE_TOOLS": "available_tools.properties",
     "IDENTITY_CORE": "identity_core.properties" 
   },  
@@ -31,7 +31,7 @@
               "variableName": "reasoning/provider/api_key",
               "actionName": "CHANGE_REASONING_PROVIDER",
               "required": true,
-              "childs": "LLM_PROVIDERS_APIKEY"
+              "childs": "APIKEYS"
             },
             {
               "type": "selectoption",
@@ -86,7 +86,7 @@
           "variableName": "memory/provider/api_key",
           "actionName": "CHANGE_MEMORY_PROVIDER",
           "required": true,
-          "childs": "LLM_PROVIDERS_APIKEY"
+          "childs": "APIKEYS"
         },
         {
           "type": "selectoption",
@@ -200,9 +200,22 @@
       ]
     },
     {
-      "type": "inputstring",
-      "label": "Web search, Brave API Key",
-      "variableName": "websearch/brave_api_key"
+      "type": "menu",
+      "label": "Web serach",
+      "childs": [
+          {
+            "type": "combo",
+            "label": "Web search, Brave API Key",
+            "variableName": "websearch/brave_api_key",
+            "childs": "APIKEYS"
+          },
+          {
+            "type": "combo",
+            "label": "Web search, Tavily API Key",
+            "variableName": "websearch/tavily_api_key",
+            "childs": "APIKEYS"
+          }
+        ]
     },
     {
       "type": "menu",

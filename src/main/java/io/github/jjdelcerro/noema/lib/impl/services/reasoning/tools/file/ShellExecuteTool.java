@@ -1,11 +1,10 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
-import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.AbstractPaginatedAgentTool;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceImpl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -13,7 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -28,22 +26,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * de los procesos, la captura en disco y la higiene de temporales.
  */
 @SuppressWarnings("UseSpecificCatch")
-public class ShellExecuteTool extends AbstractAgentTool {
+public class ShellExecuteTool extends AbstractPaginatedAgentTool {
 
   public static final String TOOL_NAME = "shell_execute";
-  private static final int MAX_SAVED_OUTPUTS = 20; // Cuota de archivos en disco
+  private static final int MAX_SAVED_OUTPUTS = 20;
   private static final long WAIT_STEP_SECONDS = 30;
 
   private static Boolean firejailAvailable = null;
 
-  // Mapa de salidas: ID (UUID) -> Path al fichero .out
   private final Map<String, Path> outputRegistry;
-//  private final File tmpFolder;
 
-  /**
-   * Extensión de LRUMap para gestionar el borrado físico de archivos al
-   * desalojar entradas.
-   */
   private class OutputLRUMap extends LRUMap<String, Path> {
 
     public OutputLRUMap(int size) {
@@ -65,21 +57,15 @@ public class ShellExecuteTool extends AbstractAgentTool {
   public ShellExecuteTool(Agent agent) {
     super(agent);
     this.outputRegistry = Collections.synchronizedMap(new OutputLRUMap(MAX_SAVED_OUTPUTS));
-//    this.tmpFolder = agent.getPaths().getTempFolder();
     loadOutputsInformation();
   }
 
-  /**
-   * Rescata archivos de sesiones anteriores y activa la autolimpieza si se
-   * supera la cuota.
-   */
   private void loadOutputsInformation() {
     if (!Files.exists(agent.getPaths().getTempFolder())) {
       return;
     }
 
     try {
-      // Listar archivos .out ordenados por fecha de modificación (viejos primero)
       List<Path> files = Files.list(agent.getPaths().getTempFolder())
               .filter(p -> p.toString().endsWith(".out"))
               .sorted(Comparator.comparingLong(p -> p.toFile().lastModified()))
@@ -87,7 +73,6 @@ public class ShellExecuteTool extends AbstractAgentTool {
 
       for (Path file : files) {
         String id = file.getFileName().toString().replace(".out", "");
-        // Al insertar, el LRUMap ejecutará removeLRU si excedemos MAX_SAVED_OUTPUTS
         outputRegistry.put(id, file.toAbsolutePath());
       }
       if (!files.isEmpty()) {
@@ -102,44 +87,23 @@ public class ShellExecuteTool extends AbstractAgentTool {
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
             .name(TOOL_NAME)
-            .description(
-                    """
-Ejecuta comandos de sistema en una shell de Bash. 
-STATUS: ok|error
-EMPTY: true|false
----
-<contenido del fichero, solo presente si EMPTY es es falso>                         
-
-En caso de error devolvera:
-STATUS: error
-ERROR: <error description>
----                                                                           
-
-**RESTRICCIONES CRÍTICAS:** 
-1. **No Interactividad:** La shell NO es interactiva. Evita estrictamente comandos que requieran entrada del usuario, contraseñas o confirmaciones (ej: 'sudo', 'apt' sin '-y', o scripts con prompts [y/n]). 
-2. **Supervisión Humana:** Para tareas largas, el usuario humano será consultado cada cierto tiempo y tiene la autoridad de abortar el proceso. Prepárate para manejar estados 'aborted'. 
-3. **Gestión de Salida:** Si el comando genera una salida extensa, esta se guardará en un recurso temporal y se te entregará un bloque inicial de líneas. 
-
-**PROTOCOLO DE LECTURA:** Si la salida está truncada, verás un bloque [SYSTEM] con un HINT. Debes usar la herramienta 'shell_read_output' con el ID del recurso y el offset indicado para continuar la lectura si necesitas más información.
-"""
-            )
-            .addParameter("command", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Comando completo a ejecutar. Asegúrate de incluir flags de no-interactividad (ej: '-y' o '--batch') si el comando los soporta."))
+            .description("Ejecuta comandos de sistema en una shell de Bash.\n" +
+                    "**RESTRICCIONES CRÍTICAS:**\n" +
+                    "  1. **No Interactividad:** La shell NO es interactiva. Evita estrictamente comandos que requieran entrada del usuario, contraseñas o confirmaciones (ej: 'sudo', 'apt' sin '-y').\n" +
+                    "  2. **Supervisión Humana:** Para tareas largas, el usuario será consultado periódicamente y puede abortar el proceso.\n" +
+                    "  3. **Flags no-interactivos:** Incluye flags de no-interactividad si el comando los soporta (ej: '-y', '--batch').\n" +
+                    "\n" +
+                    "**SEGURIDAD:** Si Firejail está disponible, los comandos se ejecutan en un sandbox con directorio home aislado y acceso restringido al proyecto.\n" +
+                    "\n" +
+                    getPaginationSystemInstruction())
+            .addParameter("command", JsonSchemaProperty.STRING, 
+                    JsonSchemaProperty.description("Comando completo a ejecutar. Incluye flags de no-interactividad si aplica (ej: '-y', '--batch')."))
             .build();
   }
 
   @Override
   public int getMode() {
     return AgentTool.MODE_EXECUTION;
-  }
-
-  /**
-   * Devuelve la ruta de una salida capturada.Usado por ShellReadOutputTool.
-   *
-   * @param id
-   * @return
-   */
-  public Path getOutputPath(String id) {
-    return outputRegistry.get(id);
   }
 
   @Override
@@ -156,6 +120,10 @@ ERROR: <error description>
       Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
       String command = args.get("command");
 
+      if (command == null || command.trim().isEmpty()) {
+        return formatErrorResponse("El parámetro 'command' es obligatorio.");
+      }
+
       ProcessBuilder pb = new ProcessBuilder("bash", "-c", this.getSecuredCommand(command));
       pb.directory(agent.getPaths().getWorkspaceFolder().toFile());
       pb.redirectErrorStream(true);
@@ -167,12 +135,9 @@ ERROR: <error description>
       Semaphore readPermission = new Semaphore(1);
       AtomicBoolean processFinished = new AtomicBoolean(false);
 
-      // HILO LECTOR: Vuelca bytes a disco mientras tenga permiso
       @SuppressWarnings("SleepWhileInLoop")
-//      Thread readerThread = Thread.ofVirtual().start(() -> {
       Thread readerThread = Thread.ofPlatform().start(() -> {
         try (InputStream is = process.getInputStream(); OutputStream os = Files.newOutputStream(outputFile)) {
-
           byte[] buffer = new byte[4096];
           while (!processFinished.get()) {
             if (readPermission.tryAcquire(100, TimeUnit.MILLISECONDS)) {
@@ -197,7 +162,6 @@ ERROR: <error description>
         }
       });
 
-      // HILO PRINCIPAL: Vigilante del tiempo e interacción
       boolean keepGoing = true;
       int totalSeconds = 0;
 
@@ -205,7 +169,6 @@ ERROR: <error description>
         boolean finishedInStep = process.waitFor(WAIT_STEP_SECONDS, TimeUnit.SECONDS);
         if (!finishedInStep) {
           totalSeconds += WAIT_STEP_SECONDS;
-          // Pausamos al lector adquiriendo el semáforo
           readPermission.acquire();
           try {
             String msg = String.format("El comando '%s' lleva %ds. ¿Continuar?", command, totalSeconds);
@@ -222,69 +185,46 @@ ERROR: <error description>
       processFinished.set(true);
       readerThread.join(1000);
 
-      // Registrar en el mapa para futura lectura/higiene
       outputRegistry.put(executionId, outputFile.toAbsolutePath());
 
       int exitCode = process.isAlive() ? -1 : process.exitValue();
 
-      // DELEGACIÓN: Usamos FileReadTool para generar la respuesta paginada
-      ReasoningServiceImpl reasoning = (ReasoningServiceImpl) agent.getService(ReasoningServiceImpl.NAME);
-      FileReadTool fileRead = (FileReadTool) reasoning.getAvailableTool(FileReadTool.TOOL_NAME);
+      String resourceId = getIdFromPath(outputFile);
+      if (resourceId == null) {
+        return formatErrorResponse("Error generando resource_id para la salida del comando.");
+      }
 
-      // Inyectamos el código de salida en el prefijo de la respuesta
-      String statusPrefix = (exitCode == 0) ? "" : "[SYSTEM: Command failed with exit code " + exitCode + "]\n";
+      if (exitCode != 0) {
+        LOGGER.warn("Comando falló con exit code: " + exitCode + ", command: " + command);
+      }
 
-      Map<String, Object> shellReadOutputArgs = new HashMap<>();
-      shellReadOutputArgs.put("id", executionId);
-      String readerOutput = fileRead.execute(
-              outputFile,
-              executionId,
-              ShellReadOutputTool.TOOL_NAME,
-              shellReadOutputArgs,
-              0,
-              1000
-      );
-
-      return statusPrefix + readerOutput;
+      return servePaginatedResource(resourceId);
 
     } catch (Exception e) {
-      return error("Fallo en ejecución: " + e.getMessage());
+      LOGGER.warn("Error ejecutando comando, args=" + jsonArguments, e);
+      return formatErrorResponse("Fallo en ejecución: " + e.getMessage());
     }
   }
 
-  /**
-   * Construye el comando final envuelto en Firejail siguiendo la arquitectura:
-   * - agent/data: Blindada (Blacklist) - agent/home: Home persistente (Private)
-   * - project_root: Visible (Whitelist)
-   */
   private String getSecuredCommand(String command) {
     if (!this.isSecureShellExecutionAvailable()) {
       return command;
     }
-    // 1. Resolución de rutas absolutas
-    // Asumimos que getAgentFolder() devuelve la carpeta "agent/"
+
     Path agentFolder = agent.getPaths().getSandboxHomeFolder().toAbsolutePath().normalize();
     Path dataFolder = agent.getPaths().getDataFolder().toAbsolutePath().normalize();
 
     Path projectRoot = agentFolder.getParent();
     Path homeFolder = agentFolder.resolve("home");
 
-    // Aseguramos que la carpeta home existe antes de lanzar firejail
     try {
       Files.createDirectories(homeFolder);
     } catch (IOException e) {
       LOGGER.warn("No se pudo crear/verificar la carpeta home del agente: " + homeFolder, e);
     }
 
-    // 2. Escapado del comando original
-    // Al ir dentro de un bash -c "...", debemos escapar las comillas dobles internas
-    String escapedCommand = command.replace("\"", "\\\"");
+    String escapedCommand = command.replace("\"", "\\\\\\\"");
 
-    // 3. Construcción del comando Firejail
-    // --quiet: Silencia los mensajes de inicio de Firejail
-    // --private: Usa la carpeta especificada como el $HOME del proceso
-    // --whitelist: Permite acceso a la raíz del proyecto
-    // --blacklist: Prohíbe explícitamente el acceso a la carpeta de datos del orquestador
     return String.format(
             "firejail --quiet --private=\"%s\" --whitelist=\"%s\" --blacklist=\"%s\" -- bash -c \"cd \\\"%s\\\"; %s\"",
             homeFolder.toString(),
@@ -295,25 +235,14 @@ ERROR: <error description>
     );
   }
 
-  /**
-   * Verifica si el binario 'firejail' está instalado y disponible en el PATH
-   * del sistema.Cachea el resultado para optimizar ejecuciones posteriores.
-   *
-   * @return
-   */
   public synchronized boolean isSecureShellExecutionAvailable() {
     if (firejailAvailable != null) {
       return firejailAvailable;
     }
 
     try {
-      // Ejecutamos 'which firejail' para ver si el binario existe en el PATH
       Process process = new ProcessBuilder("which", "firejail").start();
-
-      // Esperamos un tiempo ínfimo (max 2s) para la comprobación
       boolean exited = process.waitFor(2, TimeUnit.SECONDS);
-
-      // Si el exitValue es 0, el binario existe y es accesible
       firejailAvailable = exited && process.exitValue() == 0;
 
       if (firejailAvailable) {
@@ -329,10 +258,4 @@ ERROR: <error description>
 
     return firejailAvailable;
   }
-
-  @Override
-  protected String error(String m) {
-    return "STATUS: ERROR\nERROR: " + m + "\n---\n";
-  }
-
 }
