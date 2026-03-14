@@ -29,9 +29,20 @@ public class FileExtractTextTool extends AbstractAgentTool {
     return ToolSpecification.builder()
             .name(TOOL_NAME)
             .description("""
-                    Extrae el texto de archivos complejos (PDF, DOCX, etc). 
-                    Soporta paginación. Si el contenido es largo, usa 'offset' y 'limit' para leer por partes.
-                    """)
+Extrae y devuelve el texto de archivos complejos (PDF, DOCX, etc). 
+Soporta paginación. Si el contenido es largo, usa 'offset' y 'limit' para leer por partes.
+El formato de la respuesta es:
+STATUS: ok|error
+EMPTY: true|false
+---
+<contenido del fichero, solo presente si EMPTY es es falso>                         
+
+En caso de error devolvera:
+STATUS: error
+ERROR: <error description>
+---                                                                           
+"""
+            )
             .addParameter("path", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Ruta del archivo binario."))
             .addParameter("offset", JsonSchemaProperty.INTEGER, JsonSchemaProperty.description("Línea inicial del texto extraído."))
             .addParameter("limit", JsonSchemaProperty.INTEGER, JsonSchemaProperty.description("Líneas a leer."))
@@ -91,4 +102,10 @@ public class FileExtractTextTool extends AbstractAgentTool {
   private Path getTemporaryFolder() {
     return agent.getPaths().getCacheFolder().resolve(TOOL_NAME);
   }
+
+  @Override
+  protected String error(String m) {
+      return "STATUS: ERROR\nERROR: "+m+"\n---\n";
+  }
+  
 }

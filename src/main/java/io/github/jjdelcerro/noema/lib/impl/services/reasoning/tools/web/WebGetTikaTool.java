@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentAccessControl;
 import org.apache.tika.Tika;
 
 import java.net.URI;
@@ -72,8 +71,10 @@ public class WebGetTikaTool implements AgentTool { // FIXME: alguna forma de pag
         finalContent = response.body();
       } else {
         // Es HTML, PDF, DOCX... aquí sí entra Tika para limpiar la "mugre"
+        tika.setMaxStringLength(-1);
         finalContent = tika.parseToString(new java.io.ByteArrayInputStream(response.body().getBytes()));
-        finalContent = finalContent.replaceAll("\\s+", " ").trim();
+        finalContent = finalContent.replaceAll("[ \\t]+", " ").trim();
+        finalContent = finalContent.replaceAll("[\\n]+", "\n").trim();
       }
 
       // 3. Aplicar política de recorte
@@ -82,7 +83,6 @@ public class WebGetTikaTool implements AgentTool { // FIXME: alguna forma de pag
         finalContent = finalContent.substring(0, MAX_CHARS);
         truncated = true;
       }
-
       return gson.toJson(Map.of(
               "status", "success",
               "mime_type", contentType,

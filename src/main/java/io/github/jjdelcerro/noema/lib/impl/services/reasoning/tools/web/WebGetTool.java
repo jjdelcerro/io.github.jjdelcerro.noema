@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 
-public class WebGetTool implements AgentTool {
+public class WebGetTool implements AgentTool { // NO USAR, usar WebGetTikaTool
 
   private final HttpClient httpClient;
   private final Gson gson = new Gson();

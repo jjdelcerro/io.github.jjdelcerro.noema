@@ -5,6 +5,7 @@ import io.github.jjdelcerro.noema.lib.AgentPaths;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -121,7 +122,7 @@ public class AgentPathsImpl implements AgentPaths {
   }
 
   @Override
-  public Collection<Path> listAgentPath(String name) {
+  public List<Path> listAgentPath(String name) {
     if (workspaceFolder == null) {
       return null;
     }
@@ -140,7 +141,7 @@ public class AgentPathsImpl implements AgentPaths {
     } catch (Exception ex) {
       new RuntimeException("Can't get paths from agent folder '" + name + "'.", ex);
     }
-    return paths;
+    return new ArrayList<>(paths);
   }
 
   @Override
@@ -165,7 +166,7 @@ public class AgentPathsImpl implements AgentPaths {
     if (Files.exists(x1)) {
       return x1;
     }
-    Path x2 = this.getGlobalConfigFolder().resolve(name);
+    Path x2 = this.getGlobalConfigFolder().resolve("var/config/"+name);
     if (Files.exists(x2)) {
       return x2;
     }

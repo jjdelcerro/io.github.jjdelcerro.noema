@@ -5,9 +5,11 @@ import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
+import io.github.jjdelcerro.noema.lib.services.memory.MemoryService;
 import static io.github.jjdelcerro.noema.lib.services.memory.MemoryService.MEMORY_MODEL_ID;
 import static io.github.jjdelcerro.noema.lib.services.memory.MemoryService.MEMORY_PROVIDER_API_KEY;
 import static io.github.jjdelcerro.noema.lib.services.memory.MemoryService.MEMORY_PROVIDER_URL;
+import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.main.BootUtils;
 import io.github.jjdelcerro.noema.main.MainGUI;
@@ -117,8 +119,8 @@ Aseg\u00farese de ejecutar el agente en un entorno controlado o con backups actu
     settings.load();
 
     // Validamos servicios
-    AgentServiceFactory convFactory = manager.getServiceFactory("Conversation");
-    AgentServiceFactory memFactory = manager.getServiceFactory("Memory");
+    AgentServiceFactory convFactory = manager.getServiceFactory(ReasoningService.ID);
+    AgentServiceFactory memFactory = manager.getServiceFactory(MemoryService.ID);
 
     boolean convOk = convFactory != null && convFactory.canStart(settings);
     boolean memOk = memFactory != null && memFactory.canStart(settings);

@@ -60,7 +60,7 @@ public class ConsultEnvironTool extends AbstractAgentTool {
 
       // 2. Construir la ruta relativa dentro de la jerarquía de identidad
       // Usamos .md porque consultamos el fichero denso, no la referencia.
-      String relativePath = "identity/environ/" + moduleName + ".md";
+      String relativePath = "var/identity/environ/" + moduleName + ".md";
 
       // 3. Localizar el archivo usando la infraestructura de AgentPaths
       Path modulePath = agent.getPaths().getAgentPath(relativePath);

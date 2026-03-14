@@ -6,7 +6,9 @@ import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.output.FinishReason;
 import dev.langchain4j.model.output.Response;
+import edu.emory.mathcs.backport.java.util.Collections;
 import io.github.jjdelcerro.noema.lib.AbstractAgentAction;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.LookupTurnTool;
@@ -59,9 +61,12 @@ import io.github.jjdelcerro.noema.lib.impl.DateUtils;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.ConsultEnvironTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.ListSkillsTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.LoadSkillTool;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
 /**
@@ -122,7 +127,10 @@ public class ReasoningServiceImpl implements ReasoningService {
   @Override
   public void start() {
     String[] resources = new String[]{
-      "var/config/prompts/reasoning-system.md"
+      "var/config/prompts/reasoning-system.md",
+      "var/identity/core/readme.md",
+      "var/identity/environ/readme.md",
+      "var/skills/readme.md"
     };
     for (String resPath : resources) {
       this.agent.installResource(resPath);
@@ -211,16 +219,17 @@ public class ReasoningServiceImpl implements ReasoningService {
     sb.append("Debes cumplir estrictamente con las siguientes normas técnicas y metodológicas:\n\n");
 
     AgentSettingsCheckedList coreSettings = agent.getSettings().getPropertyAsCheckedList("reasoning/identity/core");
-    Collection<Path> coreFiles = agent.getPaths().listAgentPath("var/identity/core");
+    List<Path> coreFiles = agent.getPaths().listAgentPath("var/identity/core");
+    Collections.sort(coreFiles);
 
     if (coreFiles != null && !coreFiles.isEmpty()) {
       for (Path path : coreFiles) {
         String fileName = path.getFileName().toString();
-        if( StringUtils.equalsIgnoreCase(fileName, "readme.md") ) {
+        if (StringUtils.equalsIgnoreCase(fileName, "readme.md")) {
           continue;
-        }        
+        }
         // Verificamos si el módulo está activo en la CheckedList de configuración
-        boolean isActive = false;
+        boolean isActive = true;
         if (coreSettings != null) {
           // "01_stack_tecnico.md" -> "01_stack_tecnico"
           String baseName = org.apache.commons.io.FilenameUtils.getBaseName(fileName);
@@ -249,7 +258,7 @@ public class ReasoningServiceImpl implements ReasoningService {
     if (environFiles != null) {
       for (Path path : environFiles) {
         String fileName = path.getFileName().toString();
-        if( StringUtils.equalsIgnoreCase(fileName, "readme.md") ) {
+        if (StringUtils.equalsIgnoreCase(fileName, "readme.md")) {
           continue;
         }
         // Solo cargamos los archivos de referencia ligera
@@ -270,6 +279,15 @@ public class ReasoningServiceImpl implements ReasoningService {
     finalPrompt = StringUtils.replace(finalPrompt, "{SEARCHFULLHISTORY}", SearchFullHistoryTool.NAME);
     finalPrompt = StringUtils.replace(finalPrompt, "{CONSULTENVIRON}", ConsultEnvironTool.NAME);
 
+    try {
+      FileUtils.writeStringToFile(
+              agent.getPaths().getAgentFolder().resolve("var/tmp/reasoning-system-prompt.md").toFile(),
+              finalPrompt,
+              StandardCharsets.UTF_8
+      );
+    } catch (IOException ex) {
+      LOGGER.warn("Can't write system prompt", ex);
+    }
     return finalPrompt;
   }
 
@@ -558,6 +576,7 @@ public class ReasoningServiceImpl implements ReasoningService {
 //              
     SensorsServiceImpl sensors = (SensorsServiceImpl) this.agent.getService(SensorsService.NAME);
     MutableBoolean abort = new MutableBoolean(false);
+    int toolExecutionRetries = 0;
 
     while (this.isRunning()) {
       ConsumableSensorEvent event = null;
@@ -590,7 +609,7 @@ public class ReasoningServiceImpl implements ReasoningService {
           this.sourceOfTruth.add(obsTurn);
           this.session.consolideTurn(obsTurn);
         }
-
+        toolExecutionRetries = 0;
         boolean turnFinished = false;
         while (!turnFinished && this.isRunning()) {
           List<ChatMessage> context = this.session.getContextMessages(this.activeCheckPoint, getBaseSystemPrompt());
@@ -636,7 +655,17 @@ public class ReasoningServiceImpl implements ReasoningService {
             );
             this.sourceOfTruth.add(responseTurn);
             this.session.consolideTurn(responseTurn);
-            turnFinished = true;
+            if (response.finishReason() == FinishReason.TOOL_EXECUTION) {
+              // El modelo anunció una tool en texto pero no la ejecutó formalmente
+              // Reinyectamos forzando la ejecución
+              this.session.add(new UserMessage("(reintenta la llamada a la herramienta sin ninguna explicacion)"));
+              if (toolExecutionRetries++ > 3) {
+                throw new RuntimeException("Too many retries for executing tool");
+              }
+            } else {
+              turnFinished = true;
+            }
+            toolExecutionRetries = 0;
           }
         }
         if (this.session.needCompaction()) {

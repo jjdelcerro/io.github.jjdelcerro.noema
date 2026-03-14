@@ -29,13 +29,37 @@ Trata de no utilizar referencias biologicas para definer conportamientos de la a
     
 Teniendo en cuenta todo esto prepara un informe que incluya como minimo:
 
-* Una vision general
-* El stack tecnologico
-* Estructura de paquetes, interfaces/implementacion
-* Arquitectura y diseño 
-* Herramientas del agente, se exaustivo en la enumeracion de las herramientas.
-* Construccion y despliegue
-* Una conclusion
+*   Una vision general
+*   El stack tecnologico
+*   Estructura de paquetes, interfaces/implementacion
+*   Arquitectura y diseño. 
+    Para esta seccion sigue una estructura en la que queden reflejadas al menos las siguientes partes:
+    1.  **El Kernel (o Core)**
+        *   `Agent` y `AgentManager`: El contrato principal y el director de orquesta.
+        *   **Ciclo de Vida**: Registro, arranque, parada y gestión de factorías.
+        *   **Infraestructura de Datos**: `SQLProvider` y capas de abstracción de persistencia básica.
+        *   **Topología de Archivos**: La estructura de la carpeta `noema-agent` (var/lib, var/config, etc.).
+
+    2.  **Capacidades Horizontales (Cross-cutting Concerns)**
+        *   **Seguridad y Control de Acceso** (`AgentAccessControl`).
+        *   **Gestión de Rutas y Sandbox** (`AgentPaths`).
+        *   **Sistema de Configuración Jerárquica** (`AgentSettings`).
+
+    3.  **Servicios de Periferia**
+        *   `SensorsService`.
+        *   `SchedulerService`.
+        *   `Email` / `Telegram`.
+        *   `DocumentsService`.
+
+    4.  **Servicios Cognitivos** (puedes incluir aqui mencion a la parte de persistencia como algo comun a estos dos servicios).
+        *   `ReasoningService` (Orquestación del pensamiento).
+        *   `MemoryService` (Consolidación histórica y Checkpoints).
+
+    Acompaña a cada uno de los servicios de un parrafo de descripcion.
+    
+*   Herramientas del agente, se exaustivo en la enumeracion de las herramientas.
+*   Construccion y despliegue
+*   Una conclusion
 
 Opcionalmente puede incluir:
 

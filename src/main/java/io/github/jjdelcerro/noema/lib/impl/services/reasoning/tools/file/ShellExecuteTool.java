@@ -105,6 +105,15 @@ public class ShellExecuteTool extends AbstractAgentTool {
             .description(
                     """
 Ejecuta comandos de sistema en una shell de Bash. 
+STATUS: ok|error
+EMPTY: true|false
+---
+<contenido del fichero, solo presente si EMPTY es es falso>                         
+
+En caso de error devolvera:
+STATUS: error
+ERROR: <error description>
+---                                                                           
 
 **RESTRICCIONES CRÍTICAS:** 
 1. **No Interactividad:** La shell NO es interactiva. Evita estrictamente comandos que requieran entrada del usuario, contraseñas o confirmaciones (ej: 'sudo', 'apt' sin '-y', o scripts con prompts [y/n]). 
@@ -319,6 +328,11 @@ Ejecuta comandos de sistema en una shell de Bash.
     }
 
     return firejailAvailable;
+  }
+
+  @Override
+  protected String error(String m) {
+    return "STATUS: ERROR\nERROR: " + m + "\n---\n";
   }
 
 }

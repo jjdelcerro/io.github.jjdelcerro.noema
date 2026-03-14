@@ -59,9 +59,19 @@ public class FileReadTool extends AbstractAgentTool {
     return ToolSpecification.builder()
             .name(TOOL_NAME)
             .description("""
-                    Lee el contenido de un archivo de texto.
-                    Soporta paginación automática para archivos grandes.
-                    Si el archivo se trunca por tamaño, se incluirán instrucciones para leer el siguiente bloque.
+Devuelve el contenido de un archivo de texto.
+Soporta paginación automática para archivos grandes.
+Si el archivo se trunca por tamaño, se incluirán instrucciones para leer el siguiente bloque.
+El formato de la respuesta es:
+STATUS: ok|error
+EMPTY: true|false
+---
+<contenido del fichero, solo presente si EMPTY es es falso>                         
+
+En caso de error devolvera:
+STATUS: error
+ERROR: <error description>
+---                                                                           
                     """)
             .addParameter("path", JsonSchemaProperty.STRING,
                     JsonSchemaProperty.description("Ruta del archivo."))
@@ -136,20 +146,24 @@ public class FileReadTool extends AbstractAgentTool {
     List<String> chunk = lines.skip(offset)
             .limit(limit)
             .collect(Collectors.toList());
-
     content = String.join("\n", chunk);
     linesRead = chunk.size();
 
+    if( StringUtils.isBlank(content)) {
+      return "STATUS: OK\nEMPTY: true\n---\n";
+    }
     boolean isTruncated = (offset + linesRead) < totalLines;
 
     // CASO A: Lectura completa desde el inicio (sin ruido)
     if (offset == 0 && !isTruncated) {
-      return content;
+      return "STATUS: OK\nEMPTY: false\n---\n" + content;
     }
 
     // CASO B: Paginación o Truncado (con metadatos e instrucciones)
     StringBuilder sb = new StringBuilder();
     int nextOffset = offset + linesRead;
+
+    sb.append("STATUS: OK\nEMPTY: false\n---\n");
 
     // Cabecera informativa
     sb.append("[SYSTEM: Showing lines ").append(offset)
@@ -229,6 +243,11 @@ public class FileReadTool extends AbstractAgentTool {
       // Si no podemos leerlo para detectar el tipo, asumimos que no podemos leer el contenido
       return true;
     }
+  }
+
+  @Override
+  protected String error(String m) {
+      return "STATUS: ERROR\nERROR: "+m+"\n---\n";
   }
 
   private static class ReadArgs {

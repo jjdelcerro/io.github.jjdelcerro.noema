@@ -46,12 +46,12 @@
         {
           "type": "inputstring",
           "label": "Turnos para compactar historial",
-          "actionName": "reasoning/compaction_turns"
+          "variableName": "reasoning/compaction_turns"
         },
         {
           "type": "inputstring",
           "label": "Tokens para compactar historial",
-          "actionName": "reasoning/compaction_tokens"
+          "variableName": "reasoning/compaction_tokens"
         },
         {
           "type": "checkedlist",

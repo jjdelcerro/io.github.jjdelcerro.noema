@@ -2,6 +2,7 @@ package io.github.jjdelcerro.noema.lib;
 
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
 
 /**
  *
@@ -35,5 +36,5 @@ public interface AgentPaths {
 
   Path getConfigPath(String name);
 
-  Collection<Path> listAgentPath(String name);
+  List<Path> listAgentPath(String name);
 }
