@@ -177,7 +177,7 @@ public class AgentAccessControlImpl implements AgentAccessControl {
   public boolean isAccessible(URI url) { // FIXME: habria que afinar esto, probablemente usando AgentSettings
     // habria que ver si es intersante restringir el protocolo.
     String lower = url.toString().toLowerCase();
-    return lower.contains("localhost") || lower.contains("127.0.0.1") || lower.contains("192.168.");
+    return !(lower.contains("localhost") || lower.contains("127.0.0.1") || lower.contains("192.168."));
   }
 
   /**

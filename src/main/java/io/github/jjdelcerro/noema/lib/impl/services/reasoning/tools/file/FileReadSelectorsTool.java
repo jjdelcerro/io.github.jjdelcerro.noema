@@ -57,9 +57,20 @@ public class FileReadSelectorsTool extends AbstractAgentTool {
     return ToolSpecification.builder()
             .name(TOOL_NAME)
             .description("""
-                    Lee contenido de múltiples archivos mediante rutas exactas o patrones glob (ej: 'src/**/*.java').
-                    Soporta paginación. Si el conjunto de archivos es muy grande, usa 'offset' y 'limit' para navegar.
-                    """)
+Lee contenido de múltiples archivos mediante rutas exactas o patrones glob (ej: 'src/**/*.java').
+Soporta paginación. Si el conjunto de archivos es muy grande, usa 'offset' y 'limit' para navegar.
+El formato de la respuesta es:
+STATUS: ok|error
+EMPTY: true|false
+---
+<contenido del fichero, solo presente si EMPTY es es falso>                         
+
+En caso de error devolvera:
+STATUS: error
+ERROR: <error description>
+---                                                                           
+"""
+            )
             .addParameter("selectors", JsonSchemaProperty.ARRAY,
                     JsonSchemaProperty.description("Lista de rutas o patrones glob."))
             .addParameter("offset", JsonSchemaProperty.INTEGER,
@@ -248,4 +259,10 @@ public class FileReadSelectorsTool extends AbstractAgentTool {
     }
     return true;
   }
+
+  @Override
+  protected String error(String m) {
+      return "STATUS: ERROR\nERROR: "+m+"\n---\n";
+  }
+
 }

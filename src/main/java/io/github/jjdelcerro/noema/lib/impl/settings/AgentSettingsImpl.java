@@ -40,7 +40,7 @@ public class AgentSettingsImpl extends AgentSettingsGroupImpl implements AgentSe
 
   @Override
   public void load() {
-    Path path = paths.getConfigFolder().resolve("settings.json");
+    Path path = paths.getConfigPath("settings.json");
     if (!Files.exists(path)) {
       return;
     }

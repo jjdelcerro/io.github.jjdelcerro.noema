@@ -29,8 +29,21 @@ public class ShellReadOutputTool extends AbstractAgentTool {
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
             .name(TOOL_NAME)
-            .description("Lee bloques adicionales de la salida de un comando previo. "
-                    + "Úsalo cuando el sistema te informe de que la salida se guardó en un recurso temporal.")
+            .description(
+                    """                    
+Lee bloques adicionales de la salida de un comando previo.
+Úsalo cuando el sistema te informe de que la salida se guardó en un recurso temporal.
+STATUS: ok|error
+EMPTY: true|false
+---
+<contenido del fichero, solo presente si EMPTY es es falso>                         
+
+En caso de error devolvera:
+STATUS: error
+ERROR: <error description>
+---                                                                           
+"""
+            )
             .addParameter("id", JsonSchemaProperty.STRING,
                     JsonSchemaProperty.description("El ID del recurso de salida (ej: 'out_abc123')."))
             .addParameter("offset", JsonSchemaProperty.INTEGER,
@@ -78,7 +91,7 @@ public class ShellReadOutputTool extends AbstractAgentTool {
 
       // Pasamos el ID como 'originalPath' para que los HINTs de paginación
       // sigan usando el ID y no una ruta de archivo.
-      Map<String, Object> shellReadOutputArgs = new HashMap<>();      
+      Map<String, Object> shellReadOutputArgs = new HashMap<>();
       shellReadOutputArgs.put("id", id);
       return fileRead.execute(outputPath, id, TOOL_NAME, shellReadOutputArgs, offset, limit);
 
@@ -86,5 +99,10 @@ public class ShellReadOutputTool extends AbstractAgentTool {
       LOGGER.warn("Error en ShellReadOutputTool: " + e.getMessage());
       return error("Error al leer salida de comando: " + e.getMessage());
     }
+  }
+
+  @Override
+  protected String error(String m) {
+    return "STATUS: ERROR\nERROR: " + m + "\n---\n";
   }
 }
