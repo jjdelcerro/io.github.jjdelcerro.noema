@@ -45,15 +45,15 @@ Teniendo en cuenta todo esto prepara un informe que incluya como minimo:
         *   **Gestión de Rutas y Sandbox** (`AgentPaths`).
         *   **Sistema de Configuración Jerárquica** (`AgentSettings`).
 
-    3.  **Servicios de Periferia**
+    3.  **Servicios Cognitivos** (puedes incluir aqui mencion a la parte de persistencia como algo comun a estos dos servicios).
+        *   `ReasoningService` (Orquestación del pensamiento).
+        *   `MemoryService` (Consolidación histórica y Checkpoints).
+
+    4.  **Servicios de Periferia** (asegurate que en esta seccion se incluyan todos los servicios que no esten en el apartado de servicios Cognitivos).
         *   `SensorsService`.
         *   `SchedulerService`.
         *   `Email` / `Telegram`.
         *   `DocumentsService`.
-
-    4.  **Servicios Cognitivos** (puedes incluir aqui mencion a la parte de persistencia como algo comun a estos dos servicios).
-        *   `ReasoningService` (Orquestación del pensamiento).
-        *   `MemoryService` (Consolidación histórica y Checkpoints).
 
     Acompaña a cada uno de los servicios de un parrafo de descripcion.
     
