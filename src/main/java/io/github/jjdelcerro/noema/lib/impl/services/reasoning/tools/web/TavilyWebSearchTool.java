@@ -27,7 +27,7 @@ public class TavilyWebSearchTool extends AbstractAgentTool {
   @Override
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
-            .name("tavily_web_search")
+            .name("web_search")
             .description("Busca información actualizada en internet usando Tavily. Ideal para búsquedas complejas y análisis de datos web.")
             .addParameter("query", JsonSchemaProperty.STRING, JsonSchemaProperty.description("La consulta de búsqueda."))
             .build();
