@@ -108,4 +108,9 @@ public class ComboOptionItemSwing extends AbstractAgentSettingsItemSwing {
 
     return p;
   }
+  
+  @Override
+  public boolean isLeaf() {
+    return true;
+  }
 }
