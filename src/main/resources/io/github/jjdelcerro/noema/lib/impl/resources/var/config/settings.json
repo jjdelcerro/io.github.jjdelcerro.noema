@@ -55,6 +55,7 @@
     }
   },  
   "access_control": {
+    "humanConfirmationRequired": true,
     "allow_disk_write": true,
     "allow_shell_execution": true,
     "allow_internet_access": true,    
