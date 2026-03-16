@@ -65,4 +65,8 @@ public class SelectOptionItemSwing extends AbstractAgentSettingsItemSwing {
     return p;
   }
   
+  @Override
+  public boolean isLeaf() {
+    return true;
+  }
 }

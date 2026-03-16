@@ -66,4 +66,8 @@ public class ActionItemSwing extends AbstractAgentSettingsItemSwing {
     return p;
   }
   
+  @Override
+  public boolean isLeaf() {
+    return true;
+  }
 }

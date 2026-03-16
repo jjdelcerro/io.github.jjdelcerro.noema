@@ -81,4 +81,9 @@ public class InputStringItemSwing extends AbstractAgentSettingsItemSwing {
     return p;
   }
   
+  @Override
+  public boolean isLeaf() {
+    return true;
+  }
+  
 }

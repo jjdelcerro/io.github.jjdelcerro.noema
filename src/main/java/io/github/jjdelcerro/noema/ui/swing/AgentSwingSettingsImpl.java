@@ -14,12 +14,16 @@ import java.awt.BorderLayout;
 import java.awt.Dialog;
 import java.awt.FlowLayout;
 import java.awt.Frame;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.Window;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import java.io.FileReader;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -69,19 +73,80 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
 
   private void updateDetailPanel(AgentSettingsItemSwing item) {
     detailPanel.removeAll();
+    detailPanel.setLayout(new BorderLayout());
+    
     if (item != null) {
-      JComponent comp = item.getComponent();
-      if (comp != null) {
-        // Usamos CENTER para que el componente interno decida cómo crecer
-        detailPanel.add(comp, BorderLayout.CENTER);
+      if (item.isLeaf()) {
+        // Comportamiento actual para hojas
+        JComponent comp = item.getComponent();
+        if (comp != null) {
+          detailPanel.add(comp, BorderLayout.CENTER);
+        }
       } else {
-        JLabel lbl = new JLabel("Seleccione una sub-opción para: " + item.getLabel());
-        lbl.setHorizontalAlignment(SwingConstants.CENTER);
-        detailPanel.add(lbl, BorderLayout.NORTH);
+        // Nuevo comportamiento para menús: mostrar todas las hojas hijas directas
+        List<AgentSettingsItemUI> children = item.getChilds();
+        if (children != null && !children.isEmpty()) {
+          // Filtrar solo hojas hijas directas
+          List<AgentSettingsItemSwing> leafChildren = new ArrayList<>();
+          for (AgentSettingsItemUI child : children) {
+            if (child instanceof AgentSettingsItemSwing) {
+              AgentSettingsItemSwing swingChild = (AgentSettingsItemSwing) child;
+              if (swingChild.isLeaf()) {
+                leafChildren.add(swingChild);
+              }
+            }
+          }
+          
+          if (!leafChildren.isEmpty()) {
+            // Crear panel intermedio con GridBagLayout
+            JPanel intermediatePanel = new JPanel(new GridBagLayout());
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.gridx = 0;
+            gbc.gridy = 0;
+            gbc.weightx = 1.0;
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            gbc.anchor = GridBagConstraints.NORTHWEST;
+            gbc.insets = new Insets(5, 10, 5, 10);
+            
+            // Agregar cada componente de hoja
+            for (AgentSettingsItemSwing leaf : leafChildren) {
+              JComponent comp = leaf.getComponent();
+              if (comp != null) {
+                intermediatePanel.add(comp, gbc);
+                gbc.gridy++;
+              }
+            }
+            
+            // Panel vacío para empujar todo hacia arriba
+            gbc.weighty = 1.0;
+            gbc.fill = GridBagConstraints.BOTH;
+            intermediatePanel.add(new JPanel(), gbc);
+            
+            // Envolver en JScrollPane (barra vertical solo cuando sea necesario)
+            JScrollPane scrollPane = new JScrollPane(intermediatePanel);
+            scrollPane.setBorder(null);
+            scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+            scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+            detailPanel.add(scrollPane, BorderLayout.CENTER);
+          } else {
+            // No hay hojas hijas - mostrar mensaje original
+            showSelectSubOptionMessage(item);
+          }
+        } else {
+          // No hay hijos - mostrar mensaje original
+          showSelectSubOptionMessage(item);
+        }
       }
     }
+    
     detailPanel.revalidate();
     detailPanel.repaint();
+  }
+  
+  private void showSelectSubOptionMessage(AgentSettingsItemSwing item) {
+    JLabel lbl = new JLabel("Seleccione una sub-opción para: " + item.getLabel());
+    lbl.setHorizontalAlignment(SwingConstants.CENTER);
+    detailPanel.add(lbl, BorderLayout.NORTH);
   }
 
   private void loadConfiguration() {

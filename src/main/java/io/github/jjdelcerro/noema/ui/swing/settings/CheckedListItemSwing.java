@@ -154,4 +154,9 @@ public class CheckedListItemSwing extends AbstractAgentSettingsItemSwing {
       return this;
     }
   }
+  
+  @Override
+  public boolean isLeaf() {
+    return true;
+  }
 }

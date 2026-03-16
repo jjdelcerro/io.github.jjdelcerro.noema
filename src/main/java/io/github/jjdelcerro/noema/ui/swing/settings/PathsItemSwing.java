@@ -125,4 +125,9 @@ public class PathsItemSwing extends AbstractAgentSettingsItemSwing {
     agent.getSettings().setProperty(getVariableName(), paths);
     this.save(); // Guarda y ejecuta acciones
   }
+  
+  @Override
+  public boolean isLeaf() {
+    return true;
+  }
 }
