@@ -55,6 +55,10 @@
     }
   },  
   "access_control": {
+    "allow_disk_write": true,
+    "allow_shell_execution": true,
+    "allow_internet_access": true,    
+    "enable_rcs_backup": true,    
     "allowed_external_paths": [
     ],
     "nom_writable_paths": null,

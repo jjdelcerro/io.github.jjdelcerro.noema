@@ -259,6 +259,46 @@
       "label": "Control de acceso",
       "childs": [
         {
+          "type": "combo",
+          "label": "Permitir escritura en disco",
+          "variableName": "access_control/allow_disk_write",
+          "actionName": "RELOAD_ACCESS_CONTROL",
+          "childs": [
+            {"type": "value", "label": "Sí", "value": "true"},
+            {"type": "value", "label": "No", "value": "false"}
+          ]
+        },
+        {
+          "type": "combo",
+          "label": "Permitir ejecución de comandos (Shell)",
+          "variableName": "access_control/allow_shell_execution",
+          "actionName": "RELOAD_ACCESS_CONTROL",
+          "childs": [
+            {"type": "value", "label": "Sí", "value": "true"},
+            {"type": "value", "label": "No", "value": "false"}
+          ]
+        },
+        {
+          "type": "combo",
+          "label": "Permitir acceso a internet",
+          "variableName": "access_control/allow_internet_access",
+          "actionName": "RELOAD_ACCESS_CONTROL",
+          "childs": [
+            {"type": "value", "label": "Sí", "value": "true"},
+            {"type": "value", "label": "No", "value": "false"}
+          ]
+        },
+        {
+          "type": "combo",
+          "label": "Habilitar backup automático (RCS)",
+          "variableName": "access_control/enable_rcs_backup",
+          "actionName": "RELOAD_ACCESS_CONTROL",
+          "childs": [
+            {"type": "value", "label": "Sí", "value": "true"},
+            {"type": "value", "label": "No", "value": "false"}
+          ]
+        },
+        {
           "type": "paths",
           "label": "Rutas Externas Permitidas (Whitelist)",
           "variableName": "access_control/allowed_external_paths",

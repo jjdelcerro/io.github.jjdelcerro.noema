@@ -11,6 +11,7 @@ import dev.langchain4j.model.output.Response;
 import edu.emory.mathcs.backport.java.util.Collections;
 import io.github.jjdelcerro.noema.lib.AbstractAgentAction;
 import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.LookupTurnTool;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.SearchFullHistoryTool;
 import io.github.jjdelcerro.noema.lib.persistence.CheckPoint;
@@ -43,7 +44,6 @@ import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.Location
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.TimeTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.WeatherTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.WebGetTikaTool;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.BraveWebSearchTool;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryServiceImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
 import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
@@ -502,8 +502,9 @@ public class ReasoningServiceImpl implements ReasoningService {
 
   private List<ToolSpecification> getToolSpecifications() {
     List<ToolSpecification> toolSpecifications = new ArrayList<>();
+    AgentAccessControl accessControl = this.agent.getAccessControl();
     for (AvailableAgentTool availableTool : this.availableTools.values()) {
-      if (availableTool.active) {
+      if (accessControl.isToolAllowed(availableTool.tool) && availableTool.active) {
         toolSpecifications.add(availableTool.tool.getSpecification());
       }
     }

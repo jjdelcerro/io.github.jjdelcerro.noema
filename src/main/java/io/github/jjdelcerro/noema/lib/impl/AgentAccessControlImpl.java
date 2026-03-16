@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.AgentActions;
+import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import java.net.URI;
 
@@ -21,6 +22,11 @@ public class AgentAccessControlImpl implements AgentAccessControl {
   private final Path rootPath;
   private final AgentSettings settings;
   private final AgentActions actions;
+
+  private boolean allowDiskWrite;
+  private boolean allowShellExecution;
+  private boolean enableRcsBackup;
+  private boolean allowInternetAccess;
 
   // Lista de rutas adicionales permitidas fuera del root (ej: carpetas temporales)
   private final List<Path> allowedExternalPaths = new ArrayList<>();
@@ -207,6 +213,57 @@ public class AgentAccessControlImpl implements AgentAccessControl {
     for (Path p : forbidden) {
       nomReadablePaths.add(p.toAbsolutePath().normalize());
     }
+    this.allowDiskWrite = Boolean.parseBoolean(
+            settings.getPropertyAsString("access_control/allow_disk_write", "true")
+    );
+    this.allowShellExecution = Boolean.parseBoolean(
+            settings.getPropertyAsString("access_control/allow_shell_execution", "true")
+    );
+    this.enableRcsBackup = Boolean.parseBoolean(
+            settings.getPropertyAsString("access_control/enable_rcs_backup", "true")
+    );
+    this.allowInternetAccess = Boolean.parseBoolean(
+            settings.getPropertyAsString("access_control/allow_internet_access", "true")
+    );
   }
 
+  @Override
+  public boolean isAllowedDiskWrite() {
+    return allowDiskWrite;
+  }
+
+  @Override
+  public boolean isAllowedShellExecution() {
+    return allowShellExecution;
+  }
+
+  @Override
+  public boolean isEnabledRCSBackup() {
+    return enableRcsBackup;
+  }
+
+  @Override
+  public boolean isAllowedInternetAccess() {
+    return allowInternetAccess;
+  }
+
+  @Override
+  public boolean isToolAllowed(AgentTool tool) {
+    // Política 1: Si intenta escribir en disco pero no está permitido
+    if (tool.getMode() == AgentTool.MODE_WRITE && !this.allowDiskWrite) {
+      return false;
+    }
+
+    // Política 2: Si intenta ejecutar comandos pero no está permitido
+    if (tool.getMode() == AgentTool.MODE_EXECUTION && !this.allowShellExecution) {
+      return false;
+    }
+
+    // Política 3: Si intenta acceso a web/internet y no está permitido
+    if (tool.getMode() == AgentTool.MODE_WEB && !this.allowInternetAccess) {
+      return false;
+    }
+
+    return true;
+  }
 }
