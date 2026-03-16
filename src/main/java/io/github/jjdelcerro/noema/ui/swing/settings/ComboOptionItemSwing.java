@@ -101,11 +101,6 @@ public class ComboOptionItemSwing extends AbstractAgentSettingsItemSwing {
     gbc.insets = new Insets(10, 0, 0, 0);
     p.add(combo, gbc);
 
-    // Espaciador para empujar los componentes hacia arriba
-    gbc.gridy = 2;
-    gbc.weighty = 1.0;
-    p.add(new JPanel(), gbc);
-
     return p;
   }
   

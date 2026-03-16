@@ -73,11 +73,7 @@ public class InputStringItemSwing extends AbstractAgentSettingsItemSwing {
     gbc.fill = GridBagConstraints.HORIZONTAL;
     gbc.insets = new Insets(10, 0, 0, 0);
     p.add(field, gbc);
-    // EL TRUCO: Un panel vacío con weighty = 1.0 que empuja todo hacia arriba
-    gbc.gridy = 2;
-    gbc.weighty = 1.0;
-    gbc.fill = GridBagConstraints.BOTH;
-    p.add(new JPanel(), gbc);
+
     return p;
   }
   

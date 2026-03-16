@@ -13,7 +13,6 @@ import io.github.jjdelcerro.noema.ui.common.FakeAgent;
 import java.awt.BorderLayout;
 import java.awt.Dialog;
 import java.awt.FlowLayout;
-import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -73,76 +72,64 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
 
   private void updateDetailPanel(AgentSettingsItemSwing item) {
     detailPanel.removeAll();
-    detailPanel.setLayout(new BorderLayout());
-    
-    if (item != null) {
-      if (item.isLeaf()) {
-        // Comportamiento actual para hojas
-        JComponent comp = item.getComponent();
-        if (comp != null) {
-          detailPanel.add(comp, BorderLayout.CENTER);
-        }
-      } else {
-        // Nuevo comportamiento para menús: mostrar todas las hojas hijas directas
-        List<AgentSettingsItemUI> children = item.getChilds();
-        if (children != null && !children.isEmpty()) {
-          // Filtrar solo hojas hijas directas
-          List<AgentSettingsItemSwing> leafChildren = new ArrayList<>();
-          for (AgentSettingsItemUI child : children) {
-            if (child instanceof AgentSettingsItemSwing) {
-              AgentSettingsItemSwing swingChild = (AgentSettingsItemSwing) child;
-              if (swingChild.isLeaf()) {
-                leafChildren.add(swingChild);
-              }
+
+    JPanel intermediatePanel = new JPanel(new GridBagLayout());
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.gridx = 0;
+    gbc.gridy = 0;
+    gbc.weightx = 1.0;
+    gbc.weighty = 0.0; // Los elementos no se estiran verticalmente
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+    gbc.anchor = GridBagConstraints.NORTHWEST; // ALINEACIÓN SIEMPRE ARRIBA
+    gbc.insets = new Insets(1, 5, 1, 5);
+
+    // 2. Determinar qué añadir al panel
+    List<AgentSettingsItemSwing> componentsToAdd = new ArrayList<>();
+
+    if (item.isLeaf()) {
+      // Caso: Hoja (Input, Combo, Path, etc.)
+      JComponent comp = item.getComponent();
+      if (comp != null) {
+        componentsToAdd.add(item);
+      }
+    } else {
+      // Caso: Rama (Menú). Filtramos hojas hijas directas
+      List<AgentSettingsItemUI> children = item.getChilds();
+      if (children != null) {
+        for (AgentSettingsItemUI child : children) {
+          if (child instanceof AgentSettingsItemSwing swingChild && swingChild.isLeaf()) {
+            if (swingChild.getComponent() != null) {
+              componentsToAdd.add(swingChild);
             }
           }
-          
-          if (!leafChildren.isEmpty()) {
-            // Crear panel intermedio con GridBagLayout
-            JPanel intermediatePanel = new JPanel(new GridBagLayout());
-            GridBagConstraints gbc = new GridBagConstraints();
-            gbc.gridx = 0;
-            gbc.gridy = 0;
-            gbc.weightx = 1.0;
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-            gbc.anchor = GridBagConstraints.NORTHWEST;
-            gbc.insets = new Insets(5, 10, 5, 10);
-            
-            // Agregar cada componente de hoja
-            for (AgentSettingsItemSwing leaf : leafChildren) {
-              JComponent comp = leaf.getComponent();
-              if (comp != null) {
-                intermediatePanel.add(comp, gbc);
-                gbc.gridy++;
-              }
-            }
-            
-            // Panel vacío para empujar todo hacia arriba
-            gbc.weighty = 1.0;
-            gbc.fill = GridBagConstraints.BOTH;
-            intermediatePanel.add(new JPanel(), gbc);
-            
-            // Envolver en JScrollPane (barra vertical solo cuando sea necesario)
-            JScrollPane scrollPane = new JScrollPane(intermediatePanel);
-            scrollPane.setBorder(null);
-            scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-            scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-            detailPanel.add(scrollPane, BorderLayout.CENTER);
-          } else {
-            // No hay hojas hijas - mostrar mensaje original
-            showSelectSubOptionMessage(item);
-          }
-        } else {
-          // No hay hijos - mostrar mensaje original
-          showSelectSubOptionMessage(item);
         }
       }
     }
-    
+
+    // 3. Añadir todos los componentes al layout
+    for (AgentSettingsItemSwing compItem : componentsToAdd) {
+      intermediatePanel.add(compItem.getComponent(), gbc);
+      gbc.gridy++;
+    }
+
+    // 4. Panel vacío al final para "empujar" todo hacia arriba (el peso 1.0 aquí es clave)
+    gbc.gridy++;
+    gbc.weighty = 1.0;
+    gbc.fill = GridBagConstraints.BOTH;
+    intermediatePanel.add(new JPanel(), gbc);
+
+    // 5. Envolver en scroll por si acaso
+    JScrollPane scrollPane = new JScrollPane(intermediatePanel);
+    scrollPane.setBorder(null);
+    scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+    scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+    scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
+    detailPanel.add(scrollPane, BorderLayout.CENTER);
     detailPanel.revalidate();
     detailPanel.repaint();
   }
-  
+
   private void showSelectSubOptionMessage(AgentSettingsItemSwing item) {
     JLabel lbl = new JLabel("Seleccione una sub-opción para: " + item.getLabel());
     lbl.setHorizontalAlignment(SwingConstants.CENTER);
