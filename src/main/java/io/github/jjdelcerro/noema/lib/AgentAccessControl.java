@@ -14,6 +14,8 @@ public interface AgentAccessControl {
     PATH_ACCESS_WRITE
   }
 
+  public boolean isHumanConfirmationRequired();
+
   /**
    * @return true si el agente tiene permiso para escribir archivos en el disco.
    */

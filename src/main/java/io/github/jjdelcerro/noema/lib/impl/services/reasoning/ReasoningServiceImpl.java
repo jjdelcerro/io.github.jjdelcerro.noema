@@ -304,7 +304,7 @@ public class ReasoningServiceImpl implements ReasoningService {
 
     if (availableTool != null && availableTool.tool != null) {
       AgentTool tool = availableTool.tool;
-      if (tool.getMode() != AgentTool.MODE_READ) {
+      if (tool.getMode() != AgentTool.MODE_READ && agent.getAccessControl().isHumanConfirmationRequired() ) {
         boolean authorized = this.console().confirm(
                 String.format("El agente quiere ejecutar la herramienta: %s\nArgumentos: %s\n¿Autorizar?", toolName, args)
         );
@@ -693,5 +693,4 @@ public class ReasoningServiceImpl implements ReasoningService {
       }
     }
   }
-
 }

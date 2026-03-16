@@ -27,6 +27,7 @@ public class AgentAccessControlImpl implements AgentAccessControl {
   private boolean allowShellExecution;
   private boolean enableRcsBackup;
   private boolean allowInternetAccess;
+  private boolean humanConfirmationRequired;
 
   // Lista de rutas adicionales permitidas fuera del root (ej: carpetas temporales)
   private final List<Path> allowedExternalPaths = new ArrayList<>();
@@ -225,8 +226,16 @@ public class AgentAccessControlImpl implements AgentAccessControl {
     this.allowInternetAccess = Boolean.parseBoolean(
             settings.getPropertyAsString("access_control/allow_internet_access", "true")
     );
+    this.allowInternetAccess = Boolean.parseBoolean(
+            settings.getPropertyAsString("access_control/humanConfirmationRequired", "true")
+    );
   }
 
+  @Override
+  public boolean isHumanConfirmationRequired() { 
+    return this.humanConfirmationRequired;
+  }
+  
   @Override
   public boolean isAllowedDiskWrite() {
     return allowDiskWrite;
@@ -266,4 +275,5 @@ public class AgentAccessControlImpl implements AgentAccessControl {
 
     return true;
   }
+  
 }

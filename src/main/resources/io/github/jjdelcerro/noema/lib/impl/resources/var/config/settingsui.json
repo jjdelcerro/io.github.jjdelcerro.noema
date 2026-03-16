@@ -260,6 +260,16 @@
       "childs": [
         {
           "type": "combo",
+          "label": "Pedir confirmación al usuario para operaciones de escritura/ejecucion/acceso a internet",
+          "variableName": "access_control/humanConfirmationRequired",
+          "actionName": "RELOAD_ACCESS_CONTROL",
+          "childs": [
+            {"type": "value", "label": "Sí", "value": "true"},
+            {"type": "value", "label": "No", "value": "false"}
+          ]
+        },
+        {
+          "type": "combo",
           "label": "Permitir escritura en disco",
           "variableName": "access_control/allow_disk_write",
           "actionName": "RELOAD_ACCESS_CONTROL",
