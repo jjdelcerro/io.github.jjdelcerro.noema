@@ -76,32 +76,6 @@
       <version>0.35.0</version>
     </dependency>
         
-    <!-- Para el store (en memoria para el prototipo) -->
-    <!--
-    <dependency>
-        <groupId>dev.langchain4j</groupId>
-        <artifactId>langchain4j-embeddings-in-memory</artifactId>
-        <version>0.35.0</version>
-    </dependency>
-    -->
-        
-    <!--
-    <dependency>
-        <groupId>dev.langchain4j</groupId>
-        <artifactId>langchain4j-chroma</artifactId>
-        <version>0.35.0</version>
-    </dependency>        
-    -->
-        
-        
-    <!--    
-    <dependency>
-        <groupId>dev.langchain4j</groupId>
-        <artifactId>langchain4j-community-h2</artifactId>
-        <version>0.35.0</version>
-    </dependency>
-    -->        
-        
     <!-- Motor de logs: Log4j 2 a traves de SLF4J -->
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
@@ -163,14 +137,12 @@
       <artifactId>jakarta.mail</artifactId>
       <version>2.0.3</version>
     </dependency>        
-        
+
     <!--
-    <dependency>
-        <groupId>log4j</groupId>
-        <artifactId>log4j</artifactId>
-        <scope>runtime</scope>
-    </dependency>
-    -->
+    Hay un problema con las versiones de jackson que requiere tika y langchain4j.
+    Fijamos las dependencias con jackson para evitar acabar cargando una que no funcione
+    con alguna de las dos libreria.
+    -->        
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
