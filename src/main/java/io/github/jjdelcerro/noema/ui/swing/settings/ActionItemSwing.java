@@ -58,11 +58,6 @@ public class ActionItemSwing extends AbstractAgentSettingsItemSwing {
     gbc.insets = new Insets(10, 0, 0, 0);
     gbc.fill = GridBagConstraints.NONE; // El botón no se estira todo el ancho
     p.add(btn, gbc);
-    // Panel espaciador para empujar todo hacia arriba (coherencia visual con otros items)
-    gbc.gridy = 2;
-    gbc.weighty = 1.0;
-    gbc.fill = GridBagConstraints.BOTH;
-    p.add(new JPanel(), gbc);
     return p;
   }
   

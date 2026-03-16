@@ -108,12 +108,6 @@ public class PathsItemSwing extends AbstractAgentSettingsItemSwing {
     gbc.fill = GridBagConstraints.HORIZONTAL;
     p.add(btnPanel, gbc);
 
-    // 4. Espaciador final
-    gbc.gridy = 3;
-    gbc.weighty = 1.0;
-    gbc.fill = GridBagConstraints.BOTH;
-    p.add(new JPanel(), gbc);
-
     return p;
   }
 
