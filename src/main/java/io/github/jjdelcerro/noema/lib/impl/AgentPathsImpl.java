@@ -53,11 +53,11 @@ public class AgentPathsImpl implements AgentPaths {
   }
 
   private String getLocalAgentFolderName() {
-    return "_" + AGENT_FOLDER_NAME;
+    return "." + AGENT_FOLDER_NAME;
   }
 
   private String getGlobalAgentFolderName() {
-    return "." + AGENT_FOLDER_NAME;
+    return ".config/" + AGENT_FOLDER_NAME;
   }
 
   @Override

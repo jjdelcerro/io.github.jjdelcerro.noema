@@ -3,6 +3,7 @@ package io.github.jjdelcerro.noema.lib.impl;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Locale;
+import org.apache.commons.lang3.StringUtils;
 import org.ocpsoft.prettytime.PrettyTime;
 
 /**
@@ -29,7 +30,7 @@ public class DateUtils {
     }
     
     public static LocalDateTime toLocalDateTime(String s) {
-      if( s == null ) {
+      if( StringUtils.isBlank(s) ) {
         return null;
       }
       return Timestamp.valueOf(s).toLocalDateTime();

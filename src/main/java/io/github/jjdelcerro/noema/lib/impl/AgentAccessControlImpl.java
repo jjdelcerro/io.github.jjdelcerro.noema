@@ -48,6 +48,13 @@ public class AgentAccessControlImpl implements AgentAccessControl {
     loadConfig();
   }
 
+  public List<Path> getAllowedPaths() {
+    List<Path> paths = new ArrayList<>();
+    paths.add(this.rootPath);
+    paths.addAll(this.allowedExternalPaths);
+    return paths;
+  }
+  
   @Override
   public void addAllowedPath(Path path) {
     this.allowedExternalPaths.add(path.toAbsolutePath().normalize());
@@ -182,6 +189,9 @@ public class AgentAccessControlImpl implements AgentAccessControl {
 
   @Override
   public boolean isAccessible(URI url) { // FIXME: habria que afinar esto, probablemente usando AgentSettings
+    if( !isAllowedInternetAccess() ) {
+      return false;
+    }
     // habria que ver si es intersante restringir el protocolo.
     String lower = url.toString().toLowerCase();
     return !(lower.contains("localhost") || lower.contains("127.0.0.1") || lower.contains("192.168."));

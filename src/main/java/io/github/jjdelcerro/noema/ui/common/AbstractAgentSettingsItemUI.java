@@ -102,14 +102,6 @@ public abstract class AbstractAgentSettingsItemUI implements AgentSettingsItemUI
         }
       } else if (childsElement.isJsonPrimitive() && childsElement.getAsJsonPrimitive().isString()) {
         // Es una referencia a un dominio
-        /*
-          TODO: Posible mejora, dominios en archivos externos
-
-          Si en el futuro la lista de modelos crece mucho, podrías incluso hacer 
-          que si childs empieza por "file:", cargue un JSON externo. 
-          Pero con la solución del nodo "domains" en el raíz, ya resuelves el 90% 
-          del problema de mantenimiento.
-         */
         String domainName = childsElement.getAsString();
         JsonArray domainArray = findDomainInTree(domainName);
 

@@ -43,36 +43,31 @@ public class FileFindTool extends AbstractAgentTool {
       final PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + pattern);
       List<Map<String, Object>> results = new ArrayList<>();
 
-      Path rootPath = this.resolvePathOrNull(".");
-      Files.walkFileTree(rootPath, new SimpleFileVisitor<>() {
-        @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-          Path relative = rootPath.relativize(file);
-          if (matcher.matches(relative)) {
-            Map<String, Object> fileInfo = new LinkedHashMap<>();
-            fileInfo.put("path", relative.toString());
-            fileInfo.put("size_bytes", attrs.size());
-            fileInfo.put("last_modified", attrs.lastModifiedTime().toString());
-
-            // Intentar obtener el MIME Type
-            String contentType = Files.probeContentType(file);
-            fileInfo.put("mime_type", contentType != null ? contentType : "unknown");
-
-            results.add(fileInfo);
+      for (Path rootPath : this.agent.getAccessControl().getAllowedPaths()) {
+        Files.walkFileTree(rootPath, new SimpleFileVisitor<>() {
+          @Override
+          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+//            Path relative = rootPath.relativize(file);
+            if (matcher.matches(file)) {
+              collectPath(results, file, attrs);
+            }
+            // Límite de seguridad: no devolver miles de entradas
+            return results.size() < 100 ? FileVisitResult.CONTINUE : FileVisitResult.TERMINATE;
           }
-          // Límite de seguridad: no devolver miles de entradas
-          return results.size() < 100 ? FileVisitResult.CONTINUE : FileVisitResult.TERMINATE;
-        }
 
-        @Override
-        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-          String name = dir.getFileName().toString();
-          if (name.equals("target") || name.equals(".git") || name.equals(".idea")) {
-            return FileVisitResult.SKIP_SUBTREE;
+          @Override
+          public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+            String name = dir.getFileName().toString();
+            if (name.equals("target") || name.equals(".git") || name.equals(".idea")) {
+              return FileVisitResult.SKIP_SUBTREE;
+            }
+            if (matcher.matches(dir)) {
+              collectPath(results, dir, attrs);
+            }
+            return FileVisitResult.CONTINUE;
           }
-          return FileVisitResult.CONTINUE;
-        }
-      });
+        });
+      }
 
       return gson.toJson(Map.of("status", "success", "matches", results));
 
@@ -82,4 +77,21 @@ public class FileFindTool extends AbstractAgentTool {
     }
   }
 
+  private void collectPath(List<Map<String, Object>> paths, Path file, BasicFileAttributes attrs) {
+    Map<String, Object> fileInfo = new LinkedHashMap<>();
+    fileInfo.put("path", file.toString());
+    fileInfo.put("size_bytes", attrs.size());
+    fileInfo.put("last_modified", attrs.lastModifiedTime().toString());
+    fileInfo.put("isdir", attrs.isDirectory());
+
+    // Intentar obtener el MIME Type
+    String contentType = null;
+    try {
+      contentType = Files.probeContentType(file);
+    } catch (IOException ex) {
+    }
+    fileInfo.put("mime_type", contentType != null ? contentType : "unknown");
+
+    paths.add(fileInfo);
+  }
 }

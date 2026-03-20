@@ -121,5 +121,11 @@ public class AgentManagerImpl implements AgentManager {
   public String getVersion() {
     return "0.1.0";
   }
+
+  @Override
+  public Agent.ModelParameters getModelParameters(String providerUrl, String providerApiKey, String modelId) {
+    return new ModelParametersImpl(providerUrl, providerApiKey, modelId, Double.NaN);
+  }
+
   
 }

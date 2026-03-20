@@ -1,6 +1,7 @@
 package io.github.jjdelcerro.noema.ui.swing;
 
 import com.formdev.flatlaf.extras.FlatSVGUtils;
+import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
@@ -141,17 +142,31 @@ Aseg\u00farese de ejecutar el agente en un entorno controlado o con backups actu
   }
 
   private void updateConfigSummaryUI(boolean convOk, boolean memOk) {
+    AgentManager manager = AgentLocator.getAgentManager();
+    Agent.ModelParameters reasoning = manager.getModelParameters(
+            getProperty(REASONING_PROVIDER_URL),
+            getProperty(REASONING_PROVIDER_API_KEY),
+            getProperty(REASONING_MODEL_ID)
+    );
+    Agent.ModelParameters compact = manager.getModelParameters(
+            getProperty(MEMORY_PROVIDER_URL),
+            getProperty(MEMORY_PROVIDER_API_KEY),
+            getProperty(MEMORY_MODEL_ID)
+    );
+            
     StringBuilder sb = new StringBuilder("<html><body>");
 
-    sb.append("<b>Model de conversación:</b> ").append(getStatusIcon(convOk)).append("<br>");
-    sb.append("&nbsp;&nbsp;- Proveedor: ").append(getProperty(REASONING_PROVIDER_URL)).append("<br>");
-    sb.append("&nbsp;&nbsp;- Modelo: ").append(getProperty(REASONING_MODEL_ID)).append("<br>");
-    sb.append("&nbsp;&nbsp;- API Key: ").append(getMaskedApiKey(REASONING_PROVIDER_API_KEY)).append("<br><br>");
+    sb.append("<b>Modelo de razonamiento:</b> ").append(getStatusIcon(convOk)).append("<br>");
+    sb.append("&nbsp;&nbsp;- Proveedor: ").append(reasoning.providerUrl()).append("<br>");
+    sb.append("&nbsp;&nbsp;- Modelo: ").append(reasoning.modelId()).append("<br>");
+    sb.append("&nbsp;&nbsp;- API Key: ").append(getMaskedApiKey(reasoning.providerApiKey())).append("<br>");
+    sb.append("&nbsp;&nbsp;- Contexto: ").append(reasoning.contextSize()).append("<br><br>");
 
     sb.append("<b>Modelo de compactación de memoria:</b> ").append(getStatusIcon(memOk)).append("<br>");
-    sb.append("&nbsp;&nbsp;- Proveedor: ").append(getProperty(MEMORY_PROVIDER_URL)).append("<br>");
-    sb.append("&nbsp;&nbsp;- Modelo: ").append(getProperty(MEMORY_MODEL_ID)).append("<br>");
-    sb.append("&nbsp;&nbsp;- API Key: ").append(getMaskedApiKey(MEMORY_PROVIDER_API_KEY)).append("<br>");
+    sb.append("&nbsp;&nbsp;- Proveedor: ").append(compact.providerUrl()).append("<br>");
+    sb.append("&nbsp;&nbsp;- Modelo: ").append(compact.modelId()).append("<br>");
+    sb.append("&nbsp;&nbsp;- API Key: ").append(getMaskedApiKey(compact.providerApiKey())).append("<br>");
+    sb.append("&nbsp;&nbsp;- Contexto: ").append(compact.contextSize()).append("<br><br>");
 
     sb.append("</body></html>");
     txtConfigSummary.setText(sb.toString());
@@ -162,11 +177,10 @@ Aseg\u00farese de ejecutar el agente en un entorno controlado o con backups actu
   }
 
   private String getMaskedApiKey(String key) {
-    String val = settings.getPropertyAsString(key);
-    if (val == null || val.isBlank()) {
+    if (key == null || key.isBlank() || StringUtils.containsIgnoreCase(key, "no definido")) {
       return "<font color='#ffb86c'>no configurada</font>";
     }
-    return "********" + (val.length() > 4 ? val.substring(val.length() - 4) : "");
+    return "********" + (key.length() > 4 ? key.substring(key.length() - 4) : "");
   }
 
   private String getProperty(String key) {

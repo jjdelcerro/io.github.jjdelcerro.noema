@@ -27,6 +27,8 @@ public interface ReasoningService extends AgentService {
   int estimateMessagesTokenCount();
 
   int estimateToolsTokenCount();
+  
+  int estimateSystemPromptTokenCount();
 
   AgentTool getAvailableTool(String name);
 

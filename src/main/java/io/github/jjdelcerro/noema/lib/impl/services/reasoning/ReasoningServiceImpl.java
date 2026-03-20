@@ -79,6 +79,7 @@ public class ReasoningServiceImpl implements ReasoningService {
   private static final Logger LOGGER = LoggerFactory.getLogger(ReasoningServiceImpl.class);
 
   private static final int OVERHEAD_IN_ESTIMATE_TOOLS_TOKEN_COUNT = 15;
+  private String lastestSystemPrompt;
 
   private static class AvailableAgentTool {
 
@@ -182,7 +183,9 @@ public class ReasoningServiceImpl implements ReasoningService {
     this.model = this.agent.createChatModel(ReasoningService.ID);
 //    Thread.ofVirtual().name(AgentManager.AGENT_NAME + "-Event-Dispatcher").start(this::eventDispatcher);
     Thread.ofPlatform().name(AgentManager.AGENT_NAME + "-Event-Dispatcher").start(this::eventDispatcher);
-    this.running = true;
+    this.running = true;    
+    this.agent.getConsole().printSystemLog("Reasoning service " + getModelName());
+
   }
 
   @Override
@@ -190,18 +193,6 @@ public class ReasoningServiceImpl implements ReasoningService {
     this.availableTools.put(tool.getName(), new AvailableAgentTool(tool));
   }
 
-//  private String getBaseSystemPrompt() {
-//    String systemPrompt = agent.getResourceAsString("var/config/prompts/reasoning-system.md");
-//
-//    if (systemPrompt.isEmpty()) {
-//      LOGGER.warn("No se ha podido cargar el prompt del sistema del ReasoningService");
-//      throw new RuntimeException("Can't load system prompt from data folder");
-//    }
-//    systemPrompt = StringUtils.replace(systemPrompt, "{NOW}", DateUtils.now());
-//    systemPrompt = StringUtils.replace(systemPrompt, "{LOOKUPTURN}", LookupTurnTool.NAME);
-//    systemPrompt = StringUtils.replace(systemPrompt, "{SEARCHFULLHISTORY}", SearchFullHistoryTool.NAME);
-//    return systemPrompt;
-//  }
   private String getBaseSystemPrompt() {
     StringBuilder sb = new StringBuilder();
 
@@ -289,7 +280,15 @@ public class ReasoningServiceImpl implements ReasoningService {
     } catch (IOException ex) {
       LOGGER.warn("Can't write system prompt", ex);
     }
+    this.lastestSystemPrompt = finalPrompt;
     return finalPrompt;
+  }
+  
+  private String getLastestSystemPrompt() {
+    if( this.lastestSystemPrompt != null ) {
+      return this.lastestSystemPrompt;
+    }
+    return this.getBaseSystemPrompt();
   }
 
   private AgentConsole console() {
@@ -447,6 +446,13 @@ public class ReasoningServiceImpl implements ReasoningService {
   public boolean isRunning() {
     return this.running;
   }
+  
+  public int estimateSystemPromptTokenCount() {
+    if (this.model == null) {
+      return 0;
+    }
+    return this.model.estimateTokenCount(this.getLastestSystemPrompt());
+  }
 
   @Override
   public int estimateToolsTokenCount() {
@@ -466,13 +472,17 @@ public class ReasoningServiceImpl implements ReasoningService {
     if (this.model == null) {
       return 0;
     }
-    List<ChatMessage> messages = this.session.getContextMessages(this.activeCheckPoint, getBaseSystemPrompt());
+    List<ChatMessage> messages = this.session.getContextMessages(this.activeCheckPoint, this.getLastestSystemPrompt());
     return this.model.estimateTokenCount(messages);
   }
 
   @Override
   public String getModelName() {
-    return this.agent.getSettings().getPropertyAsString(REASONING_MODEL_ID);
+    Agent.ChatModel theModel = this.getModel();
+    if( theModel == null ) {
+      return null;
+    }
+    return theModel.getParameters().modelId();
   }
 
   public void showSession() {

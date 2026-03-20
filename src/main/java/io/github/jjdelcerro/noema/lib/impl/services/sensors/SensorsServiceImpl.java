@@ -17,6 +17,7 @@ import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.discrete.Disc
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.mergeable.MergeableSensorData;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.state.StateSensorData;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.user.UserSensorData;
+import io.github.jjdelcerro.noema.lib.impl.services.sensors.persistence.SensorInformationGsonAdapter;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.tools.SensorStartTool;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.tools.SensorStatusTool;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.tools.SensorStopTool;
@@ -453,7 +454,8 @@ public class SensorsServiceImpl implements SensorsService {
     return new GsonBuilder()
             .registerTypeHierarchyAdapter(SensorEvent.class, new SensorEventGsonAdapter(this))
             .registerTypeHierarchyAdapter(SensorStatistics.class, new SensorStatisticsGsonAdapter())
-            .setPrettyPrinting()
+            .registerTypeHierarchyAdapter(SensorInformation.class, new SensorInformationGsonAdapter())
+            .setPrettyPrinting()            
             .create();
   }
   

@@ -2,11 +2,23 @@
   "reasoning": {
     "provider": {
       "url": "https://llm.chutes.ai/v1",
-      "model_id": "zai-org/GLM-4.7-FP8",
+      "model_id": "{ \"model\": \"zai-org/GLM-4.7-FP8\", \"context\": 202000}",
       "api_key": null
     },
     "compaction_turns": 40,
-    "compaction_tokens": 100000,
+    "compaction_tokens": 60000,
+    "active_tools": {
+      "web_search": false,
+      "email_list_inbox": false,
+      "email_read": false,
+      "email_send": false,
+      "telegram_send": false,
+      "file_write": false,
+      "file_mkdir": false,
+      "file_patch": false,
+      "file_search_and_replace": false,
+      "shell_execute": false
+    },
     "identity": {
             "core": {
                 
@@ -15,8 +27,8 @@
   },
   "memory": {
     "provider": {
-      "url": "https://llm.chutes.ai/v1",
-      "model_id": "tngtech/DeepSeek-TNG-R1T2-Chimera",
+      "url": "https://api.deepseek.com/v1",
+      "model_id": "{ \"model\": \"deepseek-reasoner\", \"context\": 128000 }",
       "api_key": null
     }
   },
@@ -57,9 +69,10 @@
   "access_control": {
     "humanConfirmationRequired": true,
     "allow_disk_write": true,
-    "allow_shell_execution": true,
+    "allow_shell_execution": false,
     "allow_internet_access": true,    
     "enable_rcs_backup": true,    
+    "enable_firejail": false,    
     "allowed_external_paths": [
     ],
     "nom_writable_paths": null,

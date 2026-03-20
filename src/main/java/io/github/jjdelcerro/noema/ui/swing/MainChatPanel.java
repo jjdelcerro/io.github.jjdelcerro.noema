@@ -7,8 +7,7 @@ import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceImpl;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
+import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.SensorEventCallback;
 import io.github.jjdelcerro.noema.main.MainGUI;
 import io.github.jjdelcerro.noema.ui.AgentUILocator;
@@ -22,8 +21,10 @@ import java.awt.Image;
 import java.awt.Insets;
 import java.awt.MouseInfo;
 import java.awt.Rectangle;
+import java.awt.Window;
 import java.awt.event.KeyEvent;
 import java.util.List;
+import java.util.Locale;
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -115,6 +116,13 @@ public class MainChatPanel extends JPanel {
 
     // 1. Botón Herramientas (Izq)
     btnTools = createCapsuleButton("tools.svg", "Herramientas");
+    btnTools.addActionListener(e -> {
+        if (agent != null) {
+            Window parentWindow = SwingUtilities.getWindowAncestor(this);
+            JSelectToolsPanel toolsPanel = new JSelectToolsPanel(agent);
+            toolsPanel.showWindow(parentWindow);
+        }
+    });    
     controlBar.add(btnTools);
 
     // 2. Metadata (Centro)
@@ -204,13 +212,15 @@ public class MainChatPanel extends JPanel {
     });
 
     btnSend.addActionListener(e -> handleSend());
-    settingsBtn.addActionListener(e -> { handleShowSetting(); });
+    settingsBtn.addActionListener(e -> {
+      handleShowSetting();
+    });
   }
-  
+
   private void handleShowSetting() {
-      if (agent != null) {
-        AgentUILocator.getAgentUIManager().createSettings(agent).showWindow();
-      }
+    if (agent != null) {
+      AgentUILocator.getAgentUIManager().createSettings(agent).showWindow();
+    }
   }
 
   private void setupThinkingTimer() {
@@ -245,8 +255,8 @@ public class MainChatPanel extends JPanel {
 //          } catch (Exception e) {
 //            consoleController.printSystemError("Error: " + e.getMessage());
 //          } finally {
-            stopThinking();
-            updateMetadata();
+          stopThinking();
+          updateMetadata();
 //          }
         }
       });
@@ -281,10 +291,34 @@ public class MainChatPanel extends JPanel {
     if (agent == null) {
       return;
     }
-    ReasoningServiceImpl reasoning = (ReasoningServiceImpl) agent.getService(ReasoningServiceImpl.NAME);
+    ReasoningService reasoning = (ReasoningService) agent.getService(ReasoningService.NAME);
     SwingUtilities.invokeLater(() -> {
-      lblModelInfo.setText(reasoning.getModelName());
-      lblTokens.setText(reasoning.estimateToolsTokenCount() + "+" + reasoning.estimateMessagesTokenCount()+ "/"+agent.getConversationContextSize());
+      Agent.ChatModel model = reasoning.getModel();
+      if (model == null) {
+        lblModelInfo.setText("?");
+        lblTokens.setText("?/?");
+      } else {
+        lblModelInfo.setText(model.getParameters().modelId());
+        lblTokens.setText(
+                String.format(
+                        Locale.ENGLISH,
+                        "%.1f/%.1f",
+                        (reasoning.estimateToolsTokenCount()+ reasoning.estimateSystemPromptTokenCount()+ reasoning.estimateMessagesTokenCount()) / 1024.0,
+                        agent.getConversationContextSize() / 1024.0
+                )
+        );
+        lblTokens.setToolTipText(
+                String.format(
+                        Locale.ENGLISH,
+                        "Prompt del sistema %.1f, herramientas %.1f, mensajes %.1f\nTotal consumido %.1f de %.1f disponible",
+                        reasoning.estimateToolsTokenCount() / 1024.0,
+                        reasoning.estimateSystemPromptTokenCount() / 1024.0,
+                        reasoning.estimateMessagesTokenCount() / 1024.0,
+                        (reasoning.estimateToolsTokenCount()+ reasoning.estimateSystemPromptTokenCount()+ reasoning.estimateMessagesTokenCount()) / 1024.0,
+                        agent.getConversationContextSize() / 1024.0
+                )
+        );
+      }
     });
   }
 
@@ -306,21 +340,14 @@ public class MainChatPanel extends JPanel {
   private JButton createSidebarButton() {
     JButton btn = new JButton();
 
-    // 1. IMPORTANTE: activamos el pintado del fondo
     btn.setContentAreaFilled(true);
     btn.setBorderPainted(true);
 
-    // 2. Definimos el tipo de botón
-//    btn.putClientProperty("JButton.buttonType", "roundRect");
-    // 3. EL TRUCO: Ajustamos el arco. 
-    // Un valor bajo (8 o 10) lo hace parecer un cuadrado con puntas romas.
-    // Un valor alto (999) lo haría un círculo.
     btn.putClientProperty("Component.arc", 10);
 
     btn.setFocusable(false);
     btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
 
-    // Un pequeño margen para que el icono no toque los bordes
     btn.setMargin(new Insets(4, 4, 4, 4));
 
     return btn;

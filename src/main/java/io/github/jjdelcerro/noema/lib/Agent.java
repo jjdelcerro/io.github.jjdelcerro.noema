@@ -37,6 +37,7 @@ public interface Agent {
     public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications, MutableBoolean abort) throws Throwable;
     public int estimateTokenCount(String text);
     public int estimateTokenCount(List<ChatMessage> messages);
+    public Agent.ModelParameters getParameters();
   }
 
   public AgentPaths getPaths();
