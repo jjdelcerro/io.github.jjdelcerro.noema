@@ -13,11 +13,8 @@ import io.github.jjdelcerro.noema.lib.persistence.CheckPoint;
 import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
 import io.github.jjdelcerro.noema.lib.persistence.Turn;
 
-import java.sql.Timestamp;
-import java.time.Instant;
 import java.util.List;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
-import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.AgentTool;
@@ -83,6 +80,8 @@ public class MemoryServiceImpl implements MemoryService {
     this.model = this.agent.createChatModel(MemoryService.ID);
     loadSystemPrompt();
     this.running = true;
+    
+    this.agent.getConsole().printSystemLog("Memory service " + getModelName());
   }
 
   private void loadSystemPrompt() {
@@ -223,6 +222,18 @@ public class MemoryServiceImpl implements MemoryService {
   @Override
   public void stop() {
     this.running = false;
+  }
+  
+  public Agent.ChatModel getModel() {
+    return model;
+  }
+  
+  public String getModelName() {
+    Agent.ChatModel theModel = this.getModel();
+    if( theModel == null ) {
+      return null;
+    }
+    return theModel.getParameters().modelId();
   }
 
 }

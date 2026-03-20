@@ -37,4 +37,7 @@ public interface AgentManager {
   public String getName();
   
   public String getVersion();
+  
+  public Agent.ModelParameters getModelParameters(String providerUrl,String providerApiKey,String modelId);
+          
 }

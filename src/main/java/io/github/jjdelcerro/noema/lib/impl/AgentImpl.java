@@ -5,7 +5,6 @@ import com.google.gson.JsonElement;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceImpl;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import dev.langchain4j.model.openai.OpenAiChatModel;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentActions;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
@@ -21,12 +20,11 @@ import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
-import static io.github.jjdelcerro.noema.lib.services.memory.MemoryService.MEMORY_MODEL_ID;
+import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -34,7 +32,6 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -45,7 +42,7 @@ import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_MODEL_ID;
+import javax.swing.SwingUtilities;
 
 /**
  *
@@ -117,7 +114,7 @@ public class AgentImpl implements Agent {
     );
     sensors.registerSensor(sensor);
     
-    ReasoningServiceImpl reasoning = (ReasoningServiceImpl) this.getService(ReasoningServiceImpl.NAME);
+    ReasoningService reasoning = (ReasoningService) this.getService(ReasoningService.NAME);
     for (AgentService service : this.services.values()) {
       if (service.canStart()) {
         List<AgentTool> tools = service.getTools();
@@ -133,9 +130,6 @@ public class AgentImpl implements Agent {
     }
 
     this.startAllServices();
-
-    console.printSystemLog("MemoryManager " + settings.getPropertyAsString(MEMORY_MODEL_ID));
-    console.printSystemLog("ConversationManager " + settings.getPropertyAsString(REASONING_MODEL_ID));
 
     this.running = true;
     this.shutdownHook = new Thread(() -> {

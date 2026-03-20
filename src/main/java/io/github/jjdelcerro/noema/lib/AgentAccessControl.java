@@ -2,6 +2,7 @@ package io.github.jjdelcerro.noema.lib;
 
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.List;
 
 /**
  *
@@ -53,6 +54,8 @@ public interface AgentAccessControl {
 
   void addNonReadablePath(Path path);
 
+  List<Path> getAllowedPaths();
+  
   /**
    * Verifica si el path es seguro y accesible para el modo solicitado.
    *
