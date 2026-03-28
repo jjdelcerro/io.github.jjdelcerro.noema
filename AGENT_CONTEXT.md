@@ -22,7 +22,7 @@ El proyecto está construido sobre un ecosistema Java moderno y dependencias lig
 *   **Embeddings Locales:** `langchain4j-embeddings-all-minilm-l6-v2` (Modelo de vectorización en memoria, elimina la necesidad de servicios externos).
 *   **Persistencia de Datos:** `H2 Database` (Motor SQL embebido) y persistencia plana en ficheros (Markdown, JSON vía `Gson`).
 *   **Procesamiento de Archivos:** `Apache Tika` (Extracción de texto), `Natty` (Parseo de fechas en lenguaje natural).
-*   **Control de Versiones y Diff:** Implementaciones nativas en Java ([io.github.jjdelcerro.javarcs](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs) y `java-diff-utils`).
+*   **Control de Versiones y Diff:** Implementaciones nativas en Java ([JavaRCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs) y `java-diff-utils`).
 *   **Interfaz de Usuario (Dual):**
 
     *   *Gráfica (Swing):* `FlatLaf` (Look & Feel moderno), `MigLayout`, `RSyntaxTextArea` (Editor de código), renderizado de Markdown nativo.
@@ -30,7 +30,6 @@ El proyecto está construido sobre un ecosistema Java moderno y dependencias lig
     
 *   **Comunicaciones:** `java-telegram-bot-api` y `jakarta.mail`.
 
----
 
 ### Estructura de Paquetes e Interfaces/Implementación
 
@@ -73,7 +72,7 @@ El sistema está diseñado en capas concéntricas, desde el motor central de orq
 #### 4. Servicios Cognitivos
 El "motor de pensamiento" se divide en dos servicios que comparten el `SourceOfTruth` (la persistencia del historial):
 
-*   **[ReasoningService (Orquestación del pensamiento)](docs/reasoning-service.md)**: Mantiene el bucle perpetuo de evaluación (`eventDispatcher`). Recibe eventos, actualiza el contexto a corto plazo (`Session`), invoca al modelo de lenguaje, ejecuta las peticiones de herramientas (`ToolExecutionRequest`) y decide si la sesión actual requiere ser empaquetada.
+*   **[ReasoningService](docs/reasoning-service.md) (Orquestación del pensamiento)**: Mantiene el bucle perpetuo de evaluación (`eventDispatcher`). Recibe eventos, actualiza el contexto a corto plazo (`Session`), invoca al modelo de lenguaje, ejecuta las peticiones de herramientas (`ToolExecutionRequest`) y decide si la sesión actual requiere ser empaquetada.
 *   **`MemoryService` (Consolidación histórica)**: Encargado de la memoria a largo plazo. Cuando el contexto actual es demasiado grande, este servicio toma el historial reciente y el resumen histórico anterior, y mediante un LLM, genera un nuevo `CheckPoint` consolidado (un "Resumen" y una narrativa llamada "El Viaje").
 
 
