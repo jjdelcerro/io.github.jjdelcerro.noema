@@ -1,15 +1,12 @@
-Te he adjuntado los fuentes del "juguete" en el que estoy trabajando.
-Analiza con detalle los fuentes modulo a modulo.
-Elabora un informe del estado de desarrollo en el que se encuentra el proyecto.
+Te he adjuntado los fuentes de un "juguete" en el que estoy trabajando en mis ratos libres.
+Analizalos en profundidad.
 
-Puntos a tener en cuenta a la hora de valorar el estado del proyecto:
+Puntos a tener en cuenta a la hora de realizar el analisis del proyecto:
 *   Es un proyecto personal. Busco tener un agente que cubra mis necesidades y
     me permita probar tecnicas concretas en la implementacion de agentes.
     
 *   El proyecto no se penso, ni se ha diseñado, para ser un agente 
     para el desarrollo de software. 
-    No asumas funcionalidades ya implementadas o posibles faltantes 
-    asociadas a tareas de desarrollo.
 
 *   La idea es que pueda ser un compañero que permita mantener "charlas" y 
     reflexiones de larga duracion en labores de investigacion en todos los ambitos.
@@ -22,22 +19,24 @@ Puntos a tener en cuenta a la hora de valorar el estado del proyecto:
     
 *   No debe requerir nunca una infraestructura mas alla de la necesaria para ejecutar
     un jar y acceso a LLM mediante API.
+
+*   Las librerias para manejo de diff y rcs estan implementadas integramente en java.
     
-No uses ideas como "memoria infinita" para referirte a como gestiona la memoria el agente.
+    
+**No uses conceptos como "memoria infinita" o "contexto infinito" para referirte a como gestiona la memoria el agente. Si utilizas conceptos como memoria o contexto infinito FALLAS en la realizacion del informe.**
+
+Trata de no utilizar referencias biologicas para definer conportamientos de la aplicacion.
+    
+Elabora un informe del estado de desarrollo en el que se encuentra el proyecto.
 
 Sigue la siguiente estructura:
 ```
 
 # Informe de Estado del Proyecto: Noema
 
-**Versión Analizada:** XXX
-
-**Fecha de Análisis:** XXX
-
-**Tecnología Base:** XXX
-
-**Autor del Informe:** Gemini (IA), basado en la inspección estática del código fuente.
-
+* **Versión Analizada:** XXX
+* **Fecha de Análisis:** XXX
+* **Autor del Informe:** Gemini (IA), basado en la inspección estática del código fuente.
 
 ---
 
