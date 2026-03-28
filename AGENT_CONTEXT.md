@@ -73,7 +73,7 @@ El sistema está diseñado en capas concéntricas, desde el motor central de orq
 #### 4. Servicios Cognitivos
 El "motor de pensamiento" se divide en dos servicios que comparten el `SourceOfTruth` (la persistencia del historial):
 
-*   **`ReasoningService` (Orquestación del pensamiento)**: Mantiene el bucle perpetuo de evaluación (`eventDispatcher`). Recibe eventos, actualiza el contexto a corto plazo (`Session`), invoca al modelo de lenguaje, ejecuta las peticiones de herramientas (`ToolExecutionRequest`) y decide si la sesión actual requiere ser empaquetada.
+*   **[ReasoningService (Orquestación del pensamiento)](docs/reasoning-service.md)**: Mantiene el bucle perpetuo de evaluación (`eventDispatcher`). Recibe eventos, actualiza el contexto a corto plazo (`Session`), invoca al modelo de lenguaje, ejecuta las peticiones de herramientas (`ToolExecutionRequest`) y decide si la sesión actual requiere ser empaquetada.
 *   **`MemoryService` (Consolidación histórica)**: Encargado de la memoria a largo plazo. Cuando el contexto actual es demasiado grande, este servicio toma el historial reciente y el resumen histórico anterior, y mediante un LLM, genera un nuevo `CheckPoint` consolidado (un "Resumen" y una narrativa llamada "El Viaje").
 
 
