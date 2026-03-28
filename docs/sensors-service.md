@@ -2,7 +2,7 @@
 # Especificación técnica de la implementación de SensorsService
 
 <nota>
-En ningún punto del documento hay un diagrama de flujo o pseudocódigo del camino feliz completo, desde que un estímulo externo entra al sistema hasta que el LLM lo recibe. La arquitectura está bien descrita por componentes, pero un lector nuevo tendría que reconstruir mentalmente ese flujo leyendo todo el documento. Una sección introductoria corta que trace ese camino de principio a fin —aunque sea en prosa— haría el documento mucho más accesible antes de entrar en los detalles de cada componente.
+En ningún punto del documento hay un diagrama de flujo o pseudocódigo del camino feliz completo, desde que un estímulo externo entra al sistema hasta que el LLM lo recibe. La arquitectura está bien descrita por componentes, pero un lector nuevo tendría que reconstruir mentalmente ese flujo leyendo todo el documento. Una sección introductoria corta que trace ese camino de principio a fin, aunque sea en prosa, haría el documento mucho más accesible antes de entrar en los detalles de cada componente.
 </nota>
 
 ### Punto 0: Arquitectura del Sistema Sensorial (Mapa de Componentes)
@@ -18,7 +18,7 @@ Como orquestador, el servicio asume cuatro funciones críticas:
 *   **Gestión del Ciclo de Vida y Persistencia**: Controla el estado operativo del servicio (`running`). Es el único componente que orquestará la serialización y deserialización del estado sensorial completo mediante el `SensorsMemento`, asegurando que, al reiniciar el agente, la configuración de los sensores (qué está activo, qué está silenciado) y las estadísticas históricas se restauren sin pérdida de fidelidad.
 *   **Enrutamiento y Entrega**: Actúa como el administrador de las dos estructuras de datos de salida: la `deliveryQueue` (FIFO para eventos secuenciales) y el `stateMap` (para el estado actual de los sensores volátiles). Su lógica interna de `getEvent()` se encarga de realizar la **Fusión Maestra** necesaria para presentar al consumidor (el LLM) una realidad unificada, cronológica y, sobre todo, libre de ruido técnico.
 
-En resumen, `SensorsServiceImpl` no procesa los datos en sí mismos —esa es responsabilidad de las implementaciones de `SensorData`—, sino que **coordina la orquestación temporal y lógica** para que el flujo de eventos que llega al sistema sea predecible y coherente.
+En resumen, `SensorsServiceImpl` no procesa los datos en sí mismos, esa es responsabilidad de las implementaciones de `SensorData`—, sino que **coordina la orquestación temporal y lógica** para que el flujo de eventos que llega al sistema sea predecible y coherente.
 
 ### 0.2. La Identidad (`SensorInformation`)
 
@@ -59,7 +59,7 @@ La interfaz `SensorData` define el contrato para el **motor de procesamiento** q
     
     Son las clases que contienen la lógica específica de transformación. Este diseño asegura que el `SensorsService` sea **abierto a la extensión pero cerrado a la modificación**: si el sistema requiere un nuevo comportamiento sensorial, basta con crear una nueva implementación de `SensorData` y registrarla en la factoría, sin necesidad de alterar el código del orquestador.
 
-*   **Gestión del Estado Vivo (Buffers de Trabajo)**: Cada implementación de `SensorData` es un contenedor de estado. Mantiene un **Buffer de Trabajo** interno —cuyo tipo de dato varía según la naturaleza—, que persiste mientras el sensor está activo. Por ejemplo:
+*   **Gestión del Estado Vivo (Buffers de Trabajo)**: Cada implementación de `SensorData` es un contenedor de estado. Mantiene un **Buffer de Trabajo** interno, cuyo tipo de dato varía según la naturaleza—, que persiste mientras el sensor está activo. Por ejemplo:
 
     *   El `MergeableSensorData` encapsula un `StringBuilder` para la concatenación narrativa.
     *   El `AggregateSensorData` gestiona un contador de tipo `long`.
@@ -102,7 +102,7 @@ El `SensorEvent` actúa como un **contrato de comunicación** que garantiza que 
 
 *   **Inmutabilidad Lógica**: Aunque durante su construcción en el `SensorData` el evento puede ser mutable, en el momento en que es entregado a la `DeliveryQueue`, se considera un objeto **inmutable**. Esto es fundamental para evitar efectos secundarios: una vez que el SNC comienza a razonar sobre un evento, el SNA no puede alterar su contenido, garantizando una base de datos de razonamiento estable.
 
-En esencia, `SensorEvent` es la **moneda de cambio** del sistema sensorial. Es el objeto que logra el puente entre la señal física —el log, el mensaje, la alerta— y el concepto abstracto que el cerebro del agente utilizará para planificar su próxima acción.
+En esencia, `SensorEvent` es la **moneda de cambio** del sistema sensorial. Es el objeto que logra el puente entre la señal física, el log, el mensaje, la alerta, y el concepto abstracto que el cerebro del agente utilizará para planificar su próxima acción.
 
 ### 0.5. El Registro de Salud (`SensorStatistics`)
 
