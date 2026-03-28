@@ -22,7 +22,7 @@ El proyecto está construido sobre un ecosistema Java moderno y dependencias lig
 *   **Embeddings Locales:** `langchain4j-embeddings-all-minilm-l6-v2` (Modelo de vectorización en memoria, elimina la necesidad de servicios externos).
 *   **Persistencia de Datos:** `H2 Database` (Motor SQL embebido) y persistencia plana en ficheros (Markdown, JSON vía `Gson`).
 *   **Procesamiento de Archivos:** `Apache Tika` (Extracción de texto), `Natty` (Parseo de fechas en lenguaje natural).
-*   **Control de Versiones y Diff:** Implementaciones nativas en Java (`io.github.jjdelcerro.javarcs` y `java-diff-utils`).
+*   **Control de Versiones y Diff:** Implementaciones nativas en Java ([io.github.jjdelcerro.javarcs](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs) y `java-diff-utils`).
 *   **Interfaz de Usuario (Dual):**
 
     *   *Gráfica (Swing):* `FlatLaf` (Look & Feel moderno), `MigLayout`, `RSyntaxTextArea` (Editor de código), renderizado de Markdown nativo.
@@ -105,8 +105,8 @@ Las herramientas son clases que implementan `AgentTool` y exponen metadatos (JSO
 *   `file_search_and_replace`: Busca un bloque de texto exacto y lo sustituye por otro.
 *   `file_mkdir`: Crea directorios en el sistema de ficheros.
 *   `file_extract_text`: Usa Apache Tika para extraer texto de archivos binarios/complejos (PDFs, DOCX).
-*   `file_history`: Muestra el historial de revisiones (RCS `rlog`) de un archivo.
-*   `file_recovery`: Recupera (checkout) una versión antigua de un archivo desde el control de versiones local RCS.
+*   `file_history`: Muestra el historial de revisiones ([RCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs) `rlog`) de un archivo.
+*   `file_recovery`: Recupera (checkout) una versión antigua de un archivo desde el control de versiones local [RCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs).
 
 **Ejecución de Comandos:**
 
@@ -170,7 +170,7 @@ La ingesta de documentos (`DocumentStructureExtractor`) se ejecuta en un hilo se
 #### Gestión de la Seguridad
 *   **Control de Acceso (VFS Sandbox)**: Toda ruta (`path`) que el agente intenta leer o escribir pasa por `AgentAccessControlImpl`. Verifica manipulaciones como `../` e impide salir del Workspace a menos que la ruta esté en una `whitelist`. Prohíbe explícitamente escrituras en ficheros de control (ej. carpetas `.git`).
 *   **Confirmación de Usuario**: Herramientas marcadas con `MODE_WRITE` o `MODE_EXECUTION` (modificar archivos, ejecutar shell) requieren obligatoriamente confirmación interactiva en la interfaz gráfica/consola (`console.confirm()`) antes de aplicarse.
-*   **RCS Automático (Control de Versiones)**: Previo a cualquier modificación destructiva (`file_write`, `file_patch`, `file_search_and_replace`), el sistema llama a `CheckinOptions` de la librería `JavaRCS`. Esto realiza un *commit* de la versión actual del archivo localmente, permitiendo al agente invocar `file_recovery` si la modificación introdujo errores.
+*   **[RCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs) Automático (Control de Versiones)**: Previo a cualquier modificación destructiva (`file_write`, `file_patch`, `file_search_and_replace`), el sistema llama a `CheckinOptions` de la librería [JavaRCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs). Esto realiza un *commit* de la versión actual del archivo localmente, permitiendo al agente invocar `file_recovery` si la modificación introdujo errores.
 
 #### Flujos en el Conversation Manager (ReasoningService)
 El `eventDispatcher` es un bucle infinito que:
@@ -193,6 +193,6 @@ La aplicación está diseñada para ser extremadamente portable:
 
 ### Conclusión
 
-**Noema** representa una implementación fascinante y altamente pragmática del concepto de "Agente Autónomo de Reflexión Continua". En lugar de apoyarse en arquitecturas complejas y de alto coste (como servidores dedicados a bases vectoriales), implementa soluciones elegantes en software puro (búsqueda de coseno en memoria/SQL, RCS en Java) y delega inteligentemente la carga cognitiva en la interacción asíncrona.
+**Noema** representa una implementación fascinante y altamente pragmática del concepto de "Agente Autónomo de Reflexión Continua". En lugar de apoyarse en arquitecturas complejas y de alto coste (como servidores dedicados a bases vectoriales), implementa soluciones elegantes en software puro (búsqueda de coseno en memoria/SQL, [RCS en Java](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs)) y delega inteligentemente la carga cognitiva en la interacción asíncrona.
 
 El diseño del sistema de memoria (Turnos atómicos -> Compactación narrativa -> Flashbacks vía `lookup_turn`) solventa con gran acierto el problema de las ventanas finitas de tokens de los LLM actuales. Además, el aislamiento por capas de la identidad, las habilidades, y su sistema de inyección de contexto "bajo demanda" demuestran un enfoque altamente optimizado, lo cual lo convierte en una herramienta sólida y segura para investigación y conversación prolongada a nivel personal.
