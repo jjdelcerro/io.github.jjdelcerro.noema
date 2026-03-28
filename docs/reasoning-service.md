@@ -1,5 +1,5 @@
 
-## ReasoningService
+# Especificación técnica de la implementación de ReasoningService
 
 ## 1. Introducción: el cerebro del agente
 
