@@ -12,20 +12,21 @@ El objetivo de este software es demostrar que es posible construir un Agente Aut
 
 Implementa los conceptos teóricos de:
 
-*   **Memoria Híbrida Determinista:** Separación de roles entre un servicio de conversación
+*   **Memoria híbrida determinista:** Separación de roles entre un servicio de conversación
     (ReasoningService) y otro para la consolidación narrativa (MemoryService).
-*   **Proactividad Simulada:** Implementación del patrón `pool_event` y gestion de
+*   **Proactividad simulada:** Implementación del patrón `pool_event` y gestión de
     eventos a través del SensorsService para permitir al agente reaccionar a estímulos 
     externos dentro del ciclo síncrono del LLM.
-*   **Independencia:** Ejecución local (On-Premise) con soporte para LLMs remotos (OpenRouter) o locales (Ollama).
+*   **Independencia:** Ejecución local (On-Premise) con soporte para LLMs remotos o locales.
 
 ## Interfaz de Usuario
 
-Noema no solo procesa texto; interactúa con su entorno. En la siguiente captura se observa cómo 
-el agente, ante una consulta meteorológica, decide de forma autónoma localizar al usuario y consultar 
-una API de clima externa antes de responder:
+Noema no solo procesa texto; interactúa con su entorno. 
 
 ![Noema en acción](./screenshot.png)
+
+En captura se puede ver cómo el agente, ante una consulta meteorológica, 
+decide de forma autónoma localizar al usuario y consultar una API de clima externa antes de responder.
 
 *   **Razonamiento y Herramientas:** Visualización clara de la ejecución de `AgentTools`.
 *   **Diseño Moderno:** Interfaz con la estética de los asistentes de IA actuales con soporte para Markdown.
@@ -35,7 +36,7 @@ una API de clima externa antes de responder:
 
 La implementación prioriza la ligereza y el control explícito de recursos:
 
-*   **Core:** Java 21 (Uso intensivo de *Virtual Threads*).
+*   **Core:** Java 21.
 *   **Orquestación:** LangChain4j (sin integraciones de alto nivel, uso "bare-metal").
 *   **Persistencia:** H2 Database embebida (Modo mixto: Relacional + BLOBs para vectores).
 *   **Arquitectura:** Diseño modular basado en *Service Locator* e inyección manual. Sin Spring Boot ni frameworks de DI.
@@ -73,6 +74,7 @@ consultalo.
 Puedes encontrar interesantes algunos de los artículos que he publicado y para 
 los que este proyecto a sido el patio de pruebas.
 
+*   [Noema: cuando el patio de juegos no viene de serie](https://jjdelcerro.github.io/es/blog/noema-cuando-el-patio-de-juegos-no-viene-de-serie/)
 *   [¿Qué es un agente?](https://jjdelcerro.github.io/es/blog/que-es-un-agente/)
 *   [Agentes de IA y la inyección de observaciones proactivas en clientes de chat](https://jjdelcerro.github.io/es/blog/agentes-de-ia-y-la-inyeccion-de-observaciones-proactivas-en-clientes-de-chat/)
 *   [Control proactivo de la percepción en agentes de IA](https://jjdelcerro.github.io/es/blog/como-gestionar-la-observacion-proactiva/)
@@ -84,18 +86,18 @@ los que este proyecto a sido el patio de pruebas.
 1.  **Gestión de Memoria:**
     *   **Session:** Memoria de corto plazo.
     *   **Turns:** Persistencia inmutable de interacciones.
-    *   **CheckPoints:** Resúmenes narrativos ("El Viaje") generados por IA para compactar la historia sin perder referencias.
+    *   **CheckPoints:** Resúmenes narrativos ("El Viaje") generados por IA para compactar la historia sin perder referencias. Esta parte, aunque debería estar funcional, aun estoy trabajando en ella, y puede que no funcione correctamente.
 
 2.  **Herramientas (Agency):**
-    *   Sistema de archivos (Lectura, escritura, parches...).
-    *   Navegación Web (Búsqueda y extracción con Apache Tika).
-    *   Comunicación (Cliente de Email IMAP/SMTP, Bot de Telegram).
+    *   Sistema de archivos (Lectura, escritura, parches...). Las herramientas de lectura deberían funcionar, las de escritura no ha sido mi prioridad probarlas.
+    *   Navegación Web (Búsqueda y extracción con Apache Tika). El acceso a documentos en la web, y acceso a algunas APIs como la consulta de la ubicacion y el tiempo, estan funcionando; pero la búsqueda no.
+    *   Comunicación (Cliente de Email IMAP/SMTP, Bot de Telegram). Esta parte esta "dejada caer" sin más. Una prueba para ver como se podría abordar, pero no esta funcional, y en estos momentos no esta entre mis prioridades.
     *   Planificador de tareas (Scheduler en lenguaje natural).
 
 3.  **Document Mapper (RAG Estructural):**
     *   Sistema de ingestión de documentos que genera una Tabla de Contenidos 
         estructural antes de vectorizar, permitiendo búsquedas más precisas 
-        que el RAG tradicional.
+        que el RAG tradicional. Esto es el siguiente punto de investigación, no es mas que una primera implementación para comprobar la viabilidad, pero no lo considero funcional en estos momentos.
 
 ## Inicio Rápido
 
@@ -118,7 +120,9 @@ presenta un diálogo de inicio, que permite seleccionar la carpeta de trabajo, y
 nos muestra la configuración actual para los modelos básicos que precisa
 para funcionar. Desde ahí mismo puede accederse al diálogo de configuración para
 editar la lista de de proveedores, modelos o API-KEYS y configurar éstos en la 
-aplicación.
+aplicación. Aunque permite la configuración en el arranque, no esperes un asistente
+de "siguiente->siguiente". Requiere que tengas conocimientos minimos sobre que es 
+un LLM, que son herramientas y como configurar el acceso a ellos.
 
 
 1.  Ejecuta el JAR.
@@ -152,7 +156,7 @@ Una vez iniciada la aplicación puedes acceder al modo debugger en el puerto 876
 Si precisas depurar el arranque inicia el script con "--debug" y luego conectate
 desde el entorno de depuración.
     
-## Estructura de Datos y Personalización (`./data`)
+## Estructura de Datos y Personalización
 
 La aplicación crea en la carpeta de trabajo seleccionada una carpeta `.noema-agent`
 en la que podemos encontrar la siguiente estructura:
@@ -190,7 +194,7 @@ en la que podemos encontrar la siguiente estructura:
     Leer estos archivos es la mejor forma de validar cómo el agente compacta la 
     historia sin perder el contexto cognitivo.
 
-### 3. Sala de Máquinas (Prompts)
+### 3. Los prompts
 
 *   **`var/config/prompts/*.md`**: Al primer arranque, el agente despliega los 
     prompts del sistema desde el JAR a esta carpeta. 
@@ -209,11 +213,10 @@ en la que podemos encontrar la siguiente estructura:
 
 Para facilitar la auditoría de la memoria del agente, la aplicación inicia 
 automáticamente un servidor web de H2. En el dialogo de configuración
-hay posibilidad de configurar el puerto de este servicio asi como un botón
+hay posibilidad de configurar el puerto de este servicio así como un botón
 para iniciar la herramienta en el navegador.
 
-Desde aquí puedes ejecutar consultas SQL para ver vectores, turnos consolidados 
-y metadatos de las herramientas en tiempo real.
+Desde aquí puedes ejecutar consultas SQL para observar el estado en tiempo real.
 
 ### 6. Estado
 
@@ -223,25 +226,25 @@ Me he centrado en tratar de tener funcionando la parte de:
 * Consolidación de memoria
 * La gestión básica de sensores
 * La gestión de identidad
-* La gestión basica de habilidades (skills)
-* Que las opciones de configuración sean minimamente funcionales.
+* La gestión básica de habilidades (skills)
+* Que las opciones de configuración sean mínimamente funcionales.
 * Gestión básica de la seguridad.
 * Herramientas básicas de acceso disco
 * Herramientas básicas de acceso a internet
-* Herramientas bñásicas de control de versiones.
+* Herramientas básicas de control de versiones.
 
-Hay muchas cosas que no estan funcionales:
+Hay muchas cosas que no están funcionales:
 
 * El servicio de "documentos".
 * Correo.
 * Telegram.
 * Ejecución de comandos de shell.
-* Busqueda en internet.
+* Búsqueda en internet.
 * Muchas opciones de configuración, para asistir en la adición de archivos de 
-  identidad, habilidades, configuracion en el home del usuario, limpieza de 
+  identidad, habilidades, configuración en el home del usuario, limpieza de 
   temporales...
 
-Estas partes las ire abordando poco a poco dependiendo de mi disponibilidad de
+Estas partes las iré abordando poco a poco dependiendo de mi disponibilidad de
 tiempo.
 
 
