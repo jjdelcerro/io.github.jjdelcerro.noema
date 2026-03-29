@@ -207,7 +207,7 @@ public class ShellExecuteTool extends AbstractPaginatedAgentTool {
   }
 
   private String getSecuredCommand(String command) {
-    if (!this.isSecureShellExecutionAvailable()) {
+    if (!this.isSecureShellExecutionAvailable() && !agent.getAccessControl().isFirejailEnabled()) {
       return command;
     }
 

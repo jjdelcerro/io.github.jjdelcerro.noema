@@ -1,6 +1,8 @@
 package io.github.jjdelcerro.noema.ui.swing.settings;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsCheckedList;
 import io.github.jjdelcerro.noema.ui.common.AgentSettingsItemUI;
@@ -12,6 +14,7 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import javax.swing.BorderFactory;
@@ -31,11 +34,27 @@ public class CheckedListItemSwing extends AbstractAgentSettingsItemSwing {
   public static final String NAME = "checkedlist";
 
   private record ToolUIItem(String label, String technicalName, boolean checked) {}
-
+  
   public CheckedListItemSwing(AgentSettingsItemUI parent, Agent agent, JsonObject json) {
     super(parent, agent, json);
   }
-
+  
+  public boolean isChildEnabled(String childname) {
+    JsonElement x = this.item.get("childEnabled");
+    if( x == null ) {
+      return true;
+    }
+    if( x instanceof JsonPrimitive) {
+      if( ((JsonPrimitive) x).isBoolean() ) {
+        return x.getAsBoolean();
+      }
+      if( ((JsonPrimitive) x).isString()) {
+        return (boolean) this.agent.getSettings().eval(x.getAsString(), true, Collections.singletonMap("child", childname));
+      }
+    }
+    return true;
+  }
+  
   @Override
   public JComponent getComponent() {
     JPanel p = new JPanel(new GridBagLayout());
@@ -55,7 +74,7 @@ public class CheckedListItemSwing extends AbstractAgentSettingsItemSwing {
     refreshModel(listModel);
 
     JList<ToolUIItem> list = new JList<>(listModel);
-    list.setCellRenderer(new CheckBoxListRenderer());
+    list.setCellRenderer(new CheckBoxListRenderer(this));
     list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
     list.addMouseListener(new MouseAdapter() {
@@ -144,6 +163,13 @@ public class CheckedListItemSwing extends AbstractAgentSettingsItemSwing {
   }
 
   private static class CheckBoxListRenderer extends JCheckBox implements ListCellRenderer<ToolUIItem> {
+    
+    private CheckedListItemSwing checkedlist;
+    
+    public CheckBoxListRenderer(CheckedListItemSwing checkedlist) {
+      this.checkedlist = checkedlist;
+    }
+    
     @Override
     public Component getListCellRendererComponent(JList<? extends ToolUIItem> list, ToolUIItem value, int index, boolean isSelected, boolean cellHasFocus) {
       setSelected(value.checked());
@@ -151,6 +177,7 @@ public class CheckedListItemSwing extends AbstractAgentSettingsItemSwing {
       setBackground(isSelected ? list.getSelectionBackground() : list.getBackground());
       setForeground(isSelected ? list.getSelectionForeground() : list.getForeground());
       setFocusable(false);
+      setEnabled(this.checkedlist.isChildEnabled(value.technicalName));
       return this;
     }
   }

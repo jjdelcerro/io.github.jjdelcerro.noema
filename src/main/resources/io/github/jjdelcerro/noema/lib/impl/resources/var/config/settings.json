@@ -68,9 +68,9 @@
   },  
   "access_control": {
     "humanConfirmationRequired": true,
-    "allow_disk_write": true,
+    "allow_disk_write": false,
     "allow_shell_execution": false,
-    "allow_internet_access": true,    
+    "allow_internet_access": false,    
     "enable_rcs_backup": true,    
     "enable_firejail": false,    
     "allowed_external_paths": [

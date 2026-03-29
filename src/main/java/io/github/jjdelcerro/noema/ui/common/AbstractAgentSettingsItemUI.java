@@ -3,7 +3,9 @@ package io.github.jjdelcerro.noema.ui.common;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.AgentLocator;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
@@ -61,6 +63,23 @@ public abstract class AbstractAgentSettingsItemUI implements AgentSettingsItemUI
     return x.getAsBoolean();
   }
 
+  @Override
+  public boolean isEnabled() {
+    JsonElement x = this.item.get("required");
+    if( x == null ) {
+      return true;
+    }
+    if( x instanceof JsonPrimitive) {
+      if( ((JsonPrimitive) x).isBoolean() ) {
+        return x.getAsBoolean();
+      }
+      if( ((JsonPrimitive) x).isString()) {
+        return (boolean) this.agent.getSettings().eval(x.getAsString(), true);
+      }
+    }
+    return true;
+  }
+  
   @Override
   public String getVariableName() {
     if (!this.item.has("variableName")) {

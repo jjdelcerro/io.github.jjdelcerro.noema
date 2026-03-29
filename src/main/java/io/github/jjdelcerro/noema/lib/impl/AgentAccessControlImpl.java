@@ -33,6 +33,7 @@ public class AgentAccessControlImpl implements AgentAccessControl {
   private final List<Path> allowedExternalPaths = new ArrayList<>();
   private final List<Path> nomWritablePaths = new ArrayList<>();
   private final List<Path> nomReadablePaths = new ArrayList<>();
+  private boolean enableFirejail;
 
   public AgentAccessControlImpl(AgentSettings settings, AgentActions actions, Path rootPath) {
     this.rootPath = rootPath.toAbsolutePath().normalize();
@@ -239,6 +240,9 @@ public class AgentAccessControlImpl implements AgentAccessControl {
     this.allowInternetAccess = Boolean.parseBoolean(
             settings.getPropertyAsString("access_control/humanConfirmationRequired", "true")
     );
+    this.enableFirejail = Boolean.parseBoolean(
+            settings.getPropertyAsString("access_control/enable_firejail", "true")
+    );
   }
 
   @Override
@@ -285,5 +289,9 @@ public class AgentAccessControlImpl implements AgentAccessControl {
 
     return true;
   }
-  
+
+  @Override
+  public boolean isFirejailEnabled() {
+    throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+  }
 }
