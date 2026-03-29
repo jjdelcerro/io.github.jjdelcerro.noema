@@ -15,5 +15,6 @@ public interface AgentSettingsItemUI {
     List<AgentSettingsItemUI> getChilds();
     AgentSettingsItemUI getParent();
     public boolean isRequired();
+    public boolean isEnabled();
      
 }

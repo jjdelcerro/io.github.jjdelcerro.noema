@@ -58,8 +58,9 @@
           "label": "Capacidades del Agente",
           "variableName": "reasoning/active_tools",
           "actionName": "REFRESH_REASONING_TOOLS",
-          "childs": "AVAILABLE_TOOLS"
-        },
+          "childs": "AVAILABLE_TOOLS",
+          "childEnabled": "child == \"shell_execute\"? getSetting(\"access_control/allow_shell_execution\") : ((child == \"web_search\" || child == \"web_get_content\")? getSetting(\"access_control/allow_internet_access\") : ((child == \"file_write\" || child == \"file_patch\" || child == \"file_mkdir\" || child == \"file_search_and_replace\")? getSetting(\"access_control/allow_disk_write\") : true))"         
+        },        
         {
           "type": "checkedlist",
           "label": "Identidad",
@@ -280,6 +281,16 @@
         },
         {
           "type": "combo",
+          "label": "Permitir acceso a internet",
+          "variableName": "access_control/allow_internet_access",
+          "actionName": "RELOAD_ACCESS_CONTROL",
+          "childs": [
+            {"type": "value", "label": "Sí", "value": "true"},
+            {"type": "value", "label": "No", "value": "false"}
+          ]
+        },
+        {
+          "type": "combo",
           "label": "Permitir ejecución de comandos (Shell)",
           "variableName": "access_control/allow_shell_execution",
           "actionName": "RELOAD_ACCESS_CONTROL",
@@ -290,8 +301,8 @@
         },
         {
           "type": "combo",
-          "label": "Permitir acceso a internet",
-          "variableName": "access_control/allow_internet_access",
+          "label": "Habilitar firejail si esta disponible",
+          "variableName": "access_control/enable_firejail",
           "actionName": "RELOAD_ACCESS_CONTROL",
           "childs": [
             {"type": "value", "label": "Sí", "value": "true"},

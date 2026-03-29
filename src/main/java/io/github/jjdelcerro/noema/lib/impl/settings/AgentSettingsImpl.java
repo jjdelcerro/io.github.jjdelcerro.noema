@@ -6,6 +6,7 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.impl.AgentUtils;
+import io.github.jjdelcerro.noema.lib.impl.ExpressionEvaluator;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsItem;
 import java.io.IOException;
@@ -18,7 +19,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import org.apache.commons.lang3.BooleanUtils;
 
+@SuppressWarnings("UseSpecificCatch")
 public class AgentSettingsImpl extends AgentSettingsGroupImpl implements AgentSettings {
 
   // Estructura para los ajustes globales (fuera de cualquier workspace)
@@ -182,4 +187,43 @@ public class AgentSettingsImpl extends AgentSettingsGroupImpl implements AgentSe
   public AgentPaths getPaths() {
     return this.paths;
   }
+
+  @Override
+  public Object eval(String expression, Object defaultValue) {
+    return this.eval(expression, defaultValue, null);
+  }
+  
+  @Override
+  public Object eval(String expression, Object defaultValue, Map<String,Object> vars) {
+    ExpressionEvaluator.DefaultVars theVars = new ExpressionEvaluator.DefaultVars();
+    if( vars!=null ) {
+      theVars.putAll(vars);
+    }
+    ExpressionEvaluator.DefaultFunctions funcs = new ExpressionEvaluator.DefaultFunctions();
+    funcs.put("getSetting", new Function() {
+      @Override
+      public Object apply(Object t) {
+        return getPropertyAsString(Objects.toString(t, ""), Objects.toString(defaultValue));
+      }
+    });
+    Object x = ExpressionEvaluator.eval(expression, theVars, funcs);
+    if (x == null) {
+      return defaultValue;
+    }
+    try {
+      if (defaultValue instanceof Boolean) {
+        return BooleanUtils.toBoolean(Objects.toString(x));
+      }
+      if (defaultValue instanceof Integer) {
+        return Integer.getInteger(Objects.toString(x), (Integer) defaultValue);
+      }
+      if (defaultValue instanceof Number) {
+        return Double.valueOf(Objects.toString(x));
+      }
+    } catch (Exception ex) {
+      return defaultValue;
+    }
+    return Objects.toString(x, "");
+  }
+
 }
