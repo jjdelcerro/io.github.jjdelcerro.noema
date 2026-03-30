@@ -19,6 +19,7 @@ import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.ModelParametersImpl;
+import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.AnnotateObservationTool;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.LookupTurnTool;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.SearchFullHistoryTool;
 import java.time.LocalDateTime;
@@ -204,7 +205,8 @@ public class MemoryServiceImpl implements MemoryService {
   public List<AgentTool> getTools() {
     AgentTool[] tools = new AgentTool[]{
       new LookupTurnTool(this.agent),
-      new SearchFullHistoryTool(this.agent)
+      new SearchFullHistoryTool(this.agent),
+      new AnnotateObservationTool(this.agent)
     };
     return Arrays.asList(tools);
   }

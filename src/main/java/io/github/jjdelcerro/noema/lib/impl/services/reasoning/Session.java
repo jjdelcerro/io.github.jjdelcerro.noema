@@ -20,14 +20,11 @@ import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
 import io.github.jjdelcerro.noema.lib.impl.DateUtils;
-import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SYSTEMCLOCK_SENSOR_NAME;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.persistence.CheckPoint;
 import io.github.jjdelcerro.noema.lib.persistence.Turn;
 import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.MEMORY_COMPACTION_TURNS;
-import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
-import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -36,7 +33,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import org.slf4j.Logger;
@@ -86,7 +82,6 @@ public class Session {
 
   private final Path sessionPath;
   private final Path tempPath;
-  private final SensorsServiceImpl sensors;
 
   // ESTADO INTERNO
   private final List<ChatMessage> messages = new ArrayList<>();
@@ -111,8 +106,7 @@ public class Session {
    * @param dataFolder
    * @param settings
    */
-  public Session(Path dataFolder, AgentSettings settings, SensorsServiceImpl sensors) {
-    this.sensors = sensors;
+  public Session(Path dataFolder, AgentSettings settings) {
     this.settings = settings;
     this.sessionPath = dataFolder.resolve("active_session.json");
     this.tempPath = dataFolder.resolve("active_session.json.tmp");
@@ -163,32 +157,7 @@ public class Session {
     if (sb.length() > 0) {
       context.add(SystemMessage.from(sb.toString()));
     }
-
-    LocalDateTime now = LocalDateTime.now();
-    if (this.lastInteractionTime != null && !this.messages.isEmpty()) {
-      ChatMessage lastMessage = this.messages.get(this.messages.size() - 1);
-      if (lastMessage instanceof UserMessage) {
-        // Introduccion de la percepcion temporal.
-        Duration delta = Duration.between(this.lastInteractionTime, now);
-        if (delta.toHours() >= 1) {
-          String content = "Ha pasado " + DateUtils.timeAgo(this.lastInteractionTime) + " desde la última interacción con el usuario.";
-          ConsumableSensorEvent timerEvent = this.sensors.createSensorEvent(
-                  SYSTEMCLOCK_SENSOR_NAME,
-                  content, 
-                  PRIORITY_NORMAL,
-                  "A pasado el tiempo",
-                  now, 
-                  null
-          );
-          this.messages.add(timerEvent.getChatMessage());
-          this.messages.add(timerEvent.getResponseMessage());
-        }
-      }
-    }
-
     context.addAll(this.messages);
-    this.lastInteractionTime = now;
-
     return context;
   }
 
@@ -488,4 +457,17 @@ public class Session {
     // Devolvemos una copia para evitar problemas de concurrencia
     return new ArrayList<>(this.messages);
   }
+
+  public LocalDateTime getLastInteractionTime() {
+    return lastInteractionTime;
+  }
+  
+  boolean isEmpty() {
+    return this.messages.isEmpty();
+  }
+
+  public void setLastInteractionTime(LocalDateTime lastInteractionTime) {
+    this.lastInteractionTime = lastInteractionTime;
+  }
+  
 }
