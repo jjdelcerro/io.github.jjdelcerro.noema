@@ -62,9 +62,12 @@ import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.Con
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.ListSkillsTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.LoadSkillTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.TavilyWebSearchTool;
+import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SYSTEMCLOCK_SENSOR_NAME;
+import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import org.apache.commons.io.FileUtils;
@@ -110,8 +113,7 @@ public class ReasoningServiceImpl implements ReasoningService {
     this.sourceOfTruth = agent.getSourceOfTruth();
     this.session = new Session(
             agent.getPaths().getDataFolder(),
-            agent.getSettings(),
-            (SensorsServiceImpl) agent.getService(SensorsService.NAME)
+            agent.getSettings()
     );
     this.running = false;
     try {
@@ -183,7 +185,7 @@ public class ReasoningServiceImpl implements ReasoningService {
     this.model = this.agent.createChatModel(ReasoningService.ID);
 //    Thread.ofVirtual().name(AgentManager.AGENT_NAME + "-Event-Dispatcher").start(this::eventDispatcher);
     Thread.ofPlatform().name(AgentManager.AGENT_NAME + "-Event-Dispatcher").start(this::eventDispatcher);
-    this.running = true;    
+    this.running = true;
     this.agent.getConsole().printSystemLog("Reasoning service " + getModelName());
 
   }
@@ -283,9 +285,9 @@ public class ReasoningServiceImpl implements ReasoningService {
     this.lastestSystemPrompt = finalPrompt;
     return finalPrompt;
   }
-  
+
   private String getLastestSystemPrompt() {
-    if( this.lastestSystemPrompt != null ) {
+    if (this.lastestSystemPrompt != null) {
       return this.lastestSystemPrompt;
     }
     return this.getBaseSystemPrompt();
@@ -303,7 +305,7 @@ public class ReasoningServiceImpl implements ReasoningService {
 
     if (availableTool != null && availableTool.tool != null) {
       AgentTool tool = availableTool.tool;
-      if (tool.getMode() != AgentTool.MODE_READ && agent.getAccessControl().isHumanConfirmationRequired() ) {
+      if (tool.getMode() != AgentTool.MODE_READ && agent.getAccessControl().isHumanConfirmationRequired()) {
         boolean authorized = this.console().confirm(
                 String.format("El agente quiere ejecutar la herramienta: %s\nArgumentos: %s\n¿Autorizar?", toolName, args)
         );
@@ -433,7 +435,7 @@ public class ReasoningServiceImpl implements ReasoningService {
     String tavilyApiKey = this.agent.getSettings().getPropertyAsString(TavilyWebSearchTool.TAVILY_API_KEY);
     if (StringUtils.isNotBlank(tavilyApiKey)) {
       tools.add(new TavilyWebSearchTool(this.agent));
-    }    
+    }
     return tools;
   }
 
@@ -446,7 +448,7 @@ public class ReasoningServiceImpl implements ReasoningService {
   public boolean isRunning() {
     return this.running;
   }
-  
+
   public int estimateSystemPromptTokenCount() {
     if (this.model == null) {
       return 0;
@@ -479,7 +481,7 @@ public class ReasoningServiceImpl implements ReasoningService {
   @Override
   public String getModelName() {
     Agent.ChatModel theModel = this.getModel();
-    if( theModel == null ) {
+    if (theModel == null) {
       return null;
     }
     return theModel.getParameters().modelId();
@@ -580,6 +582,28 @@ public class ReasoningServiceImpl implements ReasoningService {
     this.running = false;
   }
 
+  private void checkAndInsertTimestamp() {
+    LocalDateTime now = LocalDateTime.now();
+    if (this.session.getLastInteractionTime() != null && !this.session.isEmpty()) {
+      // Introduccion de la percepcion temporal.
+      Duration delta = Duration.between(this.session.getLastInteractionTime(), now);
+      if (delta.toHours() >= 1) {
+        SensorsServiceImpl sensors = (SensorsServiceImpl) agent.getService(SensorsService.NAME);
+        String content = "Ha pasado " + DateUtils.timeAgo(this.session.getLastInteractionTime()) + " desde la última interacción con el usuario.";
+        ConsumableSensorEvent timerEvent = sensors.createSensorEvent(
+                SYSTEMCLOCK_SENSOR_NAME,
+                content,
+                PRIORITY_NORMAL,
+                "A pasado el tiempo",
+                now,
+                null
+        );
+        this.session.add(timerEvent.getChatMessage());
+        this.session.add(timerEvent.getResponseMessage());
+      }
+    }
+  }
+
   /**
    * Bucle perpetuo de consciencia. Consume señales de los sensores y las
    * procesa íntegramente hasta generar una respuesta o acción.
@@ -607,6 +631,7 @@ public class ReasoningServiceImpl implements ReasoningService {
 
         if (event instanceof SensorEventUser) {
           // Caso Usuario: Guardamos el prompt para el turno final 'chat'
+          this.checkAndInsertTimestamp();
           textUser = event.getContents();
           this.session.add(event.getChatMessage());
         } else {
@@ -684,6 +709,10 @@ public class ReasoningServiceImpl implements ReasoningService {
             toolExecutionRetries = 0;
           }
         }
+        if( textUser!=null ) {
+          this.session.setLastInteractionTime(LocalDateTime.now());
+        }
+        
         if (this.session.needCompaction()) {
           performCompaction();
         }
