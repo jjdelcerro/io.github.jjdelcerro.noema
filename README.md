@@ -1,4 +1,4 @@
-# Noema: Implementación de Referencia para Memoria narrativa trazable
+# Noema: laboratorio de arquitectura para agentes de IA
 
 > ⚠️ **Estado del Proyecto: Prototipo de Investigación (Alpha)**
 >
