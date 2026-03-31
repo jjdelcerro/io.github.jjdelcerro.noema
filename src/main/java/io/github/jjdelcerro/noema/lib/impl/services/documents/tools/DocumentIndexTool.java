@@ -1,33 +1,30 @@
 package io.github.jjdelcerro.noema.lib.impl.services.documents.tools;
 
-import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl;
-import io.github.jjdelcerro.noema.lib.impl.AgentImpl;
 import java.nio.file.Path;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsService;
 
 /**
  * Herramienta para indexar y procesar documentos nuevos. Activa el DocMapper
  * para transformar un archivo bruto en conocimiento estructurado.
  */
-public class DocumentIndexTool implements AgentTool {
-
-  private final AgentImpl agent;
-  private final Gson gson = new Gson();
+public class DocumentIndexTool extends AbstractAgentTool {
+  public static final String TOOL_NAME = "document_index";
 
   public DocumentIndexTool(Agent agent) {
-    this.agent = (AgentImpl) agent;
+    super(agent);
   }
 
   @Override
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
-            .name("document_index")
+            .name(TOOL_NAME)
             .description("Inicia el procesamiento y mapeo de un documento (PDF, texto, etc.) para que pueda ser buscado y leído por secciones más tarde. Úsalo cuando encuentres un archivo nuevo que quieras 'aprender'.")
             .addParameter("path", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Ruta relativa del archivo a procesar."))
             .build();

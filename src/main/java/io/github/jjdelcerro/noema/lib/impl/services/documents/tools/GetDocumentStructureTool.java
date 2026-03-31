@@ -1,27 +1,23 @@
 package io.github.jjdelcerro.noema.lib.impl.services.documents.tools;
 
-import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.impl.AgentImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsServiceImpl;
 import java.util.Map;
-import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
 
-public class GetDocumentStructureTool implements AgentTool {
-
-  private final AgentImpl agent;
-  private final Gson gson = new Gson();
+public class GetDocumentStructureTool extends AbstractAgentTool {
+  public static final String TOOL_NAME = "get_document_structure";
 
   public GetDocumentStructureTool(Agent agent) {
-    this.agent = (AgentImpl) agent;
+    super(agent);
   }
 
   @Override
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
-            .name("get_document_structure")
+            .name(TOOL_NAME)
             .description("Recupera el esquema jerárquico (índice) de un documento en formato XML. Incluye títulos, niveles y resúmenes de secciones para que decidas qué leer.")
             .addParameter("docId", JsonSchemaProperty.STRING, JsonSchemaProperty.description("El ID único del documento (ej: 'DOCUMENT-10')."))
             .build();

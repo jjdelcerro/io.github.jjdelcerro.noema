@@ -47,7 +47,7 @@ public class WebGetTikaTool extends AbstractPaginatedAgentTool {
             .name(TOOL_NAME)
             .description("Descarga y extrae texto de URLs (HTML, PDF, DOCX, etc).\n" +
                     "\n" +
-                    getPaginationSystemInstruction())
+                    getShortPaginationInstruction())
             .addParameter("url", JsonSchemaProperty.STRING, 
                     JsonSchemaProperty.description("URL completa del recurso web a descargar y procesar."))
             .build();

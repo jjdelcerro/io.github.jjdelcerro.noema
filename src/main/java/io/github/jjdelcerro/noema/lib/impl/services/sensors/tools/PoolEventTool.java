@@ -13,7 +13,7 @@ import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
  * Tool that allows the LLM to pool for pending sensory events from all
  * registered sensors.
  */
-public class PoolEventTool extends AbstractAgentTool {
+public class PoolEventTool extends AbstractAgentTool { // FIXME: Esta tool esta repetida!!!
 
   public static final String TOOL_NAME = "pool_event";
 

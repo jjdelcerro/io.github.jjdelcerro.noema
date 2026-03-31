@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.util.Map;
 
 public class TavilyWebSearchTool extends AbstractAgentTool {
+  public static final String TOOL_NAME = "web_search";
 
   public static final String TAVILY_API_KEY = "websearch/tavily_api_key";
 
@@ -27,7 +28,7 @@ public class TavilyWebSearchTool extends AbstractAgentTool {
   @Override
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
-            .name("web_search")
+            .name(TOOL_NAME)
             .description("Busca información actualizada en internet usando Tavily. Ideal para búsquedas complejas y análisis de datos web.")
             .addParameter("query", JsonSchemaProperty.STRING, JsonSchemaProperty.description("La consulta de búsqueda."))
             .build();

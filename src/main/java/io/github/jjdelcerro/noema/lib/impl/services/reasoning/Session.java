@@ -180,7 +180,7 @@ public class Session {
     // TODO: habria que implementar algun mecanismo para detectar si el tamaño 
     // de contexto a superado el 40% y disparar tambien ahi la compactacion.
     //
-    // TODO: Probablemente haya que estudir que hacer cuando hay herramientas que 
+    // TODO: Probablemente haya que estudiar que hacer cuando hay herramientas que 
     // han devuelto una cantidad inmensa de texto, tal vez haya que valorar
     // si es mejor compactar o simplemente deshacernos de la informacion
     // devuelta por esas herramientas que de todos modos se iba a perder tras
@@ -393,7 +393,7 @@ public class Session {
   // =================================================================================
   // ADAPTADORES GSON
   // =================================================================================
-  private static class ChatMessageAdapter implements JsonSerializer<ChatMessage>, JsonDeserializer<ChatMessage> {
+  public static class ChatMessageAdapter implements JsonSerializer<ChatMessage>, JsonDeserializer<ChatMessage> {
 
     @Override
     public JsonElement serialize(ChatMessage src, Type typeOfSrc, JsonSerializationContext context) {
@@ -425,7 +425,7 @@ public class Session {
     }
   }
 
-  private static class ContentAdapter implements JsonSerializer<Content>, JsonDeserializer<Content> {
+  public static class ContentAdapter implements JsonSerializer<Content>, JsonDeserializer<Content> {
 
     @Override
     public JsonElement serialize(Content src, Type typeOfSrc, JsonSerializationContext context) {

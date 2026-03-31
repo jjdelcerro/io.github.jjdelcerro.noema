@@ -36,7 +36,7 @@ public class FileExtractTextTool extends AbstractPaginatedAgentTool {
                     "  • Solo archivos dentro del sandbox del proyecto.\n" +
                     "  • La extracción puede ser costosa computacionalmente para documentos grandes.\n" +
                     "\n" +
-                    getPaginationSystemInstruction())
+                    getShortPaginationInstruction())
             .addParameter("path", JsonSchemaProperty.STRING, 
                     JsonSchemaProperty.description("Ruta del archivo binario (PDF, DOCX, etc.)."))
             .build();

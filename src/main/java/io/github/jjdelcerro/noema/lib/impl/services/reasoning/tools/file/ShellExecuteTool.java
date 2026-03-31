@@ -95,7 +95,7 @@ public class ShellExecuteTool extends AbstractPaginatedAgentTool {
                     "\n" +
                     "**SEGURIDAD:** Si Firejail está disponible, los comandos se ejecutan en un sandbox con directorio home aislado y acceso restringido al proyecto.\n" +
                     "\n" +
-                    getPaginationSystemInstruction())
+                    getShortPaginationInstruction())
             .addParameter("command", JsonSchemaProperty.STRING, 
                     JsonSchemaProperty.description("Comando completo a ejecutar. Incluye flags de no-interactividad si aplica (ej: '-y', '--batch')."))
             .build();

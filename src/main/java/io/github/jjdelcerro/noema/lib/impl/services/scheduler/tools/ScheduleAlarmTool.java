@@ -1,6 +1,5 @@
 package io.github.jjdelcerro.noema.lib.impl.services.scheduler.tools;
 
-import com.google.gson.Gson;
 import com.joestelmach.natty.DateGroup;
 import com.joestelmach.natty.Parser;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
@@ -13,29 +12,27 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
 
 /**
  * Herramienta para programar avisos o alarmas usando lenguaje natural (Inglés).
  */
-public class ScheduleAlarmTool implements AgentTool {
+public class ScheduleAlarmTool extends AbstractAgentTool {
+  public static final String TOOL_NAME = "schedule_alarm";
 
-  private final Gson gson = new Gson();
   private final Parser dateParser = new Parser();
-  private final Agent agent;
 
   public ScheduleAlarmTool(Agent agent) {
-    this.agent = agent;
+    super(agent);
   }
 
   @Override
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
-            .name("schedule_alarm")
-            // Descripción general en el idioma del sistema (Castellano)
+            .name(TOOL_NAME)
             .description("Permite programar una alarma para que te avise cuando se dispare mediante un evento. Cuando recibas el evento de que se ha disparado la alarma sera responsabilidad tuya dar el aviso al usuario.")
             .addParameter("reason", JsonSchemaProperty.STRING,
                     JsonSchemaProperty.description("El motivo o contenido de la alarma."))
-            // Instrucción específica sobre el idioma para el parámetro técnico
             .addParameter("when", JsonSchemaProperty.STRING,
                     JsonSchemaProperty.description("Descripción temporal. DEBE ESTAR EN INGLÉS "
                             + "(ej: 'tomorrow at 5pm', 'in 10 minutes', 'March 21st', '2025-02-10 19:00'). "

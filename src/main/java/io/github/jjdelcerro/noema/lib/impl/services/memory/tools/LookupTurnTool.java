@@ -1,6 +1,5 @@
 package io.github.jjdelcerro.noema.lib.impl.services.memory.tools;
 
-import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
@@ -11,17 +10,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
 
-public class LookupTurnTool implements AgentTool {
+public class LookupTurnTool extends AbstractAgentTool {
 
   public static final String NAME = "lookup_turn";
 
-  private final Agent agent;
-  private final Gson gson;
-
   public LookupTurnTool(Agent agent) {
-    this.agent = agent;
-    this.gson = new Gson();
+    super(agent);
   }
 
   @Override

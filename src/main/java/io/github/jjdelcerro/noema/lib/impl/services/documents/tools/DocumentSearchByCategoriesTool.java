@@ -1,30 +1,25 @@
 package io.github.jjdelcerro.noema.lib.impl.services.documents.tools;
 
-import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.impl.AgentImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsService.DocumentResult;
-import io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsServiceImpl;
 import java.util.List;
 import java.util.Map;
-import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsService;
 
-public class DocumentSearchByCategoriesTool implements AgentTool {
-
-  private final AgentImpl agent;
-  private final Gson gson = new Gson();
+public class DocumentSearchByCategoriesTool extends AbstractAgentTool {
+  public static final String TOOL_NAME = "document_search_by_categories";
 
   public DocumentSearchByCategoriesTool(Agent agent) {
-    this.agent = (AgentImpl) agent;
+    super(agent);
   }
 
   @Override
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
-            .name("document_search_by_categories")
+            .name(TOOL_NAME)
             .description("Lista documentos que pertenecen a categorías específicas. Úsalo para ver qué manuales o archivos hay disponibles de un tipo concreto.")
             .addParameter("categories", JsonSchemaProperty.type("array"),
                     JsonSchemaProperty.items(JsonSchemaProperty.STRING),

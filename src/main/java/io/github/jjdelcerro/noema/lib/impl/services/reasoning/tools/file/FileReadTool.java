@@ -28,9 +28,8 @@ public class FileReadTool extends AbstractPaginatedAgentTool {
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
             .name(TOOL_NAME)
-            .description("Devuelve el contenido de un archivo de texto del proyecto (código fuente, documentación, archivos de configuración, etc.).\n" +
-                    "\n" +
-                    getPaginationSystemInstruction())
+            .description("Devuelve el contenido de un archivo de texto del proyecto (código fuente, documentación, archivos de configuración, etc.).\n\n" +
+                    getShortPaginationInstruction())
             .addParameter("path", JsonSchemaProperty.STRING,
                     JsonSchemaProperty.description("Ruta del archivo (relativa o absoluta)."))
             .build();

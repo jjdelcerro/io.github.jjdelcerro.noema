@@ -45,7 +45,7 @@ public class FileReadSelectorsTool extends AbstractPaginatedAgentTool {
             .name(TOOL_NAME)
             .description("Lee contenido de múltiples archivos mediante rutas exactas o patrones glob (ej: 'src/**/*.java').\n" +
                     "\n" +
-                    getPaginationSystemInstruction())
+                    getShortPaginationInstruction())
             .addParameter("selectors", JsonSchemaProperty.ARRAY,
                     JsonSchemaProperty.description("Lista de rutas o patrones glob para seleccionar archivos."))
             .build();

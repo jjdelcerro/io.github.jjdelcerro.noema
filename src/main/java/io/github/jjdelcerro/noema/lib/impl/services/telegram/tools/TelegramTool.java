@@ -11,6 +11,7 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceImpl;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
 
 /**
  * Puente bidireccional entre el Agente y la plataforma de mensajería Telegram.
@@ -44,20 +45,17 @@ import io.github.jjdelcerro.noema.lib.AgentTool;
  *
  * @author jjdelcerro
  */
-public class TelegramTool implements AgentTool {
-
-  private final Gson gson = new Gson();
-  private final Agent agent;
+public class TelegramTool extends AbstractAgentTool {
+  public static final String TOOL_NAME = "telegram_send";
 
   public TelegramTool(Agent agent) {
-    this.agent = agent;
+    super(agent);
   }
     
-
   @Override
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
-            .name("telegram_send")
+            .name(TOOL_NAME)
             .description("Envía un mensaje al usuario a través de Telegram. Úsalo para notificar resultados de tareas largas o alertas proactivas.")
             .addParameter("message", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Contenido del mensaje"))
             .build();
