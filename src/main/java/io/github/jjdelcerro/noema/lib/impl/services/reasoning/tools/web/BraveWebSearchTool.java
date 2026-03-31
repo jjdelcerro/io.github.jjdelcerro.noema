@@ -1,6 +1,5 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -15,19 +14,18 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
 
-public class BraveWebSearchTool implements AgentTool {
+public class BraveWebSearchTool extends AbstractAgentTool {
+  public static final String TOOL_NAME = "web_search";
 
   public static final String BRAVE_SEARCH_API_KEY = "websearch/brave_api_key";
 
   private final String apiKey;
   private final HttpClient httpClient;
-  private final Gson gson = new Gson();
-
-  private final Agent agent;
 
   public BraveWebSearchTool(Agent agent) {
-    this.agent = agent;
+    super(agent);
     this.apiKey = agent.getSettings().getPropertyAsString(BRAVE_SEARCH_API_KEY);
     this.httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
@@ -37,7 +35,7 @@ public class BraveWebSearchTool implements AgentTool {
   @Override
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
-            .name("web_search")
+            .name(TOOL_NAME)
             .description("Busca información actualizada en internet. Úsala cuando necesites datos que no están en tu memoria local o para verificar hechos actuales.")
             .addParameter("query", JsonSchemaProperty.STRING, JsonSchemaProperty.description("La consulta de búsqueda en lenguaje natural."))
             .build();

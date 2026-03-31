@@ -13,18 +13,20 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
 import java.util.Locale;
 
 /**
  * Herramienta para consultar el clima actual utilizando Open-Meteo. No requiere
  * API Key, cumpliendo con la filosofía de minimizar fricción en el prototipo.
  */
-public class WeatherTool implements AgentTool {
+public class WeatherTool extends AbstractAgentTool {
+  public static final String TOOL_NAME = "get_weather";
 
   private final HttpClient httpClient;
-  private final Gson gson = new Gson();
 
   public WeatherTool(Agent agent) {
+    super(agent);
     this.httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .build();
@@ -33,7 +35,7 @@ public class WeatherTool implements AgentTool {
   @Override
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
-            .name("get_weather")
+            .name(TOOL_NAME)
             .description("Consulta el clima actual y la prevision. "
                     + "ESTRATEGIA: Si el usuario no especifica una ciudad o ubicacion, utiliza primero "
                     + "la herramienta 'get_current_location' para obtener las coordenadas actuales "

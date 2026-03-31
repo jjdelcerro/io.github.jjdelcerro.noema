@@ -3,16 +3,18 @@ package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.events;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
 
 /**
  * Herramienta de sistema para la gestión de la proactividad.
  * Permite al agente consultar si existen estímulos externos pendientes de procesar.
  */
-public class PoolEventTool implements AgentTool {
+public class PoolEventTool extends AbstractAgentTool {
 
     public static final String NAME = "pool_event";
 
     public PoolEventTool(Agent agent) {
+      super(agent);
         // De momento no necesita estado, pero recibe el agente por consistencia
     }
 

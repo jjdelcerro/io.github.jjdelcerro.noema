@@ -48,4 +48,10 @@ public abstract class AbstractAgentTool implements AgentTool {
   protected ReasoningServiceImpl getReasoningService() {
     return (ReasoningServiceImpl) agent.getService(ReasoningServiceImpl.NAME);
   }
+
+  @Override
+  public String trimResult(String result) {
+    return result;
+  }
+  
 }

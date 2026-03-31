@@ -1,6 +1,5 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web;
 
-import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
@@ -10,23 +9,24 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import java.util.LinkedHashMap;
+import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
 
 /**
  * Herramienta para obtener la fecha y hora actual del sistema. Permite
  * especificar una zona horaria opcional.
  */
-public class TimeTool implements AgentTool {
+public class TimeTool extends AbstractAgentTool {
 
-  private final Gson gson = new Gson();
+  public static final String TOOL_NAME = "get_current_time";
 
   public TimeTool(Agent agent) {
+    super(agent);
   }
 
   @Override
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
-            .name("get_current_time")
+            .name(TOOL_NAME)
             .description("Obtiene la fecha, hora y zona horaria actual del sistema. "
                     + "Utilizala cuando necesites precision temporal para programar tareas, "
                     + "calcular duraciones o entender referencias relativas (ej: 'manana').")

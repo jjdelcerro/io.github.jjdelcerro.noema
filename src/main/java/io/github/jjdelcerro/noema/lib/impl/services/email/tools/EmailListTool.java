@@ -3,20 +3,19 @@ package io.github.jjdelcerro.noema.lib.impl.services.email.tools;
 import io.github.jjdelcerro.noema.lib.impl.services.email.EmailService;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
 
-public class EmailListTool implements AgentTool {
-
-  private final Agent agent;
+public class EmailListTool extends AbstractAgentTool {
+  public static final String TOOL_NAME = "email_list_inbox";
 
   public EmailListTool(Agent agent) {
-    this.agent = agent;
+    super(agent);
   }
 
   @Override
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
-            .name("email_list_inbox")
+            .name(TOOL_NAME)
             .description("Lista las cabeceras de los últimos 10 correos. Úsalo para identificar qué correos necesitas leer.")
             .build();
   }

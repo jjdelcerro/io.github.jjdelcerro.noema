@@ -1,6 +1,5 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web;
 
-import com.google.gson.Gson;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 
@@ -11,17 +10,19 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
 
 /**
  * Herramienta para determinar la ubicación geográfica aproximada basada en la
  * IP pública. Utiliza ip-api.com (gratuito para desarrollo).
  */
-public class LocationTool implements AgentTool {
+public class LocationTool extends AbstractAgentTool {
+  public static final String TOOL_NAME = "get_current_location";
 
   private final HttpClient httpClient;
-  private final Gson gson = new Gson();
 
   public LocationTool(Agent agent) {
+    super(agent);
     this.httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .build();
@@ -30,7 +31,7 @@ public class LocationTool implements AgentTool {
   @Override
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
-            .name("get_current_location")
+            .name(TOOL_NAME)
             .description("Obtiene la ubicacion geografica actual del sistema basada en la IP publica. "
                     + "Devuelve ciudad, pais y coordenadas (latitud/longitud).")
             .build();

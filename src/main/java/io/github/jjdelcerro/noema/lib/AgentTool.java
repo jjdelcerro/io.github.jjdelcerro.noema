@@ -34,4 +34,6 @@ public interface AgentTool {
     
     // Ejecución de la lógica (recibe JSON args, devuelve String result)
     String execute(String jsonArguments);
+    
+    String trimResult(String result);
 }

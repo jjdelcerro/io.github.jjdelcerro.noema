@@ -1,11 +1,8 @@
 package io.github.jjdelcerro.noema.lib.impl;
 
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentAccessControl;
 import org.apache.commons.collections4.map.LRUMap;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -21,18 +18,17 @@ import static io.github.jjdelcerro.noema.lib.AgentAccessControl.AccessMode.PATH_
 
 public abstract class AbstractPaginatedAgentTool extends AbstractAgentTool {
 
-  protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractPaginatedAgentTool.class);
-  
   private static final String PREFIX_TMP = "tmp://";
   private static final String PREFIX_CACHE = "cache://";
   private static final String PREFIX_USER = "user://";
-  
+
   private static final int DEFAULT_MAX_LINES = 1000;
   private static final int CACHE_SIZE = 30;
 
   private final Map<String, FileMeta> lineCountCache;
 
   private record FileMeta(long lineCount, FileTime lastModifiedTime) {
+
   }
 
   protected AbstractPaginatedAgentTool(Agent agent) {
@@ -264,6 +260,15 @@ public abstract class AbstractPaginatedAgentTool extends AbstractAgentTool {
     return "HINT: To read the next block, call 'read_paginated_resource' with args: {\"resource_id\": \"" + resourceId + "\", \"offset\": " + nextOffset + ", \"limit\": " + limit + "}";
   }
 
+  protected String getShortPaginationInstruction() {
+    return """
+**FORMATO DE SALIDA:**
+    El resultado siempre consta de dos partes separadas estrictamente por el delimitador `---`:
+    1. Cabecera, arriba de `---`): Metadatos del sistema. Si el contenido es demasiado largo, se truncará y aparecerá aquí un campo `HINT` con la llamada exacta a la herramienta para continuar leyendo.
+    2. Contenido, debajo de `---`): El texto real del archivo o comando.
+""";
+  }
+  
   protected String getPaginationSystemInstruction() {
     return """
 **PROTOCOLO DE RESPUESTA Y NAVEGACIÓN:**
@@ -307,6 +312,26 @@ EMPTY: [true|false]
   * Si recibes un `HINT`, es una instrucción ejecutable para obtener el siguiente bloque. No intentes paginar por tu cuenta.
   * Si el patrón no incluye `HINT`, el recurso ha finalizado. No intentes realizar más llamadas de lectura.
   * Si recibes un error indicando que el recurso temporal ha expirado, debes regenerar el recurso original.
+  * Si ves el campo `CONTENT_TRIMMED: true` en la cabecera, significa que el sistema ha borrado el texto del 
+    archivo de tu memoria a corto plazo para ahorrar contexto. Asume que ya leíste y procesaste este bloque 
+    correctamente en un turno anterior, y si crees que lo necesitas vuelvelo a pedir.
 """;
   }
+
+  @Override
+  public String trimResult(String result) {
+    if (result == null) {
+      return null;
+    }
+
+    String separator = "\n---\n";
+    int separatorIndex = result.indexOf(separator);
+
+    if (separatorIndex == -1) {
+      return super.trimResult(result);
+    }
+    String header = result.substring(0, separatorIndex);
+    return header + "\nCONTENT_TRIMMED: true" + separator;
+  }
+
 }

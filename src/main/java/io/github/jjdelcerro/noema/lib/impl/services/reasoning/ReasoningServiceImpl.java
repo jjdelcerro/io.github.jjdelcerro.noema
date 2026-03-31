@@ -1,9 +1,12 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.Content;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.output.FinishReason;
@@ -65,8 +68,11 @@ import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.TavilyWe
 import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SYSTEMCLOCK_SENSOR_NAME;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
 import java.io.IOException;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -654,6 +660,7 @@ public class ReasoningServiceImpl implements ReasoningService {
         boolean turnFinished = false;
         while (!turnFinished && this.isRunning()) {
           List<ChatMessage> context = this.session.getContextMessages(this.activeCheckPoint, getBaseSystemPrompt());
+          this.contextTrimmer(context);
 
           Response<AiMessage> response = model.generate(context, this.getToolSpecifications(), abort);
           AiMessage aiMessage = response.content();
@@ -709,10 +716,10 @@ public class ReasoningServiceImpl implements ReasoningService {
             toolExecutionRetries = 0;
           }
         }
-        if( textUser!=null ) {
+        if (textUser != null) {
           this.session.setLastInteractionTime(LocalDateTime.now());
         }
-        
+
         if (this.session.needCompaction()) {
           performCompaction();
         }
@@ -731,5 +738,40 @@ public class ReasoningServiceImpl implements ReasoningService {
         this.console().printSystemError("Dispatcher error onComplete: " + e.getMessage());
       }
     }
+  }
+
+  private void contextTrimmer(List<ChatMessage> context) {
+    for (int i = 0; i < context.size(); i++) {
+      if (i > context.size() - 10) {
+        break; // los ultimos 10 mensajes se mantienen sin cambios
+      }
+      ChatMessage message = context.get(i);
+      if (message instanceof ToolExecutionResultMessage toolResult) {
+        AvailableAgentTool tool = availableTools.get(toolResult.toolName());
+        if (tool != null && tool.tool != null) {
+          String text = toolResult.text();
+          if (text.length() > 1024) {
+            text = tool.tool.trimResult(text);
+            ToolExecutionResultMessage x = ToolExecutionResultMessage.from(toolResult.id(), toolResult.toolName(), text);
+            context.set(i, x);
+          }
+        }
+      }
+    }
+    Gson gson = new GsonBuilder()
+            .setPrettyPrinting()
+            .registerTypeAdapter(ChatMessage.class, new Session.ChatMessageAdapter())
+            .registerTypeAdapter(Content.class, new Session.ContentAdapter())
+            .enableComplexMapKeySerialization()
+            .create();
+    Path tempPath = agent.getPaths().getTempFolder().resolve("last_context.json");    
+    try {
+      try (Writer writer = Files.newBufferedWriter(tempPath, StandardCharsets.UTF_8)) {
+        gson.toJson(context, writer);
+        writer.flush();
+      }
+    } catch (IOException e) {
+      throw new RuntimeException("Error guardando contexto: " + e.getMessage(), e);
+    }    
   }
 }
