@@ -455,6 +455,7 @@ public class ReasoningServiceImpl implements ReasoningService {
     return this.running;
   }
 
+  @Override
   public int estimateSystemPromptTokenCount() {
     if (this.model == null) {
       return 0;
@@ -800,5 +801,10 @@ public class ReasoningServiceImpl implements ReasoningService {
     } catch (IOException e) {
       throw new RuntimeException("Error guardando contexto: " + e.getMessage(), e);
     }    
+  }
+  
+  @Override
+  public int getTurnsCount() {
+    return this.session.getTurnsCount();
   }
 }

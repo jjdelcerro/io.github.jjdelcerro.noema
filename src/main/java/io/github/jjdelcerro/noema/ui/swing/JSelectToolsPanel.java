@@ -3,6 +3,7 @@ package io.github.jjdelcerro.noema.ui.swing;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
+import io.github.jjdelcerro.noema.ui.swing.settings.CheckedListItemSwing;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dialog;
@@ -17,6 +18,7 @@ import javax.swing.Box;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import static javax.swing.JComponent.TOOL_TIP_TEXT_KEY;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -55,7 +57,7 @@ public class JSelectToolsPanel extends JPanel {
     add(lblHeader, BorderLayout.NORTH);
 
     // --- 2. Lista de Herramientas ---
-    list.setCellRenderer(new CheckBoxListRenderer());
+    list.setCellRenderer(new CheckBoxListRenderer(this.agent));
     list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
     // Lógica de clic para marcar/desmarcar
@@ -65,6 +67,9 @@ public class JSelectToolsPanel extends JPanel {
         int index = list.locationToIndex(e.getPoint());
         if (index != -1) {
           ToolUIItem item = listModel.getElementAt(index);
+          if( !isToolEnabled(agent, item.technicalName)) {
+            return;
+          }            
           boolean newState = !item.checked();
 
           // Actualizamos modelo visual
@@ -173,14 +178,22 @@ public class JSelectToolsPanel extends JPanel {
   // --- Renderer visual ---
   private static class CheckBoxListRenderer extends JCheckBox implements ListCellRenderer<ToolUIItem> {
 
-    public CheckBoxListRenderer() {
+    private final Agent agent;
+
+    public CheckBoxListRenderer(Agent agent) {
+      this.agent = agent;
       setOpaque(true);
       setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
     }
 
     @Override
     public Component getListCellRendererComponent(JList<? extends ToolUIItem> list, ToolUIItem value, int index, boolean isSelected, boolean cellHasFocus) {
-      setSelected(value.checked());
+      boolean toolEnabled = isToolEnabled(this.agent, value.technicalName);
+      boolean checked = value.checked();
+      if( !toolEnabled ) {
+        checked = false;
+      }
+      setSelected(checked);
 
       String desc = value.description();
       if (desc != null && desc.length() > 80) {
@@ -193,7 +206,21 @@ public class JSelectToolsPanel extends JPanel {
       setBackground(isSelected ? list.getSelectionBackground() : list.getBackground());
       setForeground(isSelected ? list.getSelectionForeground() : list.getForeground());
       setFocusable(false);
+      setEnabled(toolEnabled);
       return this;
     }
   }
+
+  private static boolean isToolEnabled(Agent agent, String toolName) {
+    if (StringUtils.equals(toolName, "shell_execute")) {
+      return agent.getSettings().getPropertyAsBoolean("access_control/allow_shell_execution", true);
+    } else if (StringUtils.equalsAny(toolName, "web_search", "web_get_content")) {
+      return agent.getSettings().getPropertyAsBoolean("access_control/allow_internet_access", true);
+    } else if (StringUtils.equalsAny(toolName, "file_write", "file_patch", "file_mkdir", "file_search_and_replace")) {
+      return agent.getSettings().getPropertyAsBoolean("access_control/allow_disk_write", true);
+    } else {
+      return true;
+    }
+  }
+
 }

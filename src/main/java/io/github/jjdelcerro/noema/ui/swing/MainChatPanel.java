@@ -308,12 +308,13 @@ public class MainChatPanel extends JPanel {
       if (model == null) {
         lblModelInfo.setText("?");
         lblTokens.setText("?/?");
-      } else {
+      } else {        
         lblModelInfo.setText(model.getParameters().modelId());
         lblTokens.setText(
                 String.format(
                         Locale.ENGLISH,
-                        "%.1f/%.1f",
+                        "%d - %.1f/%.1f",
+                        reasoning.getTurnsCount(),
                         (reasoning.estimateToolsTokenCount() + reasoning.estimateSystemPromptTokenCount() + reasoning.estimateMessagesTokenCount()) / 1024.0,
                         agent.getConversationContextSize() / 1024.0
                 )
@@ -321,7 +322,8 @@ public class MainChatPanel extends JPanel {
         lblTokens.setToolTipText(
                 String.format(
                         Locale.ENGLISH,
-                        "Prompt del sistema %.1fkt, herramientas %.1fkt, mensajes %.1fkt\nTotal consumido %.1fkt de %.1fkt disponible",
+                        "Turnos %d\nTokens en el prompt del sistema %.1fk, en herramientas %.1fk, en mensajes %.1fk\nTotal tokens consumido %.1fk de %.1fk disponible",
+                        reasoning.getTurnsCount(),
                         reasoning.estimateToolsTokenCount() / 1024.0,
                         reasoning.estimateSystemPromptTokenCount() / 1024.0,
                         reasoning.estimateMessagesTokenCount() / 1024.0,
