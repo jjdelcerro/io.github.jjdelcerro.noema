@@ -21,7 +21,10 @@ import java.awt.Image;
 import java.awt.Insets;
 import java.awt.MouseInfo;
 import java.awt.Rectangle;
+import java.awt.Toolkit;
 import java.awt.Window;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
 import java.util.List;
 import java.util.Locale;
@@ -47,7 +50,7 @@ public class MainChatPanel extends JPanel {
   private final JLabel lblModelInfo, lblTokens, lblTimer;
   private final JButton settingsBtn, btnSave, btnCopy;
 
-  private final AgentConsole consoleController;
+  private final AgentSwingConsoleControllerUsingMultipleJTextPane consoleController;
   private Agent agent;
   private AgentSettings settings;
   private Timer thinkingTimer;
@@ -61,8 +64,8 @@ public class MainChatPanel extends JPanel {
     // --- Panel Izquierdo (Settings) ---
     JPanel leftBar = new JPanel(new MigLayout("wrap 1, ins 10, filly", "[]", "[][grow]"));
     leftBar.setBackground(Color.DARK_GRAY);
-    settingsBtn = createSidebarButton(); // <--- Usamos una función de ayuda
-    leftBar.add(settingsBtn, "w 28!, h 28!"); // Un pelín más grandes para que respiren
+    settingsBtn = createSidebarButton();
+    leftBar.add(settingsBtn, "w 28!, h 28!");
 
     // --- Panel Derecho (Guardar y Copiar) ---
     JPanel rightBar = new JPanel(new MigLayout("wrap 1, ins 10, filly", "[]", "[][][grow]"));
@@ -117,12 +120,12 @@ public class MainChatPanel extends JPanel {
     // 1. Botón Herramientas (Izq)
     btnTools = createCapsuleButton("tools.svg", "Herramientas");
     btnTools.addActionListener(e -> {
-        if (agent != null) {
-            Window parentWindow = SwingUtilities.getWindowAncestor(this);
-            JSelectToolsPanel toolsPanel = new JSelectToolsPanel(agent);
-            toolsPanel.showWindow(parentWindow);
-        }
-    });    
+      if (agent != null) {
+        Window parentWindow = SwingUtilities.getWindowAncestor(this);
+        JSelectToolsPanel toolsPanel = new JSelectToolsPanel(agent);
+        toolsPanel.showWindow(parentWindow);
+      }
+    });
     controlBar.add(btnTools);
 
     // 2. Metadata (Centro)
@@ -212,9 +215,17 @@ public class MainChatPanel extends JPanel {
     });
 
     btnSend.addActionListener(e -> handleSend());
+    btnCopy.addActionListener(e -> handleCopy());
     settingsBtn.addActionListener(e -> {
       handleShowSetting();
     });
+  }
+
+  private void handleCopy() {
+    String text = this.consoleController.getMarkdown();
+    Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+    StringSelection selection = new StringSelection(text);
+    clipboard.setContents(selection, null);
   }
 
   private void handleShowSetting() {
@@ -303,18 +314,18 @@ public class MainChatPanel extends JPanel {
                 String.format(
                         Locale.ENGLISH,
                         "%.1f/%.1f",
-                        (reasoning.estimateToolsTokenCount()+ reasoning.estimateSystemPromptTokenCount()+ reasoning.estimateMessagesTokenCount()) / 1024.0,
+                        (reasoning.estimateToolsTokenCount() + reasoning.estimateSystemPromptTokenCount() + reasoning.estimateMessagesTokenCount()) / 1024.0,
                         agent.getConversationContextSize() / 1024.0
                 )
         );
         lblTokens.setToolTipText(
                 String.format(
                         Locale.ENGLISH,
-                        "Prompt del sistema %.1f, herramientas %.1f, mensajes %.1f\nTotal consumido %.1f de %.1f disponible",
+                        "Prompt del sistema %.1fkt, herramientas %.1fkt, mensajes %.1fkt\nTotal consumido %.1fkt de %.1fkt disponible",
                         reasoning.estimateToolsTokenCount() / 1024.0,
                         reasoning.estimateSystemPromptTokenCount() / 1024.0,
                         reasoning.estimateMessagesTokenCount() / 1024.0,
-                        (reasoning.estimateToolsTokenCount()+ reasoning.estimateSystemPromptTokenCount()+ reasoning.estimateMessagesTokenCount()) / 1024.0,
+                        (reasoning.estimateToolsTokenCount() + reasoning.estimateSystemPromptTokenCount() + reasoning.estimateMessagesTokenCount()) / 1024.0,
                         agent.getConversationContextSize() / 1024.0
                 )
         );

@@ -24,6 +24,12 @@ import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.LookupTurnTool;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.SearchFullHistoryTool;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +40,6 @@ import org.slf4j.LoggerFactory;
 public class MemoryServiceImpl implements MemoryService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MemoryServiceImpl.class);
-
 
   private final Agent agent;
   private final SourceOfTruth sourceOfTruth;
@@ -81,7 +86,7 @@ public class MemoryServiceImpl implements MemoryService {
     this.model = this.agent.createChatModel(MemoryService.ID);
     loadSystemPrompt();
     this.running = true;
-    
+
     this.agent.getConsole().printSystemLog("Memory service " + getModelName());
   }
 
@@ -105,11 +110,20 @@ public class MemoryServiceImpl implements MemoryService {
     if (newTurns == null || newTurns.isEmpty()) {
       throw new IllegalArgumentException("No hay turnos para compactar.");
     }
-
-    // 1. Preparar el Prompt del Usuario (Input Data)
+    Set<Integer> validTurnIds = new HashSet<>();
+    if( previous != null ) {
+      validTurnIds.addAll(extractCitationIds(previous.getText()));
+    }
+    for (Turn turn : newTurns) {
+      validTurnIds.add(turn.getId());
+      if ("lookup_turn".equals(turn.getContenttype()) || "tool_execution".equals(turn.getContenttype())) {
+          // Escaneamos el resultado de la herramienta por si trajo citas del pasado
+          validTurnIds.addAll(extractCitationIds(turn.getToolResult()));
+      }      
+    }
+    
     String userPrompt = buildUserPrompt(previous, newTurns);
 
-    // 2. Invocar al LLM
     LOGGER.info("Iniciando compactación de " + newTurns.size() + " turnos.");
     this.console.printSystemLog("Iniciando compactación de " + newTurns.size() + " turnos...");
     AiMessage response = model.generate(
@@ -119,24 +133,59 @@ public class MemoryServiceImpl implements MemoryService {
 
     String generatedText = response.text();
 
-    // TODO: Comprobar aqui que las citas del nuevo "viaje" son correctas.
+    Collection<Integer> currentCitations = extractCitationIds(generatedText);
+    for (Integer turnId : currentCitations) {
+      if( !validTurnIds.contains(turnId) ) {
+        LOGGER.warn("Encontrada cita "+turnId+" incorrecta.");
+        generatedText = generatedText.replace("{cite:" + turnId + "}", "{badcite:" + turnId + "}");
+      }
+    }
     
-    // 3. Calcular metadatos del nuevo rango
     int firstId = newTurns.getFirst().getId();
     int lastId = newTurns.getLast().getId();
 
-    // Si venimos de un CP anterior, el rango empieza donde empezaba aquel (historia acumulada)
-    // Opcional: Si quieres que el CP represente TODA la historia, firstId debería ser el del CP previo.
-    // Si quieres que represente el bloque consolidado, se mantiene el actual.
+    // TODO: Si venimos de un CP anterior, el rango empieza donde empezaba aquel (historia acumulada)
+    // Opcional: Si queremos que el CP represente TODA la historia, firstId debería ser el del CP previo.
+    // Si queremos que represente el bloque consolidado, se mantiene el actual.
     // Según tu arquitectura de "El Viaje" acumulativo, el 'first' debería ser el inicio de los tiempos.
     if (previous != null) {
       firstId = previous.getTurnFirst();
     }
 
-    // 4. Crear CheckPoint Transitorio
     CheckPoint cp = this.sourceOfTruth.createCheckPoint(firstId, lastId, LocalDateTime.now(), generatedText);
     LOGGER.info("Compactacion finalizada.");
     return cp;
+  }
+
+  /**
+   * Extrae los IDs de las citas presentes en un texto. Soporta formatos
+   * {cite:123} y {cite:12,6,24}
+   */
+  private Collection<Integer> extractCitationIds(String text) {
+    Set<Integer> foundIds = new HashSet<>();
+
+    // Regex: Busca "{cite:" seguido de números, comas o espacios, hasta el cierre "}"
+    // Captura el grupo de contenido dentro de los corchetes
+    Pattern pattern = Pattern.compile("\\{cite:\\s*([\\d,\\s]+)\\}");
+    Matcher matcher = pattern.matcher(text);
+
+    while (matcher.find()) {
+      String match = matcher.group(1);
+      String[] parts = StringUtils.split(match,',');
+
+      for (String part : parts) {
+        try {
+          String idStr = StringUtils.trim(part);
+          if (!idStr.isEmpty()) {
+            foundIds.add(Integer.valueOf(idStr));
+          }
+        } catch (NumberFormatException e) {
+          LOGGER.warn("Cita no valida '"+match+"'.");
+        }
+      }
+    }
+
+    return foundIds;
   }
 
   private String buildUserPrompt(CheckPoint previous, List<Turn> newTurns) {
@@ -146,7 +195,7 @@ public class MemoryServiceImpl implements MemoryService {
     if (previous != null) {
       sb.append("MODO DE OPERACIÓN: 2 (Actualización)\n\n");
       sb.append("=== DOCUMENTO DE PUNTO DE GUARDADO ANTERIOR ===\n");
-      sb.append(previous.getText()); // Carga el texto desde disco/cache
+      sb.append(previous.getText()); 
       sb.append("\n===============================================\n\n");
     } else {
       sb.append("MODO DE OPERACIÓN: 1 (Creación Inicial)\n\n");
@@ -158,15 +207,12 @@ public class MemoryServiceImpl implements MemoryService {
     sb.append("code,timestamp,contenttype,text_user,text_model_thinking,text_model,tool_call,tool_result\n");
 
     // TODO: Falta por implementar correctamente la rehidratacion del las herramienta de memoria.
-    
     // TODO: Habria que implementar el troceado de los turnos generando mas de un punto
     // de guardado, cuando estos no entren en el contexto del LLM encargado de compactarlos.
-    
     // TODO: Ver hasta que punto es necesario (hacerlo optativo) la implementacion
     // de la gestion de estado al realizar las compactaciones. Probablemente habria
     // que hacerlo en una segunda llamada al LLM para evitar problemas cognitivos y que
     // luego el agente se encargue de montarlo todo en un solo punto de guardado.
-    
     for (Turn turn : newTurns) {
       sb.append(turn.toCSVLine()).append("\n");
     }
@@ -225,14 +271,14 @@ public class MemoryServiceImpl implements MemoryService {
   public void stop() {
     this.running = false;
   }
-  
+
   public Agent.ChatModel getModel() {
     return model;
   }
-  
+
   public String getModelName() {
     Agent.ChatModel theModel = this.getModel();
-    if( theModel == null ) {
+    if (theModel == null) {
       return null;
     }
     return theModel.getParameters().modelId();

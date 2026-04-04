@@ -340,7 +340,7 @@ public class Session {
     }
   }
 
-  private void save() {
+  public void save() {
     Gson gson = createGson();
     String lastTimeStr = this.lastInteractionTime != null ? this.lastInteractionTime.toString() : null;
     SessionState state = new SessionState(this.messages, this.turnOfMessage, lastTimeStr);

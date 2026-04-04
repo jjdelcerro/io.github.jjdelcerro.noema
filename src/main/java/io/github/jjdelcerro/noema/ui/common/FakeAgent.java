@@ -181,6 +181,10 @@ public class FakeAgent implements Agent {
     public void printModelResponse(String message) {
     }
 
+    @Override
+    public void printSystemLog(String message, Format format) {
+    }
+
   }
 
   private static class FakeAgentActions implements AgentActions {

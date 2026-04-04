@@ -18,9 +18,18 @@ public class AnnotateObservationTool extends AbstractAgentTool {
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
             .name(TOOL_NAME)
-            .description("Guarda una nota o resumen sobre información que acabas de leer o procesar (ej. tras usar file_read o web_search). "
-                    + "Utiliza esta herramienta para asegurar que los conceptos clave, decisiones o hechos relevantes "
-                    + "sobrevivan en tu memoria a largo plazo y no se pierdan al avanzar la conversación.")
+            .description(
+"""
+Utiliza esta herramienta para guardar una nota o resumen sobre información que acabas de leer o procesar (ej. tras usar file_read o web_search).
+Utilizala para guardar:
+* Insights, resúmenes o relaciones que infieres entre múltiples fuentes.
+* Patrones arquitectónicos o de diseño que identificas al leer ficheros.
+* Conexiones que establezcas entre archivos
+* Comprensión del flujos que infieras
+
+Recuerda que la herramienta está pensada para retener valor cognitivo, no para duplicar datos,
+no la uses para duplicar contenido que puedes recuperar de nuevo con file_read o web_search.
+""")
             .addParameter("source", JsonSchemaProperty.STRING,
                     JsonSchemaProperty.description("El origen de la información (ej: nombre del archivo, URL o 'instrucción del usuario')."))
             .addParameter("note", JsonSchemaProperty.STRING,

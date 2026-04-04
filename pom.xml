@@ -10,6 +10,7 @@
   <properties>
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
+    <netbeans.hint.jdkPlatform>JDK_21__System_</netbeans.hint.jdkPlatform>
   </properties>    
     
   <build>
@@ -235,6 +236,12 @@
       <groupId>com.jgoodies</groupId>
       <artifactId>jgoodies-forms</artifactId>
       <version>1.9.0</version>
+      <type>jar</type>
+    </dependency>
+    <dependency>
+      <groupId>org.jsoup</groupId>
+      <artifactId>jsoup</artifactId>
+      <version>1.15.3</version>
       <type>jar</type>
     </dependency>
   </dependencies>

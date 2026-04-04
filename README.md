@@ -230,16 +230,15 @@ Me he centrado en tratar de tener funcionando la parte de:
 * Que las opciones de configuración sean mínimamente funcionales.
 * Gestión básica de la seguridad.
 * Herramientas básicas de acceso disco
-* Herramientas básicas de acceso a internet
+* Herramientas básicas de acceso a internet (recuperacion y busqueda de contenidos usando [tavily](https://www.tavily.com/pricing))
 * Herramientas básicas de control de versiones.
+* Ejecución de comandos de shell, aun falta probar la parte de firejail.
 
 Hay muchas cosas que no están funcionales:
 
 * El servicio de "documentos".
 * Correo.
 * Telegram.
-* Ejecución de comandos de shell.
-* Búsqueda en internet.
 * Muchas opciones de configuración, para asistir en la adición de archivos de 
   identidad, habilidades, configuración en el home del usuario, limpieza de 
   temporales...

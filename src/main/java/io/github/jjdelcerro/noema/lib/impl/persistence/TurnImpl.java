@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Representa una unidad atómica de interacción (Turno) en el sistema de
@@ -67,8 +68,8 @@ public class TurnImpl implements Turn {
   public String toCSVLine() {
     // FIXME: probablemente habria que comprobar si es un turno de tipo TYPE_MEMORY y ver de generar varias lineas con los turnos recuperados de la toolResult
     return Stream.of(
-            "ID-" + id,
-            String.valueOf(timestamp),
+            StringUtils.trim(String.valueOf(id)),
+            StringUtils.trim(String.valueOf(timestamp)),
             contenttype,
             textUser,
             textModelThinking,

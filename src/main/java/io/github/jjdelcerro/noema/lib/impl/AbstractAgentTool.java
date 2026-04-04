@@ -50,8 +50,10 @@ public abstract class AbstractAgentTool implements AgentTool {
   }
 
   @Override
-  public String trimResult(String result) {
-    return result;
+  public String trimResult(String result, TrimResultType trimResultType) {
+    return null;
   }
+
   
+ 
 }

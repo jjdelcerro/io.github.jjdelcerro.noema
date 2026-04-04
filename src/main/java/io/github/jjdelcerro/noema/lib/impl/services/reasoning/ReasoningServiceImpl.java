@@ -60,6 +60,7 @@ import org.slf4j.LoggerFactory;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_REASONING_MODEL;
 import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_REASONING_PROVIDER;
+import io.github.jjdelcerro.noema.lib.AgentTool.TrimResultType;
 import io.github.jjdelcerro.noema.lib.impl.DateUtils;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.ConsultEnvironTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.ListSkillsTool;
@@ -72,7 +73,6 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -496,6 +496,9 @@ public class ReasoningServiceImpl implements ReasoningService {
   public void showSession() {
     List<ChatMessage> history = this.session.getMessages();
 
+    if( this.activeCheckPoint != null ) {
+      console().printSystemLog(this.activeCheckPoint.getText(),AgentConsole.Format.Markdown);
+    }
     for (ChatMessage message : history) {
       if (message instanceof UserMessage userMsg) {
         console().printUserMessage(userMsg.singleText());
@@ -590,6 +593,8 @@ public class ReasoningServiceImpl implements ReasoningService {
 
   private void checkAndInsertTimestamp() {
     LocalDateTime now = LocalDateTime.now();
+    // FIXME: ¿¿ Deberia usarse el SensorsService.getSensorStatistics(USER_SENSOR_NAME).getLastEventTimestamp() 
+    // en lugar de session.getLastInteractionTime() y quitar de la session LastInteractionTime ??
     if (this.session.getLastInteractionTime() != null && !this.session.isEmpty()) {
       // Introduccion de la percepcion temporal.
       Duration delta = Duration.between(this.session.getLastInteractionTime(), now);
@@ -719,6 +724,7 @@ public class ReasoningServiceImpl implements ReasoningService {
         if (textUser != null) {
           this.session.setLastInteractionTime(LocalDateTime.now());
         }
+        this.session.save();
 
         if (this.session.needCompaction()) {
           performCompaction();
@@ -740,24 +746,45 @@ public class ReasoningServiceImpl implements ReasoningService {
     }
   }
 
+  private int getNumberOfMessagesToKeep() {
+    return 20;
+  }
+  
+  private int getNumberOfMessagesToNotify() {
+    int n = getNumberOfMessagesToKeep();
+    return n - (n/3);
+  }
+  
+  private int getMinimumSizeForTrim() {
+    return 1024;
+  }
+  
   private void contextTrimmer(List<ChatMessage> context) {
     for (int i = 0; i < context.size(); i++) {
-      if (i > context.size() - 10) {
-        break; // los ultimos 10 mensajes se mantienen sin cambios
+      if (i > context.size() - this.getNumberOfMessagesToKeep()) { 
+        break; 
       }
       ChatMessage message = context.get(i);
       if (message instanceof ToolExecutionResultMessage toolResult) {
         AvailableAgentTool tool = availableTools.get(toolResult.toolName());
         if (tool != null && tool.tool != null) {
           String text = toolResult.text();
-          if (text.length() > 1024) {
-            text = tool.tool.trimResult(text);
-            ToolExecutionResultMessage x = ToolExecutionResultMessage.from(toolResult.id(), toolResult.toolName(), text);
-            context.set(i, x);
+          if (text.length() > this.getMinimumSizeForTrim() ) { 
+            TrimResultType trimResultType = TrimResultType.Trim;
+            if( i > context.size() - this.getNumberOfMessagesToNotify()) {
+              trimResultType = TrimResultType.Notify;
+            }
+            text = tool.tool.trimResult(text, trimResultType);
+            if( text!=null ) {
+              ToolExecutionResultMessage x = ToolExecutionResultMessage.from(toolResult.id(), toolResult.toolName(), text);
+              context.set(i, x);
+            }
           }
         }
       }
     }
+    
+    // Guardo en disco como ha quedado el ultimo contexto para depuracion
     Gson gson = new GsonBuilder()
             .setPrettyPrinting()
             .registerTypeAdapter(ChatMessage.class, new Session.ChatMessageAdapter())
