@@ -46,14 +46,14 @@ Teniendo en cuenta todo esto prepara un informe que incluya como minimo:
         *   **Sistema de Configuración Jerárquica** (`AgentSettings`).
 
     3.  **Servicios Cognitivos** (puedes incluir aqui mencion a la parte de persistencia como algo comun a estos dos servicios).
-        *   `ReasoningService` (Orquestación del pensamiento).
-        *   `MemoryService` (Consolidación histórica y Checkpoints).
+        *   [ReasoningService](docs/reasoning-service.md) (Orquestación del pensamiento).
+        *   MemoryService (Consolidación histórica y Checkpoints).
 
     4.  **Servicios de Periferia** (asegurate que en esta seccion se incluyan todos los servicios que no esten en el apartado de servicios Cognitivos).
-        *   `SensorsService`.
-        *   `SchedulerService`.
-        *   `Email` / `Telegram`.
-        *   `DocumentsService`.
+        *   [SensorsService](docs/sensors-service.md).
+        *   SchedulerService.
+        *   Email / Telegram.
+        *   DocumentsService.
 
     Acompaña a cada uno de los servicios de un parrafo de descripcion.
     
@@ -84,6 +84,8 @@ Incluye previo a la seccion de vision general informacion sobre:
 * Versión Analizada
 * Fecha de Análisis
 * Autor del Informe: Gemini (IA), basado en la inspección estática del código fuente.
+
+Si nombras RCS o JavaRCS asegurate de poner un enlace a https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs. Ej: `[RCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs)`
 
 Cuanto mas detallado mejor.
 Es preferible que te extiendas y generes un analisis detallado. 

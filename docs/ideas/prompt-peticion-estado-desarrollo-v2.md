@@ -27,7 +27,9 @@ Puntos a tener en cuenta a la hora de realizar el analisis del proyecto:
 
 Trata de no utilizar referencias biologicas para definer conportamientos de la aplicacion.
     
-Elabora un informe del estado de desarrollo en el que se encuentra el proyecto.
+Elabora un informe del estado de desarrollo en el que se encuentra el proyecto. 
+
+IMPORTANTE: Basate solo en los fuentes para realizar el informe. Usa la documentacion existente solo para valorar el estado de la documentacion, ya que esta puede estar desactualizada.
 
 Sigue la siguiente estructura:
 ```
@@ -120,6 +122,9 @@ XXX
 XXX
 
 ```
+
+Si nombras RCS o JavaRCS asegurate de poner un enlace a https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs. Ej: `[RCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs)`
+
 
 Sientete libre de incluir cualquier detalle del proyecto que crees que es relevante relacionado con el estado del proyecto tal como lo has analizado.
 
