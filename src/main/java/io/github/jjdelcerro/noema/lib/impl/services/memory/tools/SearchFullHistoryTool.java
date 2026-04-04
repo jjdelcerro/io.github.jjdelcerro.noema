@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import org.apache.commons.lang3.StringUtils;
 
 public class SearchFullHistoryTool extends AbstractAgentTool {
 
@@ -30,17 +31,22 @@ FIXME: le faltaria un par de parametros para indicar rango de fechas en el que s
      */
     return ToolSpecification.builder()
             .name("search_full_history")
-            .description(
-                    """
-Busca en toda la memoria hist\u00f3rica eventos relevantes bas\u00e1ndose en significado.
-\u00dasalo cuando:
-1. Tengas la sensaci\u00f3n de haber hablado de algo pero no recuerdes los detalles
-2. Necesites encontrar informaci\u00f3n relacionada con un concepto o tema
-3. El contexto inmediato sea insuficiente para responder con precisi\u00f3n
-Par\u00e1metros:
-- query: La consulta de b\u00fasqueda (describe lo que buscas)
-- limit: M\u00e1ximo de resultados (default: 10, max: 50)"""
-            )
+            .description(StringUtils.replace(
+"""
+Busca y recupera en toda la memoria histórica informacion relevantes basándose en significado.
+Úsalo cuando:
+1. Tengas la sensación de haber hablado de algo pero no recuerdes los detalles
+2. Necesites encontrar información relacionada con un concepto o tema
+3. El contexto inmediato sea insuficiente para responder con precisión
+Parámetros:
+- query: La consulta de búsqueda (describe lo que buscas)
+- limit: Máximo de resultados (default: 10, max: 50)
+
+Se recuperara toda la informacion disponible para cada uno de los turnos o citas recuperados.
+Una vez ya has recuperado un turno o cita mediante esta herramienta no debes llamar a la
+herramienta {LOOKUPTURN} para tratar de recuperar mas informacion sobre los turnos devueltos por esta 
+herramienta.
+""", "{LOOKUPTURN}", NAME))
             .addParameter("query", JsonSchemaProperty.STRING, JsonSchemaProperty.description("El concepto a buscar."))
             .addParameter("limit", JsonSchemaProperty.INTEGER, JsonSchemaProperty.description("Máximo de resultados (Default 10, Max 50)."))
             .build();
@@ -63,9 +69,8 @@ Par\u00e1metros:
       List<Map<String, Object>> results = new ArrayList<>();
       for (Turn t : turns) {
         Map<String, Object> map = new HashMap<>();
-        map.put("code", "ID-" + t.getId()); // Formato String para el LLM
+        map.put("code", StringUtils.trim(String.valueOf(t.getId()))); 
         map.put("timestamp", t.getTimestamp().toString());
-        // Usamos el contenido concatenado para dar contexto
         map.put("content", t.getContentForEmbedding());
         results.add(map);
       }

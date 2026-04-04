@@ -3,6 +3,7 @@ package io.github.jjdelcerro.noema.ui.swing;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Container;
 import java.awt.Insets;
 import java.awt.Window;
@@ -20,11 +21,127 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
 
   private final JPanel chatContainer;
   private MessageType lastType = null;
-
-  private JTextPane currentTextPanel;
+  private JBubbleTextPanel currentPanel;
 
   public enum MessageType {
-    SYSTEM, ERROR, USER, MODEL
+    SYSTEM, SYSTEM_MARKDOWN, ERROR, USER, MODEL
+  }
+
+  private static class JBubbleTextPanel extends JPanel {
+
+    protected JTextPane contents;
+    private final MessageType type;
+
+    public JBubbleTextPanel(MessageType type, Color lineColor, JTextPane contents) {
+      this.type = type;
+      this.setLayout(new BorderLayout());
+      this.setBorder(BorderFactory.createCompoundBorder(
+              BorderFactory.createEmptyBorder(2, 5, 2, 5),
+              BorderFactory.createCompoundBorder(
+                      createRoundedBorder(lineColor),
+                      BorderFactory.createEmptyBorder(4, 12, 4, 12)
+              )
+      ));
+      this.contents = contents;
+      this.add(this.contents, BorderLayout.CENTER);
+      this.setBackground(Color.DARK_GRAY);
+      this.contents.setBackground(Color.DARK_GRAY);
+      this.contents.setForeground(Color.LIGHT_GRAY);
+    }
+
+    private Border createRoundedBorder(Color borderColor) {
+      com.formdev.flatlaf.ui.FlatLineBorder roundedLine = new com.formdev.flatlaf.ui.FlatLineBorder(
+              new Insets(0, 0, 0, 0),
+              borderColor,
+              1,
+              20 // Redondeo de la burbuja
+      );
+      return roundedLine;
+    }
+
+    public void appendText(String text) {
+      String oldText = this.contents.getText();
+      String newText = oldText + "\n" + text;
+      this.contents.setText(newText);
+      this.contents.setPreferredSize(null);
+//      this.contents.validate();      
+    }
+
+    public String getRawText() {
+      return this.contents.getText();
+    }
+
+    public String getTypeName() {
+      switch (this.type) {
+        case ERROR:
+          return "Error";
+        case USER:
+          return "Usuario";
+        case MODEL:
+          return "Modelo";
+        case SYSTEM:
+        default:
+          return "Sistema";
+      }
+    }
+
+    public MessageType getType() {
+      return type;
+    }
+  }
+
+  private static class JBubbleMarkdownPanel extends JBubbleTextPanel {
+
+    public JBubbleMarkdownPanel(MessageType type, Color lineColor, JTextPane contents) {
+      super(type, lineColor, contents);
+    }
+
+    public void appendText(String text) {
+      JMarkdownPanel markdownPanel = (JMarkdownPanel) this.contents;
+      String oldMd = markdownPanel.getMarkdownText();
+      String newMd = oldMd + "\n" + text;
+      markdownPanel.setMarkdownText(this.getTypeName() + ":", newMd);
+      this.contents.setPreferredSize(null);
+    }
+
+    public String getRawText() {
+      return ((JMarkdownPanel) this.contents).getMarkdownText();
+    }
+  }
+
+  private static class JSystemMarkdownPanel extends JBubbleMarkdownPanel {
+
+    public JSystemMarkdownPanel() {
+      super(MessageType.SYSTEM_MARKDOWN, Color.LIGHT_GRAY, new JMarkdownPanel());
+    }
+  }
+
+  private static class JUserPanel extends JBubbleMarkdownPanel {
+
+    public JUserPanel() {
+      super(MessageType.USER, new Color(60, 140, 200), new JMarkdownPanel());
+    }
+  }
+
+  private static class JModelPanel extends JBubbleMarkdownPanel {
+
+    public JModelPanel() {
+      super(MessageType.MODEL, new Color(80, 170, 110), new JMarkdownPanel());
+    }
+  }
+
+  private static class JErrorPanel extends JBubbleTextPanel {
+
+    public JErrorPanel() {
+      super(MessageType.ERROR, Color.RED.darker(), new JTextPane());
+    }
+  }
+
+  private static class JSystemPanel extends JBubbleTextPanel {
+
+    public JSystemPanel() {
+      super(MessageType.SYSTEM, Color.LIGHT_GRAY, new JTextPane());
+    }
   }
 
   public AgentSwingConsoleControllerUsingMultipleJTextPane(JPanel chatContainer) {
@@ -33,104 +150,38 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
 
   private synchronized void addMessage(MessageType type, String text) {
     SwingUtilities.invokeLater(() -> {
-      String header = null;
-      switch(type) {
-        case MODEL:
-          header = "Modelo:";
-          break;
-        case USER:
-          header = "Usuario:";
-          break;
-        default:
-        case SYSTEM:
-        case ERROR:
-          break;
-      }        
-      if( header == null )  {
-        if (type == lastType && currentTextPanel != null) {
-          // AGRUPACIÓN: Añadimos al componente existente
-          String oldText = currentTextPanel.getText();
-          String newText = oldText + "\n" + text;
-          currentTextPanel.setText(newText);        
-        } else {
-          // NUEVA CAJA: Creamos el contenedor y el text pane
-          currentTextPanel = new JTextPane();
-          currentTextPanel.setText(text);
-
-          JPanel bubble = createBubbleWrapper(type, currentTextPanel);
-          chatContainer.add(bubble, "growx, width 0:100:100%, gapy 0 2");
-        }
-      } else {
-        if (type == lastType && currentTextPanel != null) {
-          // AGRUPACIÓN: Añadimos al componente existente
-          JMarkdownPanel markdownPanel = (JMarkdownPanel) this.currentTextPanel; 
-          String oldMd = markdownPanel.getMarkdownText();
-          String newMd = oldMd + "\n" + text;
-          markdownPanel.setMarkdownText(header, newMd);        
-        } else {
-          // NUEVA CAJA: Creamos el contenedor y el text pane
-          JMarkdownPanel markdownPanel = new JMarkdownPanel();
-          markdownPanel.setMarkdownText(header, text);
-          currentTextPanel = markdownPanel;
-          
-          JPanel bubble = createBubbleWrapper(type, currentTextPanel);
-          chatContainer.add(bubble, "growx, width 0:100:100%, gapy 5 5");
-        }
+      if (!(type == lastType && currentPanel != null)) {
+        this.currentPanel = createBubblePanel(type);
+        this.chatContainer.add(this.currentPanel, "growx, width 0:100:100%, gapy 0 2");
       }
-      lastType = type;
-      currentTextPanel.setPreferredSize(null); 
-      currentTextPanel.validate();
+      this.currentPanel.appendText(text);
+      this.lastType = type;
+      this.currentPanel.setPreferredSize(null);
+      this.currentPanel.validate();
 
-      chatContainer.revalidate();
-      chatContainer.repaint();
+      this.chatContainer.revalidate();
+      this.chatContainer.repaint();
       scrollAtBottom();
-    });
+    }
+    );
   }
 
-  private Border createRoundedBorder(Color borderColor) {
-    com.formdev.flatlaf.ui.FlatLineBorder roundedLine = new com.formdev.flatlaf.ui.FlatLineBorder(
-            new Insets(0, 0, 0, 0), 
-            borderColor, 
-            1, 
-            20 // Redondeo de la burbuja
-    );
-//    Border roundedLine = BorderFactory.createLineBorder(lineColor, 2, true);
-    return roundedLine;
+  private JBubbleTextPanel createBubblePanel(MessageType type) {
+    switch (type) {
+      case ERROR:
+        return new JErrorPanel();
+      case MODEL:
+        return new JModelPanel();
+      case USER:
+        return new JUserPanel();
+      case SYSTEM_MARKDOWN:
+        return new JSystemMarkdownPanel();
+      case SYSTEM:
+      default:
+        return new JSystemPanel();
+    }
   }
-  
-  private JPanel createBubbleWrapper(MessageType type, JTextPane textPane) {
-      Color lineColor;
-      switch(type) {
-        case ERROR:
-          lineColor = Color.RED.darker();
-          break;
-        case MODEL:
-          lineColor = new Color(80, 170, 110); // Color.GREEN.darker();
-          break;
-        case USER:
-          lineColor = new Color(60, 140, 200); // Color.BLUE.darker();
-          break;
-        default:
-        case SYSTEM:
-          lineColor = Color.LIGHT_GRAY;
-          break;
-      }
-      JPanel p = new JPanel();
-      p.setLayout(new BorderLayout());
-      p.setBorder(BorderFactory.createCompoundBorder(
-              BorderFactory.createEmptyBorder(2, 5, 2, 5), 
-              BorderFactory.createCompoundBorder(
-                      createRoundedBorder(lineColor), 
-                      BorderFactory.createEmptyBorder(4, 12, 4, 12) 
-              )
-      ));    
-      p.add(textPane, BorderLayout.CENTER);
-      p.setBackground(Color.DARK_GRAY);
-      textPane.setBackground(Color.DARK_GRAY);
-      textPane.setForeground(Color.LIGHT_GRAY);
-      return p;
-  }
-  
+
   private void scrollAtBottom() {
     SwingUtilities.invokeLater(() -> {
       Container parent = chatContainer.getParent();
@@ -145,6 +196,18 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
   @Override
   public void printSystemLog(String m) {
     addMessage(MessageType.SYSTEM, m);
+  }
+
+  @Override
+  public void printSystemLog(String m, Format format) {
+    switch (format) {
+      case Markdown:
+        addMessage(MessageType.SYSTEM_MARKDOWN, m);
+        break;
+      case RawText:
+      default:
+        addMessage(MessageType.SYSTEM, m);
+    }
   }
 
   @Override
@@ -165,15 +228,41 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
   @Override
   public boolean confirm(String message) {
     return JOptionPane.showConfirmDialog(
-            SwingUtils.getTopWindow(), 
-            message, 
-            "Confirmación", 
+            SwingUtils.getTopWindow(),
+            message,
+            "Confirmación",
             JOptionPane.YES_NO_OPTION
-      ) == JOptionPane.YES_OPTION;
+    ) == JOptionPane.YES_OPTION;
   }
-  
+
   public Window getRoot() {
     Window parent = SwingUtilities.getWindowAncestor(this.chatContainer);
     return parent;
+  }
+
+  public String getMarkdown() {
+    StringBuilder contents = new StringBuilder();
+    for (Component component : this.chatContainer.getComponents()) {
+      if (component instanceof JBubbleTextPanel textPanel) {
+        contents.append("# ")
+                .append(textPanel.getTypeName())
+                .append("\n\n");
+        switch (textPanel.getType()) {
+          case ERROR:
+          case SYSTEM:
+            contents.append("```\n")
+                    .append(textPanel.getRawText())
+                    .append("\n```\n");
+            break;
+          case USER:
+          case MODEL:
+          default:
+            contents.append(textPanel.getRawText());
+            break;
+        }
+        contents.append("\n\n---\n\n");
+      }
+    }
+    return contents.toString();
   }
 }

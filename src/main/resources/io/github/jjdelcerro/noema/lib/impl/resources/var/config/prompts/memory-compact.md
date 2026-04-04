@@ -36,19 +36,13 @@ Debes operar bajo los siguientes principios rectores:
 
 Para mantener la fluidez, las citas deben integrarse en la narrativa para señalar el origen de una idea clave en el punto en el que aparezca la idea.
 
-**Formato de Cita:** `{cite: ID1}` o `{cite: ID1, ID2, ...}`
+**Formato de Cita:** `{cite:1}` o `{cite:1,2,...}`
 
 **Ejemplo de citación correcta (integrada en la narrativa):**
-`El punto de inflexión ocurrió cuando el usuario aclaró que su sistema aprendía del texto {cite: 6}, un detalle que cambió por completo la dirección de la conversación.`
+`El punto de inflexión ocurrió cuando el usuario aclaró que su sistema aprendía del texto {cite:6}, un detalle que cambió por completo la dirección de la conversación.`
 
 **Ejemplo de citación incorrecta (estilo Resumen, a evitar aquí):**
-`El punto de inflexión ocurrió cuando el usuario aclaró que su sistema aprendía del texto, un detalle que cambió por completo la dirección de la conversación. {cite: 6}`
-
-
-
-Aquí tienes la propuesta completa para la nueva sección.
-
-He seguido la estructura que discutimos, dividiéndola en la interpretación de herramientas operativas y de memoria, y he incorporado todos los matices sobre cómo narrar los eventos técnicos para que el `MemoryManager` genere un "Viaje" coherente y legible.
+`El punto de inflexión ocurrió cuando el usuario aclaró que su sistema aprendía del texto, un detalle que cambió por completo la dirección de la conversación. {cite:6}`
 
 
 ### **4. Directivas para la interpretación de eventos técnicos**
@@ -70,11 +64,11 @@ Estas herramientas interactúan con el "mundo exterior" (ficheros, cálculos, AP
 
 *   **Ejemplo (Salida pequeña):**
     *   *CSV Input:* `contenttype: tool_execution`, `tool_result: { "result": 5 }`
-    *   *Narrativa correcta:* "El agente realizó el cálculo solicitado, obteniendo el resultado 5 {cite: 101}."
+    *   *Narrativa correcta:* "El agente realizó el cálculo solicitado, obteniendo el resultado 5 {cite:101}."
 
 *   **Ejemplo (Salida grande):**
     *   *CSV Input:* `contenttype: tool_execution_summarized`, `tool_result: { "status": "success", "original_size_bytes": 47185920 }`
-    *   *Narrativa correcta:* "A continuación, el sistema consultó la lista completa de pedidos, una operación que devolvió un conjunto de datos masivo de 45 MB {cite: 108}."
+    *   *Narrativa correcta:* "A continuación, el sistema consultó la lista completa de pedidos, una operación que devolvió un conjunto de datos masivo de 45 MB {cite:108}."
 
 #### **4.2. Herramientas de memoria: el mecanismo del "flashback" narrativo**
 
@@ -92,7 +86,7 @@ Cuando el agente consulta su propio historial, los turnos recuperados se **inyec
 
 *   **Ejemplo de narrativa:**
     *   *CSV Input:* (Turno 40 con `tool_call` a `lookup_turn`) seguido de (Turnos 3, 4, 5 con `contenttype: lookup_turn` y fechas antiguas).
-    *   *Narrativa correcta:* "Para responder con precisión a la pregunta del usuario sobre sus motivaciones, el agente **consultó sus registros históricos**. Recuperó la conversación original donde se detallaba la 'crisis de sentido' con SHRDLU y el posterior giro hacia la filosofía kantiana {cite: 40}."
+    *   *Narrativa correcta:* "Para responder con precisión a la pregunta del usuario sobre sus motivaciones, el agente **consultó sus registros históricos**. Recuperó la conversación original donde se detallaba la 'crisis de sentido' con SHRDLU y el posterior giro hacia la filosofía kantiana {cite:40}."
 
     
 ## **5. Modos de funcionamiento**

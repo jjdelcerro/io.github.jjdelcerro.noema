@@ -12,6 +12,12 @@ public interface AgentTool {
     public static final int MODE_WEB = 3;
     public static final int MODE_EXECUTION = 4;
     
+    public enum TrimResultType {
+      None,
+      Notify,
+      Trim
+    }
+
     // Devuelve la especificación para OpenAI
     ToolSpecification getSpecification();
 
@@ -35,5 +41,6 @@ public interface AgentTool {
     // Ejecución de la lógica (recibe JSON args, devuelve String result)
     String execute(String jsonArguments);
     
-    String trimResult(String result);
+    
+    String trimResult(String result, TrimResultType trimResultType);
 }

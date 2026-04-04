@@ -11,10 +11,11 @@ import java.util.List;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import org.apache.commons.lang3.StringUtils;
 
 public class LookupTurnTool extends AbstractAgentTool {
 
-  public static final String NAME = "lookup_turn";
+  public static final String NAME = "fetch_citation";
 
   public LookupTurnTool(Agent agent) {
     super(agent);
@@ -24,16 +25,21 @@ public class LookupTurnTool extends AbstractAgentTool {
   public ToolSpecification getSpecification() {
     return ToolSpecification.builder()
             .name(NAME)
-            .description("""
-Recupera un evento espec\u00edfico de la memoria a largo plazo usando su ID \u00fanico. 
-\u00dasalo cuando:
-1. Veas una referencia como {cite:ID-123} en el Punto de Guardado
-2. Necesites los detalles exactos de lo que ocurri\u00f3 en un momento espec\u00edfico
-3. Requieras el contexto cronol\u00f3gico (qu\u00e9 pas\u00f3 justo antes/despu\u00e9s)
-Par\u00e1metros:
-- code: El ID del turno (ej: "ID-123" o solo "123")
-- context_window: Cu\u00e1ntos turnos adicionales recuperar (default: 2)""")
-            .addParameter("code", JsonSchemaProperty.STRING, JsonSchemaProperty.description("El ID único del turno (ej: 'ID-1001')."))
+            .description(
+                    StringUtils.replace("""
+Recupera información específica de la memoria a largo plazo usando su ID único. 
+Úsalo cuando:
+1. Veas una referencia como {cite:123} en el Punto de Guardado
+2. Necesites los detalles exactos de lo que ocurrió en un momento específico
+3. Requieras el contexto cronológico (qué pasó justo antes/después)
+Parámetros:
+- code: El ID del turno o cita (ej: 123)
+- context_window: Cuántos turnos adicionales recuperar (default: 2)
+                         
+Ejemplo: Si en el relato dice "...decidimos usar {cite:42}", 
+invoca {LOOKUPTURN}(code=42) para recuperar los argumentos de esa decisión.
+""", "{LOOKUPTURN}", NAME))
+            .addParameter("code", JsonSchemaProperty.STRING, JsonSchemaProperty.description("El ID único del turno (ej: 1001)."))
             .addParameter("context_window", JsonSchemaProperty.INTEGER, JsonSchemaProperty.description("Turnos antes/después a recuperar (Max 5)."))
             .build();
   }
@@ -65,7 +71,7 @@ Par\u00e1metros:
       List<Map<String, Object>> results = new ArrayList<>();
       for (Turn t : turns) {
         Map<String, Object> map = new HashMap<>();
-        map.put("code", "ID-" + t.getId());
+        map.put("code", StringUtils.trim(String.valueOf(t.getId()))); 
         map.put("role", determineRole(t));
         map.put("text", t.getContentForEmbedding());
         results.add(map);

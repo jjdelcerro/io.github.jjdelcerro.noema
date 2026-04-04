@@ -15,6 +15,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.github.jjdelcerro.noema.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
+import io.github.jjdelcerro.noema.lib.AgentTool;
+import static io.github.jjdelcerro.noema.lib.AgentTool.TrimResultType.None;
 
 public abstract class AbstractPaginatedAgentTool extends AbstractAgentTool {
 
@@ -318,8 +320,11 @@ EMPTY: [true|false]
 """;
   }
 
+  private static final String CONTENT_TRIMMED_IN_THE_FOLLOWING_TURNS = "\nCONTENT_TRIMMED: IN THE FOLLOWING TURNS";
+  private static final String CONTENT_TRIMMED = "\nCONTENT_TRIMMED: true";
+  
   @Override
-  public String trimResult(String result) {
+  public String trimResult(String result, AgentTool.TrimResultType trimResultType) {
     if (result == null) {
       return null;
     }
@@ -328,10 +333,22 @@ EMPTY: [true|false]
     int separatorIndex = result.indexOf(separator);
 
     if (separatorIndex == -1) {
-      return super.trimResult(result);
+      return super.trimResult(result, trimResultType);
+    }    
+    String header = result.substring(0, separatorIndex);    
+    String body = result.substring(separatorIndex);    
+    header = StringUtils.replace(header, CONTENT_TRIMMED_IN_THE_FOLLOWING_TURNS, "");
+    switch(trimResultType) {      
+      case Notify:
+//        LOGGER.info("TRIM RESULTS OF "+this.getClass().getSimpleName()+ " IN THE FOLLOWING TURNS");
+        return header + CONTENT_TRIMMED_IN_THE_FOLLOWING_TURNS + separator + body;
+      case Trim:
+//        LOGGER.info("TRIM RESULTS OF "+this.getClass().getSimpleName());
+        return header + CONTENT_TRIMMED + separator;
+      case None:
+      default:
+        return null;
     }
-    String header = result.substring(0, separatorIndex);
-    return header + "\nCONTENT_TRIMMED: true" + separator;
   }
 
 }
