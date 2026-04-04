@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.commons.lang3.BooleanUtils;
 
 public class AgentSettingsGroupImpl implements AgentSettingsGroup {
 
@@ -40,6 +41,16 @@ public class AgentSettingsGroupImpl implements AgentSettingsGroup {
     String val = getPropertyAsString(path);
     try {
       return val != null ? Integer.parseInt(val) : defaultValue;
+    } catch (NumberFormatException e) {
+      return defaultValue;
+    }
+  }
+
+  @Override
+  public boolean getPropertyAsBoolean(String path, boolean defaultValue) {
+    String val = getPropertyAsString(path);
+    try {
+      return BooleanUtils.toBoolean(val);
     } catch (NumberFormatException e) {
       return defaultValue;
     }

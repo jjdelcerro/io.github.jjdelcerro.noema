@@ -15,6 +15,8 @@ public interface AgentSettingsGroup extends AgentSettingsItem {
 
   String getPropertyAsString(String path, String defaultValue);
 
+  boolean getPropertyAsBoolean(String path, boolean defaultValue);
+  
   int getPropertyAsInt(String path, int defaultValue);
 
   long getPropertyAsLong(String path, long defaultValue);

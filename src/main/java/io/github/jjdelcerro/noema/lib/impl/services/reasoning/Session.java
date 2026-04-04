@@ -190,6 +190,11 @@ public class Session {
     Set<ChatMessageInfo> uniqueTurns = new HashSet<>(turnOfMessage.values());
     return uniqueTurns.size() >= getCompactationThreshold();
   }
+  
+  public int getTurnsCount() {
+    Set<ChatMessageInfo> uniqueTurns = new HashSet<>(turnOfMessage.values());
+    return uniqueTurns.size();
+  }
 
   private int getCompactationThreshold() {
     int x = (int) this.settings.getPropertyAsLong(MEMORY_COMPACTION_TURNS, -1);
