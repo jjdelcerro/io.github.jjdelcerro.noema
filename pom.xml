@@ -196,8 +196,53 @@
     <dependency>
       <groupId>org.commonmark</groupId>
       <artifactId>commonmark</artifactId>
-      <version>0.21.0</version>
+      <version>0.28.0</version>
     </dependency>
+    <dependency>
+      <groupId>org.commonmark</groupId>
+      <artifactId>commonmark-ext-gfm-tables</artifactId>
+      <version>0.28.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.commonmark</groupId>
+      <artifactId>commonmark-ext-gfm-alerts</artifactId>
+      <version>0.28.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.commonmark</groupId>
+      <artifactId>commonmark-ext-task-list-items</artifactId>
+      <version>0.28.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.commonmark</groupId>
+      <artifactId>commonmark-ext-footnotes</artifactId>
+      <version>0.28.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.commonmark</groupId>
+      <artifactId>commonmark-ext-image-attributes</artifactId>
+      <version>0.28.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.commonmark</groupId>
+      <artifactId>commonmark-ext-gfm-strikethrough</artifactId>
+      <version>0.28.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.commonmark</groupId>
+      <artifactId>commonmark-ext-autolink</artifactId>
+      <version>0.28.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.commonmark</groupId>
+      <artifactId>commonmark-ext-ins</artifactId>
+      <version>0.28.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.commonmark</groupId>
+      <artifactId>commonmark-ext-heading-anchor</artifactId>
+      <version>0.28.0</version>
+    </dependency>    
     <dependency>
       <groupId>com.formdev</groupId>
       <artifactId>flatlaf-extras</artifactId>

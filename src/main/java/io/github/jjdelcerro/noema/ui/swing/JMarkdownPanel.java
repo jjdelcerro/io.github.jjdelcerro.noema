@@ -7,6 +7,7 @@ import java.awt.Insets;
 import java.awt.Toolkit;
 import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
+import org.commonmark.ext.gfm.tables.TablesExtension;
 
 import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.StyleSheet;
@@ -14,11 +15,21 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.List;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTextPane;
 import javax.swing.Timer;
 import org.apache.commons.lang3.StringUtils;
+import org.commonmark.Extension;
+import org.commonmark.ext.autolink.AutolinkExtension;
+import org.commonmark.ext.footnotes.FootnotesExtension;
+import org.commonmark.ext.gfm.alerts.AlertsExtension;
+import org.commonmark.ext.gfm.strikethrough.StrikethroughExtension;
+import org.commonmark.ext.heading.anchor.HeadingAnchorExtension;
+import org.commonmark.ext.image.attributes.ImageAttributesExtension;
+import org.commonmark.ext.ins.InsExtension;
+import org.commonmark.ext.task.list.items.TaskListItemsExtension;
 
 /**
  * Componente especializado para visualizar Markdown renderizado en HTML con
@@ -31,8 +42,8 @@ public class JMarkdownPanel extends JTextPane {
   private final JPanel buttonContainer;
 
   // Parsers estáticos para eficiencia
-  private static final Parser MD_PARSER = Parser.builder().build();
-  private static final HtmlRenderer HTML_RENDERER = HtmlRenderer.builder().build();
+  private static Parser MD_PARSER = null;
+  private static HtmlRenderer HTML_RENDERER = null;
 
   public JMarkdownPanel() {
     super();
@@ -56,6 +67,46 @@ public class JMarkdownPanel extends JTextPane {
 
     // 4. Gestión de visibilidad (Hover)
     setupHoverLogic();
+  }
+
+  private HtmlRenderer getHtmlRenderer() {
+    if (HTML_RENDERER == null) {
+      List<Extension> extensions = List.of(
+              TablesExtension.create(),
+              AutolinkExtension.create(),
+              StrikethroughExtension.create(),
+              AlertsExtension.create(),
+              FootnotesExtension.create(),
+              HeadingAnchorExtension.create(),
+              InsExtension.create(),
+              ImageAttributesExtension.create(),
+              TaskListItemsExtension.create()
+      );
+      HTML_RENDERER = HtmlRenderer.builder()
+              .extensions(extensions)
+              .build();
+    }
+    return HTML_RENDERER;
+  }
+
+  private Parser getMarkdownParser() {
+    if (MD_PARSER == null) {
+      List<Extension> extensions = List.of(
+              TablesExtension.create(),
+              AutolinkExtension.create(),
+              StrikethroughExtension.create(),
+              AlertsExtension.create(),
+              FootnotesExtension.create(),
+              HeadingAnchorExtension.create(),
+              InsExtension.create(),
+              ImageAttributesExtension.create(),
+              TaskListItemsExtension.create()
+      );
+      MD_PARSER = Parser.builder()
+              .extensions(extensions)
+              .build();
+    }
+    return MD_PARSER;
   }
 
   private void setupHtmlEngine() {
@@ -103,7 +154,7 @@ public class JMarkdownPanel extends JTextPane {
 
       @Override
       public void mouseExited(MouseEvent e) {
-          copyButton.setVisible(false);
+        copyButton.setVisible(false);
       }
     };
     this.addMouseListener(hoverHandler);
@@ -116,18 +167,19 @@ public class JMarkdownPanel extends JTextPane {
    */
   public void setMarkdownText(String header, String mdBody) {
     this.rawMarkdown = mdBody;
-    String htmlBody = HTML_RENDERER.render(MD_PARSER.parse(mdBody));
+
+    String htmlBody = getHtmlRenderer().render(getMarkdownParser().parse(mdBody));
     String fullHtml;
-    if( StringUtils.isBlank(header) ) {
+    if (StringUtils.isBlank(header)) {
       fullHtml = String.format(
-            "<html><body>%s</body></html>",
-            htmlBody
+              "<html><body>%s</body></html>",
+              htmlBody
       );
     } else {
       fullHtml = String.format(
-            "<html><body><small>%s</small><br>%s</body></html>",
-            header,
-            htmlBody
+              "<html><body><small>%s</small><br>%s</body></html>",
+              header,
+              htmlBody
       );
     }
 
