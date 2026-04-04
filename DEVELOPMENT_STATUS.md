@@ -1,93 +1,108 @@
 # Informe de Estado del Proyecto: Noema
 
-* **Versión Analizada:** 0.1.0
-* **Fecha de Análisis:** 28 de Marzo de 2026
+* **Versión Analizada:** 0.1.0 (Extraída del `pom.xml`)
+* **Fecha de Análisis:** Abril 2026
 * **Autor del Informe:** Gemini (IA), basado en la inspección estática del código fuente.
 
----
 
 ## 1. Evaluación General
 
-Noema es un agente conversacional autónomo diseñado como un proyecto personal enfocado en la investigación y reflexión a largo plazo. Su arquitectura destaca por estar completamente autocontenida en el ecosistema Java, cumpliendo con la restricción de no requerir infraestructura externa más allá del propio ejecutable y la conexión a las APIs de los modelos de lenguaje (LLMs). 
+El proyecto "Noema" es un framework avanzado para la creación de un agente conversacional de larga duración, diseñado bajo una estricta filosofía de ejecución local y dependencias mínimas. A partir del análisis del código fuente (Java 21), se evidencia una arquitectura de software altamente madura y pragmática. 
 
-El proyecto implementa un modelo de sesión única y continua. Para lograr esto sin desbordar los límites de los LLMs, utiliza un sistema de consolidación de eventos y un almacenamiento local (H2) combinado con cálculo de embeddings en memoria. Asimismo, presenta un diseño muy modular basado en servicios (`Memory`, `Reasoning`, `Sensors`, `Documents`, etc.) y un control de acceso estricto que lo hace seguro para operar sobre el sistema de archivos local. Destaca especialmente su enfoque para simular proactividad mediante un sistema de "sensores" que encolan eventos externos (Telegram, Email, temporizadores) y los inyectan en el flujo de razonamiento.
+El sistema no intenta delegar toda la lógica al Modelo de Lenguaje (LLM), sino que utiliza el LLM como un procesador semántico dentro de un orquestador determinista muy robusto. Destaca especialmente su enfoque para resolver las limitaciones inherentes de los LLMs actuales (como el límite de la ventana de contexto) mediante soluciones de ingeniería de software clásicas: paginación de recursos en disco (`AbstractPaginatedAgentTool`), consolidación narrativa con trazabilidad de citas (`MemoryServiceImpl`), y un sistema de inyección de eventos asíncronos (`SensorsServiceImpl`) que dota al agente de proactividad sin romper el paradigma de petición-respuesta (Request-Response) de las APIs de los modelos.
+
+El proyecto es plenamente funcional como prueba de concepto avanzada, con un núcleo sólido, aunque algunos servicios periféricos (como la integración con Telegram o Email) se encuentran en un estado más experimental.
 
 ## 2. Análisis de Completitud por Bloques Funcionales
 
-### A. Núcleo y Arquitectura (85% Completo)
-*   **Inyección de Dependencias:** Implementada mediante un patrón *Service Locator* manual (`AgentLocator` y `AgentManagerImpl`). Adecuado y funcional para evitar frameworks pesados como Spring, cumpliendo la premisa de ligereza.
-*   **Ciclo de Vida:** Bien definido. Los servicios implementan una interfaz común con métodos `start()`, `stop()` y `canStart()`, gestionados centralmente. Se hace un buen uso de *Shutdown Hooks* para cerrar conexiones a bases de datos de forma segura.
-*   **Configuración:** Sólida. Basada en un archivo `settings.json` jerárquico, respaldado por un árbol de interfaces en Java y adaptadores GSON personalizados que permiten la generación de interfaces de usuario automáticas.
-*   **Faltante:** Mecanismos de recuperación o reinicio en caliente ante caídas de la conexión con el LLM o bloqueos en la base de datos local.
-*   **Limitaciones:** El enrutamiento manual de dependencias puede volverse tedioso si el número de servicios sigue creciendo, aunque es perfectamente manejable en el alcance actual.
+### A. Núcleo y Arquitectura (95% Completo)
+*   **Inyección de Dependencias:** Implementada de forma manual y efectiva mediante un patrón *Service Locator* (`AgentLocator`, `AgentManagerImpl`). Desacopla perfectamente las interfaces (`AgentService`) de sus implementaciones.
+*   **Ciclo de Vida:** Gestión explícita y robusta (`start()`, `stop()`, `canStart()`). Los servicios se registran mediante factorías y el apagado está protegido por *Shutdown Hooks* en la JVM para garantizar la persistencia del estado.
+*   **Configuración:** Sistema jerárquico muy avanzado (`AgentSettingsImpl`). Soporta persistencia en JSON, listas con estado (`AgentSettingsCheckedList`) y, notablemente, un evaluador de expresiones lógicas propio (`ExpressionEvaluator`) para habilitar/deshabilitar opciones dinámicamente en la interfaz.
+*   **Faltante:** Mayor granularidad en la recarga en caliente de ciertos servicios sin necesidad de reiniciar el bucle principal.
+*   **Limitaciones:** Al ser un diseño *single-tenant* (orientado a un único usuario local), la arquitectura asume acceso exclusivo a los recursos del sistema.
 
 ### B. Motor de Conversación y Herramientas (90% Completo)
-*   **Bucle ReAct:** Implementado en `ReasoningServiceImpl#eventDispatcher()`. Gestiona eficazmente la invocación de herramientas, la recuperación ante respuestas mal formateadas (hasta 3 reintentos) y la inyección de eventos asíncronos.
-*   **Herramientas:** Muy completas y bien categorizadas.
-    *   *Sistema de archivos:* Lectura, escritura, creación de directorios, búsqueda por patrones y expresiones regulares, parches (Unified Diff) y reemplazo de texto. Integración completa y nativa con un sistema RCS en Java puro para control de versiones y recuperación.
-    *   *Web:* Búsqueda (Tavily, Brave), extracción de contenido limpio (Tika) con soporte de paginación, clima y geolocalización.
-    *   *Integraciones:* Telegram (Push/Pull de mensajes completos), Email (Push de cabeceras mediante IMAP IDLE, Pull de cuerpos con Tika) y planificador de alarmas (Scheduler).
-*   **Faltante:** Refinamiento en algunas herramientas (marcadas con `FIXME` en el código, como la separación de límites de búsqueda y retorno en `SearchFullHistoryTool`).
-*   **Limitaciones:** La herramienta de extracción web (`WebGetTikaTool`) procesa contenido estático. Sitios que dependan fuertemente de renderizado JavaScript del lado del cliente (SPA) podrían no extraerse correctamente.
+*   **Bucle ReAct:** Implementado en `ReasoningServiceImpl.eventDispatcher()`. Es un bucle síncrono que gestiona eficientemente la llamada al modelo, la ejecución de herramientas, el manejo de errores y la inyección de eventos externos simulando llamadas a la herramienta `pool_event`.
+*   **Herramientas:** Catálogo extenso y bien estructurado, heredando de `AbstractAgentTool`.
 
-### C. Gestión de Memoria (80% Completo)
-*   **Persistencia:** Utiliza una base de datos embebida H2 configurada con soporte para BLOBs para guardar el historial completo de interacciones (`Turn`) y los resúmenes consolidados (`CheckPoint`).
-*   **Compactación:** Funcional y bien diseñada mediante `MemoryServiceImpl`. Cuando la sesión activa alcanza un umbral de turnos, invoca a un LLM secundario para generar un resumen ejecutivo y una narrativa estructurada ("El Viaje"), manteniendo la coherencia cronológica y las referencias (`{cite:ID}`).
-*   **Recuperación:** Uso de un modelo ONNX local (`AllMiniLmL6V2`) para generar embeddings. La búsqueda vectorial se realiza directamente en memoria mediante una cola de prioridad (`EmbeddingFilterImpl`), calculando la similitud del coseno. Esto cumple magistralmente con el requisito de no depender de bases de datos vectoriales externas.
-*   **Faltante:** Lógica robusta para trocear resultados inmensos de herramientas antes de guardarlos en la base de datos (actualmente hay un truncado básico que avisa al modelo de que la salida se recortó en BD).
-*   **Limitaciones:** El cálculo de la distancia del coseno en memoria contra todos los registros de la base de datos (o un subconjunto filtrado) escalará linealmente (O(N)). Para un proyecto personal es aceptable, pero penalizará el rendimiento si la base de conocimiento crece hasta decenas de miles de registros.
+    *   *Sistema de archivos:* Altamente completo. Incluye lectura, escritura, búsqueda (glob y grep), creación de directorios y aplicación de parches (`UnifiedDiffUtils`).
+    *   *Paginación:* Brillante implementación en `AbstractPaginatedAgentTool` y `ReadPaginatedResourceTool`. Permite al agente consumir salidas masivas (logs, webs, extracciones Tika) mediante un sistema de punteros y offsets, protegiendo el contexto.
+    *   *Control de Versiones:* Integración nativa con [RCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs) para historial y recuperación de archivos.
+    *   *Web:* Búsqueda mediante Tavily y Brave, geolocalización por IP, clima y extracción de texto web con Apache Tika.
+    *   *Integraciones:* Servicios de Email y Telegram presentes, pero con implementaciones básicas.
+    
+*   **Faltante:** Las herramientas de comunicación (Email/Telegram) requieren mayor robustez en el manejo de errores de red y reconexiones.
+*   **Limitaciones:** El bucle de razonamiento se ejecuta en un único hilo de plataforma. La ejecución de una herramienta lenta (ej. descarga web pesada) bloquea el procesamiento de nuevos eventos sensoriales hasta que finaliza.
 
-### D. Document Mapper / RAG (75% Completo)
-*   **Ingesta:** Proceso asíncrono que utiliza dos modelos: uno de razonamiento para inferir la jerarquía y estructura del documento (TOC) desde el texto bruto, y otro más rápido para generar resúmenes y categorías por cada sección.
-*   **Estructura:** Crea un archivo `.struct` (JSON) paralelo al documento original y persiste metadatos y vectores en la tabla `DOCUMENTS` de H2.
-*   **Faltante:** Tolerancia a fallos más estricta si el modelo de razonamiento falla al devolver el formato CSV esperado durante la extracción de la estructura. 
-*   **Limitaciones:** El modelo requiere cargar documentos completos (línea por línea) para extraer la estructura inicial, lo que puede ser limitante en modelos con ventanas de contexto pequeñas si el documento es masivo.
+### C. Gestión de Memoria (85% Completo)
+*   **Persistencia:** Sólida. Utiliza H2 embebido (`SourceOfTruthImpl`). Guarda cada interacción como un `Turn` inmutable, incluyendo el cálculo y almacenamiento de embeddings como BLOBs.
+*   **Compactación:** Implementada en `MemoryServiceImpl`. Cuando la `Session` supera un umbral de turnos, un LLM genera un `CheckPoint` compuesto por un resumen y una narrativa cronológica que mantiene referencias exactas (`{cite:ID}`) a los turnos originales.
+*   **Recuperación:** Herramientas `lookup_turn` y `search_full_history`. La búsqueda semántica se realiza en memoria (`EmbeddingFilterImpl`) calculando la distancia coseno, lo cual es muy eficiente para el alcance de un proyecto personal.
+*   **Faltante:** Implementación completa de la rehidratación automática de contexto al recuperar turnos antiguos (mencionado en el código como TODO).
+*   **Limitaciones:** La compactación es síncrona y bloquea el hilo principal del agente mientras el LLM genera el resumen. El umbral de compactación se basa en cantidad de turnos y no en el conteo real de tokens, lo que podría saturar el contexto si los turnos contienen textos muy largos.
+
+### D. Document Mapper / RAG (60% Completo)
+*   **Ingesta:** Implementada en `DocumentStructureExtractor`. Utiliza un enfoque de tres pasadas (extracción de estructura, resumen por nodos y categorización) delegando en LLMs.
+*   **Estructura:** Guarda el resultado como un archivo `.struct` (JSON) y permite su representación como XML plegable (`DocumentStructure.toXML()`) para que el agente decida qué secciones expandir mediante `get_partial_document`.
+*   **Faltante:** El código muestra que es funcional, pero carece de manejo avanzado de errores para documentos mal formateados o PDFs complejos.
+*   **Limitaciones:** La extracción de estructura depende en gran medida de la capacidad del LLM para seguir el formato CSV estricto solicitado en el prompt, lo cual puede ser frágil con modelos de menor capacidad.
 
 ### E. Interfaces de Usuario (85% Completo)
-*   **Consola:** Implementada con `JLine3`, soportando historial, multilínea y autocompletado básico.
-*   **Swing:** Interfaz rica usando `FlatLaf` (tema oscuro). Incluye un panel lateral de configuración autogenerado a partir del JSON de configuración, un editor de texto (`RSyntaxTextArea`) para visualizar archivos y parches, y un renderizador Markdown personalizado (`JMarkdownPanel`).
-*   **Faltante:** Feedback visual en tiempo real (streaming de tokens) en la interfaz gráfica. Actualmente, la UI muestra un temporizador y bloquea el input hasta que llega la respuesta completa.
-*   **Limitaciones:** El sistema de renderizado Markdown de Swing puede requerir optimizaciones si se manejan mensajes extremadamente largos con bloques de código muy complejos.
+*   **Consola:** Implementación funcional usando JLine3 (`MainConsole`), con soporte para autocompletado y atajos de teclado.
+*   **Swing:** Interfaz gráfica muy pulida (`MainGUI`, `MainChatPanel`). Utiliza FlatLaf para un tema oscuro moderno, MigLayout para la disposición, y RSyntaxTextArea para la edición de texto y visualización de Markdown. Incluye renderizado de burbujas de chat diferenciadas por rol y un panel dinámico de configuración (`AgentSwingSettingsImpl`).
+*   **Faltante:** Mayor integración visual de los estados de los sensores (ej. mostrar gráficamente si el agente está "silenciado" o procesando eventos en segundo plano).
+*   **Limitaciones:** La interfaz Swing está fuertemente acoplada a la máquina local, lo que es coherente con el diseño del proyecto, pero impide su uso remoto sin herramientas de escritorio remoto.
+
 
 ## 3. Valoración de la seguridad
 
-Sorprendentemente alta para un proyecto personal. La clase `AgentAccessControlImpl` establece un entorno restrictivo (Sandbox) muy sólido:
+La seguridad es uno de los puntos más fuertes y mejor diseñados del proyecto, evidenciando una mentalidad defensiva:
 
-*   Previene ataques de *Path Traversal* (jailbreak del directorio de trabajo).
-*   Maneja listas de rutas permitidas (Whitelist) y listas de solo lectura (Blacklist).
-*   Protege sus propios archivos de control de versiones (`.jv`).
-*   Permite requerir confirmación humana explícita antes de ejecutar operaciones de escritura, ejecución en shell o acceso web.
-*   Incluye integración opcional con `Firejail` en sistemas Linux para aislar por completo la ejecución de comandos shell (`ShellExecuteTool`), lo cual es una medida de seguridad excepcional para un agente autónomo.
+1.  **Sandbox Estricto:** La clase `AgentAccessControlImpl` centraliza toda la resolución de rutas. Previene activamente ataques de *Path Traversal* y verifica listas blancas (rutas externas permitidas) y listas negras (rutas de solo lectura o prohibidas).
+2.  **Confirmación Humana (Human-in-the-loop):** Las herramientas declaran su nivel de riesgo (`MODE_READ`, `MODE_WRITE`, `MODE_EXECUTION`). Cualquier acción destructiva suspende la ejecución y solicita confirmación explícita al usuario a través de la interfaz (`AgentConsole.confirm()`).
+3.  **Inmutabilidad Histórica:** El agente no puede modificar los archivos de respaldo generados por el sistema de control de versiones.
+4.  **Respaldos Automáticos:** Antes de que herramientas como `file_write`, `file_patch` o `file_search_and_replace` modifiquen un archivo, el sistema fuerza un *check-in* automático utilizando la librería [RCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs), garantizando que cualquier error del LLM pueda ser revertido.
+5.  **Aislamiento de Procesos:** La ejecución de comandos de shell (`ShellExecuteTool`) incluye soporte para envolver los procesos en `Firejail` si está disponible en el sistema anfitrión.
 
 ## 4. Valoración de la Documentación
 
-La documentación del código (Javadoc) es escasa y se limita a descripciones de interfaces clave. Sin embargo, el proyecto brilla en su **documentación dirigida a la IA** (*Prompt Engineering*). Los archivos Markdown en `var/config/prompts/` (`memory-compact.md`, `reasoning-system.md`, etc.) están redactados de forma impecable, con instrucciones directas, ejemplos y restricciones lógicas muy bien estructuradas. El código es autoexplicativo, con nombres de variables y métodos bien elegidos.
+La documentación presente en el directorio `docs/` (especialmente en `docs/ideas/`) es extensa, rica en reflexiones arquitectónicas y detalla profundamente el "por qué" de las decisiones de diseño. 
+
+Sin embargo, desde la perspectiva del análisis estático, la documentación presenta un riesgo de desincronización con el código real. Muchos documentos están redactados como propuestas, borradores o discusiones conceptuales (ej. notas sobre cómo implementar el sistema sensorial o la memoria temática). Aunque el archivo `AGENT_CONTEXT.md` ofrece una excelente visión general, el propio autor reconoce que el proyecto es un "organismo vivo", por lo que el código fuente es la única fuente de verdad absoluta. La documentación es sobresaliente para entender la filosofía del proyecto, pero debe leerse con precaución respecto a los detalles exactos de implementación actual.
 
 ## 5. Resumen de Deuda Técnica Identificada
 
-1.  **Manejo de Concurrencia:** Hay comentarios que indican un cambio reciente de `Thread.ofVirtual()` a `Thread.ofPlatform()`. Si el objetivo a largo plazo es eficiencia, estabilizar el uso de hilos virtuales de Java 21 sería ideal.
-2.  **Hardcoding en parseo:** Algunas extracciones web (`WebGetTool`, aunque marcada para no usar) utilizan expresiones regulares frágiles para limpiar HTML en lugar de depender exclusivamente de Tika.
-3.  **Límites de Búsqueda:** Existen comentarios (`FIXME`) en herramientas como `SearchFullHistoryTool` indicando que falta separar el parámetro de límite de búsqueda de documentos del límite de resultados a devolver.
-4.  **Gestión de Descripciones:** Algunos sensores (ej. Telegram, Email) tienen descripciones *placeholder* (`"Telegram"`, `"email"`) que deberían ser más detalladas para que el LLM entienda mejor el propósito de esos canales al usar `sensor_status`.
+A partir de la inspección del código, se identifican las siguientes áreas de mejora técnica:
+
+*   **Bloqueo del Hilo Principal:** El `ReasoningServiceImpl.eventDispatcher()` se ejecuta en un único hilo. Operaciones pesadas como la compactación de memoria (`MemoryServiceImpl.compact()`) o la ejecución de herramientas de red bloquean la percepción de nuevos eventos.
+*   **Gestión de Errores en el Bucle ReAct:** Existe un `TODO` en el código que señala posibles fallos si el primer mensaje enviado al LLM es una llamada simulada a `pool_event`.
+*   **Cálculo de Umbrales de Memoria:** La compactación se dispara por el número de turnos (`compaction_turns`) en lugar de por el conteo real de tokens, lo que es una heurística imprecisa que podría llevar a exceder el límite de la API del LLM.
+*   **Servicios Periféricos Incompletos:** Las implementaciones de `TelegramService` y `EmailService` carecen de la robustez necesaria para manejar desconexiones de red prolongadas o errores de autenticación de forma resiliente.
+*   **Clasificación de Herramientas:** La herramienta `annotate_observation` está clasificada temporalmente como operativa (`TYPE_OPERATIONAL`) en lugar de memoria (`TYPE_MEMORY`) para aprovechar un efecto secundario de la persistencia, lo cual es un parche arquitectónico reconocido en los comentarios del código.
 
 ## 6. Próximos Hitos (Roadmap Sugerido)
 
-1.  **Refinamiento de la Paginación Semántica:** Mejorar la inyección de fragmentos de herramientas en la base de datos para no perder información crítica cuando la salida de una herramienta supera el límite de guardado local.
-2.  **Streaming en UI:** Conectar el `StreamingResponseHandler` (que ya está preparado en `ChatModelImpl`) con el `JMarkdownPanel` para renderizar las respuestas del agente en tiempo real.
-3.  **Gestión de Ventana de Contexto Dinámica:** Implementar en `Session.java` un chequeo de tokens consumidos en el turno actual para forzar una consolidación proactiva si la conversación se acerca peligrosamente al límite de tokens del modelo activo.
+Basado en el estado actual del código, los siguientes pasos lógicos para la evolución del proyecto serían:
+
+1.  **Asincronía en la Compactación:** Refactorizar `MemoryServiceImpl` para que la generación de *CheckPoints* se realice en un hilo secundario, permitiendo al agente seguir interactuando (quizás con una advertencia de "consolidando memoria") mientras se procesa el resumen.
+2.  **Refinamiento del Document Mapper:** Estabilizar el `DocumentsServiceImpl`, añadiendo manejo de reintentos si el LLM falla al generar el CSV estructural, y optimizar la inyección de texto parcial en el XML.
+3.  **Transición a Conteo de Tokens:** Integrar el estimador de tokens (`estimateMessagesTokenCount`) como disparador principal para la compactación de la `Session`, reemplazando el conteo estático de turnos.
+4.  **Robustecimiento de Sensores:** Mejorar los servicios de Email y Telegram implementando políticas de reconexión (backoff exponencial) y manejo de excepciones de red más detallado.
+5.  **Rehidratación Completa de Memoria:** Implementar la lógica pendiente para que, cuando el agente use `lookup_turn`, el `MemoryService` detecte esta acción y reincorpore explícitamente ese recuerdo en el siguiente *CheckPoint*.
 
 ## 7. Resumen del Estado
 
 | Área | Estado | Calidad del Código | Riesgo |
 | :--- | :---: | :---: | :---: |
-| **Arquitectura Core** | 🟢 Estable | Alta | Bajo |
-| **Persistencia** | 🟡 Funcional | Media-Alta | Medio (Escalabilidad de búsqueda local O(N)) |
-| **Integración LLM** | 🟢 Estable | Alta | Bajo |
-| **Herramientas** | 🟢 Amplias | Alta | Bajo |
-| **Seguridad** | 🟢 Robusta | Alta | Bajo |
-| **Interfaz Usuario** | 🟡 Funcional | Media-Alta | Bajo |
-| **Documentación** | 🟡 Mejorable | Media | Bajo (Uso personal) |
+| **Arquitectura Core** | 🟢 95% | Alta | Bajo |
+| **Persistencia** | 🟡 85% | Media-Alta | Medio (Bloqueos síncronos) |
+| **Integración LLM** | 🟢 90% | Alta | Bajo |
+| **Herramientas** | 🟢 90% | Alta | Bajo |
+| **Seguridad** | 🟢 90% | Alta | Bajo |
+| **Interfaz Usuario** | 🟡 85% | Alta | Bajo |
+| **Documentación** | 🟡 70% | Alta (Conceptual) / Media (Actualización) | Medio (Desincronización) |
 
 **Conclusión**
 
-El proyecto Noema presenta un estado de desarrollo sorprendentemente maduro para ser una iniciativa personal. Su diseño arquitectónico resuelve con elegancia el problema de mantener una sesión continua en el tiempo sin depender de infraestructuras de terceros, demostrando que la combinación de bases de datos relacionales locales (H2) junto con modelos de embeddings incrustados y algoritmos de ranking en memoria es una aproximación viable y pragmática. El uso de un RCS en Java nativo y las medidas de seguridad perimetral implementadas le otorgan una gran fiabilidad para ser utilizado como asistente de investigación e interacción sobre el sistema operativo.
+"Noema" es un proyecto personal de una calidad técnica excepcional. Demuestra un profundo entendimiento no solo de cómo interactuar con Modelos de Lenguaje, sino de cómo construir el software que los rodea para mitigar sus debilidades. La implementación de la paginación en disco para proteger el contexto, el uso de [RCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs) para la seguridad del sistema de archivos, y la falsificación elegante del historial para lograr proactividad (`pool_event`) son soluciones de ingeniería brillantes. Aunque presenta deuda técnica típica de un proyecto en evolución (especialmente en la sincronía de tareas pesadas), los cimientos arquitectónicos son lo suficientemente sólidos para soportar experimentación avanzada a largo plazo.
