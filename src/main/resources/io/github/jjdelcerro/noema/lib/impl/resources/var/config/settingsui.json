@@ -252,6 +252,16 @@
           "type": "action",
           "label": "Mostrar consola H2",
           "actionName": "OPEN_H2WEBCONSOLE"
+        },
+        {
+          "type": "action",
+          "label": "Forzar compactacion del 50% del historial",
+          "actionName": "COMPACT_REASONING_SESSION"
+        },
+        {
+          "type": "action",
+          "label": "Forzar compactacion del 100% del historial",
+          "actionName": "COMPACT_REASONING_FULL_SESSION"
         }
       ]
     },

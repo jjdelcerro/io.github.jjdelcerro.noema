@@ -160,11 +160,27 @@ public class ReasoningServiceImpl implements ReasoningService {
         return true;
       }
     });
-    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, "COMPACT_REASONING") {
+    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, "COMPACT_REASONING_SESSION") {
       @Override
       public boolean perform(AgentSettings settings) {
         try {
-          performCompaction();
+          Session.SessionMark mark1 = session.getOldestMark();
+          Session.SessionMark mark2 = session.getCompactMark();
+          performCompaction(mark1, mark2);
+          return true;
+        } catch (Exception ex) {
+          LOGGER.warn("Can't compact conversation", ex);
+          return false;
+        }
+      }
+    });
+    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, "COMPACT_REASONING_FULL_SESSION") {
+      @Override
+      public boolean perform(AgentSettings settings) {
+        try {
+          Session.SessionMark mark1 = session.getOldestMark();
+          Session.SessionMark mark2 = session.getNewestMark();
+          performCompaction(mark1, mark2);
           return true;
         } catch (Exception ex) {
           LOGGER.warn("Can't compact conversation", ex);
@@ -346,11 +362,13 @@ public class ReasoningServiceImpl implements ReasoningService {
   }
 
   private void performCompaction() throws SQLException {
-    this.console().printSystemLog("Iniciando proceso de compactación de memoria...");
-
-    // 1. Obtener marcas de sesion
     Session.SessionMark mark1 = this.session.getOldestMark();
     Session.SessionMark mark2 = this.session.getCompactMark();
+    this.performCompaction(mark1, mark2);
+  }
+  
+  private void performCompaction(Session.SessionMark mark1, Session.SessionMark mark2) throws SQLException {
+    this.console().printSystemLog("Iniciando proceso de compactación de memoria...");
 
     if (mark1 == null || mark2 == null) {
       String msg = "No hay suficientes datos consolidados para compactar.";
@@ -359,7 +377,7 @@ public class ReasoningServiceImpl implements ReasoningService {
       return;
     }
 
-    // 2. Recuperar turnos de la DB usando el rango de IDs de las marcas
+    // Recuperar turnos de la DB usando el rango de IDs de las marcas
     List<Turn> compactTurns = this.sourceOfTruth.getTurnsByIds(mark1.getTurnId(), mark2.getTurnId());
 
     if (compactTurns.isEmpty()) {
@@ -369,17 +387,17 @@ public class ReasoningServiceImpl implements ReasoningService {
       return;
     }
 
-    // 3. MemoryManager crea el CheckPoint
+    // MemoryManager crea el CheckPoint
     MemoryServiceImpl memory = (MemoryServiceImpl) this.agent.getService(MemoryServiceImpl.NAME);
     CheckPoint newCheckPoint = memory.compact(this.activeCheckPoint, compactTurns);
 
-    // 4. SourceOfTruth persiste
+    // SourceOfTruth persiste
     sourceOfTruth.add(newCheckPoint);
 
-    // 5. Limpieza de Sesion (Borrar mensajes ya compactados)
+    // Limpieza de Sesion (Borrar mensajes ya compactados)
     this.session.remove(mark1, mark2);
 
-    // 6. Actualizar punteros del Agente
+    // Actualizar punteros del Agente
     this.activeCheckPoint = newCheckPoint;
 
     this.console().printSystemLog("Memoria compactada con éxito. Nuevo CheckPoint ID: " + newCheckPoint.getId());
@@ -628,7 +646,7 @@ public class ReasoningServiceImpl implements ReasoningService {
 //              
     SensorsServiceImpl sensors = (SensorsServiceImpl) this.agent.getService(SensorsService.NAME);
     MutableBoolean abort = new MutableBoolean(false);
-    int toolExecutionRetries = 0;
+    int toolExecutionRetries;
 
     while (this.isRunning()) {
       ConsumableSensorEvent event = null;
@@ -693,6 +711,7 @@ public class ReasoningServiceImpl implements ReasoningService {
               this.session.add(ToolExecutionResultMessage.from(request, result));
               this.session.consolideTurn(toolTurn);
             }
+            toolExecutionRetries = 0;
           } else {
             String aiText = aiMessage.text();
             finalLlmResponse.append(aiText); // No esta claro que sea necesario mantener el finalLlmResponse
@@ -712,14 +731,14 @@ public class ReasoningServiceImpl implements ReasoningService {
             if (response.finishReason() == FinishReason.TOOL_EXECUTION) {
               // El modelo anunció una tool en texto pero no la ejecutó formalmente
               // Reinyectamos forzando la ejecución
-              this.session.add(new UserMessage("(reintenta la llamada a la herramienta sin ninguna explicacion)"));
               if (toolExecutionRetries++ > 3) {
                 throw new RuntimeException("Too many retries for executing tool");
               }
+              this.session.add(new UserMessage("(reintenta la llamada a la herramienta sin ninguna explicacion)"));
             } else {
               turnFinished = true;
+              toolExecutionRetries = 0;
             }
-            toolExecutionRetries = 0;
           }
         }
         if (textUser != null) {
