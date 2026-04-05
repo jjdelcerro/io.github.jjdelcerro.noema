@@ -33,6 +33,7 @@ import org.apache.commons.lang3.StringUtils;
 import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_PROVIDER_URL;
 import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_PROVIDER_API_KEY;
 import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_MODEL_ID;
+import java.nio.file.Files;
 
 /**
  * Panel de bienvenida para la selección de workspace y validación de
@@ -63,9 +64,9 @@ public class WelcomePanel extends WelcomePanelView {
     txtDisclaimer.setContentType("text/html");
     txtDisclaimer.setText(
             """
-Noema es un agente <b>experimental</b> aut\u00f3nomo con capacidad de modificar archivos y ejecutar comandos.<br>
-El uso de esta herramienta implica la aceptaci\u00f3n de los riesgos asociados.<br>
-Aseg\u00farese de ejecutar el agente en un entorno controlado o con backups actualizados.<br>
+Noema es un agente <b>experimental</b> autónomo con capacidad de modificar archivos y ejecutar comandos.<br>
+El uso de esta herramienta implica la aceptación de los riesgos asociados.<br>
+Asegúrese de ejecutar el agente en un entorno controlado o con backups actualizados.<br>
 """);
 //    txtDisclaimer.setLineWrap(true);
 //    txtDisclaimer.setWrapStyleWord(true);
@@ -80,6 +81,9 @@ Aseg\u00farese de ejecutar el agente en un entorno controlado o con backups actu
 
   private void handleContinue() {
     this.closeWindow(true);
+    AgentPaths paths = getSelectedPaths();
+    settings.setupSettings(paths);
+    settings.load();
     this.settings.setLastWorkspacePath(this.settings.getPaths().getWorkspaceFolder().toString());
   }
 
@@ -116,7 +120,7 @@ Aseg\u00farese de ejecutar el agente en un entorno controlado o con backups actu
       return;
     }
     AgentManager manager = AgentLocator.getAgentManager();
-    settings.setupSettings(paths);
+    settings = manager.createSettings(paths);
     settings.load();
 
     // Validamos servicios
@@ -153,7 +157,7 @@ Aseg\u00farese de ejecutar el agente en un entorno controlado o con backups actu
             getProperty(MEMORY_PROVIDER_API_KEY),
             getProperty(MEMORY_MODEL_ID)
     );
-            
+
     StringBuilder sb = new StringBuilder("<html><body>");
 
     sb.append("<b>Modelo de razonamiento:</b> ").append(getStatusIcon(convOk)).append("<br>");
@@ -207,9 +211,25 @@ Aseg\u00farese de ejecutar el agente en un entorno controlado o con backups actu
     if (paths == null) {
       JOptionPane.showMessageDialog(this,
               "Debe indicar primero el Workspace (carpeta de trabajo).",
-              "Workspace Requerido",
+              "Noema",
               JOptionPane.WARNING_MESSAGE);
       return;
+    }
+    if (!Files.exists(paths.getDataFolder())) {
+      int n = JOptionPane.showConfirmDialog(
+              this,
+              "La carpeta de configuración de Noema no existe. Es necesaria para realizar la configuración\n¿Desea que se cree en este momento?",
+              "Noema",
+              JOptionPane.YES_NO_OPTION,
+              JOptionPane.QUESTION_MESSAGE
+      );
+      if (n != JOptionPane.YES_OPTION) {
+        JOptionPane.showMessageDialog(this,
+                "No se ha podido iniciar el proceso de configuración.\nReintentelo de nuevo o seleccione otra carpeta.",
+                "Noema",
+                JOptionPane.INFORMATION_MESSAGE);
+        return;
+      }
     }
     this.settings.setupSettings(paths);
 //    AgentUISettings settingsUI = AgentUILocator.getAgentUIManager().createSettings(this.settings); FIXME Por que no va?

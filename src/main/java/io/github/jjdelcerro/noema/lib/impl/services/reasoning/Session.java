@@ -20,7 +20,6 @@ import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
 import io.github.jjdelcerro.noema.lib.impl.DateUtils;
-import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.persistence.CheckPoint;
 import io.github.jjdelcerro.noema.lib.persistence.Turn;
@@ -44,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * (Archivo).
  */
 public class Session {
-  
+
   private static final Logger LOGGER = LoggerFactory.getLogger(Session.class);
 
   private static final int DEFAULT_COMPACTION_THRESHOLD = 40;
@@ -185,12 +184,12 @@ public class Session {
     // si es mejor compactar o simplemente deshacernos de la informacion
     // devuelta por esas herramientas que de todos modos se iba a perder tras
     // la compactacion.
-    
+
     // Contamos cuantos IDs de turnos unicos tenemos en la sesion
     Set<ChatMessageInfo> uniqueTurns = new HashSet<>(turnOfMessage.values());
     return uniqueTurns.size() >= getCompactationThreshold();
   }
-  
+
   public int getTurnsCount() {
     Set<ChatMessageInfo> uniqueTurns = new HashSet<>(turnOfMessage.values());
     return uniqueTurns.size();
@@ -218,6 +217,18 @@ public class Session {
     }
 
     return new SessionMarkImpl(0, turnOfMessage.get(0).turnId, messages.get(0));
+  }
+
+  public SessionMark getNewestMark() {
+    if (messages.isEmpty()) {
+      return null;
+    }
+    // Gracias al backfill, si hay alguna consolidacion, el indice 0 tiene ID.
+    if (!turnOfMessage.containsKey(0)) {
+      return null;
+    }
+
+    return new SessionMarkImpl(0, turnOfMessage.get(turnOfMessage.size() - 1).turnId, messages.get(messages.size() - 1));
   }
 
   public SessionMark getCompactMark() {
@@ -466,7 +477,7 @@ public class Session {
   public LocalDateTime getLastInteractionTime() {
     return lastInteractionTime;
   }
-  
+
   boolean isEmpty() {
     return this.messages.isEmpty();
   }
@@ -474,5 +485,5 @@ public class Session {
   public void setLastInteractionTime(LocalDateTime lastInteractionTime) {
     this.lastInteractionTime = lastInteractionTime;
   }
-  
+
 }
