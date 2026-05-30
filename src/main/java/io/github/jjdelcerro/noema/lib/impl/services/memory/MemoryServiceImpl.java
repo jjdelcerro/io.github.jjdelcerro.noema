@@ -236,7 +236,7 @@ public class MemoryServiceImpl implements MemoryService {
                 settings.getPropertyAsString(MEMORY_PROVIDER_URL),
                 settings.getPropertyAsString(MEMORY_PROVIDER_API_KEY),
                 settings.getPropertyAsString(MEMORY_MODEL_ID),
-                0.7d
+                0.7f
         );
     }
     return null;

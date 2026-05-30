@@ -47,9 +47,9 @@ public class WelcomePanel extends WelcomePanelView {
   private JFrame window;
   private boolean returnValue;
 
-  public WelcomePanel(AgentSettings workspaceSettings) {
+  public WelcomePanel() {
     this.returnValue = true;
-    this.settings = workspaceSettings;
+    this.settings = null;
     this.initUI();
     loadRecentWorkspaces();
     refreshWorkspaceConfig();

@@ -11,6 +11,7 @@ import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.SensorEventCallback;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
+import java.nio.file.Path;
 import java.util.List;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
@@ -20,6 +21,11 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
  */
 public interface Agent {
 
+  public enum ModelType {
+    OPENAI,
+    LLAMA_EMBEDDED
+  }
+  
   public interface ModelParameters {
     public String providerUrl();
     public String providerApiKey();
@@ -27,6 +33,11 @@ public interface Agent {
     public double temperature();
     public int contextSize();
     public void setContextSize(int contextSize);
+    public Path getWorkingDirectory();
+    public Path getModelCachePath();
+    public boolean canCacheTheModel();
+    public String getTheKeyToCacheTheModel();
+    public ModelType getModelType();
   }
   
   public interface ChatModel {
@@ -35,9 +46,8 @@ public interface Agent {
     public Response<AiMessage> generate(List<ChatMessage> messages);
     public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications);
     public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications, MutableBoolean abort) throws Throwable;
-    public int estimateTokenCount(String text);
-    public int estimateTokenCount(List<ChatMessage> messages);
     public Agent.ModelParameters getParameters();
+    public ModelType getModelType();
   }
 
   public AgentPaths getPaths();
@@ -130,4 +140,6 @@ public interface Agent {
   public void showSession();
   
   public int getConversationContextSize();
+  
+  public int estimateTokenCount(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications);
 }

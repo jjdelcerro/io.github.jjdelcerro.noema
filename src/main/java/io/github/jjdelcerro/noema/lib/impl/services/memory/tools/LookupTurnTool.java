@@ -1,7 +1,5 @@
 package io.github.jjdelcerro.noema.lib.impl.services.memory.tools;
 
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.persistence.Turn;
 
@@ -11,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 import org.apache.commons.lang3.StringUtils;
 
 public class LookupTurnTool extends AbstractAgentTool {
@@ -22,8 +21,8 @@ public class LookupTurnTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(NAME)
             .description(
                     StringUtils.replace("""
@@ -39,9 +38,8 @@ Parámetros:
 Ejemplo: Si en el relato dice "...decidimos usar {cite:42}", 
 invoca {LOOKUPTURN}(code=42) para recuperar los argumentos de esa decisión.
 """, "{LOOKUPTURN}", NAME))
-            .addParameter("code", JsonSchemaProperty.STRING, JsonSchemaProperty.description("El ID único del turno (ej: 1001)."))
-            .addParameter("context_window", JsonSchemaProperty.INTEGER, JsonSchemaProperty.description("Turnos antes/después a recuperar (Max 5)."))
-            .build();
+            .addStringParameter("code", false, "El ID único del turno (ej: 1001).")
+            .addIntegerParameter("context_window", false, "Turnos antes/después a recuperar (Max 5).");
   }
 
   @Override
@@ -71,7 +69,7 @@ invoca {LOOKUPTURN}(code=42) para recuperar los argumentos de esa decisión.
       List<Map<String, Object>> results = new ArrayList<>();
       for (Turn t : turns) {
         Map<String, Object> map = new HashMap<>();
-        map.put("code", StringUtils.trim(String.valueOf(t.getId()))); 
+        map.put("code", StringUtils.trim(String.valueOf(t.getId())));
         map.put("role", determineRole(t));
         map.put("text", t.getContentForEmbedding());
         results.add(map);

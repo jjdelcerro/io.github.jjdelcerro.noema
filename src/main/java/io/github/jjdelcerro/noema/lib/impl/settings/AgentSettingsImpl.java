@@ -1,10 +1,12 @@
 package io.github.jjdelcerro.noema.lib.impl.settings;
 
+import com.drew.lang.StringUtil;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
+import io.github.jjdelcerro.noema.lib.impl.AgentPathsImpl;
 import io.github.jjdelcerro.noema.lib.impl.AgentUtils;
 import io.github.jjdelcerro.noema.lib.impl.ExpressionEvaluator;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
@@ -22,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 
 @SuppressWarnings("UseSpecificCatch")
 public class AgentSettingsImpl extends AgentSettingsGroupImpl implements AgentSettings {
@@ -39,7 +42,14 @@ public class AgentSettingsImpl extends AgentSettingsGroupImpl implements AgentSe
   private transient AgentPaths paths;
   private transient GlobalSettingsData globalSettings;
 
-  public AgentSettingsImpl(AgentPaths paths) {
+  public AgentSettingsImpl(AgentPaths paths) {    
+    if( paths == null ) {
+      this.paths = new AgentPathsImpl(null);
+      String s = this.getLastWorkspacePath();
+      if( StringUtils.isNotBlank(s) ) {
+        paths = new AgentPathsImpl(Path.of(s));
+      }
+    }
     this.paths = paths;
   }
 

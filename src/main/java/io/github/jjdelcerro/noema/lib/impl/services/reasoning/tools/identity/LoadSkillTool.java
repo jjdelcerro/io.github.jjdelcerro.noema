@@ -1,10 +1,9 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity;
 
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,18 +28,16 @@ public class LoadSkillTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(NAME)
             .description("Carga un manual de procedimiento específico desde tu memoria procedimental. "
                     + "Úsalo para obtener las instrucciones paso a paso, flujos de trabajo o comandos exactos "
                     + "de una habilidad que hayas identificado previamente en 'list_skills'. "
                     + "La carga es volátil: el manual estará disponible para razonar en este turno, "
                     + "pero no saturará tu memoria a largo plazo.")
-            .addParameter("skill_id", JsonSchemaProperty.STRING,
-                    JsonSchemaProperty.description("El identificador único de la habilidad (ej: 'java_refactor', 'deploy_plugin'). "
-                            + "Debe ser el valor obtenido del campo 'nombre' al usar 'list_skills'."))
-            .build();
+            .addStringParameter("skill_id", "El identificador único de la habilidad (ej: 'java_refactor', 'deploy_plugin'). "
+                    + "Debe ser el valor obtenido del campo 'nombre' al usar 'list_skills'.");
   }
 
   @Override

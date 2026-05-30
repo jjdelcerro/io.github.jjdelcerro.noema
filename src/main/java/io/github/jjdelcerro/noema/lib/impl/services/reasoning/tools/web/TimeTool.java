@@ -1,7 +1,5 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web;
 
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 
 import java.time.ZonedDateTime;
@@ -10,6 +8,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 /**
  * Herramienta para obtener la fecha y hora actual del sistema. Permite
@@ -24,15 +23,13 @@ public class TimeTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
             .description("Obtiene la fecha, hora y zona horaria actual del sistema. "
                     + "Utilizala cuando necesites precision temporal para programar tareas, "
                     + "calcular duraciones o entender referencias relativas (ej: 'manana').")
-            .addParameter("timezone", JsonSchemaProperty.STRING,
-                    JsonSchemaProperty.description("ID de la zona horaria (ej: 'Europe/Madrid', 'UTC'). Opcional."))
-            .build();
+            .addStringParameter("timezone", "ID de la zona horaria (ej: 'Europe/Madrid', 'UTC'). Opcional.");
   }
 
   @Override

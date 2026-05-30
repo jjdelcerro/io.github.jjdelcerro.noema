@@ -1,7 +1,5 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web;
 
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 
 import java.net.URI;
@@ -12,8 +10,10 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.regex.Pattern;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 public class WebGetTool extends AbstractAgentTool { // NO USAR, usar WebGetTikaTool
+
   public static final String TOOL_NAME = "web_get_content";
 
   private final HttpClient httpClient;
@@ -28,12 +28,11 @@ public class WebGetTool extends AbstractAgentTool { // NO USAR, usar WebGetTikaT
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
             .description("Extrae el texto de una URL específica. Úsala cuando tengas un enlace directo (por ejemplo, de un resultado de búsqueda) y necesites leer su contenido detallado.")
-            .addParameter("url", JsonSchemaProperty.STRING, JsonSchemaProperty.description("La URL completa a leer."))
-            .build();
+            .addStringParameter("url", "La URL completa a leer.");
   }
 
   @Override

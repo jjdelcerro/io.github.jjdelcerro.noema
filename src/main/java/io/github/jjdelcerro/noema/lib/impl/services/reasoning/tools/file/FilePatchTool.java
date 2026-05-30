@@ -5,8 +5,6 @@ import com.github.difflib.DiffUtils;
 import com.github.difflib.UnifiedDiffUtils;
 import com.github.difflib.patch.Patch;
 import com.github.difflib.patch.PatchFailedException;
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import static io.github.jjdelcerro.noema.lib.AgentAccessControl.AccessMode.PATH_ACCESS_WRITE;
 import java.nio.file.Files;
@@ -19,11 +17,12 @@ import io.github.jjdelcerro.javarcs.lib.RCSCommand;
 import io.github.jjdelcerro.javarcs.lib.RCSLocator;
 import io.github.jjdelcerro.javarcs.lib.RCSManager;
 import io.github.jjdelcerro.javarcs.lib.commands.CheckinOptions;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 public class FilePatchTool extends AbstractAgentTool {
 
   public static final String TOOL_NAME = "file_patch";
-  
+
   /*
 ### Una nota sobre el formato del parche
 Los LLM a veces envían el parche "desnudo" (solo el bloque `@@ ... @@`). Para que `UnifiedDiffUtils` no proteste, a veces es necesario que el parche incluya las líneas de cabecera:
@@ -44,16 +43,15 @@ Pero por ahora, prueba así; los modelos de 2025 suelen ser bastante buenos sigu
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
             .description("Aplica un parche en formato Unified Diff (@@ ... @@) a un archivo.\n"
                     + "Usa esta herramienta para refactorizaciones, añadir métodos o cambios en múltiples bloques.\n"
                     + "Proporciona suficiente contexto en las líneas del parche para que sea robusto."
             )
-            .addParameter("path", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Ruta relativa del archivo"))
-            .addParameter("patch", JsonSchemaProperty.STRING, JsonSchemaProperty.description("El parche en formato unified diff"))
-            .build();
+            .addStringParameter("path", "Ruta relativa del archivo")
+            .addStringParameter("patch", "El parche en formato unified diff");
   }
 
   @Override
@@ -84,7 +82,7 @@ Pero por ahora, prueba así; los modelos de 2025 suelen ser bastante buenos sigu
       // 3. Aplicar el parche usando DiffUtils
       List<String> patchedLines = DiffUtils.patch(originalLines, patch);
 
-      if( Files.exists(filePath) ) {
+      if (Files.exists(filePath)) {
         RCSManager rcsmanager = RCSLocator.getRCSManager();
         CheckinOptions opciones = rcsmanager.createCheckinOptions(filePath);
         opciones.setAuthor(this.getReasoningService().getModelName());

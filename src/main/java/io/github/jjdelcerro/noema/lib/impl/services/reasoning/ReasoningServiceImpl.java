@@ -87,7 +87,6 @@ public class ReasoningServiceImpl implements ReasoningService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ReasoningServiceImpl.class);
 
-  private static final int OVERHEAD_IN_ESTIMATE_TOOLS_TOKEN_COUNT = 15;
   private String lastestSystemPrompt;
 
   private static class AvailableAgentTool {
@@ -475,32 +474,19 @@ public class ReasoningServiceImpl implements ReasoningService {
 
   @Override
   public int estimateSystemPromptTokenCount() {
-    if (this.model == null) {
-      return 0;
-    }
-    return this.model.estimateTokenCount(this.getLastestSystemPrompt());
+    List<ChatMessage> messages = Collections.singletonList(UserMessage.from(this.getLastestSystemPrompt()));
+    return this.agent.estimateTokenCount(messages, null);
   }
 
   @Override
   public int estimateToolsTokenCount() {
-    if (this.model == null) {
-      return 0;
-    }
-    int n = 0;
-    for (ToolSpecification toolSpecification : this.getToolSpecifications()) {
-      String s = toolSpecification.toString();
-      n += this.model.estimateTokenCount(s) + OVERHEAD_IN_ESTIMATE_TOOLS_TOKEN_COUNT;
-    }
-    return n;
+    return this.agent.estimateTokenCount(null,this.getToolSpecifications());
   }
 
   @Override
   public int estimateMessagesTokenCount() {
-    if (this.model == null) {
-      return 0;
-    }
     List<ChatMessage> messages = this.session.getContextMessages(this.activeCheckPoint, this.getLastestSystemPrompt());
-    return this.model.estimateTokenCount(messages);
+    return this.agent.estimateTokenCount(messages,null);
   }
 
   @Override
@@ -545,7 +531,7 @@ public class ReasoningServiceImpl implements ReasoningService {
     AgentAccessControl accessControl = this.agent.getAccessControl();
     for (AvailableAgentTool availableTool : this.availableTools.values()) {
       if (accessControl.isToolAllowed(availableTool.tool) && availableTool.active) {
-        toolSpecifications.add(availableTool.tool.getSpecification());
+        toolSpecifications.add(availableTool.tool.getSpecification().build());
       }
     }
     return toolSpecifications;

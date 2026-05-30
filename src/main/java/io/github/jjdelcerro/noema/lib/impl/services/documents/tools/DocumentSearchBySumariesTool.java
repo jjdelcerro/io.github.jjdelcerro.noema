@@ -1,15 +1,15 @@
 package io.github.jjdelcerro.noema.lib.impl.services.documents.tools;
 
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsService.DocumentResult;
 import io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsServiceImpl;
 import java.util.List;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 public class DocumentSearchBySumariesTool extends AbstractAgentTool {
+
   public static final String TOOL_NAME = "document_search_by_sumaries";
 
   public DocumentSearchBySumariesTool(Agent agent) {
@@ -17,13 +17,12 @@ public class DocumentSearchBySumariesTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
             .description("Busca en los resúmenes de todos los documentos por significado. Úsalo si no conoces la categoría pero sabes de qué trata el documento.")
-            .addParameter("query", JsonSchemaProperty.STRING, JsonSchemaProperty.description("El tema a buscar en los resúmenes."))
-            .addParameter("limit", JsonSchemaProperty.INTEGER, JsonSchemaProperty.description("Máximo de resultados (Default 5)."))
-            .build();
+            .addStringParameter("query", false, "El tema a buscar en los resúmenes.")
+            .addIntegerParameter("limit", false, "Máximo de resultados (Default 5).");
   }
 
   @Override

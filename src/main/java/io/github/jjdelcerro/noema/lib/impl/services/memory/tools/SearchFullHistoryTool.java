@@ -1,7 +1,5 @@
 package io.github.jjdelcerro.noema.lib.impl.services.memory.tools;
 
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.persistence.Turn;
 
@@ -11,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 import org.apache.commons.lang3.StringUtils;
 
 public class SearchFullHistoryTool extends AbstractAgentTool {
@@ -22,17 +21,17 @@ public class SearchFullHistoryTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
+  public ToolSpecificationBuilder getSpecification() {
     /*
 FIXME: Hay algun lio con el parametro de limit. Deberian ser dos, 
 - uno para limitar los documentos que se recorre durante la busqueda.
 - Otro para limitar el numero de documentos maximo a devolver.
 FIXME: le faltaria un par de parametros para indicar rango de fechas en el que se desea realizar la busqueda.
      */
-    return ToolSpecification.builder()
+    return ToolSpecificationBuilder.create()
             .name("search_full_history")
             .description(StringUtils.replace(
-"""
+                    """
 Busca y recupera en toda la memoria histórica informacion relevantes basándose en significado.
 Úsalo cuando:
 1. Tengas la sensación de haber hablado de algo pero no recuerdes los detalles
@@ -47,9 +46,8 @@ Una vez ya has recuperado un turno o cita mediante esta herramienta no debes lla
 herramienta {LOOKUPTURN} para tratar de recuperar mas informacion sobre los turnos devueltos por esta 
 herramienta.
 """, "{LOOKUPTURN}", NAME))
-            .addParameter("query", JsonSchemaProperty.STRING, JsonSchemaProperty.description("El concepto a buscar."))
-            .addParameter("limit", JsonSchemaProperty.INTEGER, JsonSchemaProperty.description("Máximo de resultados (Default 10, Max 50)."))
-            .build();
+            .addStringParameter("query", "El concepto a buscar.")
+            .addIntegerParameter("limit", "Máximo de resultados (Default 10, Max 50).");
   }
 
   @Override
@@ -69,7 +67,7 @@ herramienta.
       List<Map<String, Object>> results = new ArrayList<>();
       for (Turn t : turns) {
         Map<String, Object> map = new HashMap<>();
-        map.put("code", StringUtils.trim(String.valueOf(t.getId()))); 
+        map.put("code", StringUtils.trim(String.valueOf(t.getId())));
         map.put("timestamp", t.getTimestamp().toString());
         map.put("content", t.getContentForEmbedding());
         results.add(map);

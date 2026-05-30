@@ -1,7 +1,5 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import static io.github.jjdelcerro.noema.lib.AgentAccessControl.AccessMode.PATH_ACCESS_WRITE;
 
@@ -14,6 +12,7 @@ import io.github.jjdelcerro.javarcs.lib.RCSCommand;
 import io.github.jjdelcerro.javarcs.lib.RCSLocator;
 import io.github.jjdelcerro.javarcs.lib.RCSManager;
 import io.github.jjdelcerro.javarcs.lib.commands.CheckinOptions;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 public class FileWriteTool extends AbstractAgentTool {
 
@@ -22,13 +21,12 @@ public class FileWriteTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name("file_write")
             .description("Escribe o sobrescribe un archivo con el contenido proporcionado. Crea carpetas automáticamente.")
-            .addParameter("path", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Ruta relativa del archivo (ej: 'src/main/resources/config.json')"))
-            .addParameter("content", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Contenido completo que se escribirá en el archivo."))
-            .build();
+            .addStringParameter("path", "Ruta relativa del archivo (ej: 'src/main/resources/config.json')")
+            .addStringParameter("content", "Contenido completo que se escribirá en el archivo.");
   }
 
   @Override
@@ -46,7 +44,7 @@ public class FileWriteTool extends AbstractAgentTool {
       if (relativePath == null || content == null) {
         return gson.toJson(Map.of("status", "error", "message", "Faltan parámetros: path o content"));
       }
-      Path filePath = this.agent.getAccessControl().resolvePathOrNull(relativePath,PATH_ACCESS_WRITE);
+      Path filePath = this.agent.getAccessControl().resolvePathOrNull(relativePath, PATH_ACCESS_WRITE);
       if (filePath == null) {
         return gson.toJson(Map.of("status", "error", "message", "Acceso denegado: No se permite escribir fuera del directorio del proyecto."));
       }
@@ -56,7 +54,7 @@ public class FileWriteTool extends AbstractAgentTool {
         Files.createDirectories(filePath.getParent());
       }
 
-      if( Files.exists(filePath) ) {
+      if (Files.exists(filePath)) {
         RCSManager rcsmanager = RCSLocator.getRCSManager();
         CheckinOptions opciones = rcsmanager.createCheckinOptions(filePath);
         opciones.setAuthor(this.getReasoningService().getModelName());
@@ -79,5 +77,5 @@ public class FileWriteTool extends AbstractAgentTool {
       return gson.toJson(Map.of("status", "error", "message", e.getClass().getSimpleName() + ": " + e.getMessage()));
     }
   }
-  
+
 }

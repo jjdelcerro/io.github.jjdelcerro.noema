@@ -1,10 +1,9 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractPaginatedAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 import org.apache.commons.lang3.StringUtils;
 
 public class ReadPaginatedResourceTool extends AbstractPaginatedAgentTool {
@@ -16,23 +15,18 @@ public class ReadPaginatedResourceTool extends AbstractPaginatedAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
+  public ToolSpecificationBuilder getSpecification() {
     int defaultLimit = getDefaultMaxLines();
-    
-    return ToolSpecification.builder()
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
-            .description("Herramienta universal para leer recursos paginados (salidas de comandos, contenido web, archivos temporales, cachés de extracción de documentos, etc.).\n" +
-                    "**USO RESTRINGIDO:** Esta herramienta SOLO debe usarse cuando recibes un `HINT` explícito de otra herramienta indicándote que hay más contenido disponible. El `resource_id` debe ser exactamente el proporcionado en el HINT.\n" +
-                    "\n" +
-                    getPaginationSystemInstruction()
+            .description("Herramienta universal para leer recursos paginados (salidas de comandos, contenido web, archivos temporales, cachés de extracción de documentos, etc.).\n"
+                    + "**USO RESTRINGIDO:** Esta herramienta SOLO debe usarse cuando recibes un `HINT` explícito de otra herramienta indicándote que hay más contenido disponible. El `resource_id` debe ser exactamente el proporcionado en el HINT.\n"
+                    + "\n"
+                    + getPaginationSystemInstruction()
             )
-            .addParameter("resource_id", JsonSchemaProperty.STRING,
-                    JsonSchemaProperty.description("Identificador del recurso a leer. Debe ser exactamente el proporcionado en el HINT de otra herramienta."))
-            .addParameter("offset", JsonSchemaProperty.INTEGER,
-                    JsonSchemaProperty.description("Línea inicial (0-based). Default: 0."))
-            .addParameter("limit", JsonSchemaProperty.INTEGER,
-                    JsonSchemaProperty.description("Máximo de líneas a leer. Default: " + defaultLimit))
-            .build();
+            .addStringParameter("resource_id", "Identificador del recurso a leer. Debe ser exactamente el proporcionado en el HINT de otra herramienta.")
+            .addIntegerParameter("offset", "Línea inicial (0-based). Default: 0.")
+            .addIntegerParameter("limit", "Máximo de líneas a leer. Default: " + defaultLimit);
   }
 
   @Override
@@ -45,7 +39,7 @@ public class ReadPaginatedResourceTool extends AbstractPaginatedAgentTool {
   public String execute(String jsonArguments) {
     try {
       ReadArgs args = gson.fromJson(jsonArguments, ReadArgs.class);
-      
+
       if (StringUtils.isBlank(args.resource_id)) {
         return formatErrorResponse("resource_id is required");
       }
@@ -62,9 +56,9 @@ public class ReadPaginatedResourceTool extends AbstractPaginatedAgentTool {
   }
 
   private static class ReadArgs {
+
     String resource_id;
     int offset;
     int limit;
   }
 }
-

@@ -1,13 +1,14 @@
 package io.github.jjdelcerro.noema.lib.impl.services.documents.tools;
 
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
+import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl;
 import java.nio.file.Path;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 import io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsService;
 
 /**
@@ -15,6 +16,7 @@ import io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsService;
  * para transformar un archivo bruto en conocimiento estructurado.
  */
 public class DocumentIndexTool extends AbstractAgentTool {
+
   public static final String TOOL_NAME = "document_index";
 
   public DocumentIndexTool(Agent agent) {
@@ -22,12 +24,11 @@ public class DocumentIndexTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
             .description("Inicia el procesamiento y mapeo de un documento (PDF, texto, etc.) para que pueda ser buscado y leído por secciones más tarde. Úsalo cuando encuentres un archivo nuevo que quieras 'aprender'.")
-            .addParameter("path", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Ruta relativa del archivo a procesar."))
-            .build();
+            .addStringParameter("path", false, "Ruta relativa del archivo a procesar.");
   }
 
   @Override

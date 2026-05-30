@@ -1,9 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 
 import java.net.URI;
@@ -14,6 +11,7 @@ import java.time.Duration;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 import java.util.Locale;
 
 /**
@@ -21,6 +19,7 @@ import java.util.Locale;
  * API Key, cumpliendo con la filosofía de minimizar fricción en el prototipo.
  */
 public class WeatherTool extends AbstractAgentTool {
+
   public static final String TOOL_NAME = "get_weather";
 
   private final HttpClient httpClient;
@@ -33,20 +32,16 @@ public class WeatherTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
             .description("Consulta el clima actual y la prevision. "
                     + "ESTRATEGIA: Si el usuario no especifica una ciudad o ubicacion, utiliza primero "
                     + "la herramienta 'get_current_location' para obtener las coordenadas actuales "
                     + "y luego invoca esta herramienta pasando los datos obtenidos.")
-            .addParameter("location", JsonSchemaProperty.STRING,
-                    JsonSchemaProperty.description("Nombre de la ciudad (opcional si se usan coordenadas)."))
-            .addParameter("lat", JsonSchemaProperty.NUMBER,
-                    JsonSchemaProperty.description("Latitud de la ubicacion (opcional)."))
-            .addParameter("lon", JsonSchemaProperty.NUMBER,
-                    JsonSchemaProperty.description("Longitud de la ubicacion (opcional)."))
-            .build();
+            .addStringParameter("location", "Nombre de la ciudad (opcional si se usan coordenadas).")
+            .addNumberParameter("lat", "Latitud de la ubicacion (opcional).")
+            .addNumberParameter("lon", "Longitud de la ubicacion (opcional).");
   }
 
   @Override

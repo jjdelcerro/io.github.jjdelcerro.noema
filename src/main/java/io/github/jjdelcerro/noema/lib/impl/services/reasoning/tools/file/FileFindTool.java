@@ -1,9 +1,8 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -22,13 +21,11 @@ public class FileFindTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name("file_find")
             .description("Busca archivos por patrón glob y devuelve sus metadatos (tamaño, tipo, etc).")
-            .addParameter("pattern", JsonSchemaProperty.STRING,
-                    JsonSchemaProperty.description("Patrón glob (ej: 'src/**/*.java' o 'pom.xml')"))
-            .build();
+            .addStringParameter("pattern", "Patrón glob (ej: 'src/**/*.java' o 'pom.xml')");
   }
 
   @Override

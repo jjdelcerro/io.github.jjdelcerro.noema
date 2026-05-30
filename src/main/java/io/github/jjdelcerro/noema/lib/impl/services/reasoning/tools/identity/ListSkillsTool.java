@@ -1,9 +1,9 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity;
 
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -30,15 +30,14 @@ public class ListSkillsTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(NAME)
             .description("Consulta tu catálogo de habilidades procedimentales. "
                     + "Invocala cuando el usuario te pida realizar una tarea técnica compleja, "
                     + "un procedimiento paso a paso, un despliegue o una refactorización de código. "
                     + "Esta herramienta te devolverá una lista de nombres de habilidades y sus propósitos "
-                    + "para que puedas elegir cuál cargar mediante 'load_skill'.")
-            .build();
+                    + "para que puedas elegir cuál cargar mediante 'load_skill'.");
   }
 
   @Override
@@ -59,7 +58,7 @@ public class ListSkillsTool extends AbstractAgentTool {
       if (skillPaths != null) {
         for (Path path : skillPaths) {
           String fileName = path.getFileName().toString();
-          if( StringUtils.equalsIgnoreCase(fileName, "readme.md") ) {
+          if (StringUtils.equalsIgnoreCase(fileName, "readme.md")) {
             continue;
           }
 
@@ -85,7 +84,6 @@ public class ListSkillsTool extends AbstractAgentTool {
 //      if (catalog.isEmpty()) {
 //        return "{\"status\": \"success\", \"skills\": [], \"message\": \"No hay manuales de procedimiento registrados actualmente.\"}";
 //      }
-
       // Devolver el array JSON para evitar confusiones de parseo en el LLM
       return gson.toJson(catalog);
 

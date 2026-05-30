@@ -19,21 +19,24 @@ import javax.swing.*;
 public class MainGUI {
 
     public static void main(String[] args) {
-        FlatDarkLaf.setup(); // Estética moderna desde el inicio
+        FlatDarkLaf.setup(); 
         UIManager.put("Component.arc", 12);
         UIManager.put("TextComponent.arc", 12);
 
         SwingUtilities.invokeLater(() -> {
-
-            AgentManager manager = AgentLocator.getAgentManager();
-            AgentSettings settings = manager.createSettings(null);
-
-            WelcomePanel welcomePanel = new WelcomePanel(settings);
+            WelcomePanel welcomePanel = new WelcomePanel();
             boolean ok = welcomePanel.showWindow();
+            if (!ok ) {
+                exit(0);
+            }
 
-            if (!ok || !BootUtils.areSettingsValid(settings)) {
+            AgentManager manager = AgentLocator.getAgentManager();            
+            AgentSettings settings = manager.createSettings(null);
+            settings.load();
+            if (!BootUtils.areSettingsValid(settings)) {
                 exit(1);
             }
+            settings.setupSettings();
             MainChatPanel chatPanel = new MainChatPanel(settings);
             chatPanel.showWindow();
 

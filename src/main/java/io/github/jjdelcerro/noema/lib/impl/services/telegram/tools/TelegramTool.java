@@ -1,17 +1,15 @@
 package io.github.jjdelcerro.noema.lib.impl.services.telegram.tools;
 
 import io.github.jjdelcerro.noema.lib.impl.services.telegram.TelegramService;
-import com.google.gson.Gson;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceImpl;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 /**
  * Puente bidireccional entre el Agente y la plataforma de mensajería Telegram.
@@ -46,19 +44,19 @@ import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
  * @author jjdelcerro
  */
 public class TelegramTool extends AbstractAgentTool {
+
   public static final String TOOL_NAME = "telegram_send";
 
   public TelegramTool(Agent agent) {
     super(agent);
   }
-    
+
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
             .description("Envía un mensaje al usuario a través de Telegram. Úsalo para notificar resultados de tareas largas o alertas proactivas.")
-            .addParameter("message", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Contenido del mensaje"))
-            .build();
+            .addStringParameter("message", "Contenido del mensaje");
   }
 
   @Override
@@ -69,7 +67,7 @@ public class TelegramTool extends AbstractAgentTool {
   @Override
   public String execute(String jsonArguments) {
     TelegramService service = (TelegramService) this.agent.getService(TelegramService.NAME);
-    
+
     TelegramBot bot = service.getBot();
     long chatId = service.getAuthorizedChatId();
 

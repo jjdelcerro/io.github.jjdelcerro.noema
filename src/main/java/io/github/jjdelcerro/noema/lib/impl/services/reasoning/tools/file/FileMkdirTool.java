@@ -1,8 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import static io.github.jjdelcerro.noema.lib.AgentAccessControl.AccessMode.PATH_ACCESS_WRITE;
 
@@ -10,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 public class FileMkdirTool extends AbstractAgentTool {
 
@@ -18,12 +17,11 @@ public class FileMkdirTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name("file_mkdir")
             .description("Crea un nuevo directorio o una ruta de directorios completa.")
-            .addParameter("path", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Ruta relativa del directorio a crear (ej: 'src/main/resources/data')"))
-            .build();
+            .addStringParameter("path", "Ruta relativa del directorio a crear (ej: 'src/main/resources/data')");
   }
 
   @Override

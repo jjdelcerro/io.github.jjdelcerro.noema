@@ -1,6 +1,8 @@
 package io.github.jjdelcerro.noema.ui.common;
 
 import com.google.gson.JsonObject;
+import dev.langchain4j.agent.tool.ToolSpecification;
+import dev.langchain4j.data.message.ChatMessage;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentActions;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
@@ -15,6 +17,7 @@ import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -156,6 +159,11 @@ public class FakeAgent implements Agent {
   @Override
   public SensorInformation registerSensor(String channel, String label, SensorNature nature, String description) {
     return null;
+  }
+
+  @Override
+  public int estimateTokenCount(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications) {
+    return 0;
   }
 
   private static class FakeConsole implements AgentConsole {

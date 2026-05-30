@@ -1,9 +1,8 @@
 package io.github.jjdelcerro.noema.lib.impl.services.sensors.tools;
 
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
 import java.util.List;
 import java.util.Map;
@@ -17,14 +16,11 @@ public class SensorStartTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(NAME)
             .description("Reactiva la recepción de eventos en los canales sensoriales especificados.")
-            .addParameter("channels", JsonSchemaProperty.type("array"),
-                    JsonSchemaProperty.items(JsonSchemaProperty.STRING),
-                    JsonSchemaProperty.description("Lista de identificadores de canal a iniciar (ej: ['telegram', 'email'])."))
-            .build();
+            .addStringArrayParameter("channels", false, "Lista de identificadores de canal a iniciar (ej: ['telegram', 'email']).");
   }
 
   @Override

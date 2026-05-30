@@ -148,9 +148,9 @@ public class Session {
     if (checkpoint != null) {
       sb.append("\n\n## Contexto consolidado de la conversacion\n");
       sb.append("Resumen actualizado hasta: ").append(DateUtils.toString(checkpoint.getTimestamp())).append(".\n\n");
-      sb.append("--- INICIO DEL RELATO ---\\n");
+      sb.append("--- INICIO DEL RELATO ---\n");
       sb.append(checkpoint.getText()).append("\n");
-      sb.append("--- FIN DEL RELATO ---\\n");
+      sb.append("--- FIN DEL RELATO ---\n");
     }
 
     if (sb.length() > 0) {

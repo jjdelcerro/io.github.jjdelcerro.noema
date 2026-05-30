@@ -1,10 +1,9 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web;
 
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractPaginatedAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 import org.apache.commons.io.IOUtils;
 import org.apache.tika.Tika;
 import org.apache.tika.metadata.Metadata;
@@ -42,15 +41,13 @@ public class WebGetTikaTool extends AbstractPaginatedAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
-            .description("Descarga y extrae texto de URLs (HTML, PDF, DOCX, etc).\n" +
-                    "\n" +
-                    getShortPaginationInstruction())
-            .addParameter("url", JsonSchemaProperty.STRING, 
-                    JsonSchemaProperty.description("URL completa del recurso web a descargar y procesar."))
-            .build();
+            .description("Descarga y extrae texto de URLs (HTML, PDF, DOCX, etc).\n"
+                    + "\n"
+                    + getShortPaginationInstruction())
+            .addStringParameter("url", "URL completa del recurso web a descargar y procesar.");
   }
 
   @Override
@@ -115,7 +112,7 @@ public class WebGetTikaTool extends AbstractPaginatedAgentTool {
 
     if (response.statusCode() != 200) {
       throw new HttpResponseException(
-              "HTTP " + response.statusCode(), 
+              "HTTP " + response.statusCode(),
               getHttpStatusMessage(response.statusCode()),
               response.statusCode()
       );
@@ -123,10 +120,8 @@ public class WebGetTikaTool extends AbstractPaginatedAgentTool {
 
     String contentType = getContentType(response);
 
-    try (InputStream input = new ByteArrayInputStream(response.body());
-         Reader reader = prepareReader(input, contentType);
-         Writer writer = Files.newBufferedWriter(tempFile, StandardCharsets.UTF_8)) {
-      
+    try (InputStream input = new ByteArrayInputStream(response.body()); Reader reader = prepareReader(input, contentType); Writer writer = Files.newBufferedWriter(tempFile, StandardCharsets.UTF_8)) {
+
       IOUtils.copy(reader, writer);
     }
   }
@@ -142,9 +137,9 @@ public class WebGetTikaTool extends AbstractPaginatedAgentTool {
   }
 
   private boolean shouldParseWithTika(String contentType) {
-    return !(contentType.contains("json") 
-          || contentType.contains("xml") 
-          || contentType.contains("text/plain"));
+    return !(contentType.contains("json")
+            || contentType.contains("xml")
+            || contentType.contains("text/plain"));
   }
 
   private String getContentType(HttpResponse<byte[]> response) {
@@ -161,7 +156,7 @@ public class WebGetTikaTool extends AbstractPaginatedAgentTool {
 
   private String formatNetworkError(IOException e, String url) {
     String message = e.getMessage().toLowerCase();
-    
+
     if (message.contains("timeout") || message.contains("timed out")) {
       return formatErrorResponse("Connection timeout: No se pudo conectar a " + url + " después de " + CONNECTION_TIMEOUT_SECONDS + " segundos. El servidor puede estar sobrecargado o inaccesible.");
     } else if (message.contains("connection refused") || message.contains("refused")) {
@@ -177,21 +172,33 @@ public class WebGetTikaTool extends AbstractPaginatedAgentTool {
 
   private String getHttpStatusMessage(int statusCode) {
     return switch (statusCode) {
-      case 400 -> "Bad Request - La solicitud es inválida";
-      case 401 -> "Unauthorized - Se requiere autenticación";
-      case 403 -> "Forbidden - Acceso denegado";
-      case 404 -> "Not Found - El recurso no existe";
-      case 408 -> "Request Timeout - El servidor tardó demasiado en responder";
-      case 429 -> "Too Many Requests - Rate limit excedido";
-      case 500 -> "Internal Server Error - Error en el servidor";
-      case 502 -> "Bad Gateway - Error en el servidor proxy";
-      case 503 -> "Service Unavailable - El servicio no está disponible temporalmente";
-      case 504 -> "Gateway Timeout - Timeout en el servidor proxy";
-      default -> "HTTP Error " + statusCode;
+      case 400 ->
+        "Bad Request - La solicitud es inválida";
+      case 401 ->
+        "Unauthorized - Se requiere autenticación";
+      case 403 ->
+        "Forbidden - Acceso denegado";
+      case 404 ->
+        "Not Found - El recurso no existe";
+      case 408 ->
+        "Request Timeout - El servidor tardó demasiado en responder";
+      case 429 ->
+        "Too Many Requests - Rate limit excedido";
+      case 500 ->
+        "Internal Server Error - Error en el servidor";
+      case 502 ->
+        "Bad Gateway - Error en el servidor proxy";
+      case 503 ->
+        "Service Unavailable - El servicio no está disponible temporalmente";
+      case 504 ->
+        "Gateway Timeout - Timeout en el servidor proxy";
+      default ->
+        "HTTP Error " + statusCode;
     };
   }
 
   private static class HttpResponseException extends IOException {
+
     private final int statusCode;
 
     public HttpResponseException(String message, int statusCode) {
@@ -210,6 +217,7 @@ public class WebGetTikaTool extends AbstractPaginatedAgentTool {
   }
 
   private static class ReadArgs {
+
     String url;
   }
 }

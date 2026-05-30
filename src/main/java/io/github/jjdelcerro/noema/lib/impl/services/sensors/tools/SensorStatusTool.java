@@ -1,9 +1,9 @@
 package io.github.jjdelcerro.noema.lib.impl.services.sensors.tools;
 
 import com.google.gson.GsonBuilder;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.persistence.SensorInformationGsonAdapter;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.persistence.SensorStatisticsGsonAdapter;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
@@ -30,11 +30,10 @@ public class SensorStatusTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
-            .description("Muestra el inventario completo de canales sensoriales (capacidades), su configuración y sus estadísticas de actividad. Úsalo para conocer qué sensores tienes disponibles, ver cuáles están silenciados o identificar canales con exceso de ruido")
-            .build();
+            .description("Muestra el inventario completo de canales sensoriales (capacidades), su configuración y sus estadísticas de actividad. Úsalo para conocer qué sensores tienes disponibles, ver cuáles están silenciados o identificar canales con exceso de ruido");
   }
 
   @Override

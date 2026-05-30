@@ -5,6 +5,10 @@ import com.google.gson.JsonElement;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceImpl;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import dev.langchain4j.agent.tool.ToolSpecification;
+import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.model.TokenCountEstimator;
+import dev.langchain4j.model.openai.OpenAiTokenCountEstimator;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentActions;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
@@ -43,6 +47,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import javax.swing.SwingUtilities;
+import org.apache.commons.collections4.map.LRUMap;
 
 /**
  *
@@ -53,10 +58,12 @@ public class AgentImpl implements Agent {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AgentImpl.class);
 
+  private static final int OVERHEAD_IN_ESTIMATE_TOOLS_TOKEN_COUNT = 15;
+
   public static final String USER_SENSOR_NAME = "USER";
   private static final String USER_SENSOR_LABEL = "USER";
   private static final String USER_SENSOR_DESCRIPTION = "USER";
-  
+
   private AgentConsole console;
   private final AgentSettings settings;
   private final AgentActions actions;
@@ -72,6 +79,7 @@ public class AgentImpl implements Agent {
   private JsonObject openRouterModels = null;
   private Thread shutdownHook;
   private boolean running;
+  private TokenCountEstimator tokenEstimator;
 
   public AgentImpl(ConnectionSupplier memoryDatabase, ConnectionSupplier servicesDatabase, AgentSettings settings, AgentConsole console) {
     this.running = false;
@@ -106,14 +114,14 @@ public class AgentImpl implements Agent {
     }
     SensorsService sensors = (SensorsService) this.getService(SensorsService.NAME);
     SensorInformation sensor = sensors.createSensorInformation(
-            USER_SENSOR_NAME, 
-            USER_SENSOR_LABEL, 
-            SensorNature.USER, 
-            USER_SENSOR_DESCRIPTION, 
+            USER_SENSOR_NAME,
+            USER_SENSOR_LABEL,
+            SensorNature.USER,
+            USER_SENSOR_DESCRIPTION,
             false
     );
     sensors.registerSensor(sensor);
-    
+
     ReasoningService reasoning = (ReasoningService) this.getService(ReasoningService.NAME);
     for (AgentService service : this.services.values()) {
       if (service.canStart()) {
@@ -142,7 +150,7 @@ public class AgentImpl implements Agent {
   @Override
   public synchronized void stop() {
     if (!this.running) {
-      return; 
+      return;
     }
     this.running = false;
     try {
@@ -265,6 +273,13 @@ public class AgentImpl implements Agent {
       if (cleanJson.contains("```")) {
         // Extraemos solo lo que hay entre las primeras llaves si detectamos markdown
         // o usamos un regex para limpiar el envoltorio
+        //
+        // TODO: Si el LLM es un poco verboso y responde algo como:
+        // "Aquí tienes el resultado:\njson\n{...}\n", el trim() inicial no eliminará 
+        // el texto previo. Como la regex exige que los backticks estén al principio 
+        // absoluto del string (^), fallará, no limpiará nada, y JsonParser lanzará una excepción.
+        // Solución: Es más robusto buscar el primer { o [ y el último } o ], y extraer el substring.
+        //
         cleanJson = cleanJson.replaceAll("^```(?:json)?\\s*", "")
                 .replaceAll("\\s*```$", "");
       }
@@ -284,15 +299,6 @@ public class AgentImpl implements Agent {
     name = name.toUpperCase();
 
     ModelParameters params = this.getModelParameters(name);
-//    OpenAiChatModel model = OpenAiChatModel.builder()
-//            .baseUrl(params.providerUrl())
-//            .apiKey(params.providerApiKey())
-//            .modelName(params.modelId())
-//            .temperature(params.temperature())
-//            .timeout(Duration.ofSeconds(180))
-//            .logRequests(false)
-//            .logResponses(false)
-//            .build();
     return new ChatModelImpl(params);
   }
 
@@ -310,27 +316,7 @@ public class AgentImpl implements Agent {
 
   @Override
   public void installResource(String resPath) {
-      AgentUtils.installResource(this.getPaths(), resPath);
-//    String resourceBase = "/io/github/jjdelcerro/noema/lib/impl/resources/";
-//    Path targetPath = this.getPaths().getAgentFolder().resolve(resPath);
-//    if (!Files.exists(targetPath)) {
-//      try {
-//        Files.createDirectories(targetPath.getParent());
-//
-//        try (InputStream is = getClass().getResourceAsStream(resourceBase + resPath)) {
-//          if (is != null) {
-//            Files.copy(is, targetPath, StandardCopyOption.REPLACE_EXISTING);
-//            console.printSystemLog("Recurso instalado en data " + resPath);
-//          } else {
-//            LOGGER.warn("Recurso no encontrado en el classpath " + resourceBase + resPath);
-//            console.printSystemError("Recurso no encontrado en el classpath: " + resourceBase + resPath);
-//          }
-//        }
-//      } catch (Exception e) {
-//        LOGGER.warn("No se ha podido instalar el recurso '" + resPath + "'.", e);
-//        console.printSystemError("Error al inicializar recurso " + resPath + ": " + e.getMessage());
-//      }
-//    }
+    AgentUtils.installResource(this.getPaths(), resPath);
   }
 
   /**
@@ -452,6 +438,27 @@ public class AgentImpl implements Agent {
     SensorInformation sensor = sensors.createSensorInformation(channel, label, nature, description);
     sensors.registerSensor(sensor);
     return sensor;
+  }
+
+  @Override
+  public synchronized int estimateTokenCount(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications) {
+    if (this.tokenEstimator == null) {
+      // Vamos a usar el TokenCountEstimator de OpenAI, ya que para otros muchos modelos
+      // no disponemos de el. Se trata solo de una estimacion, y asumimos el error
+      // que pueda haber en esta para otros modelos.
+      this.tokenEstimator = new OpenAiTokenCountEstimator("gpt-4o");
+    }
+    int n = 0;
+    if( messages!=null ) {
+      n += this.tokenEstimator.estimateTokenCountInMessages(messages);
+    }
+    if( toolSpecifications!=null ) {    
+      for (ToolSpecification toolSpecification : toolSpecifications) {
+        String s = toolSpecification.toString();
+        n += this.tokenEstimator.estimateTokenCountInText(s) + OVERHEAD_IN_ESTIMATE_TOOLS_TOKEN_COUNT;
+      }
+    }
+    return n;
   }
 
 }

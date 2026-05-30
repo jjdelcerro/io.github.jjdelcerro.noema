@@ -1,14 +1,14 @@
 package io.github.jjdelcerro.noema.lib.impl.services.documents.tools;
 
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsServiceImpl;
 import java.util.List;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 public class GetPartialDocumentTool extends AbstractAgentTool {
+
   public static final String TOOL_NAME = "get_partial_document";
 
   public GetPartialDocumentTool(Agent agent) {
@@ -16,16 +16,12 @@ public class GetPartialDocumentTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
             .description("Recupera la estructura completa de un documento inyectando el texto íntegro en las secciones solicitadas. Úsalo para leer el detalle tras haber explorado el índice.")
-            .addParameter("docId", JsonSchemaProperty.STRING, JsonSchemaProperty.description("El ID único del documento."))
-            .addParameter("sectionIds", JsonSchemaProperty.type("array"),
-                    JsonSchemaProperty.items(JsonSchemaProperty.STRING),
-                    JsonSchemaProperty.description("Lista de IDs de secciones a leer (ej: ['SECTION-45', 'SECTION-120']).")
-            )
-            .build();
+            .addStringParameter("docId", false, "El ID único del documento.")
+            .addStringArrayParameter("sectionIds", false, "Lista de IDs de secciones a leer (ej: ['SECTION-45', 'SECTION-120']).");
   }
 
   @Override

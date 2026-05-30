@@ -1,14 +1,14 @@
 package io.github.jjdelcerro.noema.lib.impl.services.email.tools;
 
 import io.github.jjdelcerro.noema.lib.impl.services.email.EmailService;
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 public class EmailSendTool extends AbstractAgentTool {
+
   public static final String TOOL_NAME = "email_send";
 
   public EmailSendTool(Agent agent) {
@@ -16,14 +16,13 @@ public class EmailSendTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
             .description("Envía un correo electrónico. Úsalo para entregar resultados o responder al usuario.")
-            .addParameter("to", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Destinatario"))
-            .addParameter("subject", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Asunto"))
-            .addParameter("body", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Contenido del mensaje"))
-            .build();
+            .addStringParameter("to", false, "Destinatario")
+            .addStringParameter("subject", false, "Asunto")
+            .addStringParameter("body", false, "Contenido del mensaje");
   }
 
   @Override

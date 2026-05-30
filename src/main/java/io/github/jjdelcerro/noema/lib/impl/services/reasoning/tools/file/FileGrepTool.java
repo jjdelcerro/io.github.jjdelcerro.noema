@@ -1,10 +1,9 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import static io.github.jjdelcerro.noema.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,14 +21,12 @@ public class FileGrepTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name("file_grep")
             .description("Busca un texto dentro de los archivos del proyecto.")
-            // --- LÍNEAS CORREGIDAS ---
-            .addParameter("query", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Texto o Regex a buscar"))
-            .addParameter("filePattern", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Opcional: glob para filtrar archivos (ej: '*.java')"))
-            .build();
+            .addStringParameter("query", "Texto o Regex a buscar")
+            .addStringParameter("filePattern", "Opcional: glob para filtrar archivos (ej: '*.java')");
   }
 
   @Override

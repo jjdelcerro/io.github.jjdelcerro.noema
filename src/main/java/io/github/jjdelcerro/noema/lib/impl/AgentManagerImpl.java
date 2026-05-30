@@ -92,7 +92,7 @@ public class AgentManagerImpl implements AgentManager {
     SQLProvider prov = this.sqlProvider.get(providerName.toLowerCase());
     if( prov==null ) {
       prov = new SQLProviderImpl(providerName);
-      this.sqlProvider.put(providerName, prov);
+      this.sqlProvider.put(providerName.toLowerCase(), prov);
     }
     return prov;
   }
@@ -124,7 +124,7 @@ public class AgentManagerImpl implements AgentManager {
 
   @Override
   public Agent.ModelParameters getModelParameters(String providerUrl, String providerApiKey, String modelId) {
-    return new ModelParametersImpl(providerUrl, providerApiKey, modelId, Double.NaN);
+    return new ModelParametersImpl(providerUrl, providerApiKey, modelId, Float.NaN);
   }
 
   

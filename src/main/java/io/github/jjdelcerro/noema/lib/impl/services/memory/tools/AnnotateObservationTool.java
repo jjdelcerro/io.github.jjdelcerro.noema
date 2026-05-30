@@ -1,10 +1,9 @@
 package io.github.jjdelcerro.noema.lib.impl.services.memory.tools;
 
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 public class AnnotateObservationTool extends AbstractAgentTool {
 
@@ -15,11 +14,11 @@ public class AnnotateObservationTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
             .description(
-"""
+                    """
 Utiliza esta herramienta para guardar una nota o resumen sobre información que acabas de leer o procesar (ej. tras usar file_read o web_search).
 Utilizala para guardar:
 * Insights, resúmenes o relaciones que infieres entre múltiples fuentes.
@@ -30,11 +29,8 @@ Utilizala para guardar:
 Recuerda que la herramienta está pensada para retener valor cognitivo, no para duplicar datos,
 no la uses para duplicar contenido que puedes recuperar de nuevo con file_read o web_search.
 """)
-            .addParameter("source", JsonSchemaProperty.STRING,
-                    JsonSchemaProperty.description("El origen de la información (ej: nombre del archivo, URL o 'instrucción del usuario')."))
-            .addParameter("note", JsonSchemaProperty.STRING,
-                    JsonSchemaProperty.description("Los hechos clave que deseas fijar en tu memoria episódica."))
-            .build();
+            .addStringParameter("source", false, "El origen de la información (ej: nombre del archivo, URL o 'instrucción del usuario').")
+            .addStringParameter("note", false, "Los hechos clave que deseas fijar en tu memoria episódica.");
   }
 
   @Override
@@ -58,7 +54,7 @@ no la uses para duplicar contenido que puedes recuperar de nuevo con file_read o
     herramientas esto dejaria de funcionar.
     Segun como vaya esto habria que abordar los cambios para tratar la herramienta
     como "memory".
-    */
+     */
     return TYPE_OPERATIONAL;
 //    return TYPE_MEMORY;
   }

@@ -3,8 +3,6 @@ package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 
 import java.net.URI;
@@ -15,8 +13,10 @@ import java.time.Duration;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 public class BraveWebSearchTool extends AbstractAgentTool {
+
   public static final String TOOL_NAME = "web_search";
 
   public static final String BRAVE_SEARCH_API_KEY = "websearch/brave_api_key";
@@ -33,12 +33,11 @@ public class BraveWebSearchTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
             .description("Busca información actualizada en internet. Úsala cuando necesites datos que no están en tu memoria local o para verificar hechos actuales.")
-            .addParameter("query", JsonSchemaProperty.STRING, JsonSchemaProperty.description("La consulta de búsqueda en lenguaje natural."))
-            .build();
+            .addStringParameter("query", "La consulta de búsqueda en lenguaje natural.");
   }
 
   @Override

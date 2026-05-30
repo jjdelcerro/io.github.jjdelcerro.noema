@@ -3,11 +3,10 @@ package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -17,6 +16,7 @@ import java.time.Duration;
 import java.util.Map;
 
 public class TavilyWebSearchTool extends AbstractAgentTool {
+
   public static final String TOOL_NAME = "web_search";
 
   public static final String TAVILY_API_KEY = "websearch/tavily_api_key";
@@ -26,12 +26,11 @@ public class TavilyWebSearchTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
             .description("Busca información actualizada en internet usando Tavily. Ideal para búsquedas complejas y análisis de datos web.")
-            .addParameter("query", JsonSchemaProperty.STRING, JsonSchemaProperty.description("La consulta de búsqueda."))
-            .build();
+            .addStringParameter("query", "La consulta de búsqueda.");
   }
 
   @Override

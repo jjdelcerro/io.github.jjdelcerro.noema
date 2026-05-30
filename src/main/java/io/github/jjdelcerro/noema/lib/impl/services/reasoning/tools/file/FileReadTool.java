@@ -1,7 +1,5 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractPaginatedAgentTool;
@@ -13,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static io.github.jjdelcerro.noema.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 public class FileReadTool extends AbstractPaginatedAgentTool {
 
@@ -25,14 +24,12 @@ public class FileReadTool extends AbstractPaginatedAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
-            .description("Devuelve el contenido de un archivo de texto del proyecto (código fuente, documentación, archivos de configuración, etc.).\n\n" +
-                    getShortPaginationInstruction())
-            .addParameter("path", JsonSchemaProperty.STRING,
-                    JsonSchemaProperty.description("Ruta del archivo (relativa o absoluta)."))
-            .build();
+            .description("Devuelve el contenido de un archivo de texto del proyecto (código fuente, documentación, archivos de configuración, etc.).\n\n"
+                    + getShortPaginationInstruction())
+            .addStringParameter("path", "Ruta del archivo (relativa o absoluta).");
   }
 
   @Override
@@ -45,7 +42,7 @@ public class FileReadTool extends AbstractPaginatedAgentTool {
   public String execute(String jsonArguments) {
     try {
       ReadArgs args = gson.fromJson(jsonArguments, ReadArgs.class);
-      
+
       if (StringUtils.isBlank(args.path)) {
         return formatErrorResponse("El parámetro 'path' es obligatorio.");
       }
@@ -107,6 +104,7 @@ public class FileReadTool extends AbstractPaginatedAgentTool {
   }
 
   private static class ReadArgs {
+
     String path;
   }
 }

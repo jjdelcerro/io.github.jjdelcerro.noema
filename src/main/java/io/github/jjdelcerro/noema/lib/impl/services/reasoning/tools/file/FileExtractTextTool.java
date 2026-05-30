@@ -1,7 +1,5 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractPaginatedAgentTool;
@@ -9,7 +7,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.tika.Tika;
 
-import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
@@ -17,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static io.github.jjdelcerro.noema.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 public class FileExtractTextTool extends AbstractPaginatedAgentTool {
 
@@ -28,18 +26,16 @@ public class FileExtractTextTool extends AbstractPaginatedAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
-            .description("Extrae el texto de archivos binarios complejos como PDF, DOCX, u otros documentos formateados.\n" +
-                    "RESTRICCIONES:\n" +
-                    "  • Solo archivos dentro del sandbox del proyecto.\n" +
-                    "  • La extracción puede ser costosa computacionalmente para documentos grandes.\n" +
-                    "\n" +
-                    getShortPaginationInstruction())
-            .addParameter("path", JsonSchemaProperty.STRING, 
-                    JsonSchemaProperty.description("Ruta del archivo binario (PDF, DOCX, etc.)."))
-            .build();
+            .description("Extrae el texto de archivos binarios complejos como PDF, DOCX, u otros documentos formateados.\n"
+                    + "RESTRICCIONES:\n"
+                    + "  • Solo archivos dentro del sandbox del proyecto.\n"
+                    + "  • La extracción puede ser costosa computacionalmente para documentos grandes.\n"
+                    + "\n"
+                    + getShortPaginationInstruction())
+            .addStringParameter("path", "Ruta del archivo binario (PDF, DOCX, etc.).");
   }
 
   @Override
@@ -102,8 +98,7 @@ public class FileExtractTextTool extends AbstractPaginatedAgentTool {
 
       LOGGER.info("Extrayendo texto (Tika) de: " + sourcePath);
 
-      try (Reader reader = tika.parse(sourcePath);
-           Writer writer = Files.newBufferedWriter(cachedFile, StandardCharsets.UTF_8)) {
+      try (Reader reader = tika.parse(sourcePath); Writer writer = Files.newBufferedWriter(cachedFile, StandardCharsets.UTF_8)) {
         IOUtils.copy(reader, writer);
       }
     }
@@ -112,6 +107,7 @@ public class FileExtractTextTool extends AbstractPaginatedAgentTool {
   }
 
   private static class ReadArgs {
+
     String path;
   }
 }

@@ -1,10 +1,9 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity;
 
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,17 +27,15 @@ public class ConsultEnvironTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(NAME)
             .description("Recupera el contenido completo de un módulo de conocimiento sobre el entorno"
                     + "(biografía, gustos, proyectos, marcos de investigación del usuario). "
                     + "Úsalo exclusivamente cuando el índice de la sección [CONSCIENCIA DE ENTORNO] "
                     + "sugiera que un módulo contiene información crítica para sintonizar con la petición del usuario.")
-            .addParameter("module_name", JsonSchemaProperty.STRING,
-                    JsonSchemaProperty.description("El ID del módulo a consultar (ej: '01_personal_joaquin', '05_pasiones_scifi'). "
-                            + "Debe coincidir con el ID listado en el índice de entorno."))
-            .build();
+            .addStringParameter("module_name", "El ID del módulo a consultar (ej: '01_personal_joaquin', '05_pasiones_scifi'). "
+                    + "Debe coincidir con el ID listado en el índice de entorno.");
   }
 
   @Override

@@ -1,9 +1,9 @@
 package io.github.jjdelcerro.noema.lib.impl.services.sensors.tools;
 
 import com.google.gson.GsonBuilder;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.persistence.SensorEventGsonAdapter;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorEvent;
@@ -24,12 +24,11 @@ public class PoolEventTool extends AbstractAgentTool { // FIXME: Esta tool esta 
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
             .description("Pools for pending sensory events from all registered sensors. "
-                    + "This tool should be used when notified about pending perceptions.")
-            .build();
+                    + "This tool should be used when notified about pending perceptions.");
   }
 
   @Override

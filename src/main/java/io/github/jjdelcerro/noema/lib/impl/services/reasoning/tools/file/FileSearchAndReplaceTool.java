@@ -1,7 +1,5 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import static io.github.jjdelcerro.noema.lib.AgentAccessControl.AccessMode.PATH_ACCESS_WRITE;
 
@@ -15,6 +13,7 @@ import io.github.jjdelcerro.javarcs.lib.RCSCommand;
 import io.github.jjdelcerro.javarcs.lib.RCSLocator;
 import io.github.jjdelcerro.javarcs.lib.RCSManager;
 import io.github.jjdelcerro.javarcs.lib.commands.CheckinOptions;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 public class FileSearchAndReplaceTool extends AbstractAgentTool {
 
@@ -23,18 +22,17 @@ public class FileSearchAndReplaceTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name("file_search_and_replace")
             .description("Edita un archivo reemplazando un bloque de texto específico por otro.\n"
-                    + "Usa esta herramienta para cambios simples (una línea, un valor, un nombre), es más rápido y seguro que "+FilePatchTool.TOOL_NAME+".\n" +
-"\n"
+                    + "Usa esta herramienta para cambios simples (una línea, un valor, un nombre), es más rápido y seguro que " + FilePatchTool.TOOL_NAME + ".\n"
+                    + "\n"
                     + "Asegúrate de incluir al menos 2 o 3 líneas de contexto en el oldText para que sea único. Copia el texto exactamente como aparece en el archivo, respetando cada espacio y salto de línea."
             )
-            .addParameter("path", JsonSchemaProperty.STRING, JsonSchemaProperty.description("Ruta relativa del archivo."))
-            .addParameter("oldText", JsonSchemaProperty.STRING, JsonSchemaProperty.description("El bloque de texto EXACTO que se desea cambiar (debe ser único en el archivo)."))
-            .addParameter("newText", JsonSchemaProperty.STRING, JsonSchemaProperty.description("El nuevo texto que reemplazará al anterior."))
-            .build();
+            .addStringParameter("path", "Ruta relativa del archivo.")
+            .addStringParameter("oldText", "El bloque de texto EXACTO que se desea cambiar (debe ser único en el archivo).")
+            .addStringParameter("newText", "El nuevo texto que reemplazará al anterior.");
   }
 
   @Override

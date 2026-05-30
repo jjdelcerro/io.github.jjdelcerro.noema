@@ -2,8 +2,6 @@ package io.github.jjdelcerro.noema.lib.impl.services.scheduler.tools;
 
 import com.joestelmach.natty.DateGroup;
 import com.joestelmach.natty.Parser;
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.impl.services.scheduler.SchedulerService;
 import java.time.LocalDateTime;
@@ -13,11 +11,13 @@ import java.util.List;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 /**
  * Herramienta para programar avisos o alarmas usando lenguaje natural (Inglés).
  */
 public class ScheduleAlarmTool extends AbstractAgentTool {
+
   public static final String TOOL_NAME = "schedule_alarm";
 
   private final Parser dateParser = new Parser();
@@ -27,17 +27,20 @@ public class ScheduleAlarmTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
             .description("Permite programar una alarma para que te avise cuando se dispare mediante un evento. Cuando recibas el evento de que se ha disparado la alarma sera responsabilidad tuya dar el aviso al usuario.")
-            .addParameter("reason", JsonSchemaProperty.STRING,
-                    JsonSchemaProperty.description("El motivo o contenido de la alarma."))
-            .addParameter("when", JsonSchemaProperty.STRING,
-                    JsonSchemaProperty.description("Descripción temporal. DEBE ESTAR EN INGLÉS "
-                            + "(ej: 'tomorrow at 5pm', 'in 10 minutes', 'March 21st', '2025-02-10 19:00'). "
-                            + "Traduce el tiempo solicitado por el usuario a inglés si es necesario."))
-            .build();
+            .addStringParameter(
+                    "reason",
+                    "El motivo o contenido de la alarma."
+            )
+            .addStringParameter(
+                    "when",
+                    "Descripción temporal. DEBE ESTAR EN INGLÉS "
+                    + "(ej: 'tomorrow at 5pm', 'in 10 minutes', 'March 21st', '2025-02-10 19:00'). "
+                    + "Traduce el tiempo solicitado por el usuario a inglés si es necesario."
+            );
   }
 
   @Override

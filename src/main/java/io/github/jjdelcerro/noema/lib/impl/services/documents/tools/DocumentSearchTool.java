@@ -1,15 +1,17 @@
 package io.github.jjdelcerro.noema.lib.impl.services.documents.tools;
 
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
 import dev.langchain4j.agent.tool.ToolSpecification;
+import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsService.DocumentResult;
 import io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsServiceImpl;
 import java.util.List;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 public class DocumentSearchTool extends AbstractAgentTool {
+
   public static final String TOOL_NAME = "document_search";
 
   public DocumentSearchTool(Agent agent) {
@@ -17,17 +19,13 @@ public class DocumentSearchTool extends AbstractAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
             .description("Busca documentos combinando filtros por categorías y búsqueda semántica en los resúmenes. Devuelve el ID, título y resumen del documento.")
-            .addParameter("query", JsonSchemaProperty.STRING, JsonSchemaProperty.description("El concepto o tema a buscar por significado."))
-            .addParameter("categories", JsonSchemaProperty.type("array"),
-                    JsonSchemaProperty.items(JsonSchemaProperty.STRING),
-                    JsonSchemaProperty.description("Opcional: Lista de categorías exactas para filtrar (ej: ['Manual', 'Proyecto_X']).")
-            )
-            .addParameter("limit", JsonSchemaProperty.INTEGER, JsonSchemaProperty.description("Máximo de resultados (Default 5)."))
-            .build();
+            .addStringParameter("query", false, "El concepto o tema a buscar por significado.")
+            .addStringArrayParameter("categories", true, "Opcional: Lista de categorías exactas para filtrar (ej: ['Manual', 'Proyecto_X']).")
+            .addIntegerParameter("limit", false, "Máximo de resultados (Default 5).");
   }
 
   @Override

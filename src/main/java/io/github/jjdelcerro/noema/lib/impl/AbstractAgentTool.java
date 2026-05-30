@@ -1,6 +1,9 @@
 package io.github.jjdelcerro.noema.lib.impl;
 
 import com.google.gson.Gson;
+import dev.langchain4j.model.chat.request.json.JsonArraySchema;
+import dev.langchain4j.model.chat.request.json.JsonSchemaElement;
+import dev.langchain4j.model.chat.request.json.JsonStringSchema;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl.AccessMode;
 import static io.github.jjdelcerro.noema.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
@@ -30,6 +33,11 @@ public abstract class AbstractAgentTool implements AgentTool {
     this.agent = agent;
     this.gson = customGson;
   }
+  
+  protected JsonSchemaElement createJsonStringArraySchema(String description) {
+    return JsonArraySchema.builder().description(description).items(new JsonStringSchema()).build();
+  }
+  
 
   protected String error(String m) {
     return gson.toJson(Map.of("status", "error", "message", m));

@@ -2,7 +2,9 @@ package io.github.jjdelcerro.noema.ui.swing;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.formdev.flatlaf.extras.FlatSVGUtils;
+import io.github.jjdelcerro.noema.lib.AbstractAgentAction;
 import io.github.jjdelcerro.noema.lib.Agent;
+import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_REASONING_PROVIDER;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
@@ -26,8 +28,10 @@ import java.awt.Window;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -343,6 +347,18 @@ public class MainChatPanel extends JPanel {
       inputArea.setEnabled(true);
       updateMetadata();
       inputArea.requestFocusInWindow();
+      this.agent.getActions().addAction(new AbstractAgentAction(this.agent, "DEBUG_DIALOG") {
+        @Override
+        public boolean perform(AgentSettings settings) {
+          Map<String,Object> context = new HashMap<>();
+          context.put("self", agent.getService(ReasoningService.NAME));
+          context.put("agent", agent);
+          context.put("agentManager", AgentLocator.getAgentManager());
+          DebugPanel panel = new DebugPanel(context);
+          panel.showWindow("Debug");
+          return true;
+        }
+      });      
     });
   }
 

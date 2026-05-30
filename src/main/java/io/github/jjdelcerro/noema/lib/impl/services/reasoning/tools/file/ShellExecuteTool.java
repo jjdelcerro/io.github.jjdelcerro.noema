@@ -1,10 +1,9 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
 import io.github.jjdelcerro.noema.lib.impl.AbstractPaginatedAgentTool;
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -84,21 +83,19 @@ public class ShellExecuteTool extends AbstractPaginatedAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
-            .description("Ejecuta comandos de sistema en una shell de Bash.\n" +
-                    "**RESTRICCIONES CRÍTICAS:**\n" +
-                    "  1. **No Interactividad:** La shell NO es interactiva. Evita estrictamente comandos que requieran entrada del usuario, contraseñas o confirmaciones (ej: 'sudo', 'apt' sin '-y').\n" +
-                    "  2. **Supervisión Humana:** Para tareas largas, el usuario será consultado periódicamente y puede abortar el proceso.\n" +
-                    "  3. **Flags no-interactivos:** Incluye flags de no-interactividad si el comando los soporta (ej: '-y', '--batch').\n" +
-                    "\n" +
-                    "**SEGURIDAD:** Si Firejail está disponible, los comandos se ejecutan en un sandbox con directorio home aislado y acceso restringido al proyecto.\n" +
-                    "\n" +
-                    getShortPaginationInstruction())
-            .addParameter("command", JsonSchemaProperty.STRING, 
-                    JsonSchemaProperty.description("Comando completo a ejecutar. Incluye flags de no-interactividad si aplica (ej: '-y', '--batch')."))
-            .build();
+            .description("Ejecuta comandos de sistema en una shell de Bash.\n"
+                    + "**RESTRICCIONES CRÍTICAS:**\n"
+                    + "  1. **No Interactividad:** La shell NO es interactiva. Evita estrictamente comandos que requieran entrada del usuario, contraseñas o confirmaciones (ej: 'sudo', 'apt' sin '-y').\n"
+                    + "  2. **Supervisión Humana:** Para tareas largas, el usuario será consultado periódicamente y puede abortar el proceso.\n"
+                    + "  3. **Flags no-interactivos:** Incluye flags de no-interactividad si el comando los soporta (ej: '-y', '--batch').\n"
+                    + "\n"
+                    + "**SEGURIDAD:** Si Firejail está disponible, los comandos se ejecutan en un sandbox con directorio home aislado y acceso restringido al proyecto.\n"
+                    + "\n"
+                    + getShortPaginationInstruction())
+            .addStringParameter("command", "Comando completo a ejecutar. Incluye flags de no-interactividad si aplica (ej: '-y', '--batch').");
   }
 
   @Override

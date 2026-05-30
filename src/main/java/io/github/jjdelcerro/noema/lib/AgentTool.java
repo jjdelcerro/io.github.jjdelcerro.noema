@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib;
 
-import dev.langchain4j.agent.tool.ToolSpecification;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 public interface AgentTool {
 
@@ -18,10 +18,8 @@ public interface AgentTool {
       Trim
     }
 
-    // Devuelve la especificación para OpenAI
-    ToolSpecification getSpecification();
+    ToolSpecificationBuilder getSpecification();
 
-    // Nombre para el dispatcher
     default String getName() {
         return getSpecification().name();
     }

@@ -1,7 +1,5 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
-import dev.langchain4j.agent.tool.JsonSchemaProperty;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractPaginatedAgentTool;
@@ -27,6 +25,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.github.jjdelcerro.noema.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 public class FileReadSelectorsTool extends AbstractPaginatedAgentTool {
 
@@ -40,15 +39,13 @@ public class FileReadSelectorsTool extends AbstractPaginatedAgentTool {
   }
 
   @Override
-  public ToolSpecification getSpecification() {
-    return ToolSpecification.builder()
+  public ToolSpecificationBuilder getSpecification() {
+    return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
-            .description("Lee contenido de múltiples archivos mediante rutas exactas o patrones glob (ej: 'src/**/*.java').\n" +
-                    "\n" +
-                    getShortPaginationInstruction())
-            .addParameter("selectors", JsonSchemaProperty.ARRAY,
-                    JsonSchemaProperty.description("Lista de rutas o patrones glob para seleccionar archivos."))
-            .build();
+            .description("Lee contenido de múltiples archivos mediante rutas exactas o patrones glob (ej: 'src/**/*.java').\n"
+                    + "\n"
+                    + getShortPaginationInstruction())
+            .addStringParameter("selectors", "Lista de rutas o patrones glob para seleccionar archivos.");
   }
 
   @Override
@@ -198,8 +195,8 @@ public class FileReadSelectorsTool extends AbstractPaginatedAgentTool {
         final PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + selector);
         final Path finalRootPath = rootPath;
 
-        Files.walkFileTree(rootPath, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, 
-          new SimpleFileVisitor<Path>() {
+        Files.walkFileTree(rootPath, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
+                new SimpleFileVisitor<Path>() {
 
           private boolean shouldSkipDirectory(Path dir) {
             String name = dir.getFileName() == null ? "" : dir.getFileName().toString();
@@ -255,6 +252,7 @@ public class FileReadSelectorsTool extends AbstractPaginatedAgentTool {
   }
 
   private static class ReadArgs {
+
     List<String> selectors;
   }
 }
