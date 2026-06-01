@@ -38,6 +38,7 @@ public class ListSkillsTool extends AbstractAgentTool {
                     + "un procedimiento paso a paso, un despliegue o una refactorización de código. "
                     + "Esta herramienta te devolverá una lista de nombres de habilidades y sus propósitos "
                     + "para que puedas elegir cuál cargar mediante 'load_skill'.");
+    // TODO: Tal vez estaria bien implementar un parametro de filtro por similitud semantica sobre los indices y solo devolver los que cumplan cierto grado similitud
   }
 
   @Override
