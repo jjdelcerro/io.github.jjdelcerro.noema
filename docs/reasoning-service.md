@@ -121,7 +121,19 @@ El método `start()` ejecuta una secuencia ordenada de operaciones:
 
 1. **Instalación de recursos**. Copia al espacio de trabajo del agente los archivos necesarios para su funcionamiento: el prompt de sistema base (`reasoning-system.md`), los módulos de identidad (`core`), los índices de referencia del entorno (`environ`) y la lista de habilidades (`skills`). Estos recursos se almacenan en `var/config/prompts/` y `var/identity/`, y son la materia prima con la que se construirá la personalidad del agente.
 
-2. **Registro de acciones**. Añade al sistema de acciones del agente los comportamientos que permiten modificar la configuración del modelo en caliente (`CHANGE_REASONING_PROVIDER`, `CHANGE_REASONING_MODEL`) y forzar operaciones de mantenimiento (`COMPACT_REASONING`, `REFRESH_REASONING_TOOLS`). Esto permite que el propio agente (o un usuario avanzado) pueda, por ejemplo, cambiar de proveedor de IA sin necesidad de reiniciar.
+2. **2. Registro de acciones.**  
+   Añade al sistema de acciones del agente los comportamientos que permiten:
+
+   - Modificar la configuración del modelo en caliente:  
+     - `CHANGE_REASONING_PROVIDER` (cuando se cambia la URL o la API key).  
+     - `CHANGE_REASONING_MODEL` (cuando se cambia el identificador del modelo).
+
+   - Forzar operaciones de mantenimiento sobre la sesión activa:  
+     - `COMPACT_REASONING_SESSION` – compacta aproximadamente el 50% más antiguo del historial de la sesión.  
+     - `COMPACT_REASONING_FULL_SESSION` – compacta **todo** el historial consolidado (desde el turno más antiguo hasta el más reciente).  
+     - `REFRESH_REASONING_TOOLS` – recarga el estado de activación de las herramientas desde la configuración, permitiendo habilitar o deshabilitar capacidades sin reiniciar el agente.
+
+   Esto permite que el propio agente (o un usuario avanzado) pueda, por ejemplo, cambiar de proveedor de IA, forzar una compactación parcial o total del historial, o actualizar el catálogo de herramientas activas, todo ello sin necesidad de reiniciar el agente.
 
 3. **Sincronización de herramientas**. Invoca a `refresh_available_tools()` para que el estado de activación de cada herramienta (definido en la configuración del usuario) se refleje en el mapa interno. Las herramientas que no aparecen en la configuración conservan su estado por defecto (definido por la propia herramienta al ser registrada).
 
@@ -178,12 +190,13 @@ La estructura simplificada del bucle es la siguiente:
 3. Persistir el turno de observación (el estímulo que acaba de llegar).
 4. Entrar en un bucle interno que se repetirá hasta que el turno actual se considere "terminado".
 5. Construir el contexto completo (prompt de sistema, checkpoint histórico, mensajes de la sesión).
-6. Consultar al modelo de lenguaje, proporcionándole la lista de herramientas activas.
-7. Evaluar la respuesta del modelo:
+6. Optimizar el contexto (recorte de resultados largos y anotaciones pendientes).
+7. Consultar al modelo de lenguaje, proporcionándole la lista de herramientas activas.
+8. Evaluar la respuesta del modelo:
    - Si solicita ejecutar herramientas: ejecutarlas (con confirmación humana si es necesario), persistir los resultados, añadirlos a la sesión y continuar el bucle interno.
    - Si responde con texto: mostrarlo en consola, persistir el turno final, y salir del bucle interno.
-8. Al salir del bucle interno, verificar si la sesión ha alcanzado el umbral de compactación. Si es así, ejecutar la compactación.
-9. Volver al paso 1.
+9. Al salir del bucle interno, verificar si la sesión ha alcanzado el umbral de compactación. Si es así, ejecutar la compactación.
+10. Volver al paso 1.
 
 ### 4.2. El punto de entrada: la espera de eventos
 
@@ -240,6 +253,26 @@ Se invoca a `session.getContextMessages()`, que devuelve una lista de mensajes l
 - Todos los mensajes acumulados en la sesión activa (incluyendo el evento que desencadenó el turno, las interacciones previas, y los resultados de herramientas ejecutadas en iteraciones anteriores del mismo turno).
 
 Además, si ha pasado más de una hora desde la última interacción, el método `getContextMessages()` inyecta un mensaje sintético de sensor de tiempo, informando al modelo del lapso transcurrido. Este es el mecanismo que dota al agente de percepción temporal pasiva.
+
+**Preparación y optimización del contexto**
+
+Una vez construida la lista completa de mensajes que se enviará al modelo (`getContextMessages()`), el servicio aplica una serie de transformaciones destinadas a **optimizar el uso de la ventana de contexto** y **guiar al modelo hacia prácticas que preserven información relevante**. Estas transformaciones se ejecutan antes de la consulta al LLM y son las siguientes:
+
+a. **Recorte (podado) de resultados de herramientas excesivamente largos**  
+   El servicio recorre los mensajes del historial identificando aquellos que son resultados de herramientas (`ToolExecutionResultMessage`). Si el contenido textual de un resultado supera un umbral de tamaño (por defecto, 1 KB), se aplica un recorte:
+
+   - Se elimina el cuerpo del mensaje, conservando únicamente la cabecera con metadatos (incluyendo un campo `CONTENT_TRIMMED: true` según la política definida por cada herramienta).
+   - Esto evita que resultados muy extensos, como la salida de un comando `shell_execute` o el contenido de un archivo voluminoso,  saturen el contexto, especialmente cuando ya han sido procesados en turnos anteriores.
+
+b. **Sugerencia de anotación para recursos pendientes**  
+   Tras el recorte, el servicio analiza los resultados de herramientas que aún permanecen en el contexto y detecta aquellos que corresponden a recursos paginados (identificados por un `resource_id`). Para cada recurso que ha sido **leído** (a través de herramientas como `file_read`, `web_get_content` o `shell_execute`) pero que **aún no ha sido anotado** mediante la herramienta `annotate_observation`, se genera un recordatorio.
+
+   Este recordatorio se inyecta en el contexto como un evento simulado (una llamada a `pool_event` seguida de un mensaje de resultado) que indica al modelo:
+
+   - Qué recursos están pendientes de anotación.
+   - Que debe utilizar `annotate_observation` con el `resource_id` correspondiente para extraer y consolidar la información relevante antes de que esos resultados desaparezcan del contexto por compactación o por recortes futuros.
+
+De esta forma, el servicio no solo reduce el ruido, sino que **guía al modelo para que preserve activamente el conocimiento valioso** en su memoria episódica, a través de las anotaciones que luego formarán parte de los puntos de guardado.
 
 **Consulta al modelo**
 
@@ -432,6 +465,9 @@ Si se proporciona un `systemPrompt` (que normalmente es el resultado de `getBase
 
 Si existe un `activeCheckPoint` (es decir, la memoria consolidada de conversaciones anteriores), se añade un `SystemMessage` que contiene su resumen. Este resumen se presenta como un bloque de texto que comienza con "--- INICIO DEL RELATO ---" y termina con "--- FIN DEL RELATO ---", dejando claro al modelo que se trata de información consolidada del pasado, no de la conversación inmediata.
 
+> **Importante**: Los puntos de guardado no se concatenan. Cada nuevo checkpoint reemplaza al anterior en el contexto activo del agente. El prompt del sistema solo incluye el checkpoint más reciente, que ya contiene la esencia consolidada de toda la conversación previa. Los checkpoints antiguos se conservan en disco para trazabilidad, pero no se inyectan en el contexto.
+
+
 **Mensajes de la sesión**
 
 A continuación se añaden todos los mensajes almacenados en la lista `messages`. Estos representan el historial inmediato, desde el último punto de compactación hasta el momento actual.
@@ -464,6 +500,11 @@ Elimina de la sesión todos los mensajes comprendidos entre `mark1` y `mark2` (i
 
 Esta operación es atómica desde la perspectiva de la sesión: una vez ejecutada, los mensajes compactados desaparecen y no volverán a formar parte del contexto.
 
+**`getNewestMark()`**
+
+Devuelve una `SessionMark` correspondiente al **mensaje consolidado más reciente** de la sesión (el de mayor índice que tiene un `turnId` asociado). Esta marca se utiliza exclusivamente en la acción de depuración `COMPACT_REASONING_FULL_SESSION`, que fuerza una compactación **total** de todo el historial consolidado, desde el mensaje más antiguo (`getOldestMark()`) hasta el más reciente (`getNewestMark()`). A diferencia de `getCompactMark()`, que selecciona aproximadamente la mitad de la sesión para una compactación incremental, `getNewestMark()` abarca el bloque completo, permitiendo al usuario (o al desarrollador) consolidar toda la conversación en un único punto de guardado, por ejemplo, antes de reiniciar el agente o para liberar memoria de trabajo por completo.
+
+
 ### 6.5. Umbral de compactación
 
 La decisión de cuándo compactar se basa en `needCompaction()`. Este método:
@@ -492,13 +533,85 @@ La `Session` no es un componente público del agente; es interna al `ReasoningSe
 
 En resumen, la `Session` es el puente entre la inmediatez de la conversación y la persistencia duradera. Su diseño permite mantener en memoria solo lo necesario para el siguiente turno, compactar el pasado cuando se acumula demasiado, y recuperar el estado exacto tras un reinicio, todo ello sin que el modelo de lenguaje tenga que gestionar explícitamente los límites de su propia ventana de contexto.
 
-## 7. Compactación de memoria
+
+## 7. `SourceOfTruth`: el repositorio permanente
+
+Si `Session` es la memoria de trabajo del agente, `SourceOfTruth` es su **archivo histórico inmutable**. Este componente centraliza toda la persistencia duradera: los turnos de conversación, los puntos de control (checkpoints) y los embeddings vectoriales asociados. Su implementación se apoya en una base de datos H2 embebida y en el sistema de archivos para el contenido textual extenso.
+
+### 7.1 Tablas y política de almacenamiento
+
+La base de datos `memory.mv.db` (ubicada en `var/lib/`) contiene dos tablas principales:
+
+- **`turnos`**: registra cada interacción atómica (mensajes de usuario, respuestas del modelo, ejecuciones de herramientas). Sus columnas más relevantes son:
+  - `id`: entero autoincremental.
+  - `timestamp`: momento del evento.
+  - `contenttype`: tipo de turno (`chat`, `tool_execution`, `tool_execution_summarized`, `lookup_turn`).
+  - `text_user`, `text_model_thinking`, `text_model`: los textos intercambiados.
+  - `tool_call`, `tool_result`: JSON de la llamada a herramienta y su resultado.
+  - `embedding_blob`: representación binaria del embedding semántico (BLOB).
+
+  Una política importante es el **truncado de resultados largos**: si `tool_result` supera los 2 KB, se reemplaza por un objeto JSON con metadatos (`"original_size_chars": ...`). Esto evita que la base de datos almacene textos masivos que rara vez se recuperan completos.
+
+- **`checkpoints`**: almacena únicamente los metadatos de los puntos de guardado (`id`, `cp_first`, `cp_last`, `timestamp`). El contenido textual (resumen + relato) se guarda en archivos `.md` independientes dentro de `var/lib/checkpoints/`. Este diseño híbrido mantiene la base de datos ligera mientras el contenido narrativo sigue siendo fácilmente inspeccionable.
+
+### 7.2 Gestión de IDs y contadores
+
+Tanto los turnos como los checkpoints utilizan un `Counter` que se inicializa consultando `SELECT MAX(id)` de la tabla correspondiente. Así se garantiza que, incluso si la base de datos ha sido manipulada externamente, los nuevos identificadores sigan la secuencia correcta. El método `get()` del contador es `synchronized` y simplemente incrementa el valor en memoria, lo que es suficiente para una aplicación de un solo proceso.
+
+### 7.3 Persistencia de embeddings
+
+Los vectores de embedding (generados por `EmbeddingsService`) se serializan a `byte[]` mediante `toBytes()` y se almacenan en la columna `embedding_blob`. Durante la recuperación, se deserializan con `fromBytes()`. Este proceso es transparente para el resto del sistema.
+
+### 7.4 Búsqueda semántica en el historial
+
+El método `getTurnsByText(String query, int maxResults)` implementa la búsqueda por similitud que utiliza la herramienta `search_full_history`. Dado que H2 no dispone de índices vectoriales nativos, la estrategia es **escaneo completo más ranking en cliente**:
+
+1. Se vectoriza la consulta mediante `EmbeddingsService`.
+2. Se recorren todos los turnos que tienen `embedding_blob` no nulo.
+3. Para cada uno, se calcula la similitud coseno y se mantienen los `maxResults` mejores mediante `EmbeddingFilter` (un min‑heap).
+4. Se devuelven los turnos ordenados de mayor a menor similitud.
+
+Para volúmenes moderados de turnos (miles) el rendimiento es aceptable, pero para conversaciones extremadamente largas (decenas de miles) puede ser un cuello de botella. El código incluye comentarios sobre la posibilidad de migrar a PostgreSQL con `pgvector` en el futuro.
+
+### 7.5 CSV de depuración
+
+Además de la base de datos, cada turno se vuelca en el archivo `turns.csv` dentro de `var/lib/`. Este CSV (con cabecera y escapado de comillas) no es utilizado por la lógica del agente, pero resulta muy útil para depurar el contenido exacto de la conversación o para alimentar herramientas externas de análisis.
+
+### 7.6 Creación y guardado de checkpoints
+
+Cuando `MemoryService` genera un nuevo punto de guardado, `SourceOfTruth`:
+
+- Asigna un nuevo ID (mediante el contador de checkpoints).
+- Inserta los metadatos en la tabla `checkpoints`.
+- Invoca a `CheckPointImpl.saveTextToDisk()` para escribir el contenido textual (resumen + viaje) en un archivo `.md` con nombre `checkpoint-{id}-{first}-{last}.md`.
+
+La lectura posterior del contenido se realiza bajo demanda (lazy loading), evitando cargar en memoria todos los checkpoints al arrancar el agente.
+
+### 7.8 Integración con el bucle de razonamiento
+
+El `ReasoningService` utiliza `SourceOfTruth` en tres momentos críticos:
+
+1. **Persistencia de cada interacción**: tras recibir un mensaje de usuario o ejecutar una herramienta, se crea un `Turn` y se añade al repositorio.
+2. **Recuperación para compactación**: al compactar, se solicitan los turnos comprendidos entre dos marcas (`getTurnsByIds`).
+3. **Obtención del último checkpoint**: durante el arranque y tras cada compactación, se recupera el checkpoint más reciente para inyectarlo en el contexto.
+
+En ningún caso `SourceOfTruth` modifica turnos ya escritos; la inmutabilidad es una propiedad fundamental del historial.
+
+### 7.9 Limitaciones conocidas
+
+- **Sin índices vectoriales nativos**: el escaneo completo puede volverse lento a gran escala.
+- **Truncado irreversible de resultados largos**: si una herramienta devuelve un texto de 2 MB, solo se conservan los metadatos; el contenido original se pierde (aunque estuvo disponible en el contexto del LLM durante el turno activo). Esto es deliberado para ahorrar espacio.
+- **La base H2 no es distribuida**: para entornos con múltiples instancias del agente no funcionaría; Noema está diseñado para un solo proceso.
+
+A pesar de estas limitaciones, `SourceOfTruth` cumple su cometido de forma robusta y transparente, siendo uno de los pilares que permiten la **continuidad indefinida** de la conversación.
+
+## 8. Compactación de memoria
 
 La compactación es el mecanismo mediante el cual el agente traslada información de la memoria de trabajo (la sesión activa) a la memoria a largo plazo (los puntos de control). Responde a una limitación fundamental de los modelos de lenguaje actuales: su ventana de contexto es finita. Por muy grande que sea (y las ventanas de millones de tokens ya existen), siempre habrá un límite. La compactación no intenta eliminar ese límite, sino gestionarlo de forma inteligente, preservando lo esencial y descartando lo redundante.
 
 En Noema, la compactación es un proceso colaborativo entre el `ReasoningService`, que detecta cuándo es necesaria y proporciona los datos de entrada, y el `MemoryService`, que realiza la transformación narrativa. Esta separación de responsabilidades permite que la lógica de compactación pueda evolucionar independientemente del bucle principal.
 
-### 7.1. Cuándo se dispara la compactación
+### 8.1. Cuándo se dispara la compactación
 
 La compactación no ocurre en un momento arbitrario. Se dispara al final de cada turno, después de que el modelo haya entregado una respuesta textual y se haya cerrado la interacción. En ese punto, el `eventDispatcher` evalúa `session.needCompaction()`.
 
@@ -506,7 +619,7 @@ El criterio actual es simple: la sesión necesita compactación cuando el númer
 
 La elección de un umbral basado en número de turnos (y no en tokens estimados) es una simplificación deliberada. En la práctica, funciona razonablemente bien para la mayoría de las conversaciones, pero tiene limitaciones conocidas: si un turno incluye una herramienta que devuelve grandes volúmenes de texto (por ejemplo, el contenido de un archivo extenso), el contexto puede saturarse antes de alcanzar el umbral. Una mejora futura podría combinar ambos criterios.
 
-### 7.2. El proceso de compactación
+### 8.2. El proceso de compactación
 
 Cuando se cumple la condición, el `ReasoningService` invoca a `performCompaction()`. Este método ejecuta una secuencia de operaciones cuidadosamente ordenada:
 
@@ -546,7 +659,9 @@ Con el nuevo punto de control ya persistido, se invoca a `session.remove(oldestM
 
 Finalmente, `activeCheckPoint` se actualiza al nuevo punto de control. En la siguiente construcción de contexto, `getContextMessages()` incluirá este resumen en lugar del anterior.
 
-### 7.3. El papel de `MemoryService`
+De esta forma, el checkpoint anterior queda reemplazado en el contexto activo; los checkpoints antiguos se conservan en disco solo con fines de trazabilidad, pero nunca se envían al modelo
+
+### 8.3. El papel de `MemoryService`
 
 El `ReasoningService` no conoce los detalles de cómo se genera el punto de control. Esta separación es deliberada: permite que la estrategia de compactación pueda modificarse sin afectar al orquestador principal.
 
@@ -556,7 +671,7 @@ El `ReasoningService` no conoce los detalles de cómo se genera el punto de cont
 CheckPoint compact(CheckPoint previous, List<Turn> turns)
 ```
 
-### 7.4. Implicaciones para el modelo
+### 8.4. Implicaciones para el modelo
 
 Desde la perspectiva del modelo de lenguaje, la compactación es invisible. Cuando se construye el contexto, el punto de control aparece como un bloque de texto con el formato:
 
@@ -568,13 +683,13 @@ Desde la perspectiva del modelo de lenguaje, la compactación es invisible. Cuan
 
 El modelo recibe esta información como un mensaje de sistema, junto con los mensajes de la sesión activa. No sabe que el resumen es el resultado de una compactación; simplemente lo trata como contexto histórico. Esto mantiene la simplicidad del prompt y evita que el modelo tenga que adaptarse a un formato especial.
 
-## 8. Percepción temporal pasiva
+## 9. Percepción temporal pasiva
 
 El agente no solo reacciona a estímulos explícitos, mensajes del usuario, notificaciones, alarmas, sino que también es consciente del paso del tiempo. Esta percepción temporal no depende de un sensor activo que emita eventos periódicos; es un mecanismo pasivo que se activa cuando el agente va a construir el contexto para el modelo, justo antes de cada consulta al LLM.
 
 Su objetivo es simple pero potente: si ha transcurrido un lapso significativo desde la última interacción, el agente informa al modelo de esa circunstancia. De esta forma, cuando el usuario retoma una conversación que había quedado suspendida horas o días atrás, el modelo puede contextualizar su respuesta, saludar adecuadamente, o retomar el hilo con la conciencia de que ha pasado tiempo.
 
-### 8.1. El mecanismo de inyección
+### 9.1. El mecanismo de inyección
 
 La percepción temporal se materializa dentro del método `getContextMessages()` de `Session`. Durante la construcción del contexto que se enviará al modelo, el método realiza las siguientes comprobaciones:
 
@@ -590,7 +705,7 @@ La percepción temporal se materializa dentro del método `getContextMessages()`
 
 Una vez añadidos estos mensajes, el contexto que recibe el modelo incluye la información temporal como si el propio agente hubiera consultado sus sensores y hubiera obtenido esa lectura.
 
-### 8.2. Por qué es pasiva
+### 9.2. Por qué es pasiva
 
 El término "pasiva" distingue este mecanismo de un sensor activo que emitiría eventos periódicos independientemente de la actividad del agente. Un enfoque activo requeriría:
 
@@ -600,7 +715,7 @@ El término "pasiva" distingue este mecanismo de un sensor activo que emitiría 
 
 El enfoque pasivo evita toda esta complejidad. No hay hilos adicionales, no hay colas de eventos saturándose con ticks de reloj, no hay riesgo de que el modelo reciba decenas de notificaciones de tiempo mientras el usuario no está interactuando. La percepción temporal solo ocurre cuando el agente va a responder, y solo si el usuario ha estado ausente.
 
-### 8.3. El formato del mensaje
+### 9.3. El formato del mensaje
 
 El texto inyectado es deliberadamente simple y directo: "Ha pasado X desde la última interacción con el usuario". No se añade información adicional sobre la hora actual, la fecha, o cualquier otro metadato temporal que el modelo podría deducir de su propio conocimiento del mundo (o de otras herramientas como `get_current_time` si las tuviera activas).
 
@@ -609,13 +724,13 @@ La elección del formato busca dos cosas:
 - **Minimizar tokens**: el mensaje añade muy poco overhead al contexto.
 - **Dejar la interpretación al modelo**: es el LLM quien decide cómo reaccionar ante esa información. Puede optar por saludar, por retomar un tema anterior, por preguntar si el usuario ha tenido un buen descanso, o simplemente ignorarlo si no es relevante.
 
-### 8.4. El umbral de una hora
+### 9.4. El umbral de una hora
 
 La elección de una hora como umbral es empírica. Es suficientemente larga como para no activarse en pausas breves dentro de una conversación fluida, pero suficientemente corta como para que el modelo pueda detectar ausencias significativas.
 
 El umbral no es actualmente configurable, aunque podría serlo en el futuro si se identifican casos de uso que requieran una sensibilidad temporal diferente (por ejemplo, un agente de monitorización que necesita ser consciente de lapsos de minutos, o un asistente personal que solo necesita marcar ausencias de días).
 
-### 8.5. Relación con el sensor de reloj del sistema
+### 9.5. Relación con el sensor de reloj del sistema
 
 Además de este mecanismo pasivo, el agente dispone de un sensor activo (`SYSTEMCLOCK_SENSOR_NAME`) que puede inyectar eventos de tiempo cuando se cumplen condiciones específicas (por ejemplo, una alarma programada). La diferencia fundamental es:
 
@@ -624,19 +739,19 @@ Además de este mecanismo pasivo, el agente dispone de un sensor activo (`SYSTEM
 
 Ambos mecanismos coexisten y se complementan. El primero da al agente capacidad de acción autónoma en momentos concretos; el segundo le da conciencia situacional sobre el contexto temporal de la conversación.
 
-### 8.6. Implicaciones para la experiencia de usuario
+### 9.6. Implicaciones para la experiencia de usuario
 
 Desde la perspectiva del usuario, este mecanismo contribuye a la sensación de que el agente "está presente" incluso cuando no se le habla. Si se retoma una conversación horas después, el agente puede saludar con naturalidad, retomar el hilo, o incluso comentar el tiempo transcurrido sin que el usuario tenga que recordarle dónde se quedaron.
 
 Es un pequeño detalle, pero refuerza la ilusión de continuidad y consciencia que caracteriza a un agente autónomo frente a un simple procesador de comandos. El usuario no necesita decir "sigo donde estábamos ayer"; el agente ya lo sabe porque ha percibido el paso del tiempo.
 
-## 9. Seguridad y control de acceso
+## 10. Seguridad y control de acceso
 
 El agente Noema tiene la capacidad de ejecutar comandos en el sistema, modificar archivos y acceder a recursos externos. Estas capacidades son necesarias para que sea útil, pero también representan riesgos potenciales. El sistema de seguridad está diseñado para equilibrar dos objetivos: dar al agente suficiente autonomía para realizar tareas complejas, y mantener al usuario en control de las operaciones que podrían tener efectos destructivos o invasivos.
 
 La seguridad se implementa en dos niveles: un control de acceso estructural que define qué está permitido en cada contexto, y un mecanismo de confirmación humana que requiere autorización explícita para operaciones sensibles.
 
-### 9.1. `AgentAccessControl`: la política de permisos
+### 10.1. `AgentAccessControl`: la política de permisos
 
 `AgentAccessControl` es el componente que define qué recursos puede tocar el agente y en qué condiciones. No es parte del `ReasoningService`, sino un servicio independiente que este consulta antes de ejecutar cualquier herramienta.
 
@@ -652,7 +767,7 @@ La configuración de estas listas se almacena en `settings.json` y puede ser mod
 
 Además del control de rutas, `AgentAccessControl` puede restringir herramientas específicas en función del contexto, aunque esta capacidad está menos desarrollada en la implementación actual.
 
-### 9.2. El modo de las herramientas
+### 10.2. El modo de las herramientas
 
 Cada herramienta implementa el método `getMode()`, que devuelve uno de tres valores:
 
@@ -662,7 +777,7 @@ Cada herramienta implementa el método `getMode()`, que devuelve uno de tres val
 
 Esta clasificación es declarativa: es el desarrollador de la herramienta quien asigna el modo basándose en lo que la herramienta hace. Un error en esta clasificación podría llevar a que una herramienta peligrosa se ejecute sin confirmación, por lo que la revisión de los modos es parte del control de calidad del código.
 
-### 9.3. Confirmación humana
+### 10.3. Confirmación humana
 
 Cuando el `eventDispatcher` recibe una solicitud de ejecución de herramienta, y esa herramienta tiene un modo distinto de `MODE_READ`, se activa el mecanismo de confirmación:
 
@@ -676,7 +791,7 @@ Cuando el `eventDispatcher` recibe una solicitud de ejecución de herramienta, y
 
 La confirmación no es un simple "sí/no". El mensaje incluye los argumentos exactos que la herramienta va a utilizar, lo que permite al usuario evaluar el riesgo. Por ejemplo, si la herramienta `file_write` va a sobrescribir un archivo importante, el usuario puede ver la ruta y decidir si lo permite.
 
-### 9.4. La abstracción `AgentConsole`
+### 10.4. La abstracción `AgentConsole`
 
 La confirmación humana depende de `AgentConsole`, una interfaz que desacopla al `ReasoningService` del mecanismo concreto de interacción con el usuario. `AgentConsole` define métodos para:
 
@@ -692,7 +807,7 @@ Las implementaciones de `AgentConsole` pueden ser muy diferentes:
 
 Esta abstracción es fundamental: el `ReasoningService` no necesita saber si está ejecutándose en un entorno gráfico, en una terminal o sin interfaz. Simplemente llama a `console.confirm()` y la implementación concreta resuelve cómo interactuar con el humano.
 
-### 9.5. Seguridad en las operaciones de archivo
+### 10.5. Seguridad en las operaciones de archivo
 
 Además de los mecanismos generales, las herramientas de manipulación de archivos incorporan capas adicionales de seguridad:
 
@@ -706,7 +821,7 @@ Además de los mecanismos generales, las herramientas de manipulación de archiv
 
 **Prohibición de escritura en áreas críticas**: ciertas rutas están bloqueadas por completo, independientemente de las listas de permitidas. Por ejemplo, las carpetas de configuración del agente (`var/config`, `var/identity`) no pueden ser modificadas por herramientas de escritura para evitar que el agente altere su propia personalidad sin supervisión.
 
-### 9.6. Ejecución de comandos: el entorno restringido
+### 10.6. Ejecución de comandos: el entorno restringido
 
 La herramienta `shell_execute` es particularmente sensible porque permite ejecutar cualquier comando en el sistema operativo. Para mitigar riesgos, incorpora varias protecciones:
 
@@ -715,7 +830,7 @@ La herramienta `shell_execute` es particularmente sensible porque permite ejecut
 - **Captura de salida**: la salida estándar y de error se capturan en archivos temporales, evitando que el comando pueda interactuar directamente con el terminal del usuario.
 - **Timeout configurable**: los comandos tienen un límite de tiempo de ejecución para evitar que un proceso colgado bloquee al agente.
 
-### 9.7. Filosofía de seguridad
+### 10.7. Filosofía de seguridad
 
 El enfoque de seguridad de Noema se puede resumir en unos pocos principios:
 
@@ -727,11 +842,11 @@ El enfoque de seguridad de Noema se puede resumir en unos pocos principios:
 Esta arquitectura reconoce una realidad fundamental: un agente autónomo, por muy bien diseñado que esté, puede cometer errores o ser manipulado. La seguridad no consiste en impedir que actúe, sino en asegurar que cada acción que pueda tener consecuencias irreversibles cuente con la supervisión humana. Es un equilibrio entre autonomía y control que, hasta ahora, ha demostrado ser práctico y efectivo.
 
 
-## 10. Puntos de diseño y limitaciones conocidas
+## 11. Puntos de diseño y limitaciones conocidas
 
 El `ReasoningService` de Noema es el resultado de un proceso iterativo de diseño, donde cada decisión ha buscado un equilibrio entre funcionalidad, simplicidad y robustez. Como en cualquier sistema complejo, algunas de esas decisiones introducen limitaciones que merecen ser documentadas explícitamente. Esta sección recoge tanto los principios que guiaron el diseño como las áreas donde se sabe que el sistema actual podría mejorar.
 
-### 10.1. El modelo de un solo hilo
+### 11.1. El modelo de un solo hilo
 
 **Decisión de diseño**: el `eventDispatcher` se ejecuta en un único hilo de plataforma, procesando los eventos de forma secuencial y bloqueante.
 
@@ -739,7 +854,7 @@ El `ReasoningService` de Noema es el resultado de un proceso iterativo de diseñ
 
 **Limitación**: la ejecución de herramientas que son lentas (por ejemplo, una búsqueda web que tarda varios segundos) bloquea todo el agente. Durante ese tiempo, no se atienden nuevos eventos. En la práctica, esto rara vez es un problema porque el agente no puede hacer dos cosas a la vez de todos modos, pero podría serlo si se implementaran herramientas de larga duración que requirieran procesamiento en paralelo.
 
-### 10.2. Compactación basada en número de turnos
+### 11.2. Compactación basada en número de turnos
 
 **Decisión de diseño**: el umbral de compactación se mide en número de turnos (40 por defecto), no en tokens estimados.
 
@@ -747,7 +862,7 @@ El `ReasoningService` de Noema es el resultado de un proceso iterativo de diseñ
 
 **Limitación**: conversaciones con herramientas que devuelven grandes volúmenes de texto (por ejemplo, leer un archivo de miles de líneas) pueden saturar la ventana de contexto mucho antes de alcanzar los 40 turnos. Por el contrario, conversaciones muy largas pero con mensajes muy cortos podrían acumular muchos más turnos antes de necesitar compactación. Una mejora futura sería combinar ambos criterios, compactando cuando se supere un umbral de turnos **o** un umbral de tokens estimados.
 
-### 10.3. La simulación de `pool_event` y el TODO pendiente
+### 11.3. La simulación de `pool_event` y el TODO pendiente
 
 **Decisión de diseño**: los eventos del entorno se inyectan en la sesión mediante un par de mensajes que simulan una llamada a la herramienta `pool_event` (un `AiMessage` seguido de un `ToolExecutionResultMessage`). Esto mantiene la coherencia del historial desde la perspectiva del modelo.
 
@@ -755,7 +870,7 @@ El `ReasoningService` de Noema es el resultado de un proceso iterativo de diseñ
 
 **Limitación conocida**: el código contiene un `TODO` que advierte de un posible fallo cuando el primer mensaje que se envía al LLM es una llamada simulada a `pool_event`. En ciertas condiciones (probablemente relacionadas con la inicialización del modelo o con la ausencia de un mensaje de usuario previo), esta llamada podría fallar. No se ha reproducido sistemáticamente, pero la advertencia permanece como una espina clavada que eventualmente habrá que investigar.
 
-### 10.4. Reintentos de herramientas no formalizadas
+### 11.4. Reintentos de herramientas no formalizadas
 
 **Decisión de diseño**: cuando el modelo devuelve `FinishReason.TOOL_EXECUTION` pero no hay solicitudes de herramientas en la respuesta, el bucle inyecta un mensaje de usuario que pide reintentar la llamada, con un límite de tres intentos.
 
@@ -763,7 +878,7 @@ El `ReasoningService` de Noema es el resultado de un proceso iterativo de diseñ
 
 **Limitación**: es una solución artesanal que no resuelve la causa raíz. Depende de que el modelo entienda el mensaje de reintento, lo que no siempre ocurre. Además, tres reintentos pueden ser insuficientes o excesivos según el modelo. Un enfoque más robusto requeriría un análisis más fino del formato de respuesta del modelo.
 
-### 10.5. El uso de hilos de plataforma en lugar de virtuales
+### 11.5. El uso de hilos de plataforma en lugar de virtuales
 
 **Decisión de diseño**: el `eventDispatcher` se ejecuta en un hilo de plataforma (`Thread.ofPlatform()`), no en un hilo virtual (`Thread.ofVirtual()`).
 
@@ -771,7 +886,7 @@ El `ReasoningService` de Noema es el resultado de un proceso iterativo de diseñ
 
 **Limitación**: no es una limitación funcional, sino una decisión pragmática. Si en el futuro se introdujeran múltiples hilos de procesamiento o herramientas que requirieran un gran número de hilos concurrentes, habría que reconsiderar esta elección.
 
-### 10.6. La dependencia de `AgentConsole` para confirmaciones
+### 11.6. La dependencia de `AgentConsole` para confirmaciones
 
 **Decisión de diseño**: la confirmación humana se realiza a través de `AgentConsole.confirm()`, una interfaz que puede tener diferentes implementaciones.
 
@@ -779,7 +894,7 @@ El `ReasoningService` de Noema es el resultado de un proceso iterativo de diseñ
 
 **Limitación**: la confirmación es bloqueante. Mientras el usuario decide, el agente no procesa nuevos eventos. Esto es correcto desde la perspectiva de seguridad, pero puede ser frustrante si el usuario tarda en responder. No hay un mecanismo de timeout que permita al agente continuar después de un tiempo de espera.
 
-### 10.7. El prompt de sistema se reconstruye en cada consulta
+### 11.7. El prompt de sistema se reconstruye en cada consulta
 
 **Decisión de diseño**: `getBaseSystemPrompt()` se invoca cada vez que se construye el contexto, aunque el resultado se cachea en `lastestSystemPrompt`.
 
@@ -787,7 +902,7 @@ El `ReasoningService` de Noema es el resultado de un proceso iterativo de diseñ
 
 **Limitación**: la reconstrucción tiene un costo, aunque es pequeño (concatenación de cadenas, lectura de archivos). 
 
-### 10.8. Ausencia de monitorización de tokens en tiempo real
+### 11.8. Ausencia de monitorización de tokens en tiempo real
 
 **Decisión de diseño**: el servicio estima el tamaño del contexto (`estimateMessagesTokenCount()`, `estimateToolsTokenCount()`) pero no utiliza esta información para decisiones en tiempo real (por ejemplo, para compactar antes de que el contexto exceda un límite).
 
@@ -795,7 +910,7 @@ El `ReasoningService` de Noema es el resultado de un proceso iterativo de diseñ
 
 **Limitación**: con modelos de ventana pequeña (por ejemplo, 8K tokens) o con herramientas que devuelven grandes cantidades de texto, esta estrategia puede fallar. Es una mejora pendiente para entornos más restrictivos.
 
-### 10.9. La persistencia de la sesión es por modificación, no por tiempo
+### 11.9. La persistencia de la sesión es por modificación, no por tiempo
 
 **Decisión de diseño**: la sesión se guarda en disco cada vez que se modifica (al añadir un mensaje, al consolidar un turno, al eliminar mensajes compactados).
 

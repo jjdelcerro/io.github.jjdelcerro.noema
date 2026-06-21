@@ -20,7 +20,7 @@ La arquitectura resuelve de manera brillante el problema de la persistencia a la
 
 El proyecto está construido sobre un ecosistema Java moderno, primando dependencias ligeras y embebibles:
 
-*   **Lenguaje:** Java 21 (aprovechando Virtual Threads / Platform Threads y records).
+*   **Lenguaje:** Java 25 (aprovechando Virtual Threads / Platform Threads y records).
 *   **Gestión de Dependencias y Build:** Maven (con `maven-shade-plugin` para generar un Fat JAR).
 *   **Orquestación LLM:** LangChain4j (Núcleo, integración con OpenAI/OpenRouter/Groq/Chutes y modelos de embeddings locales).
 *   **Persistencia y Búsqueda Vectorial:** H2 Database (embebida, estructurada para manejar metadatos, turnos y BLOBs de vectores con cálculo de distancia coseno en cliente).
