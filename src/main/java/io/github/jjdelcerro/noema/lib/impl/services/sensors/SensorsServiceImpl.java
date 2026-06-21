@@ -57,6 +57,10 @@ public class SensorsServiceImpl implements SensorsService {
   private static final String SYSTEMCLOCK_SENSOR_LABEL = "Reloj del Sistema";
   private static final String SYSTEMCLOCK_SENSOR_DESCRIPTION = "Sensor interno de paso del tiempo"; 
 
+  public static final String SYSTEMNOTIFICATION_SENSOR_NAME = "SYSTEMNOTIFICATION";
+  private static final String SYSTEMNOTIFICATION_SENSOR_LABEL = "Notificacion del sistema";
+  private static final String SYSTEMNOTIFICATION_SENSOR_DESCRIPTION = "Sensor interno que recoge las notificaciones del sistema"; 
+
   private final Map<String, SensorData> registeredSensors;
   private final BlockingQueue<SensorEvent> deliveryQueue;
   private final Map<String, ConsumableSensorEvent> stateMap;
@@ -94,6 +98,12 @@ public class SensorsServiceImpl implements SensorsService {
             SYSTEMCLOCK_SENSOR_LABEL,
             SensorNature.DISCRETE, 
             SYSTEMCLOCK_SENSOR_DESCRIPTION
+    );
+    SensorInformation sensorSystemNotification = this.createSensorInformation(
+            SYSTEMNOTIFICATION_SENSOR_NAME,
+            SYSTEMNOTIFICATION_SENSOR_LABEL,
+            SensorNature.DISCRETE, 
+            SYSTEMNOTIFICATION_SENSOR_DESCRIPTION
     );
     this.registerSensor(sensorSystemClock);
 

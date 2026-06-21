@@ -1,5 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl;
 
+import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import io.github.jjdelcerro.noema.lib.Agent;
 import org.apache.commons.collections4.map.LRUMap;
 import org.apache.commons.lang3.StringUtils;
@@ -20,259 +21,260 @@ import static io.github.jjdelcerro.noema.lib.AgentTool.TrimResultType.None;
 
 public abstract class AbstractPaginatedAgentTool extends AbstractAgentTool {
 
-  private static final String PREFIX_TMP = "tmp://";
-  private static final String PREFIX_CACHE = "cache://";
-  private static final String PREFIX_USER = "user://";
+    private static final String PREFIX_TMP = "tmp://";
+    private static final String PREFIX_CACHE = "cache://";
+    private static final String PREFIX_USER = "user://";
 
-  private static final int DEFAULT_MAX_LINES = 1000;
-  private static final int CACHE_SIZE = 30;
+    private static final int DEFAULT_MAX_LINES = 1000;
+    private static final int CACHE_SIZE = 30;
 
-  private final Map<String, FileMeta> lineCountCache;
+    private final Map<String, FileMeta> lineCountCache;
 
-  private record FileMeta(long lineCount, FileTime lastModifiedTime) {
+    private record FileMeta(long lineCount, FileTime lastModifiedTime) {
 
-  }
-
-  protected AbstractPaginatedAgentTool(Agent agent) {
-    super(agent);
-    this.lineCountCache = Collections.synchronizedMap(new LRUMap<>(this.getCacheSize()));
-  }
-
-  protected int getDefaultMaxLines() {
-    return DEFAULT_MAX_LINES;
-  }
-
-  private int getCacheSize() {
-    return CACHE_SIZE;
-  }
-
-  protected String getIdFromPath(Path path) {
-    if (path == null || !path.isAbsolute()) {
-      return null;
     }
 
-    Path cacheFolder = agent.getPaths().getCacheFolder().toAbsolutePath().normalize();
-    Path tempFolder = agent.getPaths().getTempFolder().toAbsolutePath().normalize();
-    Path normalizedPath = path.toAbsolutePath().normalize();
-
-    if (normalizedPath.startsWith(cacheFolder)) {
-      Path relativePath = cacheFolder.relativize(normalizedPath);
-      if (!relativePath.normalize().startsWith("..")) {
-        return PREFIX_CACHE + relativePath.toString().replace("\\", "/");
-      }
-    } else if (normalizedPath.startsWith(tempFolder)) {
-      Path relativePath = tempFolder.relativize(normalizedPath);
-      if (!relativePath.normalize().startsWith("..")) {
-        return PREFIX_TMP + relativePath.toString().replace("\\", "/");
-      }
+    protected AbstractPaginatedAgentTool(Agent agent) {
+        super(agent);
+        this.lineCountCache = Collections.synchronizedMap(new LRUMap<>(this.getCacheSize()));
     }
 
-    return PREFIX_USER + normalizedPath.toString().replace("\\", "/");
-  }
-
-  protected Path getPathFromId(String id) {
-    if (StringUtils.isBlank(id)) {
-      return null;
+    protected int getDefaultMaxLines() {
+        return DEFAULT_MAX_LINES;
     }
 
-    if (id.startsWith(PREFIX_TMP)) {
-      String relativePath = id.substring(PREFIX_TMP.length());
-      Path tempFolder = agent.getPaths().getTempFolder().toAbsolutePath().normalize();
-      Path resolved = tempFolder.resolve(relativePath).normalize();
-      Path normalizedTemp = tempFolder.normalize();
-
-      if (!resolved.startsWith(normalizedTemp)) {
-        LOGGER.warn("Path traversal detected in tmp resource: {}", id);
-        return null;
-      }
-      return resolved;
+    private int getCacheSize() {
+        return CACHE_SIZE;
     }
 
-    if (id.startsWith(PREFIX_CACHE)) {
-      String relativePath = id.substring(PREFIX_CACHE.length());
-      Path cacheFolder = agent.getPaths().getCacheFolder().toAbsolutePath().normalize();
-      Path resolved = cacheFolder.resolve(relativePath).normalize();
-      Path normalizedCache = cacheFolder.normalize();
-
-      if (!resolved.startsWith(normalizedCache)) {
-        LOGGER.warn("Path traversal detected in cache resource: {}", id);
-        return null;
-      }
-      return resolved;
-    }
-
-    if (id.startsWith(PREFIX_USER)) {
-      String absolutePath = id.substring(PREFIX_USER.length());
-      try {
-        Path resolvedPath = Path.of(absolutePath);
-        Path validatedPath = agent.getAccessControl().resolvePathOrNull(resolvedPath.toString(), PATH_ACCESS_READ);
-        if (validatedPath != null) {
-          return validatedPath.toAbsolutePath().normalize();
+    protected String getIdFromPath(Path path) {
+        if (path == null || !path.isAbsolute()) {
+            return null;
         }
-        return null;
-      } catch (Exception e) {
-        LOGGER.warn("Invalid user path format: {}", id);
-        return null;
-      }
-    }
 
-    LOGGER.warn("Unknown resource ID prefix: {}", id);
-    return null;
-  }
+        Path cacheFolder = agent.getPaths().getCacheFolder().toAbsolutePath().normalize();
+        Path tempFolder = agent.getPaths().getTempFolder().toAbsolutePath().normalize();
+        Path normalizedPath = path.toAbsolutePath().normalize();
 
-  protected String servePaginatedResource(String resourceId) {
-    return servePaginatedResource(resourceId, 0, getDefaultMaxLines());
-  }
-
-  protected String servePaginatedResource(String resourceId, int offset, int limit) {
-    if (StringUtils.isBlank(resourceId)) {
-      return formatErrorResponse("Resource ID is null or empty");
-    }
-
-    Path filePath = getPathFromId(resourceId);
-    if (filePath == null) {
-      return formatErrorResponse("Invalid resource ID or resource not found: " + resourceId);
-    }
-
-    try {
-      if (!Files.exists(filePath) || !Files.isRegularFile(filePath)) {
-        if (resourceId.startsWith(PREFIX_TMP) || resourceId.startsWith(PREFIX_CACHE)) {
-          return formatErrorResponse("Resource expired or deleted. The temporary/cached resource '" + resourceId + "' no longer exists. You need to regenerate the original resource (e.g., re-execute the shell command, re-download the web content, or re-extract the document).");
-        } else {
-          return formatErrorResponse("File not found or is not accessible: " + filePath);
+        if (normalizedPath.startsWith(cacheFolder)) {
+            Path relativePath = cacheFolder.relativize(normalizedPath);
+            if (!relativePath.normalize().startsWith("..")) {
+                return PREFIX_CACHE + relativePath.toString().replace("\\", "/");
+            }
+        } else if (normalizedPath.startsWith(tempFolder)) {
+            Path relativePath = tempFolder.relativize(normalizedPath);
+            if (!relativePath.normalize().startsWith("..")) {
+                return PREFIX_TMP + relativePath.toString().replace("\\", "/");
+            }
         }
-      }
 
-      if (!Files.isReadable(filePath)) {
-        return formatErrorResponse("File is not readable: " + filePath);
-      }
-
-      long totalLines = getLineCountWithCache(filePath);
-
-      try (Stream<String> lines = Files.lines(filePath, StandardCharsets.UTF_8)) {
-        return executePaginatedRead(lines, resourceId, totalLines, offset, limit);
-      }
-    } catch (IOException e) {
-      LOGGER.warn("Error reading paginated resource: " + resourceId, e);
-      return formatErrorResponse("I/O error reading resource: " + e.getMessage());
-    } catch (Exception e) {
-      LOGGER.warn("Unexpected error reading paginated resource: " + resourceId, e);
-      return formatErrorResponse("Unexpected error: " + e.getMessage());
-    }
-  }
-
-  private String executePaginatedRead(Stream<String> lines, String resourceId, long totalLines, int theOffset, int theLimit) throws IOException {
-    int offset = theOffset > 0 ? theOffset : 0;
-    int limit = theLimit > 0 ? theLimit : getDefaultMaxLines();
-
-    if (totalLines == 0) {
-      return formatResponse(true, offset, limit, 0, null, null);
+        return PREFIX_USER + normalizedPath.toString().replace("\\", "/");
     }
 
-    if (offset >= totalLines) {
-      return formatErrorResponse("Offset (" + offset + ") out of range. Resource has " + totalLines + " lines.");
+    protected Path getPathFromId(String id) {
+        if (StringUtils.isBlank(id)) {
+            return null;
+        }
+
+        if (id.startsWith(PREFIX_TMP)) {
+            String relativePath = id.substring(PREFIX_TMP.length());
+            Path tempFolder = agent.getPaths().getTempFolder().toAbsolutePath().normalize();
+            Path resolved = tempFolder.resolve(relativePath).normalize();
+            Path normalizedTemp = tempFolder.normalize();
+
+            if (!resolved.startsWith(normalizedTemp)) {
+                LOGGER.warn("Path traversal detected in tmp resource: {}", id);
+                return null;
+            }
+            return resolved;
+        }
+
+        if (id.startsWith(PREFIX_CACHE)) {
+            String relativePath = id.substring(PREFIX_CACHE.length());
+            Path cacheFolder = agent.getPaths().getCacheFolder().toAbsolutePath().normalize();
+            Path resolved = cacheFolder.resolve(relativePath).normalize();
+            Path normalizedCache = cacheFolder.normalize();
+
+            if (!resolved.startsWith(normalizedCache)) {
+                LOGGER.warn("Path traversal detected in cache resource: {}", id);
+                return null;
+            }
+            return resolved;
+        }
+
+        if (id.startsWith(PREFIX_USER)) {
+            String absolutePath = id.substring(PREFIX_USER.length());
+            try {
+                Path resolvedPath = Path.of(absolutePath);
+                Path validatedPath = agent.getAccessControl().resolvePathOrNull(resolvedPath.toString(), PATH_ACCESS_READ);
+                if (validatedPath != null) {
+                    return validatedPath.toAbsolutePath().normalize();
+                }
+                return null;
+            } catch (Exception e) {
+                LOGGER.warn("Invalid user path format: {}", id);
+                return null;
+            }
+        }
+
+        LOGGER.warn("Unknown resource ID prefix: {}", id);
+        return null;
     }
 
-    String content;
-    int linesRead;
-    var chunk = lines.skip(offset)
-            .limit(limit)
-            .collect(Collectors.toList());
-    content = String.join("\n", chunk);
-    linesRead = chunk.size();
-
-    if (StringUtils.isBlank(content)) {
-      return formatResponse(true, offset, limit, totalLines, null, null);
+    protected String servePaginatedResource(String resourceId) {
+        return servePaginatedResource(resourceId, 0, getDefaultMaxLines());
     }
 
-    boolean isTruncated = (offset + linesRead) < totalLines;
-    String hint = null;
+    protected String servePaginatedResource(String resourceId, int offset, int limit) {
+        if (StringUtils.isBlank(resourceId)) {
+            return formatErrorResponse("Resource ID is null or empty");
+        }
 
-    if (isTruncated) {
-      int nextOffset = offset + linesRead;
-      hint = buildPaginationHint(resourceId, nextOffset, limit);
+        Path filePath = getPathFromId(resourceId);
+        if (filePath == null) {
+            return formatErrorResponse("Invalid resource ID or resource not found: " + resourceId);
+        }
+
+        try {
+            if (!Files.exists(filePath) || !Files.isRegularFile(filePath)) {
+                if (resourceId.startsWith(PREFIX_TMP) || resourceId.startsWith(PREFIX_CACHE)) {
+                    return formatErrorResponse("Resource expired or deleted. The temporary/cached resource '" + resourceId + "' no longer exists. You need to regenerate the original resource (e.g., re-execute the shell command, re-download the web content, or re-extract the document).");
+                } else {
+                    return formatErrorResponse("File not found or is not accessible: " + filePath);
+                }
+            }
+
+            if (!Files.isReadable(filePath)) {
+                return formatErrorResponse("File is not readable: " + filePath);
+            }
+
+            long totalLines = getLineCountWithCache(filePath);
+
+            try (Stream<String> lines = Files.lines(filePath, StandardCharsets.UTF_8)) {
+                return executePaginatedRead(lines, resourceId, totalLines, offset, limit);
+            }
+        } catch (IOException e) {
+            LOGGER.warn("Error reading paginated resource: " + resourceId, e);
+            return formatErrorResponse("I/O error reading resource: " + e.getMessage());
+        } catch (Exception e) {
+            LOGGER.warn("Unexpected error reading paginated resource: " + resourceId, e);
+            return formatErrorResponse("Unexpected error: " + e.getMessage());
+        }
     }
 
-    return formatResponse(false, offset, limit, totalLines, hint, content);
-  }
+    private String executePaginatedRead(Stream<String> lines, String resourceId, long totalLines, int theOffset, int theLimit) throws IOException {
+        int offset = theOffset > 0 ? theOffset : 0;
+        int limit = theLimit > 0 ? theLimit : getDefaultMaxLines();
 
-  private long getLineCountWithCache(Path filePath) throws IOException {
-    String absPath = filePath.toAbsolutePath().toString();
-    FileTime currentModifiedTime = Files.getLastModifiedTime(filePath);
+        if (totalLines == 0) {
+            return formatResponse(resourceId, true, offset, limit, 0, null, null);
+        }
 
-    FileMeta cached = lineCountCache.get(absPath);
+        if (offset >= totalLines) {
+            return formatErrorResponse("Offset (" + offset + ") out of range. Resource has " + totalLines + " lines.");
+        }
 
-    if (cached != null && cached.lastModifiedTime.equals(currentModifiedTime)) {
-      return cached.lineCount;
+        String content;
+        int linesRead;
+        var chunk = lines.skip(offset)
+                .limit(limit)
+                .collect(Collectors.toList());
+        content = String.join("\n", chunk);
+        linesRead = chunk.size();
+
+        if (StringUtils.isBlank(content)) {
+            return formatResponse(resourceId, true, offset, limit, totalLines, null, null);
+        }
+
+        boolean isTruncated = (offset + linesRead) < totalLines;
+        String hint = null;
+
+        if (isTruncated) {
+            int nextOffset = offset + linesRead;
+            hint = buildPaginationHint(resourceId, nextOffset, limit);
+        }
+
+        return formatResponse(resourceId, false, offset, limit, totalLines, hint, content);
     }
 
-    long count;
-    try (Stream<String> lines = Files.lines(filePath, StandardCharsets.UTF_8)) {
-      count = lines.count();
+    private long getLineCountWithCache(Path filePath) throws IOException {
+        String absPath = filePath.toAbsolutePath().toString();
+        FileTime currentModifiedTime = Files.getLastModifiedTime(filePath);
+
+        FileMeta cached = lineCountCache.get(absPath);
+
+        if (cached != null && cached.lastModifiedTime.equals(currentModifiedTime)) {
+            return cached.lineCount;
+        }
+
+        long count;
+        try (Stream<String> lines = Files.lines(filePath, StandardCharsets.UTF_8)) {
+            count = lines.count();
+        }
+
+        lineCountCache.put(absPath, new FileMeta(count, currentModifiedTime));
+        return count;
     }
 
-    lineCountCache.put(absPath, new FileMeta(count, currentModifiedTime));
-    return count;
-  }
+    private String formatResponse(String resourceId, boolean empty, int offset, int limit, long total, String hint, String content) {
+        StringBuilder sb = new StringBuilder();
 
-  private String formatResponse(boolean empty, int offset, int limit, long total, String hint, String content) {
-    StringBuilder sb = new StringBuilder();
+        sb.append("STATUS: OK\n");
+        sb.append("RESOURCE_ID: " + resourceId + "\n");
 
-    sb.append("STATUS: OK\n");
+        if (empty) {
+            sb.append("EMPTY: true\n");
+            sb.append("---\n");
+            return sb.toString();
+        }
 
-    if (empty) {
-      sb.append("EMPTY: true\n");
-      sb.append("---\n");
-      return sb.toString();
+        sb.append("EMPTY: false\n");
+
+        if (offset > 0 || (offset + limit) < total) {
+            long endLine = offset + (hint != null ? limit : total - offset) - 1;
+            if (endLine >= offset) {
+                sb.append("LINE_RANGE: ").append(offset).append("-").append(endLine).append("\n");
+            }
+            sb.append("TOTAL_LINES: ").append(total).append("\n");
+        }
+
+        if (hint != null) {
+            sb.append(hint).append("\n");
+        }
+
+        sb.append("---\n");
+
+        if (offset > 0 || (offset + limit) < total) {
+            sb.append("\n");
+        }
+
+        sb.append(content);
+        return sb.toString();
     }
 
-    sb.append("EMPTY: false\n");
-
-    if (offset > 0 || (offset + limit) < total) {
-      long endLine = offset + (hint != null ? limit : total - offset) - 1;
-      if (endLine >= offset) {
-        sb.append("LINE_RANGE: ").append(offset).append("-").append(endLine).append("\n");
-      }
-      sb.append("TOTAL_LINES: ").append(total).append("\n");
+    protected String formatErrorResponse(String error) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("STATUS: ERROR\n");
+        sb.append("ERROR: ").append(error).append("\n");
+        sb.append("---\n");
+        return sb.toString();
     }
 
-    if (hint != null) {
-      sb.append(hint).append("\n");
+    private String buildPaginationHint(String resourceId, int nextOffset, int limit) {
+        return "HINT: To read the next block, call 'read_paginated_resource' with args: {\"resource_id\": \"" + resourceId + "\", \"offset\": " + nextOffset + ", \"limit\": " + limit + "}";
     }
 
-    sb.append("---\n");
-
-    if (offset > 0 || (offset + limit) < total) {
-      sb.append("\n");
-    }
-
-    sb.append(content);
-    return sb.toString();
-  }
-
-  protected String formatErrorResponse(String error) {
-    StringBuilder sb = new StringBuilder();
-    sb.append("STATUS: ERROR\n");
-    sb.append("ERROR: ").append(error).append("\n");
-    sb.append("---\n");
-    return sb.toString();
-  }
-
-  private String buildPaginationHint(String resourceId, int nextOffset, int limit) {
-    return "HINT: To read the next block, call 'read_paginated_resource' with args: {\"resource_id\": \"" + resourceId + "\", \"offset\": " + nextOffset + ", \"limit\": " + limit + "}";
-  }
-
-  protected String getShortPaginationInstruction() {
-    return """
+    protected String getShortPaginationInstruction() {
+        return """
 **FORMATO DE SALIDA:**
     El resultado siempre consta de dos partes separadas estrictamente por el delimitador `---`:
     1. Cabecera, arriba de `---`): Metadatos del sistema. Si el contenido es demasiado largo, se truncará y aparecerá aquí un campo `HINT` con la llamada exacta a la herramienta para continuar leyendo.
     2. Contenido, debajo de `---`): El texto real del archivo o comando.
 """;
-  }
-  
-  protected String getPaginationSystemInstruction() {
-    return """
+    }
+
+    protected String getPaginationSystemInstruction() {
+        return """
 **PROTOCOLO DE RESPUESTA Y NAVEGACIÓN:**
 
 Esta herramienta utiliza un protocolo de respuesta estricto basado en cuatro formatos posibles. Identifica siempre el formato al inicio de la respuesta para saber cómo proceder:
@@ -318,37 +320,55 @@ EMPTY: [true|false]
     archivo de tu memoria a corto plazo para ahorrar contexto. Asume que ya leíste y procesaste este bloque 
     correctamente en un turno anterior, y si crees que lo necesitas vuelvelo a pedir.
 """;
-  }
-
-  private static final String CONTENT_TRIMMED_IN_THE_FOLLOWING_TURNS = "\nCONTENT_TRIMMED: IN THE FOLLOWING TURNS";
-  private static final String CONTENT_TRIMMED = "\nCONTENT_TRIMMED: true";
-  
-  @Override
-  public String trimResult(String result, AgentTool.TrimResultType trimResultType) {
-    if (result == null) {
-      return null;
     }
 
-    String separator = "\n---\n";
-    int separatorIndex = result.indexOf(separator);
+    private static final String CONTENT_TRIMMED_IN_THE_FOLLOWING_TURNS = "\nCONTENT_TRIMMED: IN THE FOLLOWING TURNS";
+    private static final String CONTENT_TRIMMED = "\nCONTENT_TRIMMED: true";
 
-    if (separatorIndex == -1) {
-      return super.trimResult(result, trimResultType);
-    }    
-    String header = result.substring(0, separatorIndex);    
-    String body = result.substring(separatorIndex);    
-    header = StringUtils.replace(header, CONTENT_TRIMMED_IN_THE_FOLLOWING_TURNS, "");
-    switch(trimResultType) {      
-      case Notify:
+    @Override
+    public String trimResult(String result, AgentTool.TrimResultType trimResultType) {
+        if (result == null) {
+            return null;
+        }
+
+        String separator = "\n---\n";
+        int separatorIndex = result.indexOf(separator);
+
+        if (separatorIndex == -1) {
+            return super.trimResult(result, trimResultType);
+        }
+        String header = result.substring(0, separatorIndex);
+        String body = result.substring(separatorIndex);
+        header = StringUtils.replace(header, CONTENT_TRIMMED_IN_THE_FOLLOWING_TURNS, "");
+        switch (trimResultType) {
+            case Notify:
 //        LOGGER.info("TRIM RESULTS OF "+this.getClass().getSimpleName()+ " IN THE FOLLOWING TURNS");
-        return header + CONTENT_TRIMMED_IN_THE_FOLLOWING_TURNS + separator + body;
-      case Trim:
+                return header + CONTENT_TRIMMED_IN_THE_FOLLOWING_TURNS + separator + body;
+            case Trim:
 //        LOGGER.info("TRIM RESULTS OF "+this.getClass().getSimpleName());
-        return header + CONTENT_TRIMMED + separator;
-      case None:
-      default:
+                return header + CONTENT_TRIMMED + separator;
+            case None:
+            default:
+                return null;
+        }
+    }
+
+    public String getResourceIdFromResultMessage(ToolExecutionResultMessage message) {
+        String text = message.text();
+        if (text == null) {
+            return null;
+        }
+        // La respuesta tiene formato "STATUS: ...\n...\n---\n...", buscar línea que empiece con "RESOURCE_ID:"
+        int separatorIndex = text.indexOf("\n---\n");
+        if (separatorIndex == -1) {
+            return null;
+        }
+        String header = text.substring(0, separatorIndex);
+        for (String line : header.split("\n")) {
+            if (line.startsWith("RESOURCE_ID:")) {
+                return line.substring("RESOURCE_ID:".length()).trim();
+            }
+        }
         return null;
     }
-  }
-
 }

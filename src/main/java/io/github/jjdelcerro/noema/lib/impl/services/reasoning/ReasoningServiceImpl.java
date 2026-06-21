@@ -61,12 +61,16 @@ import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_REASONING_MODEL;
 import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_REASONING_PROVIDER;
 import io.github.jjdelcerro.noema.lib.AgentTool.TrimResultType;
+import io.github.jjdelcerro.noema.lib.impl.AbstractPaginatedAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.DateUtils;
+import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.AnnotateObservationTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.ConsultEnvironTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.ListSkillsTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.LoadSkillTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.TavilyWebSearchTool;
 import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SYSTEMCLOCK_SENSOR_NAME;
+import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SYSTEMNOTIFICATION_SENSOR_NAME;
+import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_HIGH;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
 import java.io.IOException;
 import java.io.Writer;
@@ -76,6 +80,8 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.UUID;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
@@ -235,9 +241,9 @@ public class ReasoningServiceImpl implements ReasoningService {
 
     AgentSettingsCheckedList coreSettings = agent.getSettings().getPropertyAsCheckedList("reasoning/identity/core");
     List<Path> coreFiles = agent.getPaths().listAgentPath("var/identity/core");
-    Collections.sort(coreFiles);
 
     if (coreFiles != null && !coreFiles.isEmpty()) {
+      Collections.sort(coreFiles); // Nos aseguramos que s epresenten siempre en el mismo orden
       for (Path path : coreFiles) {
         String fileName = path.getFileName().toString();
         if (StringUtils.equalsIgnoreCase(fileName, "readme.md")) {
@@ -269,8 +275,9 @@ public class ReasoningServiceImpl implements ReasoningService {
     sb.append("No posees los detalles en este momento, pero si detectas que un tema es relevante, ");
     sb.append("DEBES usar la herramienta {CONSULTENVIRON} para recuperar la información completa antes de responder.\n\n");
 
-    Collection<Path> environFiles = agent.getPaths().listAgentPath("var/identity/environ");
-    if (environFiles != null) {
+    List<Path> environFiles = agent.getPaths().listAgentPath("var/identity/environ");
+    if (environFiles != null && !environFiles.isEmpty()) {
+      Collections.sort(environFiles); // Nos aseguramos que s epresenten siempre en el mismo orden
       for (Path path : environFiles) {
         String fileName = path.getFileName().toString();
         if (StringUtils.equalsIgnoreCase(fileName, "readme.md")) {
@@ -286,6 +293,8 @@ public class ReasoningServiceImpl implements ReasoningService {
         }
       }
     }
+    
+    // sb.append("**Momento actual de la conversación:** {NOW}\n"); // Ojo, penaliza la cache en la llamada al API
 
     // --- CAPA FINAL: Resolución de Placeholders ---
     String finalPrompt = sb.toString();
@@ -670,7 +679,7 @@ public class ReasoningServiceImpl implements ReasoningService {
         boolean turnFinished = false;
         while (!turnFinished && this.isRunning()) {
           List<ChatMessage> context = this.session.getContextMessages(this.activeCheckPoint, getBaseSystemPrompt());
-          this.contextTrimmer(context);
+          this.prepareContextForLLM(context);
 
           Response<AiMessage> response = model.generate(context, this.getToolSpecifications(), abort);
           AiMessage aiMessage = response.content();
@@ -765,7 +774,51 @@ public class ReasoningServiceImpl implements ReasoningService {
     return 1024;
   }
   
-  private void contextTrimmer(List<ChatMessage> context) {
+    private List<String> getResourcesPendingAnnotation(List<ChatMessage> messages) {
+        int total = messages.size();
+        int keep = getNumberOfMessagesToKeep(); // ej. 20
+        if (total < keep) {
+            return Collections.emptyList(); // no hay suficientes mensajes 
+        }
+        int riskStartIdx = total - keep;
+        int riskEndIdx = total - keep / 2; // exclusivo
+
+        Map<String, Integer> lastReadIdx = new HashMap<>();
+        Map<String, Integer> lastAnnotatedIdx = new HashMap<>();
+
+        for (int i = riskStartIdx; i < total; i++) {
+            ChatMessage msg = messages.get(i);
+            if (msg instanceof ToolExecutionResultMessage toolResultMessage) {
+                String toolName = toolResultMessage.toolName();
+                AgentTool tool = this.getAvailableTool(toolName);
+                if( tool instanceof AbstractPaginatedAgentTool paginatedTool ) {
+                    String resourceId = paginatedTool.getResourceIdFromResultMessage(toolResultMessage);
+                    if( StringUtils.isNotBlank(resourceId)) {
+                        lastReadIdx.put(resourceId, i);
+                    }
+                    
+                } else if( tool instanceof AnnotateObservationTool annotateTool ) {
+                    String resourceId = annotateTool.getResourceIdFromResultMessage(toolResultMessage);
+                    if( StringUtils.isNotBlank(resourceId)) {
+                        lastAnnotatedIdx.put(resourceId, i);
+                    }
+                }
+            }
+        }
+
+        List<String> pending = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : lastReadIdx.entrySet()) {
+            String rid = entry.getKey();
+            int lastRead = entry.getValue();
+            int lastAnnotated = lastAnnotatedIdx.getOrDefault(rid, -1);
+            if (lastAnnotated < lastRead && lastRead < riskEndIdx) {
+                pending.add(rid);
+            }
+        }
+        return pending;
+    }
+
+  private void prepareContextForLLM(List<ChatMessage> context) {
     for (int i = 0; i < context.size(); i++) {
       if (i > context.size() - this.getNumberOfMessagesToKeep()) { 
         break; 
@@ -777,9 +830,6 @@ public class ReasoningServiceImpl implements ReasoningService {
           String text = toolResult.text();
           if (text.length() > this.getMinimumSizeForTrim() ) { 
             TrimResultType trimResultType = TrimResultType.Trim;
-            if( i > context.size() - this.getNumberOfMessagesToNotify()) {
-              trimResultType = TrimResultType.Notify;
-            }
             text = tool.tool.trimResult(text, trimResultType);
             if( text!=null ) {
               ToolExecutionResultMessage x = ToolExecutionResultMessage.from(toolResult.id(), toolResult.toolName(), text);
@@ -789,6 +839,31 @@ public class ReasoningServiceImpl implements ReasoningService {
         }
       }
     }
+    
+    List<String> resourcesPendingAnnotation = getResourcesPendingAnnotation(context); 
+    if (!resourcesPendingAnnotation.isEmpty()) {
+        String responseContents = StringUtils.replace("""
+Has leído informacion de recursos sin extraer y consolidar información relevante. 
+Si hay datos que deban conservarse relacionados con estos recursos usa la herramienta 'annotate_observation' con el parámetro 'resource_id' correspondiente.
+Los recursos involucrados son: {RESOURCES_LIST}
+                           """, "{RESOURCES_LIST}", StringUtils.join(resourcesPendingAnnotation, ","));
+        Map<String,Object> responseMap = Map.of(
+                "event_time", DateUtils.now(),
+                "current_time", DateUtils.now(),
+                "channel", SYSTEMNOTIFICATION_SENSOR_NAME,
+                "status", "ok",
+                "priority", PRIORITY_HIGH,
+                "contents", responseContents 
+        );
+        Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+        ToolExecutionRequest request = ToolExecutionRequest.builder()
+                .id("AnnotateSuggestion" + "_" + UUID.randomUUID().toString().replace("-", ""))
+                .name("pool_event")
+                .arguments("{}")
+                .build();
+        context.add(AiMessage.from(request));
+        context.add(ToolExecutionResultMessage.from(request,GSON.toJson(responseMap)));
+    }    
     
     // Guardo en disco como ha quedado el ultimo contexto para depuracion
     Gson gson = new GsonBuilder()

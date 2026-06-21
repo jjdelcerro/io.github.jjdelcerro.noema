@@ -8,9 +8,9 @@
   <groupId>io.github.jjdelcerro</groupId>
 
   <properties>
-    <maven.compiler.source>21</maven.compiler.source>
-    <maven.compiler.target>21</maven.compiler.target>
-    <netbeans.hint.jdkPlatform>JDK_21__System_</netbeans.hint.jdkPlatform>
+    <maven.compiler.source>25</maven.compiler.source>
+    <maven.compiler.target>25</maven.compiler.target>
+    <netbeans.hint.jdkPlatform>JDK_25</netbeans.hint.jdkPlatform>
   </properties>    
     
   <build>
@@ -60,22 +60,50 @@
     <!-- Nucleo de LangChain4j -->
     <dependency>
       <groupId>dev.langchain4j</groupId>
+      <artifactId>langchain4j-core</artifactId>
+      <version>1.13.0</version>
+    </dependency>    
+    <dependency>
+      <groupId>dev.langchain4j</groupId>
       <artifactId>langchain4j</artifactId>
-      <version>0.35.0</version>
+      <version>1.13.0</version>
     </dependency>
         
     <!-- Integracion con OpenAI -->
     <dependency>
       <groupId>dev.langchain4j</groupId>
       <artifactId>langchain4j-open-ai</artifactId>
-      <version>0.35.0</version>
+      <version>1.13.0</version>
     </dependency>
         
     <!-- Para generar los embeddings (usamos uno ligero local para pruebas) -->
     <dependency>
       <groupId>dev.langchain4j</groupId>
       <artifactId>langchain4j-embeddings-all-minilm-l6-v2</artifactId>
-      <version>0.35.0</version>
+      <version>1.13.0-beta23</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>dev.langchain4j</groupId>
+      <artifactId>langchain4j-jlama</artifactId>
+      <version>1.13.0-beta23</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.github.tjake</groupId>
+      <artifactId>jlama-core</artifactId>
+      <version>0.8.4</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.tjake</groupId>
+      <artifactId>jlama-native</artifactId>
+      <version>0.8.4</version>
+    </dependency>
+        
+    <dependency>
+      <groupId>org.mvel</groupId>
+      <artifactId>mvel2</artifactId>
+      <version>2.5.0.Final</version>
     </dependency>
         
     <!-- Motor de logs: Log4j 2 a traves de SLF4J -->
@@ -287,6 +315,12 @@
       <groupId>org.jsoup</groupId>
       <artifactId>jsoup</artifactId>
       <version>1.15.3</version>
+      <type>jar</type>
+    </dependency>
+    <dependency>
+      <groupId>javax.json</groupId>
+      <artifactId>javax.json-api</artifactId>
+      <version>1.1.4</version>
       <type>jar</type>
     </dependency>
   </dependencies>
