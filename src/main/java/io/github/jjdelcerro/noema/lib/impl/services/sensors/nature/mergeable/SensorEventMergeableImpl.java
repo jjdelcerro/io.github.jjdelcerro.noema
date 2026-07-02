@@ -11,12 +11,12 @@ public class SensorEventMergeableImpl extends AbstractSensorEvent implements Sen
 
   private final StringBuilder contentsBuilder;
 
-  public SensorEventMergeableImpl(SensorInformation sensor, String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback) {
-    this(sensor, text, priority, status, timestamp, callback, timestamp);
+  public SensorEventMergeableImpl(SensorInformation sensor, String subchannel, String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback) {
+    this(sensor, subchannel, text, priority, status, timestamp, callback, timestamp);
   }
 
-  public SensorEventMergeableImpl(SensorInformation sensor, String text, String priority, String status, LocalDateTime timestart, SensorsService.SensorEventCallback callback, LocalDateTime timeend) {
-    super(sensor, text, priority, status, timestart, callback);
+  public SensorEventMergeableImpl(SensorInformation sensor, String subchannel, String text, String priority, String status, LocalDateTime timestart, SensorsService.SensorEventCallback callback, LocalDateTime timeend) {
+    super(sensor, subchannel, text, priority, status, timestart, callback);
     this.contentsBuilder = new StringBuilder(text);
     this.endTimestamp = timeend;
   }

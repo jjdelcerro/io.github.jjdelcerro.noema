@@ -11,7 +11,7 @@ public interface SourceOfTruth {
 
   CheckPoint createCheckPoint(int turnFirst, int turnLast, LocalDateTime timestamp, String text);
 
-  Turn createTurn(LocalDateTime timestamp, String contenttype, String textUser, String textModelThinking, String textModel, String toolCall, String toolResult, float[] embedding);
+  Turn createTurn(LocalDateTime timestamp, String contenttype, String subchannel, String textUser, String textModelThinking, String textModel, String toolCall, String toolResult, float[] embedding);
 
   /**
    * Persiste un Turno en la base de datos.

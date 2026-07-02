@@ -68,7 +68,7 @@ public class FakeAgent implements Agent {
   }
 
   @Override
-  public void putEvent(String channel, String status, String priority, String eventText) {
+  public void putEvent(String channel, String subchannel, String status, String priority, String eventText) {
     // No hace nada
   }
 
@@ -156,6 +156,10 @@ public class FakeAgent implements Agent {
 
   }
 
+  @Override
+  public void putUsersMessage(String subchannel, String text, SensorsService.SensorEventCallback callback) {
+
+  }
   @Override
   public SensorInformation registerSensor(String channel, String label, SensorNature nature, String description) {
     return null;

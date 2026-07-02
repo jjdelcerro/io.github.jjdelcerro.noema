@@ -19,6 +19,8 @@ public interface Turn {
 
   String getContenttype();
 
+  String getSubchannel();
+  
   float[] getEmbedding();
 
   int getId();

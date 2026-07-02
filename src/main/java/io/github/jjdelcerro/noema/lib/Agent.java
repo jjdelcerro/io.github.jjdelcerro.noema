@@ -91,6 +91,7 @@ public interface Agent {
    *
    * @param channel El origen del evento (ej: "Telegram", "Email", "System").
    * Útil para que el LLM sepa contextualizar la fuente.
+     * @param subchannel
    * @param status
    * @param priority Nivel de urgencia del evento (ej: "normal", "high").
    * Actualmente informativo.
@@ -105,7 +106,9 @@ public interface Agent {
    * </ul>
    * @see #processPendingEvents()
    */
-  public void putEvent(String channel, String status, String priority, String eventText);
+  public void putEvent(String channel, String subchannel, String status, String priority, String eventText);
+  
+  public void putUsersMessage(String subchannel, String text, SensorEventCallback callback);
   
   public void putUsersMessage(String text, SensorEventCallback callback);
   

@@ -8,8 +8,8 @@ import java.time.LocalDateTime;
 
 public class SensorEventStateImpl extends AbstractSensorEvent implements SensorEventState {
 
-    public SensorEventStateImpl(SensorInformation sensor, String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback) {
-        super(sensor, text, priority, status, timestamp, callback);
+    public SensorEventStateImpl(SensorInformation sensor, String subchannel, String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback) {
+        super(sensor, subchannel, text, priority, status, timestamp, callback);
     }
 
     @Override

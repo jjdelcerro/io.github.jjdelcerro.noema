@@ -23,6 +23,8 @@ import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
+import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
+import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SENSOR_SUBCHANNEL_MAIN;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
@@ -195,9 +197,9 @@ public class AgentImpl implements Agent {
   }
 
   @Override
-  public void putEvent(String channel, String status, String priority, String eventText) {
+  public void putEvent(String channel, String subchannel, String status, String priority, String eventText) {
     SensorsService sensors = (SensorsService) this.getService(SensorsService.NAME);
-    sensors.putEvent(channel, eventText, priority, status, LocalDateTime.now());
+    sensors.putEvent(channel, subchannel, eventText, priority, status, LocalDateTime.now());
   }
 
   @Override
@@ -427,9 +429,14 @@ public class AgentImpl implements Agent {
   }
 
   @Override
+  public void putUsersMessage(String subchannel, String text, SensorsService.SensorEventCallback callback) {
+    SensorsService sensors = (SensorsService) this.getService(SensorsService.NAME);
+    sensors.putEvent(USER_SENSOR_NAME, subchannel, text, PRIORITY_NORMAL, null, LocalDateTime.now(), callback);
+  }
+
   public void putUsersMessage(String text, SensorsService.SensorEventCallback callback) {
     SensorsService sensors = (SensorsService) this.getService(SensorsService.NAME);
-    sensors.putEvent(USER_SENSOR_NAME, text, PRIORITY_NORMAL, null, LocalDateTime.now(), callback);
+    sensors.putEvent(USER_SENSOR_NAME, SENSOR_SUBCHANNEL_MAIN, text, PRIORITY_NORMAL, null, LocalDateTime.now(), callback);
   }
 
   @Override

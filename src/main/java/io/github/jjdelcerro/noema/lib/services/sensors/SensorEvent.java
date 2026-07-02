@@ -58,5 +58,7 @@ public interface SensorEvent {
      */
     void setDeliveryTimestamp(LocalDateTime deliveryTimestamp);
     
+    String getSubchannel(); 
+    
     SensorEventCallback getCallback();
 }

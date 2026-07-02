@@ -10,12 +10,12 @@ public class SensorEventAggregateImpl extends AbstractSensorEvent implements Sen
 
   private long count;
 
-  public SensorEventAggregateImpl(SensorInformation sensor, String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback) {
-    this(sensor, text, priority, status, timestamp, callback, 1);
+  public SensorEventAggregateImpl(SensorInformation sensor, String subchannel, String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback) {
+    this(sensor, subchannel, text, priority, status, timestamp, callback, 1);
   }
   
-  public SensorEventAggregateImpl(SensorInformation sensor, String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback, long count) {
-    super(sensor, text, priority, status, timestamp, callback);
+  public SensorEventAggregateImpl(SensorInformation sensor, String subchannel, String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback, long count) {
+    super(sensor, subchannel, text, priority, status, timestamp, callback);
     this.count = count;
   }
 

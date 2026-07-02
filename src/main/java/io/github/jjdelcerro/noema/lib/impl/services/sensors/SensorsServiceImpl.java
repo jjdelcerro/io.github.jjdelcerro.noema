@@ -53,6 +53,8 @@ public class SensorsServiceImpl implements SensorsService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SensorsServiceImpl.class);
 
+  public static final String SENSOR_SUBCHANNEL_MAIN = "";
+  
   public static final String SYSTEMCLOCK_SENSOR_NAME = "SYSTEMCLOCK";
   private static final String SYSTEMCLOCK_SENSOR_LABEL = "Reloj del Sistema";
   private static final String SYSTEMCLOCK_SENSOR_DESCRIPTION = "Sensor interno de paso del tiempo"; 
@@ -158,12 +160,12 @@ public class SensorsServiceImpl implements SensorsService {
   }
 
   @Override
-  public synchronized void putEvent(String channel, String text, String priority, String status, LocalDateTime timestamp) {
-    this.putEvent(channel, text, priority, status, timestamp, null);
+  public synchronized void putEvent(String channel, String subchannel, String text, String priority, String status, LocalDateTime timestamp) {
+    this.putEvent(channel, subchannel, text, priority, status, timestamp, null);
   }
 
   @Override
-  public void putEvent(String channel, String text, String priority, String status, LocalDateTime timestamp, SensorEventCallback callback) {
+  public void putEvent(String channel, String subchannel, String text, String priority, String status, LocalDateTime timestamp, SensorEventCallback callback) {
     synchronized (sensorLock) {
       if (!running) {
         return;
@@ -191,7 +193,7 @@ public class SensorsServiceImpl implements SensorsService {
       }
 
       currentSensor = data;
-      data.process(text, priority, status, timestamp, callback);
+      data.process(subchannel, text, priority, status, timestamp, callback);
 
       if (data.getSensorInformation().getNature() == SensorNature.STATE) {
         SensorEvent event = data.flushEvent();
@@ -469,8 +471,8 @@ public class SensorsServiceImpl implements SensorsService {
             .create();
   }
   
-  public ConsumableSensorEvent createSensorEvent(String channel, String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback) {
+  public ConsumableSensorEvent createSensorEvent(String channel, String subchannel, String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback) {
     AbstractSensorData sensor = (AbstractSensorData) this.registeredSensors.get(channel);
-    return sensor.createSensorEvent(text, priority, status, timestamp, callback);
+    return sensor.createSensorEvent(subchannel, text, priority, status, timestamp, callback);
   }
 }

@@ -8,6 +8,7 @@ import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.services.email.tools.EmailListTool;
 import io.github.jjdelcerro.noema.lib.impl.services.email.tools.EmailReadTool;
 import io.github.jjdelcerro.noema.lib.impl.services.email.tools.EmailSendTool;
+import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SENSOR_SUBCHANNEL_MAIN;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
 import jakarta.mail.*;
@@ -144,7 +145,7 @@ public class EmailService implements AgentService {
                   long uid = ((UIDFolder) inbox).getUID(m);
                   // INYECTAMOS SOLO LA NOTIFICACIÓN
                   String notify = String.format("NUEVO EMAIL [UID:%d] de %s. Asunto: %s", uid, from, m.getSubject());
-                  agent.putEvent(SENSOR_NAME, "EMAIL RECEIVED", PRIORITY_NORMAL, notify);
+                  agent.putEvent(SENSOR_NAME, SENSOR_SUBCHANNEL_MAIN, "EMAIL RECEIVED", PRIORITY_NORMAL, notify);
                 }
                 lastCount = current;
               }

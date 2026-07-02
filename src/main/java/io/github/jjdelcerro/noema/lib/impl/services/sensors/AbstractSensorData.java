@@ -29,7 +29,7 @@ public abstract class AbstractSensorData implements SensorData {
     this.stats = stats;
   }
 
-  public abstract ConsumableSensorEvent createSensorEvent(String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback);
+  public abstract ConsumableSensorEvent createSensorEvent(String subchannel, String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback);
 
   protected ConsumableSensorEvent getCurrentEvent() {
     return this.currentEvent;

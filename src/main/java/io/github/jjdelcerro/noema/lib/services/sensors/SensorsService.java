@@ -26,9 +26,9 @@ public interface SensorsService extends AgentService {
 
   void registerSensor(SensorInformation info);
 
-  void putEvent(String channel, String text, String priority, String status, LocalDateTime timestamp);
+  void putEvent(String channel, String subchannel, String text, String priority, String status, LocalDateTime timestamp);
 
-  void putEvent(String channel, String text, String priority, String status, LocalDateTime timestamp, SensorEventCallback callback);
+  void putEvent(String channel, String subchannel, String text, String priority, String status, LocalDateTime timestamp, SensorEventCallback callback);
 
   List<SensorInformation> getAllRegisteredSensors();
 

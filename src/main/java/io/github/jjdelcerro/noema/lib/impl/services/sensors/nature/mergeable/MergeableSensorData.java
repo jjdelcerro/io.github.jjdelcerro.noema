@@ -14,8 +14,8 @@ public class MergeableSensorData extends AbstractSensorData {
   }
 
   @Override
-  public ConsumableSensorEvent createSensorEvent(String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback) {
-    return new SensorEventMergeableImpl(info, text, priority, status, timestamp, callback);
+  public ConsumableSensorEvent createSensorEvent(String subchannel, String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback) {
+    return new SensorEventMergeableImpl(info, subchannel, text, priority, status, timestamp, callback);
   }
 
   @Override
@@ -24,9 +24,9 @@ public class MergeableSensorData extends AbstractSensorData {
   }
 
   @Override
-  public void process(String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback) {
+  public void process(String subchannel, String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback) {
     if (this.getCurrentEvent() == null) {
-      this.setCurrentEvent(this.createSensorEvent(text, priority, status, timestamp, callback));
+      this.setCurrentEvent(this.createSensorEvent(subchannel, text, priority, status, timestamp, callback));
     } else {
       this.getCurrentEvent().append(text, timestamp);
     }

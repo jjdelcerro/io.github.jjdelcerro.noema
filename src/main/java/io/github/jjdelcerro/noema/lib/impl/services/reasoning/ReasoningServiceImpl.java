@@ -68,6 +68,7 @@ import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.Con
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.ListSkillsTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.LoadSkillTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.TavilyWebSearchTool;
+import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SENSOR_SUBCHANNEL_MAIN;
 import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SYSTEMCLOCK_SENSOR_NAME;
 import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SYSTEMNOTIFICATION_SENSOR_NAME;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_HIGH;
@@ -618,6 +619,7 @@ public class ReasoningServiceImpl implements ReasoningService {
         ConsumableSensorEvent timerEvent = sensors.createSensorEvent(
                 SYSTEMCLOCK_SENSOR_NAME,
                 content,
+                SENSOR_SUBCHANNEL_MAIN,
                 PRIORITY_NORMAL,
                 "A pasado el tiempo",
                 now,
@@ -667,6 +669,7 @@ public class ReasoningServiceImpl implements ReasoningService {
           Turn obsTurn = this.sourceOfTruth.createTurn(
                   LocalDateTime.now(),
                   "tool_execution",
+                  event.getSubchannel(),
                   null, null, null,
                   event.getChatMessage().toString(),
                   event.getResponseMessage().toString(),
@@ -695,6 +698,7 @@ public class ReasoningServiceImpl implements ReasoningService {
               Turn toolTurn = this.sourceOfTruth.createTurn(
                       LocalDateTime.now(),
                       contentType,
+                      event.getSubchannel(),
                       null,
                       null,
                       null,
@@ -714,6 +718,7 @@ public class ReasoningServiceImpl implements ReasoningService {
             Turn responseTurn = this.sourceOfTruth.createTurn(
                     LocalDateTime.now(),
                     "chat",
+                    event.getSubchannel(),
                     textUser, // Original (si fue UserEvent) o null (si fue Sensor)
                     null,
                     aiText, // Respuesta final del modelo

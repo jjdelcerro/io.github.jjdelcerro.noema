@@ -18,14 +18,14 @@ public class AggregateSensorData extends AbstractSensorData {
     }
     
     @Override
-    public SensorEventAggregateImpl createSensorEvent(String text, String priority, String status, LocalDateTime timestamp, SensorEventCallback callback) {
-      return new SensorEventAggregateImpl(info, text, priority, status, timestamp, callback);
+    public SensorEventAggregateImpl createSensorEvent(String subchannel, String text, String priority, String status, LocalDateTime timestamp, SensorEventCallback callback) {
+      return new SensorEventAggregateImpl(info, subchannel, text, priority, status, timestamp, callback);
     }
 
     @Override
-    public void process(String text, String priority, String status, LocalDateTime timestamp, SensorEventCallback callback) {
+    public void process(String subchannel, String text, String priority, String status, LocalDateTime timestamp, SensorEventCallback callback) {
         if (this.getCurrentEvent() == null) {
-            this.setCurrentEvent(this.createSensorEvent(text, priority, status, timestamp, callback));
+            this.setCurrentEvent(this.createSensorEvent(subchannel, text, priority, status, timestamp, callback));
         } else {
             this.getCurrentEvent().increment();
             this.getCurrentEvent().updateEndTimestamp(timestamp);

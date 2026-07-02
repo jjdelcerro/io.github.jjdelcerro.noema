@@ -13,13 +13,13 @@ public class DiscreteSensorData extends AbstractSensorData {
   }
 
   @Override
-  public SensorEventDiscreteImpl createSensorEvent(String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback) {
-    return new SensorEventDiscreteImpl(info, text, priority, status, timestamp, callback);
+  public SensorEventDiscreteImpl createSensorEvent(String subchannel, String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback) {
+    return new SensorEventDiscreteImpl(info, subchannel, text, priority, status, timestamp, callback);
   }
 
   @Override
-  public void process(String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback) {
-    this.setCurrentEvent(this.createSensorEvent(text, priority, status, timestamp, callback));
+  public void process(String subchannel, String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback) {
+    this.setCurrentEvent(this.createSensorEvent(subchannel, text, priority, status, timestamp, callback));
   }
 
 }

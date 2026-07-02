@@ -86,6 +86,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
                     id INT PRIMARY KEY,
                     timestamp TIMESTAMP,
                     contenttype VARCHAR(50),
+                    subchannel VARCHAR(20),
                     text_user CLOB,
                     text_thinking CLOB,
                     text_model CLOB,
@@ -153,21 +154,22 @@ public class SourceOfTruthImpl implements SourceOfTruth {
 
       String sql = SQLProvider.from(getConnection()).get("SourceOfTruth_add_turn",
               """
-                INSERT INTO turnos (id, timestamp, contenttype, text_user, text_thinking, 
+                INSERT INTO turnos (id, timestamp, contenttype, subchannel, text_user, text_thinking, 
                                     text_model, tool_call, tool_result, embedding_blob) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """);
 
       try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setInt(1, turn.getId());
         ps.setTimestamp(2, Timestamp.valueOf(turn.getTimestamp()));
         ps.setString(3, dbContentType); // Usamos el tipo calculado para DB
-        ps.setString(4, turn.getTextUser());
-        ps.setString(5, turn.getTextModelThinking());
-        ps.setString(6, turn.getTextModel());
-        ps.setString(7, turn.getToolCall());
-        ps.setString(8, dbToolResult); // Usamos el texto procesado (Full o Resumen)
-        ps.setBytes(9, blobBytes);
+        ps.setString(4, turn.getSubchannel());
+        ps.setString(5, turn.getTextUser());
+        ps.setString(6, turn.getTextModelThinking());
+        ps.setString(7, turn.getTextModel());
+        ps.setString(8, turn.getToolCall());
+        ps.setString(9, dbToolResult); // Usamos el texto procesado (Full o Resumen)
+        ps.setBytes(10, blobBytes);
         ps.executeUpdate();
       }
 
@@ -409,6 +411,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
             rs.getInt("id"),
             rs.getTimestamp("timestamp").toLocalDateTime(),
             rs.getString("contenttype"),
+            rs.getString("subchannel"),
             rs.getString("text_user"),
             rs.getString("text_thinking"),
             rs.getString("text_model"),
@@ -436,9 +439,9 @@ public class SourceOfTruthImpl implements SourceOfTruth {
 
   @Override
   public synchronized Turn createTurn(LocalDateTime timestamp, String contenttype,
-          String textUser, String textModelThinking, String textModel,
+          String terminalid, String textUser, String textModelThinking, String textModel,
           String toolCall, String toolResult, float[] embedding) {
-    return TurnImpl.from(timestamp, contenttype, textUser, textModelThinking,
+    return TurnImpl.from(timestamp, contenttype, terminalid, textUser, textModelThinking,
             textModel, toolCall, toolResult, embedding);
   }
 

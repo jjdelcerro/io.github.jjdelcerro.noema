@@ -34,6 +34,7 @@ public class SensorEventGsonAdapter implements JsonSerializer<SensorEvent>, Json
     public JsonElement serialize(SensorEvent src, Type typeOfSrc, JsonSerializationContext context) {
         JsonObject obj = new JsonObject();
         obj.addProperty("channel", src.getChannel());
+        obj.addProperty("subchannel", src.getSubchannel());
         obj.addProperty("priority", src.getPriority());
         obj.addProperty("status", src.getStatus());
         obj.addProperty("contents", src.getContents());
@@ -58,6 +59,7 @@ public class SensorEventGsonAdapter implements JsonSerializer<SensorEvent>, Json
 
         // Rehidratamos los datos comunes
         String channel = obj.get("channel").getAsString();
+        String subchannel = obj.get("subchannel").getAsString();
         String priority = obj.get("priority").getAsString();
         String status = obj.get("status").getAsString();
         String contents = obj.get("contents").getAsString();
@@ -70,14 +72,14 @@ public class SensorEventGsonAdapter implements JsonSerializer<SensorEvent>, Json
         // Nota: El 'text' original ya no es necesario porque el evento está "sellado" con sus 'contents'
         switch (nature) {
             case DISCRETE:
-                return new SensorEventDiscreteImpl(info, contents, priority, status, start, null);
+                return new SensorEventDiscreteImpl(info, subchannel, contents, priority, status, start, null);
             case AGGREGATABLE:
                 long count = obj.get("count").getAsLong();
-                return new SensorEventAggregateImpl(info, contents, priority, status, start, null, count);
+                return new SensorEventAggregateImpl(info, subchannel, contents, priority, status, start, null, count);
             case MERGEABLE:
-                return new SensorEventMergeableImpl(info, contents, priority, status, start, null, end);
+                return new SensorEventMergeableImpl(info, subchannel, contents, priority, status, start, null, end);
             case STATE:
-                return new SensorEventStateImpl(info, contents, priority, status, start, null);
+                return new SensorEventStateImpl(info, subchannel, contents, priority, status, start, null);
             default:
                 throw new JsonParseException("Naturaleza desconocida: " + natureStr);
         }

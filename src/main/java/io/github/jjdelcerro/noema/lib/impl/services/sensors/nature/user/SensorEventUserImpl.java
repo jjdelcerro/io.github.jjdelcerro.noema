@@ -11,28 +11,28 @@ import java.time.LocalDateTime;
 
 public class SensorEventUserImpl extends AbstractSensorEvent implements SensorEventUser {
 
-  public SensorEventUserImpl(SensorInformation sensor, String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback) {
-    super(sensor, text, priority, status, timestamp, callback);
-  }
+    public SensorEventUserImpl(SensorInformation sensor, String subchannel, String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback) {
+        super(sensor, subchannel, text, priority, status, timestamp, callback);
+    }
 
-  @Override
-  public String getContents() {
-    return this.getText();
-  }
+    @Override
+    public String getContents() {
+        return this.getText();
+    }
 
-  /**
-   * Para el usuario, el mensaje principal es un UserMessage puro.
-   */
-  @Override
-  public ChatMessage getChatMessage() {
-    return UserMessage.from(this.getText());
-  }
+    /**
+     * Para el usuario, el mensaje principal es un UserMessage puro.
+     */
+    @Override
+    public ChatMessage getChatMessage() {
+        return UserMessage.from(this.getText());
+    }
 
-  /**
-   * El usuario no es una herramienta, por lo que no hay mensaje de respuesta.
-   */
-  @Override
-  public ToolExecutionResultMessage getResponseMessage() {
-    return null;
-  }
+    /**
+     * El usuario no es una herramienta, por lo que no hay mensaje de respuesta.
+     */
+    @Override
+    public ToolExecutionResultMessage getResponseMessage() {
+        return null;
+    }
 }

@@ -8,6 +8,7 @@ import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
 import io.github.jjdelcerro.noema.lib.impl.SQLProvider;
 import io.github.jjdelcerro.noema.lib.impl.persistence.Counter;
 import io.github.jjdelcerro.noema.lib.impl.services.scheduler.tools.ScheduleAlarmTool;
+import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SENSOR_SUBCHANNEL_MAIN;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
 import java.sql.Connection;
@@ -135,7 +136,7 @@ public class SchedulerServiceImpl implements SchedulerService {
             "alarm_time", when.toString(),
             "reason", reason
     ));
-    this.agent.putEvent(SENSOR_NAME, "ALARM TRIGGERED", PRIORITY_NORMAL, notify);
+    this.agent.putEvent(SENSOR_NAME, SENSOR_SUBCHANNEL_MAIN, "ALARM TRIGGERED", PRIORITY_NORMAL, notify);
   }
 
   private void schedule_alarm(String id, String reason, LocalDateTime alarmTime) {

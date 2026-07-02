@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentStructure.DocumentStructureEntry;
 import static io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsServiceImpl.SENSOR_NAME;
+import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SENSOR_SUBCHANNEL_MAIN;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
 import java.io.IOException;
@@ -54,6 +55,7 @@ public class DocumentStructureExtractor {
         // Al terminar, inyectamos un evento para que el Agente se entere proactivamente
         agent.putEvent(
                 SENSOR_NAME, 
+                SENSOR_SUBCHANNEL_MAIN,
                 "DOCUMENT INDEXATION FINALIZED", 
                 PRIORITY_NORMAL,
                 "Ha terminado la indexacion del documento: `" + document.getFileName()
