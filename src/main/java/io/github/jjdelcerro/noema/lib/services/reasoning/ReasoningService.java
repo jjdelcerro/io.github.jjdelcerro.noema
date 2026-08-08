@@ -24,13 +24,13 @@ public interface ReasoningService extends AgentService {
 
   void addTool(AgentTool tool);
 
-  int estimateMessagesTokenCount();
+  int estimateMessagesTokenCount(String subchannel);
 
-  int estimateToolsTokenCount();
+  int estimateToolsTokenCount(String subchannel);
   
-  int estimateSystemPromptTokenCount();
+  int estimateSystemPromptTokenCount(String subchannel);
   
-  int getTurnsCount();
+  int getTurnsCount(String subchannel);
 
   AgentTool getAvailableTool(String name);
 

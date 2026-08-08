@@ -23,7 +23,6 @@ import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
-import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
 import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SENSOR_SUBCHANNEL_MAIN;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
@@ -41,6 +40,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,8 +48,6 @@ import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import javax.swing.SwingUtilities;
-import org.apache.commons.collections4.map.LRUMap;
 
 /**
  *
@@ -66,7 +64,7 @@ public class AgentImpl implements Agent {
   private static final String USER_SENSOR_LABEL = "USER";
   private static final String USER_SENSOR_DESCRIPTION = "USER";
 
-  private AgentConsole console;
+  private Map<String,AgentConsole> consoles;
   private final AgentSettings settings;
   private final AgentActions actions;
   private final SourceOfTruth sourceOfTruth;
@@ -83,22 +81,52 @@ public class AgentImpl implements Agent {
   private boolean running;
   private TokenCountEstimator tokenEstimator;
 
-  public AgentImpl(ConnectionSupplier memoryDatabase, ConnectionSupplier servicesDatabase, AgentSettings settings, AgentConsole console) {
+/**
+   * Constructor reservado para entornos de pruebas y depuracion.
+   * Permite inyectar componentes simulados (Fakes) sin inicializar
+   * la infraestructura de base de datos ni accesos reales al disco.
+     * @param memoryDatabase
+     * @param servicesDatabase
+     * @param settings
+     * @param accessControl
+     * @param console
+     * @param sourceOfTruth
+   */
+  public AgentImpl(
+          ConnectionSupplier memoryDatabase, 
+          ConnectionSupplier servicesDatabase, 
+          AgentSettings settings, 
+          AgentConsole console,
+          SourceOfTruth sourceOfTruth,
+          AgentAccessControl accessControl
+  ) {
     this.running = false;
     this.actions = AgentLocator.getAgentManager().createActions();
     this.settings = settings;
-    this.console = console;
+    this.consoles = new HashMap<>();
+    this.consoles.put(DEFAULT_SUBCHANNEL, console);
     this.services = new LinkedHashMap<>();
-    this.accessControl = new AgentAccessControlImpl(
+    
+    this.accessControl = (accessControl != null) ? accessControl : new AgentAccessControlImpl(
             this.settings,
             this.actions,
             Paths.get(".").toAbsolutePath().normalize()
     );
+    
     this.servicesDatabase = servicesDatabase;
     this.memoryDatabase = memoryDatabase;
-    this.sourceOfTruth = SourceOfTruthImpl.from(this);
+    
+    // Si se inyecta un SourceOfTruth (ej: en tests), lo usamos directamente.
+    // Si no, instanciamos la implementación real conectada a la BBDD.
+    if (sourceOfTruth != null) {
+      this.sourceOfTruth = sourceOfTruth;
+    } else {
+      this.sourceOfTruth = SourceOfTruthImpl.from(this);
+    }
 
-    this.accessControl.addNonReadablePath(this.getPaths().getAgentFolder());
+    if (this.accessControl != null && this.getPaths() != null && this.getPaths().getAgentFolder() != null) {
+      this.accessControl.addNonReadablePath(this.getPaths().getAgentFolder());
+    }
 
     AgentManager manager = AgentLocator.getAgentManager();
     for (Supplier<AgentActions.AgentAction> actionFactory : manager.getActions()) {
@@ -106,8 +134,12 @@ public class AgentImpl implements Agent {
       action.setAgent(this);
       this.actions.addAction(action);
     }
-  }
-
+  }  
+  
+  public AgentImpl(ConnectionSupplier memoryDatabase, ConnectionSupplier servicesDatabase, AgentSettings settings, AgentConsole console) {
+    this(memoryDatabase, servicesDatabase, settings, console, null, null);
+  }  
+  
   @Override
   public synchronized void start() {
     AgentManager manager = AgentLocator.getAgentManager();
@@ -132,10 +164,10 @@ public class AgentImpl implements Agent {
           for (AgentTool tool : tools) {
             reasoning.addTool(tool);
           }
-          console.printSystemLog(service.getName() + " tools installed");
+          getConsole(DEFAULT_SUBCHANNEL).printSystemLog(service.getName() + " tools installed");
         }
       } else {
-        console.printSystemLog(service.getName() + " tools NOT installed");
+        getConsole(DEFAULT_SUBCHANNEL).printSystemLog(service.getName() + " tools NOT installed");
       }
     }
 
@@ -187,10 +219,19 @@ public class AgentImpl implements Agent {
   }
 
   @Override
-  public AgentConsole getConsole() {
-    return this.console;
+  public AgentConsole getConsole(String subchannel) {
+    AgentConsole console = this.consoles.get(subchannel);
+    if( console == null ) {
+        console = this.consoles.get(DEFAULT_SUBCHANNEL);
+    }
+    return console;
   }
 
+  @Override
+  public AgentConsole getCurrentConsole() {
+      return this.getConsole(this.getCurrentSubchannel());
+  }
+  
   @Override
   public SourceOfTruth getSourceOfTruth() {
     return this.sourceOfTruth;
@@ -208,8 +249,8 @@ public class AgentImpl implements Agent {
   }
 
   @Override
-  public void setConsole(AgentConsole console) {
-    this.console = console;
+  public void setConsole(String subchannel, AgentConsole console) {
+    this.consoles.put(subchannel, console);
   }
 
   @Override
@@ -247,7 +288,7 @@ public class AgentImpl implements Agent {
 
     } catch (Exception e) {
       LOGGER.warn("Error en callChatModel (" + llmid + ")", e);
-      console.printSystemError("Error en callChatModel (" + llmid + "): " + e.getMessage());
+      getConsole(DEFAULT_SUBCHANNEL).printSystemError("Error en callChatModel (" + llmid + "): " + e.getMessage());
       return null;
     }
   }
@@ -290,8 +331,8 @@ public class AgentImpl implements Agent {
 
     } catch (Exception e) {
       LOGGER.warn("Error en callChatModelAsJson (" + llmid + "), response: " + rawResponse, e);
-      console.printSystemError("Error parseando JSON de " + llmid + ": " + e.getMessage());
-      console.printSystemError("Contenido que falló: " + StringUtils.abbreviate(rawResponse, 100));
+      getConsole(DEFAULT_SUBCHANNEL).printSystemError("Error parseando JSON de " + llmid + ": " + e.getMessage());
+      getConsole(DEFAULT_SUBCHANNEL).printSystemError("Contenido que falló: " + StringUtils.abbreviate(rawResponse, 100));
       return null;
     }
   }
@@ -336,12 +377,12 @@ public class AgentImpl implements Agent {
       if (Files.exists(path)) {
         return Files.readString(path, StandardCharsets.UTF_8);
       } else {
-        console.printSystemError("Recurso no encontrado en data: " + resname);
+        getConsole(DEFAULT_SUBCHANNEL).printSystemError("Recurso no encontrado en data: " + resname);
         return "";
       }
     } catch (Exception e) {
       LOGGER.warn("Error leyendo recurso " + resname + ".", e);
-      console.printSystemError("Error leyendo recurso " + resname + ": " + e.getMessage());
+      getConsole(DEFAULT_SUBCHANNEL).printSystemError("Error leyendo recurso " + resname + ": " + e.getMessage());
       return "";
     }
   }
@@ -368,13 +409,21 @@ public class AgentImpl implements Agent {
   }
 
   @Override
-  public void showSession() {
+  public void showSession(String subchannel) {
     ReasoningServiceImpl reasoning = (ReasoningServiceImpl) this.getService(ReasoningServiceImpl.NAME);
     if (reasoning != null) {
-      reasoning.showSession();
+      reasoning.showSession(subchannel);
     }
   }
 
+  public String getCurrentSubchannel() {
+    ReasoningServiceImpl reasoning = (ReasoningServiceImpl) this.getService(ReasoningServiceImpl.NAME);
+    if (reasoning != null) {
+      return reasoning.getCurrentSubchannel();
+    }
+    return DEFAULT_SUBCHANNEL;
+  }
+  
   private void updateContextSize(ModelParameters params) {
     if (!StringUtils.startsWith(params.providerUrl(), "https://openrouter.ai/api/v1")) {
       return;

@@ -29,22 +29,24 @@ public class CheckPointImpl implements CheckPoint {
 
   // Cache del contenido textual. Null hasta que se llama a getText()
   private String cachedText;
+    private final String subchannel;
 
   // Constructor privado
-  private CheckPointImpl(int id, int turnFirst, int turnLast, LocalDateTime timestamp, Path storageFolder) {
+  private CheckPointImpl(String subchannel, int id, int turnFirst, int turnLast, LocalDateTime timestamp, Path storageFolder) {
     this.id = id;
     this.turnFirst = turnFirst;
     this.turnLast = turnLast;
     this.timestamp = timestamp;
     this.storageFolder = storageFolder;
+    this.subchannel = subchannel;
   }
 
   /**
    * Factoría para rehidratar un CheckPoint desde los metadatos de la Base de
    * Datos. No carga el texto del disco inmediatamente (Lazy Loading).
    */
-  /*friend*/ static CheckPointImpl from(int id, int turnFirst, int turnLast, LocalDateTime timestamp, Path storageFolder) {
-    return new CheckPointImpl(id, turnFirst, turnLast, timestamp, storageFolder);
+  /*friend*/ static CheckPointImpl from(String subchannel, int id, int turnFirst, int turnLast, LocalDateTime timestamp, Path storageFolder) {
+    return new CheckPointImpl(subchannel, id, turnFirst, turnLast, timestamp, storageFolder);
   }
 
   /**
@@ -52,8 +54,8 @@ public class CheckPointImpl implements CheckPoint {
    * contador. - Retorna la instancia para que SourceOfTruth guarde los
    * metadatos en BD.
    */
-  /*friend*/ static CheckPointImpl create(int id, int turnFirst, int turnLast, LocalDateTime timestamp, String text, Path storageFolder) {
-    CheckPointImpl cp = new CheckPointImpl(id, turnFirst, turnLast, timestamp, storageFolder);
+  /*friend*/ static CheckPointImpl create(String subchannel, int id, int turnFirst, int turnLast, LocalDateTime timestamp, String text, Path storageFolder) {
+    CheckPointImpl cp = new CheckPointImpl(subchannel, id, turnFirst, turnLast, timestamp, storageFolder);
 
     // Inyectamos el texto en cache
     cp.cachedText = text;
@@ -137,4 +139,11 @@ public class CheckPointImpl implements CheckPoint {
   public LocalDateTime getTimestamp() {
     return timestamp;
   }
+
+  @Override
+  public String getSubchannel() {
+      return subchannel;
+  }
+  
 }
+

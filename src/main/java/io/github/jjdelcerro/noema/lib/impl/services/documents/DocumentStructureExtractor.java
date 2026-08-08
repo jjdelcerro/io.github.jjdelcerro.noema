@@ -48,7 +48,7 @@ public class DocumentStructureExtractor {
     Thread.ofPlatform().start(() -> {
       try {
         LOGGER.info("Infiriendo la estrutura del documento '" + Objects.toString(document) + "'.");
-        agent.getConsole().printSystemLog("Iniciando análisis del documento " + document.getFileName());
+        agent.getCurrentConsole().printSystemLog("Iniciando análisis del documento " + document.getFileName());
 
         doProcessDocument(document);
 
@@ -64,7 +64,7 @@ public class DocumentStructureExtractor {
         LOGGER.info("Inferencia de  la estrutura de documento '" + Objects.toString(document) + "' finalizada.");
       } catch (Exception ex) {
         LOGGER.warn("Error infiriendo la estrutura del documento '" + Objects.toString(document) + "'.", ex);
-        agent.getConsole().printSystemError("Error document-strucure-extractor sobre '" + document.getFileName() + "': " + ex.getMessage());
+        agent.getCurrentConsole().printSystemError("Error document-strucure-extractor sobre '" + document.getFileName() + "': " + ex.getMessage());
       }
     });
   }

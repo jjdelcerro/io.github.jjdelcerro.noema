@@ -58,7 +58,7 @@ public class FakeAgent implements Agent {
   }
 
   @Override
-  public AgentConsole getConsole() {
+  public AgentConsole getConsole(String subchannel) {
     return console;
   }
 
@@ -78,7 +78,7 @@ public class FakeAgent implements Agent {
   }
 
   @Override
-  public void setConsole(AgentConsole console) {
+  public void setConsole(String subchannel, AgentConsole console) {
     this.console = console;
   }
 
@@ -132,7 +132,7 @@ public class FakeAgent implements Agent {
   }
 
   @Override
-  public void showSession() {
+  public void showSession(String subchannel) {
 
   }
 
@@ -169,6 +169,16 @@ public class FakeAgent implements Agent {
   public int estimateTokenCount(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications) {
     return 0;
   }
+
+    @Override
+    public AgentConsole getCurrentConsole() {
+        return this.console;
+    }
+
+    @Override
+    public String getCurrentSubchannel() {
+        return DEFAULT_SUBCHANNEL;
+    }
 
   private static class FakeConsole implements AgentConsole {
 

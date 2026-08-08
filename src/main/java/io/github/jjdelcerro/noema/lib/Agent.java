@@ -20,6 +20,8 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
  * @author jjdelcerro
  */
 public interface Agent {
+    
+    public static final String DEFAULT_SUBCHANNEL = "default";
 
   public enum ModelType {
     OPENAI,
@@ -38,6 +40,7 @@ public interface Agent {
     public boolean canCacheTheModel();
     public String getTheKeyToCacheTheModel();
     public ModelType getModelType();
+    public Object getExtraValue(String name);
   }
   
   public interface ChatModel {
@@ -56,7 +59,9 @@ public interface Agent {
 
   public AgentSettings getSettings();
 
-  public AgentConsole getConsole();
+  public AgentConsole getConsole(String subchannel);
+  
+  public AgentConsole getCurrentConsole();
 
   public SourceOfTruth getSourceOfTruth();
 
@@ -116,7 +121,7 @@ public interface Agent {
   
   public AgentAccessControl getAccessControl();
 
-  public void setConsole(AgentConsole console);
+  public void setConsole(String subchannel, AgentConsole console);
 
   public ConnectionSupplier getServicesDatabase();
 
@@ -140,9 +145,11 @@ public interface Agent {
 
   public void installResource(String resPath);
 
-  public void showSession();
+  public void showSession(String subchannel);
   
   public int getConversationContextSize();
   
   public int estimateTokenCount(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications);
+  
+  public String getCurrentSubchannel();  
 }

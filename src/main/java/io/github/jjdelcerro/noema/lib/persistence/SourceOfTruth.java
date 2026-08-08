@@ -9,7 +9,7 @@ import java.util.List;
  */
 public interface SourceOfTruth {
 
-  CheckPoint createCheckPoint(int turnFirst, int turnLast, LocalDateTime timestamp, String text);
+  CheckPoint createCheckPoint(String subchannel, int turnFirst, int turnLast, LocalDateTime timestamp, String text);
 
   Turn createTurn(LocalDateTime timestamp, String contenttype, String subchannel, String textUser, String textModelThinking, String textModel, String toolCall, String toolResult, float[] embedding);
 
@@ -26,7 +26,7 @@ public interface SourceOfTruth {
    */
   void add(CheckPoint checkpoint);
 
-  CheckPoint getLatestCheckPoint();
+  CheckPoint getLatestCheckPoint(String subchannel);
 
   /**
    * Recupera todos los turnos que aún no han sido consolidados en un
@@ -34,13 +34,13 @@ public interface SourceOfTruth {
    *
    * @return
    */
-  List<Turn> getUnconsolidatedTurns();
+  List<Turn> getUnconsolidatedTurns(String subchannel);
 
   Turn getTurnById(int id);
 
-  List<Turn> getTurnsByIds(int first, int last);
+  List<Turn> getTurnsByIds(String subchannel, int first, int last);
 
-  List<Turn> getTurnsByText(String query, int maxResults);
+  List<Turn> getTurnsByText(String subchannel, String query, int maxResults);
 
   CheckPoint getCheckPointById(int id);
 

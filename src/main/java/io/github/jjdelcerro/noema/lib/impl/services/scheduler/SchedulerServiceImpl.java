@@ -85,7 +85,7 @@ public class SchedulerServiceImpl implements SchedulerService {
       this.running = true;
     } catch (Exception ex) {
       LOGGER.warn("Error al iniciar SchedulerService", ex);
-      agent.getConsole().printSystemError("Error al iniciar SchedulerService: " + ex.getMessage());
+      agent.getCurrentConsole().printSystemError("Error al iniciar SchedulerService: " + ex.getMessage());
     }
   }
 
@@ -125,7 +125,7 @@ public class SchedulerServiceImpl implements SchedulerService {
 
     } catch (Exception ex) {
       LOGGER.warn("Error al guardar alarma en la BBDD", ex);
-      agent.getConsole().printSystemError("Error al guardar alarma en la BBDD: " + ex.getMessage());
+      agent.getCurrentConsole().printSystemError("Error al guardar alarma en la BBDD: " + ex.getMessage());
       return "{\"status\": \"error\", \"message\": \"Error al guardar alarma\"}";
     }
     return alarmId;
@@ -164,7 +164,7 @@ public class SchedulerServiceImpl implements SchedulerService {
       pstmt.executeUpdate();
     } catch (Exception ex) {
       LOGGER.warn("Error al eliminar alarma ALARM-" + id + ".", ex);
-      agent.getConsole().printSystemError("Error al eliminar alarma " + id + ": " + ex.getMessage());
+      agent.getCurrentConsole().printSystemError("Error al eliminar alarma " + id + ": " + ex.getMessage());
     }
   }
 
@@ -189,7 +189,7 @@ public class SchedulerServiceImpl implements SchedulerService {
       }
     } catch (Exception ex) {
       LOGGER.warn("Error al reprogramar la siguiente alarma", ex);
-      agent.getConsole().printSystemError("Error al reprogramar la siguiente alarma: " + ex.getMessage());
+      agent.getCurrentConsole().printSystemError("Error al reprogramar la siguiente alarma: " + ex.getMessage());
     }
   }
 

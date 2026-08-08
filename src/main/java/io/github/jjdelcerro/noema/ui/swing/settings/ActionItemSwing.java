@@ -48,10 +48,10 @@ public class ActionItemSwing extends AbstractAgentSettingsItemSwing {
         boolean result = agent.getActions().call(actionName, agent.getSettings());
         if (!result) {
           // Feedback mínimo en caso de fallo lógico (opcional)
-          agent.getConsole().printSystemError("La acción '" + actionName + "' devolvió false.");
+          agent.getCurrentConsole().printSystemError("La acción '" + actionName + "' devolvió false.");
         }
       } else {
-        agent.getConsole().printSystemError("Error: El botón '" + getLabel() + "' no tiene 'actionName' definido.");
+        agent.getCurrentConsole().printSystemError("Error: El botón '" + getLabel() + "' no tiene 'actionName' definido.");
       }
     });
     gbc.gridy = 1;

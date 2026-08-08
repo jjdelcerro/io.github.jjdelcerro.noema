@@ -74,7 +74,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
   }
 
   private AgentConsole getConsole() {
-    return this.agent.getConsole();
+    return this.agent.getCurrentConsole();
   }
 
   private void createTables() {
@@ -102,7 +102,8 @@ public class SourceOfTruthImpl implements SourceOfTruth {
                     id INT PRIMARY KEY,
                     cp_first INT,
                     cp_last INT,
-                    timestamp TIMESTAMP
+                    timestamp TIMESTAMP,
+                    subchannel VARCHAR(20)
                 )
             """));
     } catch (SQLException ex) {
@@ -234,13 +235,14 @@ public class SourceOfTruthImpl implements SourceOfTruth {
       // 2. Persistencia de metadatos
       String sql = SQLProvider.from(getConnection()).get(
               "SourceOfTtuth_add_checkpoint",
-              "INSERT INTO checkpoints (id, cp_first, cp_last, timestamp) VALUES (?, ?, ?, ?)"
+              "INSERT INTO checkpoints (id, cp_first, cp_last, timestamp, subchannel) VALUES (?, ?, ?, ?, ?)"
       );
       try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setInt(1, checkpointid);
         ps.setInt(2, checkpoint.getTurnFirst());
         ps.setInt(3, checkpoint.getTurnLast());
         ps.setTimestamp(4, Timestamp.valueOf(checkpoint.getTimestamp()));
+        ps.setString(5, checkpoint.getSubchannel());
         ps.executeUpdate();
       }
       ((CheckPointImpl) checkpoint).saveTextToDisk();
@@ -293,20 +295,23 @@ public class SourceOfTruthImpl implements SourceOfTruth {
   }
 
   @Override
-  public synchronized CheckPoint getLatestCheckPoint() {
+  public synchronized CheckPoint getLatestCheckPoint(String subchannel) {
     try {
       String sql = SQLProvider.from(getConnection()).get(
               "SourceOfTtuth_getLatestCheckPoint",
-              "SELECT * FROM checkpoints ORDER BY id DESC LIMIT 1"
+              "SELECT * FROM checkpoints WHERE subchannel = ? ORDER BY id DESC LIMIT 1"
       );
-      try (Connection conn = getConnection().get(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
-        if (rs.next()) {
-          return mapResultSetToCheckPoint(rs);
+      try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setString(1, subchannel);
+        try (ResultSet rs = ps.executeQuery()) {
+          if (rs.next()) {
+            return mapResultSetToCheckPoint(rs);
+          }
+          return null;
         }
       }
-      return null;
     } catch (Exception ex) {
-      throw new TurnException("Can't add turn", ex);
+       throw new TurnException("Can't add turn", ex);
     }
   }
 
@@ -318,19 +323,20 @@ public class SourceOfTruthImpl implements SourceOfTruth {
    * @return
    */
   @Override
-  public synchronized List<Turn> getUnconsolidatedTurns() {
+  public synchronized List<Turn> getUnconsolidatedTurns(String subchannel) {
     try {
-      CheckPoint lastCp = getLatestCheckPoint();
+      CheckPoint lastCp = getLatestCheckPoint(subchannel);
       int thresholdId = (lastCp != null) ? lastCp.getTurnLast() : 0;
 
       List<Turn> result = new ArrayList<>();
       String sql = SQLProvider.from(getConnection()).get(
               "SourceOfTtuth_getUnconsolidatedTurns",
-              "SELECT * FROM turnos WHERE id > ? ORDER BY id ASC"
+              "SELECT * FROM turnos WHERE id > ? AND subchannel = ? ORDER BY id ASC"
       );
 
       try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setInt(1, thresholdId);
+        ps.setString(2, subchannel);
         try (ResultSet rs = ps.executeQuery()) {
           while (rs.next()) {
             result.add(mapResultSetToTurn(rs));
@@ -344,16 +350,17 @@ public class SourceOfTruthImpl implements SourceOfTruth {
   }
 
   @Override
-  public synchronized List<Turn> getTurnsByIds(int first, int last) {
+  public synchronized List<Turn> getTurnsByIds(String subchannel, int first, int last) {
     try {
       List<Turn> result = new ArrayList<>();
       String sql = SQLProvider.from(getConnection()).get(
               "SourceOfTtuth_getTurnsByIds",
-              "SELECT * FROM turnos WHERE id BETWEEN ? AND ? ORDER BY id ASC"
+              "SELECT * FROM turnos WHERE subchannel = ? AND id BETWEEN ? AND ? ORDER BY id ASC"
       );
       try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
-        ps.setInt(1, first);
-        ps.setInt(2, last);
+        ps.setString(1, subchannel);
+        ps.setInt(2, first);
+        ps.setInt(3, last);
         try (ResultSet rs = ps.executeQuery()) {
           while (rs.next()) {
             result.add(mapResultSetToTurn(rs));
@@ -368,35 +375,38 @@ public class SourceOfTruthImpl implements SourceOfTruth {
   }
 
   @Override
-  public synchronized List<Turn> getTurnsByText(String query, int maxResults) {
-    /* 
-        La idea seria tener una implementacion de este metodo para utilizar con H2 en
-        entornos personales, y para entornos con cargas mas altas ir sustituir H2 por
-        PostgreSQL con el soporte de pgvector.
-     */
+  public synchronized List<Turn> getTurnsByText(String subchannel, String query, int maxResults) {
     try {
-      EmbeddingsService embedding = (EmbeddingsService) agent.getService(EmbeddingsService.NAME);
-      EmbeddingFilter<Turn> search = embedding.createEmbeddingFilter(query, maxResults);
+        EmbeddingsService embedding = (EmbeddingsService) agent.getService(EmbeddingsService.NAME);
+        EmbeddingFilter<Turn> search = embedding.createEmbeddingFilter(query, maxResults);
 
-      String sql = SQLProvider.from(getConnection()).get(
-              "SourceOfTtuth_getTurnsByText",
-              "SELECT * FROM turnos WHERE embedding_blob IS NOT NULL"
-      );
-      try (Connection conn = getConnection().get(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
-        while (rs.next()) {
-          byte[] blob = rs.getBytes("embedding_blob");
-          float[] dbVec = search.toFloat(blob);
-          if (dbVec != null) {
-            Turn turn = mapResultSetToTurn(rs, dbVec);
-            search.add(dbVec, turn);
+        // Corregido el ID de la SQL y la columna (subchannel en lugar de sunchannel)
+        String sql = SQLProvider.from(getConnection()).get(
+                "SourceOfTruth_getTurnsByText",
+                "SELECT * FROM turnos WHERE subchannel = ? AND embedding_blob IS NOT NULL"
+        );
+
+        try (Connection conn = getConnection().get(); 
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+          ps.setString(1, subchannel);
+
+          try (ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+              byte[] blob = rs.getBytes("embedding_blob");
+              float[] dbVec = search.toFloat(blob);
+              if (dbVec != null) {
+                Turn turn = mapResultSetToTurn(rs, dbVec);
+                search.add(dbVec, turn);
+              }
+            }
           }
         }
-      }
-      return search.get();
+        return search.get();
 
-    } catch (Exception ex) {
-      throw new TurnException("Can't retrieve turns", ex);
-    }
+      } catch (Exception ex) {
+        throw new TurnException("Can't retrieve turns", ex);
+      }
   }
 
   private Turn mapResultSetToTurn(ResultSet rs) throws SQLException {
@@ -423,6 +433,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
 
   private CheckPoint mapResultSetToCheckPoint(ResultSet rs) throws SQLException {
     return CheckPointImpl.from(
+            rs.getString("subchannel"),
             rs.getInt("id"),
             rs.getInt("cp_first"),
             rs.getInt("cp_last"),
@@ -432,8 +443,8 @@ public class SourceOfTruthImpl implements SourceOfTruth {
   }
 
   @Override
-  public synchronized CheckPoint createCheckPoint(int turnFirst, int turnLast, LocalDateTime timestamp, String text) {
-    CheckPoint cp = CheckPointImpl.create(-1, turnFirst, turnLast, timestamp, text, getDataFolder().resolve(CHECKPOINTS_FOLDER));
+  public synchronized CheckPoint createCheckPoint(String subchannel, int turnFirst, int turnLast, LocalDateTime timestamp, String text) {
+    CheckPoint cp = CheckPointImpl.create(subchannel, -1, turnFirst, turnLast, timestamp, text, getDataFolder().resolve(CHECKPOINTS_FOLDER));
     return cp;
   }
 

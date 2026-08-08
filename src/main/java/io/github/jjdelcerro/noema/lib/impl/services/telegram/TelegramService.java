@@ -102,7 +102,7 @@ public class TelegramService implements AgentService {
       return UpdatesListener.CONFIRMED_UPDATES_ALL;
     });
     this.running = true;
-    this.agent.getConsole().printSystemLog("Servicio de telegram iniciado.");
+    this.agent.getCurrentConsole().printSystemLog("Servicio de telegram iniciado.");
   }
 
   @Override

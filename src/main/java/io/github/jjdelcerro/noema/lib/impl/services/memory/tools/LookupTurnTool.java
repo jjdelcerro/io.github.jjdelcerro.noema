@@ -64,7 +64,7 @@ invoca {LOOKUPTURN}(code=42) para recuperar los argumentos de esa decisión.
       int first = centerId - safeWindow;
       int last = centerId + safeWindow;
 
-      List<Turn> turns = agent.getSourceOfTruth().getTurnsByIds(first, last);
+      List<Turn> turns = agent.getSourceOfTruth().getTurnsByIds(this.agent.getCurrentSubchannel(),first, last);
 
       List<Map<String, Object>> results = new ArrayList<>();
       for (Turn t : turns) {

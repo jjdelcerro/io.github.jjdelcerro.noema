@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noema Agent</title>
+    <link rel="stylesheet" href="css/styles.css">
+    
+    <!-- Librerías de terceros locales -->
+    <script src="vendor/marked.min.js"></script>
+    <script src="vendor/purify.min.js"></script>
+</head>
+<body>
+
+    <!-- Cabecera principal -->
+    <header class="app-header">
+        <div class="terminal-selector">
+            <label for="terminal-id">Terminal:</label>
+            <input type="text" id="terminal-id" placeholder="ID de Terminal" autocomplete="off">
+        </div>
+        
+        <div id="status-indicator" class="status-indicator">
+            <span class="status-dot connecting"></span>
+            <span id="status-text">Conectando...</span>
+        </div>
+
+        <button id="btn-config" class="icon-button" title="Configuración">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+        </button>
+    </header>
+
+    <!-- Área principal de conversación -->
+    <main id="chat-area" class="chat-area">
+        <!-- Los mensajes y bloques de logs se inyectarán dinámicamente aquí -->
+    </main>
+
+    <!-- Barra inferior de entrada -->
+    <footer class="input-bar">
+        <textarea id="message-input" placeholder="Escribe tu mensaje..." rows="1"></textarea>
+        <button id="btn-send" class="primary-button">Enviar</button>
+    </footer>
+
+    <!-- Contenedor flotante de notificaciones toast -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Panel lateral de configuración (oculto por defecto) -->
+    <aside id="config-panel" class="config-panel hidden">
+        <div class="config-header">
+            <h2>Configuración</h2>
+            <button id="btn-close-config" class="icon-button" title="Cerrar">✕</button>
+        </div>
+        <div class="config-body">
+            <nav id="config-tree" class="config-tree">
+                <!-- Árbol de navegación generado dinámicamente -->
+            </nav>
+            <section id="config-content" class="config-content">
+                <!-- Campos del formulario generados dinámicamente -->
+            </section>
+        </div>
+    </aside>
+
+    <!-- Punto de entrada JS -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

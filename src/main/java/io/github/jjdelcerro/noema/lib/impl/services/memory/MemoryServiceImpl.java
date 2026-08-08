@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
 
 /**
  * Componente cognitivo encargado de la consolidación de la memoria. Ejecuta el
@@ -53,7 +54,7 @@ public class MemoryServiceImpl implements MemoryService {
     this.factory = factory;
     this.agent = agent;
     this.sourceOfTruth = agent.getSourceOfTruth();
-    this.console = agent.getConsole();
+    this.console = agent.getConsole(DEFAULT_SUBCHANNEL);
   }
 
   @Override
@@ -87,7 +88,7 @@ public class MemoryServiceImpl implements MemoryService {
     loadSystemPrompt();
     this.running = true;
 
-    this.agent.getConsole().printSystemLog("Memory service " + getModelName());
+    this.console.printSystemLog("Memory service " + getModelName());
   }
 
   private void loadSystemPrompt() {
@@ -106,7 +107,7 @@ public class MemoryServiceImpl implements MemoryService {
    * @return Un nuevo CheckPoint TRANSITORIO (ID -1) con el texto generado.
    */
   @Override
-  public CheckPoint compact(CheckPoint previous, List<Turn> newTurns) {
+  public CheckPoint compact(String subchannel, CheckPoint previous, List<Turn> newTurns) {
     if (newTurns == null || newTurns.isEmpty()) {
       throw new IllegalArgumentException("No hay turnos para compactar.");
     }
@@ -152,7 +153,7 @@ public class MemoryServiceImpl implements MemoryService {
       firstId = previous.getTurnFirst();
     }
 
-    CheckPoint cp = this.sourceOfTruth.createCheckPoint(firstId, lastId, LocalDateTime.now(), generatedText);
+    CheckPoint cp = this.sourceOfTruth.createCheckPoint(subchannel, firstId, lastId, LocalDateTime.now(), generatedText);
     LOGGER.info("Compactacion finalizada.");
     return cp;
   }
@@ -236,7 +237,7 @@ public class MemoryServiceImpl implements MemoryService {
                 settings.getPropertyAsString(MEMORY_PROVIDER_URL),
                 settings.getPropertyAsString(MEMORY_PROVIDER_API_KEY),
                 settings.getPropertyAsString(MEMORY_MODEL_ID),
-                0.7f
+                0.2f
         );
     }
     return null;

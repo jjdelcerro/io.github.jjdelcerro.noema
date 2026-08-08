@@ -307,6 +307,7 @@ public class MainChatPanel extends JPanel {
       return;
     }
     ReasoningService reasoning = (ReasoningService) agent.getService(ReasoningService.NAME);
+    String subchannel = agent.getCurrentSubchannel();
     SwingUtilities.invokeLater(() -> {
       Agent.ChatModel model = reasoning.getModel();
       if (model == null) {
@@ -318,8 +319,8 @@ public class MainChatPanel extends JPanel {
                 String.format(
                         Locale.ENGLISH,
                         "%d - %.1f/%.1f",
-                        reasoning.getTurnsCount(),
-                        (reasoning.estimateToolsTokenCount() + reasoning.estimateSystemPromptTokenCount() + reasoning.estimateMessagesTokenCount()) / 1024.0,
+                        reasoning.getTurnsCount(subchannel),
+                        (reasoning.estimateToolsTokenCount(subchannel) + reasoning.estimateSystemPromptTokenCount(subchannel) + reasoning.estimateMessagesTokenCount(subchannel)) / 1024.0,
                         agent.getConversationContextSize() / 1024.0
                 )
         );
@@ -327,11 +328,11 @@ public class MainChatPanel extends JPanel {
                 String.format(
                         Locale.ENGLISH,
                         "Turnos %d\nTokens en el prompt del sistema %.1fk, en herramientas %.1fk, en mensajes %.1fk\nTotal tokens consumido %.1fk de %.1fk disponible",
-                        reasoning.getTurnsCount(),
-                        reasoning.estimateToolsTokenCount() / 1024.0,
-                        reasoning.estimateSystemPromptTokenCount() / 1024.0,
-                        reasoning.estimateMessagesTokenCount() / 1024.0,
-                        (reasoning.estimateToolsTokenCount() + reasoning.estimateSystemPromptTokenCount() + reasoning.estimateMessagesTokenCount()) / 1024.0,
+                        reasoning.getTurnsCount(subchannel),
+                        reasoning.estimateToolsTokenCount(subchannel) / 1024.0,
+                        reasoning.estimateSystemPromptTokenCount(subchannel) / 1024.0,
+                        reasoning.estimateMessagesTokenCount(subchannel) / 1024.0,
+                        (reasoning.estimateToolsTokenCount(subchannel) + reasoning.estimateSystemPromptTokenCount(subchannel) + reasoning.estimateMessagesTokenCount(subchannel)) / 1024.0,
                         agent.getConversationContextSize() / 1024.0
                 )
         );
@@ -343,7 +344,7 @@ public class MainChatPanel extends JPanel {
     this.agent = agent;
     SwingUtilities.invokeLater(() -> {
 //      Thread.ofVirtual().start(() -> agent.showSession());
-      Thread.ofPlatform().start(() -> agent.showSession());
+      Thread.ofPlatform().start(() -> agent.showSession(agent.getCurrentSubchannel()));
       inputArea.setEnabled(true);
       updateMetadata();
       inputArea.requestFocusInWindow();

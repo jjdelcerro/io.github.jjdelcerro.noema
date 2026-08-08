@@ -71,7 +71,7 @@ public class MainConsole {
       
       agent = BootUtils.init(settings);
       agent.start();
-      console = agent.getConsole();
+      console = agent.getCurrentConsole();
       console.printSystemLog("Sistema listo. Escribe '/quit' para terminar.");
 
       // Bucle de Chat (REPL con JLine)
@@ -115,7 +115,7 @@ public class MainConsole {
       if( agent == null ) {
         System.err.println(">>> [ERR] " + e.getLocalizedMessage());
       } else {
-        agent.getConsole().printSystemError(e.getLocalizedMessage());
+        agent.getCurrentConsole().printSystemError(e.getLocalizedMessage());
       }
       e.printStackTrace();
     }

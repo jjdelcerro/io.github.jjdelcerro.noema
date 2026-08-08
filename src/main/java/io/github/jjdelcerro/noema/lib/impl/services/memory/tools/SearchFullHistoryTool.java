@@ -61,7 +61,11 @@ herramienta.
       SearchArgs args = gson.fromJson(jsonArguments, SearchArgs.class);
       int safeLimit = Math.min(args.limit > 0 ? args.limit : 10, 50);
 
-      List<Turn> turns = this.agent.getSourceOfTruth().getTurnsByText(args.query, safeLimit);
+      List<Turn> turns = this.agent.getSourceOfTruth().getTurnsByText(
+              this.agent.getCurrentSubchannel(),
+              args.query, 
+              safeLimit
+      );
 
       // Mapeamos a una estructura ligera para devolver al LLM
       List<Map<String, Object>> results = new ArrayList<>();

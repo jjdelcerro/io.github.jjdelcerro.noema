@@ -63,7 +63,7 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
 
     @Override
     public AgentSettingsItemConsole show() {
-      AgentConsoleImpl console = (AgentConsoleImpl) agent.getConsole();
+      AgentConsoleImpl console = (AgentConsoleImpl) agent.getCurrentConsole();
       console.printSystemLog("\n--- " + getLabel() + " ---");
       List<AgentSettingsItemUI> childs = getChilds();
       if (childs != null) {
@@ -83,7 +83,7 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
 
     @Override
     public AgentSettingsItemConsole input() {
-      AgentConsoleImpl console = (AgentConsoleImpl) agent.getConsole();
+      AgentConsoleImpl console = (AgentConsoleImpl) agent.getCurrentConsole();
       LineReader reader = console.getLineReader();
       String input = reader.readLine("Seleccione una opcion: ");
       try {
@@ -111,7 +111,7 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
 
     @Override
     public AgentSettingsItemConsole show() {
-      AgentConsoleImpl console = (AgentConsoleImpl) agent.getConsole();
+      AgentConsoleImpl console = (AgentConsoleImpl) agent.getCurrentConsole();
       String current = agent.getSettings().getPropertyAsString(getVariableName());
       console.printSystemLog("\nModificando: " + getLabel());
       console.printSystemLog("Valor actual: " + (current == null ? "(vacio)" : current));
@@ -120,7 +120,7 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
 
     @Override
     public AgentSettingsItemConsole input() {
-      AgentConsoleImpl console = (AgentConsoleImpl) agent.getConsole();
+      AgentConsoleImpl console = (AgentConsoleImpl) agent.getCurrentConsole();
       LineReader reader = console.getLineReader();
       String input = reader.readLine("Nuevo valor (deja en blanco para cancelar): ");
       if (input != null && !input.trim().isEmpty()) {
@@ -143,7 +143,7 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
 
     @Override
     public AgentSettingsItemConsole show() {
-      AgentConsoleImpl console = (AgentConsoleImpl) agent.getConsole();
+      AgentConsoleImpl console = (AgentConsoleImpl) agent.getCurrentConsole();
       console.printSystemLog("\n--- " + getLabel() + " ---");
       List<AgentSettingsItemUI> childs = getChilds();
       if (childs != null) {
@@ -157,7 +157,7 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
 
     @Override
     public AgentSettingsItemConsole input() {
-      AgentConsoleImpl console = (AgentConsoleImpl) agent.getConsole();
+      AgentConsoleImpl console = (AgentConsoleImpl) agent.getCurrentConsole();
       LineReader reader = console.getLineReader();
       String input = reader.readLine("Seleccione una opcion: ");
       try {
@@ -191,7 +191,7 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
 
     @Override
     public AgentSettingsItemConsole show() {
-      AgentConsoleImpl console = (AgentConsoleImpl) agent.getConsole();
+      AgentConsoleImpl console = (AgentConsoleImpl) agent.getCurrentConsole();
       String current = agent.getSettings().getPropertyAsString(getVariableName());
 
       console.printSystemLog("\n--- " + getLabel() + " ---");
@@ -208,7 +208,7 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
 
     @Override
     public AgentSettingsItemConsole input() {
-      AgentConsoleImpl console = (AgentConsoleImpl) agent.getConsole();
+      AgentConsoleImpl console = (AgentConsoleImpl) agent.getCurrentConsole();
       LineReader reader = console.getLineReader();
 
       // 1. Leemos el input SIN trimar inmediatamente

@@ -26,6 +26,6 @@ public interface MemoryService extends AgentService {
    * @param newTurns La lista de turnos recientes a consolidar.
    * @return Un nuevo CheckPoint TRANSITORIO (ID -1) con el texto generado.
    */
-  CheckPoint compact(CheckPoint previous, List<Turn> newTurns);
+  CheckPoint compact(String subchannel, CheckPoint previous, List<Turn> newTurns);
   
 }

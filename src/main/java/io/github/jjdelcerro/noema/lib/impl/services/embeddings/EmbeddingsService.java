@@ -12,6 +12,7 @@ import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
+import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
 
 /**
  *
@@ -71,8 +72,8 @@ public class EmbeddingsService implements AgentService {
     private final Agent agent;
     private boolean running;
     private EmbeddingModel[] embeddingModels = new EmbeddingModel[]{
-        new EmbeddingModel(0, AllMiniLmL6V2QuantizedEmbeddingModel.class, 1024),
-        new EmbeddingModel(1, BgeSmallEnV15QuantizedEmbeddingModel.class, 1024)
+        new EmbeddingModel(0, AllMiniLmL6V2QuantizedEmbeddingModel.class, 384),
+        new EmbeddingModel(1, BgeSmallEnV15QuantizedEmbeddingModel.class, 384)
     };
     private EmbeddingModel embeddingModel;
 
@@ -94,7 +95,7 @@ public class EmbeddingsService implements AgentService {
 
     @Override
     public void start() {
-        agent.getConsole().printSystemLog("Cargando motor de embeddings local...");
+        agent.getCurrentConsole().printSystemLog("Cargando motor de embeddings local...");
         this.embeddingModel = embeddingModels[0];
         this.embeddingModel.getModel(); // Fuerza que se carge el modelo de embedding.
         this.running = true;

@@ -118,6 +118,10 @@ public class BootUtils {
               settings,
               console
       );
+      
+      int webPort = settings.getPropertyAsInt("debug/web_port", 8080);
+      NoemaWebServer.startServer(agent, webPort);      
+      
       return agent;
     } catch (Exception ex) {
       throw new RuntimeException(ex);

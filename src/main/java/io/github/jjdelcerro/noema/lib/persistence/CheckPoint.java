@@ -32,5 +32,7 @@ public interface CheckPoint {
   String getText();
 
   LocalDateTime getTimestamp();
+  
+  String getSubchannel();
 
 }

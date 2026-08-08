@@ -129,7 +129,7 @@ public abstract class AbstractAgentSettingsItemUI implements AgentSettingsItemUI
             theChilds.add(this.createItem(this, agent, (JsonObject) e));
           }
         } else {
-          agent.getConsole().printSystemLog("WARN: Dominio no encontrado: " + domainName);
+          agent.getCurrentConsole().printSystemLog("WARN: Dominio no encontrado: " + domainName);
         }
       }
       this.childs = theChilds;
@@ -176,7 +176,7 @@ public abstract class AbstractAgentSettingsItemUI implements AgentSettingsItemUI
     try {
       Path path = agent.getPaths().getConfigPath(relativePath).toAbsolutePath();
       if (!Files.exists(path)) {
-        agent.getConsole().printSystemError("Fichero de dominio no encontrado: " + path.toString());
+        agent.getCurrentConsole().printSystemError("Fichero de dominio no encontrado: " + path.toString());
         return new JsonArray(); // Devolvemos lista vacía para no romper la UI
       }
 
@@ -188,7 +188,7 @@ public abstract class AbstractAgentSettingsItemUI implements AgentSettingsItemUI
               new java.io.FileInputStream(path.toFile()), StandardCharsets.UTF_8)) {
         props.load(reader);
       } catch (java.io.IOException e) {
-        agent.getConsole().printSystemError("Error leyendo dominio externo (" + relativePath + "): " + e.getMessage());
+        agent.getCurrentConsole().printSystemError("Error leyendo dominio externo (" + relativePath + "): " + e.getMessage());
         return new JsonArray();
       }
 

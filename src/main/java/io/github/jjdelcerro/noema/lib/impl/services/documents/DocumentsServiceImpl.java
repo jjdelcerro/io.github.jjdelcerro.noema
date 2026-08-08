@@ -138,7 +138,7 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
       this.running = true;
     } catch (Exception ex) {
       LOGGER.warn("Error inicializando DocumentServices", ex);
-      agent.getConsole().printSystemError("Error inicializando DocumentServices: " + ex.getMessage());
+      agent.getCurrentConsole().printSystemError("Error inicializando DocumentServices: " + ex.getMessage());
     }
   }
 
@@ -210,7 +210,7 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
 
     } catch (Exception ex) {
       LOGGER.warn("Error al insertar documento '" + Objects.toString(docPath) + "'.", ex);
-      agent.getConsole().printSystemError("Error al insertar documento: " + ex.getMessage());
+      agent.getCurrentConsole().printSystemError("Error al insertar documento: " + ex.getMessage());
     }
   }
 
@@ -245,7 +245,7 @@ public class DocumentsServiceImpl implements AgentService, DocumentsService {
       }
     } catch (Exception ex) {
       LOGGER.warn("Error durante la busqueda de documentos (query=" + query + ").", ex);
-      agent.getConsole().printSystemError("Error en búsqueda de documentos: " + ex.getMessage());
+      agent.getCurrentConsole().printSystemError("Error en búsqueda de documentos: " + ex.getMessage());
     }
     return search.get();
   }

@@ -169,7 +169,7 @@ public class ShellExecuteTool extends AbstractPaginatedAgentTool {
           readPermission.acquire();
           try {
             String msg = String.format("El comando '%s' lleva %ds. ¿Continuar?", command, totalSeconds);
-            keepGoing = agent.getConsole().confirm(msg);
+            keepGoing = agent.getCurrentConsole().confirm(msg);
             if (!keepGoing) {
               process.destroyForcibly();
             }

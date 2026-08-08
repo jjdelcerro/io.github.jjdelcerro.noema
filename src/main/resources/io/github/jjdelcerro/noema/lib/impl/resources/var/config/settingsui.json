@@ -164,7 +164,7 @@
               "type": "combo",
               "label": "API Key (documentos razonamiento)",
               "variableName": "document/reasoning/provider/api_key",
-              "childs": "LLM_PROVIDERS_APIKEY"
+              "childs": "APIKEY"
             },
             {
               "type": "selectoption",
@@ -188,7 +188,7 @@
               "type": "combo",
               "label": "API Key (documentos basico)",
               "variableName": "document/basic/provider/api_key",
-              "childs": "LLM_PROVIDERS_APIKEY"
+              "childs": "APIKEYS"
             },
             {
               "type": "selectoption",
