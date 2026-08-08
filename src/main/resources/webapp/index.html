@@ -1,68 +1,35 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Noema Agent</title>
-    <link rel="stylesheet" href="css/styles.css">
-    
-    <!-- Librerías de terceros locales -->
-    <script src="vendor/marked.min.js"></script>
-    <script src="vendor/purify.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101116">
+  <title>Noema · Terminal</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="vendor/marked.min.js"></script>
+  <script src="vendor/purify.min.js"></script>
 </head>
 <body>
-
-    <!-- Cabecera principal -->
-    <header class="app-header">
-        <div class="terminal-selector">
-            <label for="terminal-id">Terminal:</label>
-            <input type="text" id="terminal-id" placeholder="ID de Terminal" autocomplete="off">
-        </div>
-        
-        <div id="status-indicator" class="status-indicator">
-            <span class="status-dot connecting"></span>
-            <span id="status-text">Conectando...</span>
-        </div>
-
-        <button id="btn-config" class="icon-button" title="Configuración">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="3"></circle>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-            </svg>
-        </button>
-    </header>
-
-    <!-- Área principal de conversación -->
-    <main id="chat-area" class="chat-area">
-        <!-- Los mensajes y bloques de logs se inyectarán dinámicamente aquí -->
-    </main>
-
-    <!-- Barra inferior de entrada -->
-    <footer class="input-bar">
-        <textarea id="message-input" placeholder="Escribe tu mensaje..." rows="1"></textarea>
-        <button id="btn-send" class="primary-button">Enviar</button>
-    </footer>
-
-    <!-- Contenedor flotante de notificaciones toast -->
-    <div id="toast-container" class="toast-container"></div>
-
-    <!-- Panel lateral de configuración (oculto por defecto) -->
-    <aside id="config-panel" class="config-panel hidden">
-        <div class="config-header">
-            <h2>Configuración</h2>
-            <button id="btn-close-config" class="icon-button" title="Cerrar">✕</button>
-        </div>
-        <div class="config-body">
-            <nav id="config-tree" class="config-tree">
-                <!-- Árbol de navegación generado dinámicamente -->
-            </nav>
-            <section id="config-content" class="config-content">
-                <!-- Campos del formulario generados dinámicamente -->
-            </section>
-        </div>
+  <div class="app-shell">
+    <aside class="terminal-sidebar">
+      <div class="brand-lockup"><div class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></div><div><div class="brand-name">Noema</div><div class="brand-caption">consciencia persistente</div></div></div>
+      <div class="sidebar-section-label">Terminal activo</div>
+      <div class="terminal-card"><div class="terminal-avatar">⌁</div><div class="terminal-card-copy"><strong id="sidebar-terminal-name">Terminal</strong><span id="sidebar-terminal-id">default</span></div><span class="live-dot"></span></div>
+      <div class="sidebar-note"><span>◌</span><p>Una única línea de memoria, disponible desde cada terminal.</p></div>
+      <div class="sidebar-footer"><div class="agent-state"><span class="state-orb"></span><span>Noema está disponible</span></div><button id="btn-export" class="sidebar-action"><span>↓</span><span>Descargar conversación</span></button><button id="btn-copy-conversation" class="sidebar-action"><span>▣</span><span>Copiar conversación</span></button><button id="btn-config" class="sidebar-action"><span>⚙</span><span>Configuración</span></button></div>
     </aside>
-
-    <!-- Punto de entrada JS -->
-    <script type="module" src="js/main.js"></script>
+    <main class="conversation-shell">
+      <header class="conversation-header">
+        <div class="mobile-brand"><div class="brand-mark small"><i></i><i></i><i></i></div><span>Noema</span></div>
+        <div class="conversation-title"><div class="eyebrow">Canal de comunicación</div><h1 id="conversation-title">Terminal <span>default</span></h1></div>
+        <div class="header-tools"><label class="terminal-input-wrap"><span>Terminal</span><input id="terminal-id" type="text" placeholder="ID del terminal" autocomplete="off"></label><div id="status-indicator" class="status-indicator"><span class="status-dot connecting"></span><span id="status-text">Conectando...</span></div><button id="btn-mobile-config" class="icon-button mobile-config-button">⚙</button></div>
+      </header>
+      <section id="chat-area" class="chat-area" aria-live="polite"><div class="welcome-card"><div class="welcome-symbol">✦</div><div><div class="eyebrow">Noema</div><h2>La conversación continúa.</h2><p>Este terminal es un canal hacia una única consciencia persistente. Puedes retomar el hilo cuando quieras.</p></div></div></section>
+      <footer class="composer-area"><div class="composer-shell"><textarea id="message-input" placeholder="Escribe a Noema…" rows="1"></textarea><button id="btn-send" class="send-button" aria-label="Enviar mensaje">↑</button></div><div class="composer-hint">Enter para enviar <span>·</span> Shift + Enter para nueva línea</div></footer>
+    </main>
+  </div>
+  <div id="toast-container" class="toast-container"></div>
+  <aside id="config-panel" class="config-panel hidden"><div class="config-header"><div><div class="eyebrow">Noema</div><h2>Configuración</h2></div><button id="btn-close-config" class="config-close-button" title="Cerrar configuración">Cerrar</button></div><div class="config-body"><nav id="config-tree" class="config-tree"></nav><section id="config-content" class="config-content"></section></div></aside>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

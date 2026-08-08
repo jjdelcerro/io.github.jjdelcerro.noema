@@ -30,10 +30,14 @@ export function initConfigUI() {
     configContent = document.getElementById('config-content');
 
     const btnConfig = document.getElementById('btn-config');
+    const btnMobileConfig = document.getElementById('btn-mobile-config');
     const btnClose = document.getElementById('btn-close-config');
 
     if (btnConfig) {
         btnConfig.addEventListener('click', toggleConfigPanel);
+    }
+    if (btnMobileConfig) {
+        btnMobileConfig.addEventListener('click', toggleConfigPanel);
     }
     if (btnClose) {
         btnClose.addEventListener('click', closeConfigPanel);
@@ -105,29 +109,63 @@ function renderTree(descriptor) {
 /**
  * Crea recursivamente un elemento de nodo del árbol.
  */
-function createTreeNode(node) {
+function createTreeNode(node, depth = 0) {
+    const li = document.createElement('li');
+
     if (node.type === 'action') {
-        return null; // Ignorar acciones
+        li.textContent = node.label;
+        li.classList.add('action-disabled');
+        li.title = 'No soportado en la interfaz web';
+        li.setAttribute('aria-disabled', 'true');
+        return li;
     }
 
-    const li = document.createElement('li');
-    li.textContent = node.label;
+    const label = document.createElement('span');
+    label.className = 'tree-label';
+    label.textContent = node.label;
 
     if (node.type === 'menu' && Array.isArray(node.childs)) {
-        const validChildren = node.childs.filter(c => c.type !== 'action');
-        if (validChildren.length === 0) {
-            return null; // Omitir ramas compuestas únicamente de acciones
-        }
-
         li.classList.add('branch');
-        li.addEventListener('click', (e) => {
+        const row = document.createElement('div');
+        row.className = 'tree-row';
+
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'branch-toggle';
+        toggle.setAttribute('aria-label', `Expandir ${node.label}`);
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.textContent = '›';
+
+        row.appendChild(toggle);
+        row.appendChild(label);
+        li.appendChild(row);
+
+        const childrenUl = document.createElement('ul');
+        childrenUl.hidden = true;
+        node.childs.forEach(childNode => {
+            const childLi = createTreeNode(childNode, depth + 1);
+            if (childLi) childrenUl.appendChild(childLi);
+        });
+        if (childrenUl.childElementCount > 0) li.appendChild(childrenUl);
+
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const expanded = !childrenUl.hidden;
+            childrenUl.hidden = expanded;
+            li.classList.toggle('expanded', !expanded);
+            toggle.setAttribute('aria-expanded', String(!expanded));
+            toggle.setAttribute('aria-label', `${expanded ? 'Expandir' : 'Contraer'} ${node.label}`);
+        });
+
+        label.addEventListener('click', (e) => {
             e.stopPropagation();
             setActiveNode(li);
             renderNodeContent(node);
         });
     } else {
         li.classList.add('leaf');
-        li.addEventListener('click', (e) => {
+        li.appendChild(label);
+        label.addEventListener('click', (e) => {
             e.stopPropagation();
             setActiveNode(li);
             renderNodeContent(node);
@@ -152,19 +190,20 @@ async function renderNodeContent(node) {
     if (!configContent) return;
 
     configContent.innerHTML = '';
+    const fields = [];
+    collectFields(node, fields);
 
-    if (node.type === 'menu' && Array.isArray(node.childs)) {
-        // Renderizar todos los parámetros no-action del grupo
-        for (const child of node.childs) {
-            if (child.type !== 'action') {
-                const fieldEl = await renderField(child);
-                if (fieldEl) configContent.appendChild(fieldEl);
-            }
-        }
-    } else if (node.type !== 'action') {
-        // Renderizar una única hoja
-        const fieldEl = await renderField(node);
+    for (const field of fields) {
+        const fieldEl = await renderField(field);
         if (fieldEl) configContent.appendChild(fieldEl);
+    }
+}
+
+function collectFields(node, fields) {
+    if (node.type === 'menu' && Array.isArray(node.childs)) {
+        node.childs.forEach(child => collectFields(child, fields));
+    } else {
+        fields.push(node);
     }
 }
 
@@ -196,6 +235,9 @@ async function renderField(fieldNode) {
                 break;
             case 'paths':
                 await createPathsControl(container, fieldNode);
+                break;
+            case 'action':
+                createUnsupportedActionControl(container, fieldNode);
                 break;
             default:
                 return null;
@@ -255,7 +297,7 @@ async function createSelectControl(container, node) {
     options.forEach(opt => {
         const optionEl = document.createElement('option');
         optionEl.value = opt.value;
-        optionEl.textContent = opt.key;
+        optionEl.textContent = opt.label ?? opt.key;
         select.appendChild(optionEl);
     });
 
@@ -318,26 +360,42 @@ async function createCheckedListControl(container, node) {
     const listContainer = document.createElement('div');
     listContainer.className = 'config-paths-list';
 
-    const queries = domainItems.map(item => ({
-        path: `${node.variableName}/${item.key}`,
-        defaultValue: false
-    }));
+    const queries = [];
+    domainItems.forEach(item => {
+        const statePath = `${node.variableName}/${item.key}`;
+        queries.push({ path: statePath, defaultValue: false });
+        if (node.childEnabled) {
+            queries.push({
+                path: `${statePath}/__enabled`,
+                defaultValue: true,
+                enabledExpression: node.childEnabled,
+                context: { child: item.value }
+            });
+        }
+    });
 
     let states = {};
     try {
         states = await postConfigMultivalue(queries);
-    } catch (e) {}
+    } catch (e) {
+        console.error('No se pudo consultar el estado de la lista', e);
+    }
 
     domainItems.forEach(item => {
+        const statePath = `${node.variableName}/${item.key}`;
+        const enabledPath = `${statePath}/__enabled`;
         const row = document.createElement('div');
         row.className = 'config-field-checkbox';
 
         const chk = document.createElement('input');
         chk.type = 'checkbox';
-        chk.checked = Boolean(states[`${node.variableName}/${item.key}`]);
+        chk.checked = parseBoolean(states[statePath], false);
+        chk.disabled = node.childEnabled ? !parseBoolean(states[enabledPath], true) : false;
+        if (chk.disabled) chk.title = 'Deshabilitado por la configuración de acceso';
 
         const itemLabel = document.createElement('label');
-        itemLabel.textContent = item.value; // Propiedad value como texto descriptivo
+        itemLabel.textContent = item.label ?? item.key;
+        if (chk.disabled) itemLabel.title = chk.title;
 
         chk.addEventListener('change', async () => {
             const checked = chk.checked;
@@ -346,7 +404,7 @@ async function createCheckedListControl(container, node) {
             } catch (error) {
                 console.error(error);
                 chk.checked = !checked;
-                showToast(`No se pudo actualizar ${item.value}`, 'error');
+                showToast(`No se pudo actualizar ${item.label ?? item.key}`, 'error');
             }
         });
 
@@ -356,6 +414,24 @@ async function createCheckedListControl(container, node) {
     });
 
     container.appendChild(listContainer);
+}
+
+function parseBoolean(value, defaultValue) {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+        if (value.toLowerCase() === 'true') return true;
+        if (value.toLowerCase() === 'false') return false;
+    }
+    return value == null ? defaultValue : Boolean(value);
+}
+
+function createUnsupportedActionControl(container, node) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.disabled = true;
+    button.title = 'No soportado en la interfaz web';
+    button.textContent = 'No soportado en la interfaz web';
+    container.appendChild(button);
 }
 
 async function createPathsControl(container, node) {

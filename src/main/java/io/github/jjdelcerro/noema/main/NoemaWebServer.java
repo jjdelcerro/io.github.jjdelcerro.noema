@@ -227,7 +227,8 @@ public class NoemaWebServer {
 
         for (String key : sortedKeys) {
             Map<String, String> entry = new LinkedHashMap<>();
-            entry.put("key", key.replace('_', ' '));
+            entry.put("key", key);
+            entry.put("label", key.replace('_', ' '));
             entry.put("value", props.getProperty(key));
             result.add(entry);
         }
@@ -253,7 +254,18 @@ public class NoemaWebServer {
                 : (defaultValEl.isJsonPrimitive() && defaultValEl.getAsJsonPrimitive().isBoolean()
                     ? defaultValEl.getAsBoolean() : defaultValEl.getAsString());
 
-            if (qPath.endsWith("/enabled")) {
+            if (q.has("enabledExpression")) {
+                Map<String, Object> contextVars = new HashMap<>();
+                if (q.has("context")) {
+                    JsonObject contextJson = q.getAsJsonObject("context");
+                    for (String k : contextJson.keySet()) {
+                        contextVars.put(k, contextJson.get(k).getAsString());
+                    }
+                }
+                Object val = this.agent.getSettings().eval(
+                    q.get("enabledExpression").getAsString(), defaultVal, contextVars);
+                result.addProperty(qPath, Boolean.parseBoolean(val.toString()));
+            } else if (qPath.endsWith("/enabled")) {
                 String parentPath = qPath.substring(0, qPath.length() - "/enabled".length());
                 String expression = findChildEnabledExpression(uiRoot, parentPath);
 

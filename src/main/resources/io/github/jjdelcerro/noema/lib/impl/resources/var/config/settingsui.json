@@ -164,7 +164,7 @@
               "type": "combo",
               "label": "API Key (documentos razonamiento)",
               "variableName": "document/reasoning/provider/api_key",
-              "childs": "APIKEY"
+              "childs": "APIKEYS"
             },
             {
               "type": "selectoption",
