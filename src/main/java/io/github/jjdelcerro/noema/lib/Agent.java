@@ -7,6 +7,7 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.model.output.Response;
 import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
+import io.github.jjdelcerro.noema.lib.persistence.Turn;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.SensorEventCallback;
@@ -115,7 +116,7 @@ public interface Agent {
   
   public void putUsersMessage(String subchannel, String text, SensorEventCallback callback);
   
-  public void putUsersMessage(String text, SensorEventCallback callback);
+//  public void putUsersMessage(String text, SensorEventCallback callback);
   
   public SensorInformation registerSensor(String channel, String label, SensorNature nature, String description);
   
@@ -145,8 +146,6 @@ public interface Agent {
 
   public void installResource(String resPath);
 
-  public void showSession(String subchannel);
-  
   public int getConversationContextSize();
   
   public int estimateTokenCount(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications);

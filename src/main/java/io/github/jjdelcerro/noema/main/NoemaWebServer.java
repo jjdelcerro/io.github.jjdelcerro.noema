@@ -514,5 +514,10 @@ public class NoemaWebServer {
         public void printModelResponse(String message) {
             broadcast("response", message);
         }
+        
+        @Override
+        public void printModelReasoning(String message) {
+            broadcast("reasoning", message);
+        }
     }
 }

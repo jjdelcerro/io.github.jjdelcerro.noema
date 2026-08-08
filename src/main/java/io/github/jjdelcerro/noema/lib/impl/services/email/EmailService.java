@@ -2,13 +2,13 @@ package io.github.jjdelcerro.noema.lib.impl.services.email;
 
 import com.google.gson.Gson;
 import io.github.jjdelcerro.noema.lib.Agent;
+import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.services.email.tools.EmailListTool;
 import io.github.jjdelcerro.noema.lib.impl.services.email.tools.EmailReadTool;
 import io.github.jjdelcerro.noema.lib.impl.services.email.tools.EmailSendTool;
-import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SENSOR_SUBCHANNEL_MAIN;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
 import jakarta.mail.*;
@@ -132,6 +132,7 @@ public class EmailService implements AgentService {
     Thread t = new Thread(() -> {
       while (!Thread.currentThread().isInterrupted()) {
         try {
+          // FIXME: hay que ver que pasa con el subchannel en el correo.
           executeInInbox(inbox -> {
             String authorizedSender = agent.getSettings().getPropertyAsString(EMAIL_AUTHORIZED_SENDER);
             int lastCount = inbox.getMessageCount();
@@ -145,7 +146,7 @@ public class EmailService implements AgentService {
                   long uid = ((UIDFolder) inbox).getUID(m);
                   // INYECTAMOS SOLO LA NOTIFICACIÓN
                   String notify = String.format("NUEVO EMAIL [UID:%d] de %s. Asunto: %s", uid, from, m.getSubject());
-                  agent.putEvent(SENSOR_NAME, SENSOR_SUBCHANNEL_MAIN, "EMAIL RECEIVED", PRIORITY_NORMAL, notify);
+                  agent.putEvent(SENSOR_NAME, DEFAULT_SUBCHANNEL, "EMAIL RECEIVED", PRIORITY_NORMAL, notify);
                 }
                 lastCount = current;
               }

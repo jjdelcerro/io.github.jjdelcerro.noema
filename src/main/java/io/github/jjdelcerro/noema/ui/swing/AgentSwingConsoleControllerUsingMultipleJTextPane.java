@@ -226,6 +226,11 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
   }
 
   @Override
+  public void printModelReasoning(String m) {
+      addMessage(MessageType.MODEL, m);
+  }
+  
+  @Override
   public boolean confirm(String message) {
     return JOptionPane.showConfirmDialog(
             SwingUtils.getTopWindow(),

@@ -1,6 +1,7 @@
 package io.github.jjdelcerro.noema.main;
 
 import io.github.jjdelcerro.noema.lib.Agent;
+import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
@@ -99,7 +100,7 @@ public class MainConsole {
         }
 
         // Ejecución del turno completo
-        agent.putUsersMessage(input, new SensorsService.SensorEventCallback() {
+        agent.putUsersMessage(DEFAULT_SUBCHANNEL, input, new SensorsService.SensorEventCallback() {
           @Override
           public void onComplete(String response) {
 //            try {

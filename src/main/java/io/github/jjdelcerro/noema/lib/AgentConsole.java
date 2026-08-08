@@ -23,4 +23,5 @@ public interface AgentConsole {
     
     void printModelResponse(String message);
     
+    void printModelReasoning(String message);
 }

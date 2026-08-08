@@ -1,27 +1,36 @@
 package io.github.jjdelcerro.noema.lib.impl;
 
 import io.github.jjdelcerro.noema.lib.AbstractAgentAction;
+import io.github.jjdelcerro.noema.lib.AgentAccessControl;
+import io.github.jjdelcerro.noema.lib.AgentActions;
+import io.github.jjdelcerro.noema.lib.AgentConsole;
+import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import io.github.jjdelcerro.noema.lib.AgentAccessControl;
-import io.github.jjdelcerro.noema.lib.AgentActions;
-import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
-import java.net.URI;
+import java.util.function.Supplier;
 
 /**
- * Gestiona el acceso seguro al sistema de ficheros (Sandbox).
+ * Gestiona el acceso seguro al sistema de ficheros (Sandbox) y audita
+ * incongruencias en las reglas de configuración.
  */
 @SuppressWarnings("UseSpecificCatch")
 public class AgentAccessControlImpl implements AgentAccessControl {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(AgentAccessControlImpl.class);
 
   public static final String RELOAD_ACTION_NAME = "RELOAD_ACCESS_CONTROL";
 
   private final Path rootPath;
   private final AgentSettings settings;
   private final AgentActions actions;
+  private final Supplier<AgentConsole> consoleSupplier;
 
   private boolean allowDiskWrite;
   private boolean allowShellExecution;
@@ -36,9 +45,14 @@ public class AgentAccessControlImpl implements AgentAccessControl {
   private boolean enableFirejail;
 
   public AgentAccessControlImpl(AgentSettings settings, AgentActions actions, Path rootPath) {
+    this(settings, actions, rootPath, null);
+  }
+
+  public AgentAccessControlImpl(AgentSettings settings, AgentActions actions, Path rootPath, Supplier<AgentConsole> consoleSupplier) {
     this.rootPath = rootPath.toAbsolutePath().normalize();
     this.settings = settings;
     this.actions = actions;
+    this.consoleSupplier = consoleSupplier;
     this.actions.addAction(new AbstractAgentAction(RELOAD_ACTION_NAME) {
       @Override
       public boolean perform(AgentSettings settings) {
@@ -49,6 +63,7 @@ public class AgentAccessControlImpl implements AgentAccessControl {
     loadConfig();
   }
 
+  @Override
   public List<Path> getAllowedPaths() {
     List<Path> paths = new ArrayList<>();
     paths.add(this.rootPath);
@@ -88,14 +103,6 @@ public class AgentAccessControlImpl implements AgentAccessControl {
     }
   }
 
-  /**
-   * Resuelve una ruta relativa contra el root y verifica la seguridad.Lanza
-   * excepción si el acceso es denegado.
-   *
-   * @param rawPath
-   * @param mode
-   * @return
-   */
   @Override
   public Path resolvePath(String rawPath, AccessMode mode) {
     if (rawPath == null || rawPath.isBlank()) {
@@ -114,12 +121,11 @@ public class AgentAccessControlImpl implements AgentAccessControl {
     }
 
     for (Path nonReadablePath : this.nomReadablePaths) {
-      if (target.startsWith(nonReadablePath.toString())) {
+      if (target.startsWith(nonReadablePath)) {
         throw new SecurityException("ACCESO DENEGADO: Ruta no permitida: " + rawPath);
       }
     }
 
-    // 2. Verificar Jailbreak (Path Traversal)
     // Comprobamos si la ruta final empieza por el rootPath
     boolean isUnderRoot = target.startsWith(rootPath);
     boolean isWhitelisted = false;
@@ -155,7 +161,7 @@ public class AgentAccessControlImpl implements AgentAccessControl {
       }
 
       for (Path nonWritablePath : this.nomWritablePaths) {
-        if (target_s.startsWith(nonWritablePath.toString())) {
+        if (target.startsWith(nonWritablePath)) {
           throw new SecurityException("ACCESO DENEGADO: Ruta no permitida para escritura: " + rawPath);
         }
       }
@@ -199,7 +205,7 @@ public class AgentAccessControlImpl implements AgentAccessControl {
   }
 
   /**
-   * Sincroniza las listas en memoria con lo definido en la configuracion
+   * Sincroniza las listas en memoria con lo definido en la configuración y valida incongruencias.
    */
   private synchronized void loadConfig() {
 
@@ -237,12 +243,71 @@ public class AgentAccessControlImpl implements AgentAccessControl {
     this.allowInternetAccess = Boolean.parseBoolean(
             settings.getPropertyAsString("access_control/allow_internet_access", "true")
     );
-    this.allowInternetAccess = Boolean.parseBoolean(
+    this.humanConfirmationRequired = Boolean.parseBoolean(
             settings.getPropertyAsString("access_control/humanConfirmationRequired", "true")
     );
     this.enableFirejail = Boolean.parseBoolean(
             settings.getPropertyAsString("access_control/enable_firejail", "true")
     );
+
+    // Auditoría de incongruencias
+    validateRules();
+  }
+
+  /**
+   * Inspecciona las listas cargadas para identificar errores comunes de configuración.
+   */
+  private void validateRules() {
+    // 1. Detectar rutas en nom_writable_paths fuera del workspace y no incluidas en allowed_external_paths
+    checkIsolatedRestrictedPaths(nomWritablePaths, "nom_writable_paths");
+
+    // 2. Detectar rutas en nom_readable_paths fuera del workspace y no incluidas en allowed_external_paths
+    checkIsolatedRestrictedPaths(nomReadablePaths, "nom_readable_paths");
+
+    // 3. Detectar rutas redundantes en allowed_external_paths
+    for (Path allowed : allowedExternalPaths) {
+      if (allowed.startsWith(rootPath)) {
+        reportIncongruency("La ruta '" + allowed + "' en 'allowed_external_paths' está dentro del workspace, por lo que es redundante.");
+      }
+    }
+
+    // 4. Detectar solapamientos entre lectura prohibida y solo-lectura
+    for (Path forbidden : nomReadablePaths) {
+      if (nomWritablePaths.contains(forbidden)) {
+        reportIncongruency("La ruta '" + forbidden + "' está en 'nom_readable_paths' y 'nom_writable_paths'. Prevalecerá el bloqueo total de lectura.");
+      }
+    }
+  }
+
+  private void checkIsolatedRestrictedPaths(List<Path> restrictedList, String listName) {
+    for (Path p : restrictedList) {
+      boolean isUnderRoot = p.startsWith(rootPath);
+      boolean isWhitelisted = false;
+
+      for (Path allowed : allowedExternalPaths) {
+        if (p.startsWith(allowed)) {
+          isWhitelisted = true;
+          break;
+        }
+      }
+
+      if (!isUnderRoot && !isWhitelisted) {
+        reportIncongruency("La ruta '" + p + "' en '" + listName + "' está fuera del workspace y NO está incluida en 'allowed_external_paths'. El Sandbox bloqueará completamente su acceso.");
+      }
+    }
+  }
+
+  /**
+   * Notifica una incongruencia de configuración al Logger y a la consola activa si está disponible.
+   */
+  private void reportIncongruency(String message) {
+    LOGGER.warn(message);
+    if (consoleSupplier != null) {
+      AgentConsole console = consoleSupplier.get();
+      if (console != null) {
+        console.printSystemLog("[ADVERTENCIA DE CONFIGURACIÓN] " + message);
+      }
+    }
   }
 
   @Override
@@ -292,6 +357,6 @@ public class AgentAccessControlImpl implements AgentAccessControl {
 
   @Override
   public boolean isFirejailEnabled() {
-    throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    return enableFirejail;
   }
 }

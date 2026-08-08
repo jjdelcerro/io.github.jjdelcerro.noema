@@ -3,12 +3,12 @@ package io.github.jjdelcerro.noema.lib.impl.services.telegram;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
 import io.github.jjdelcerro.noema.lib.Agent;
+import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
 import io.github.jjdelcerro.noema.lib.Agent.ModelParameters;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SENSOR_SUBCHANNEL_MAIN;
 import io.github.jjdelcerro.noema.lib.impl.services.telegram.tools.TelegramTool;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
@@ -89,13 +89,14 @@ public class TelegramService implements AgentService {
     }
     this.bot = new TelegramBot(apiKeyTelegram);
 
+    // FIXME: Hay que ver que pasa con el subchannel para el telegram
     bot.setUpdatesListener(updates -> {
       updates.forEach(update -> {
         if (update.message() != null && update.message().text() != null) {
           long chatId = update.message().chat().id();
           // Seguridad: Solo hacemos caso si eres tú (chatId configurado)
           if (chatId == authorizedChatId) {
-            agent.putEvent(SENSOR_NAME, SENSOR_SUBCHANNEL_MAIN, "TELEGRAM MESSAGE RECEIVED", PRIORITY_NORMAL, update.message().text());
+            agent.putEvent(SENSOR_NAME, DEFAULT_SUBCHANNEL, "TELEGRAM MESSAGE RECEIVED", PRIORITY_NORMAL, update.message().text());
           }
         }
       });

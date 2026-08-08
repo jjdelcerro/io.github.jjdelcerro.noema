@@ -4,10 +4,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.github.jjdelcerro.noema.lib.Agent;
+import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
 import io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentStructure.DocumentStructureEntry;
 import static io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsServiceImpl.SENSOR_NAME;
-import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SENSOR_SUBCHANNEL_MAIN;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -52,10 +51,11 @@ public class DocumentStructureExtractor {
 
         doProcessDocument(document);
 
+        // FIXME: hay que ver que pasa con el subchannel en el document-estractor
         // Al terminar, inyectamos un evento para que el Agente se entere proactivamente
         agent.putEvent(
                 SENSOR_NAME, 
-                SENSOR_SUBCHANNEL_MAIN,
+                DEFAULT_SUBCHANNEL,
                 "DOCUMENT INDEXATION FINALIZED", 
                 PRIORITY_NORMAL,
                 "Ha terminado la indexacion del documento: `" + document.getFileName()

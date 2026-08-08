@@ -68,7 +68,6 @@ import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.Con
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.ListSkillsTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.LoadSkillTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.TavilyWebSearchTool;
-import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SENSOR_SUBCHANNEL_MAIN;
 import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SYSTEMCLOCK_SENSOR_NAME;
 import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SYSTEMNOTIFICATION_SENSOR_NAME;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_HIGH;
@@ -548,34 +547,34 @@ public class ReasoningServiceImpl implements ReasoningService {
         return theModel.getParameters().modelId();
     }
 
-    public void showSession(String subchannel) {
-        List<ChatMessage> history = this.getSession(subchannel).getMessages();
-
-        CheckPoint activeCheckPoint = this.getActiveCheckPoint(subchannel);
-        if (activeCheckPoint != null) {
-            console(subchannel).printSystemLog(activeCheckPoint.getText(), AgentConsole.Format.Markdown);
-        }
-        for (ChatMessage message : history) {
-            if (message instanceof UserMessage userMsg) {
-                console(subchannel).printUserMessage(userMsg.singleText());
-
-            } else if (message instanceof AiMessage aiMsg) {
-                // 1. Si el modelo pidió ejecutar herramientas, informamos de cada una
-                if (aiMsg.hasToolExecutionRequests()) {
-                    for (ToolExecutionRequest req : aiMsg.toolExecutionRequests()) {
-                        console(subchannel).printSystemLog(String.format("Ejecutando herramienta: %s\n    Argumentos: %s",
-                                req.name(), req.arguments()));
-                    }
-                }
-                // Los ToolExecutionResultMessage y SystemMessage se ignoran 
-                // ya que no se presentan en la consola.
-                // 2. Si el modelo respondió con texto, lo mostramos
-                if (StringUtils.isNotBlank(aiMsg.text())) {
-                    console(subchannel).printModelResponse(aiMsg.text());
-                }
-            }
-        }
-    }
+//    public void showSession(String subchannel) {
+//        List<ChatMessage> history = this.getSession(subchannel).getMessages();
+//
+//        CheckPoint activeCheckPoint = this.getActiveCheckPoint(subchannel);
+//        if (activeCheckPoint != null) {
+//            console(subchannel).printSystemLog(activeCheckPoint.getText(), AgentConsole.Format.Markdown);
+//        }
+//        for (ChatMessage message : history) {
+//            if (message instanceof UserMessage userMsg) {
+//                console(subchannel).printUserMessage(userMsg.singleText());
+//
+//            } else if (message instanceof AiMessage aiMsg) {
+//                // 1. Si el modelo pidió ejecutar herramientas, informamos de cada una
+//                if (aiMsg.hasToolExecutionRequests()) {
+//                    for (ToolExecutionRequest req : aiMsg.toolExecutionRequests()) {
+//                        console(subchannel).printSystemLog(String.format("Ejecutando herramienta: %s\n    Argumentos: %s",
+//                                req.name(), req.arguments()));
+//                    }
+//                }
+//                // Los ToolExecutionResultMessage y SystemMessage se ignoran 
+//                // ya que no se presentan en la consola.
+//                // 2. Si el modelo respondió con texto, lo mostramos
+//                if (StringUtils.isNotBlank(aiMsg.text())) {
+//                    console(subchannel).printModelResponse(aiMsg.text());
+//                }
+//            }
+//        }
+//    }
 
     private List<ToolSpecification> getToolSpecifications() {
         List<ToolSpecification> toolSpecifications = new ArrayList<>();
@@ -647,7 +646,7 @@ public class ReasoningServiceImpl implements ReasoningService {
         this.running = false;
     }
 
-    private void checkAndInsertTimestamp(Session session) {
+    private void checkAndInsertTimestamp(String subchannel, Session session) {
         LocalDateTime now = LocalDateTime.now();
         // FIXME: ¿¿ Deberia usarse el SensorsService.getSensorStatistics(USER_SENSOR_NAME).getLastEventTimestamp() 
         // en lugar de session.getLastInteractionTime() y quitar de la session LastInteractionTime ??
@@ -660,7 +659,7 @@ public class ReasoningServiceImpl implements ReasoningService {
                 ConsumableSensorEvent timerEvent = sensors.createSensorEvent(
                         SYSTEMCLOCK_SENSOR_NAME,
                         content,
-                        SENSOR_SUBCHANNEL_MAIN,
+                        subchannel,
                         PRIORITY_NORMAL,
                         "A pasado el tiempo",
                         now,
@@ -711,7 +710,7 @@ public class ReasoningServiceImpl implements ReasoningService {
 
             if (event instanceof SensorEventUser) {
                 // Caso Usuario: Guardamos el prompt para el turno final 'chat'
-                this.checkAndInsertTimestamp(session);
+                this.checkAndInsertTimestamp(currentSubchannel, session);
                 textUser = event.getContents();
                 session.add(event.getChatMessage());
             } else {

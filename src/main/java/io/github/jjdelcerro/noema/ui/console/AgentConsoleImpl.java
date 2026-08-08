@@ -77,4 +77,11 @@ public class AgentConsoleImpl implements AgentConsole {
     terminal.flush();
   }
 
+    @Override
+    public void printModelReasoning(String message) {
+    terminal.writer().println("Reasoning: " + message);
+    terminal.flush();
+    }
+
+  
 }

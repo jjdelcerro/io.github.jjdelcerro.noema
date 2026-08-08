@@ -53,8 +53,6 @@ public class SensorsServiceImpl implements SensorsService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SensorsServiceImpl.class);
 
-  public static final String SENSOR_SUBCHANNEL_MAIN = "";
-  
   public static final String SYSTEMCLOCK_SENSOR_NAME = "SYSTEMCLOCK";
   private static final String SYSTEMCLOCK_SENSOR_LABEL = "Reloj del Sistema";
   private static final String SYSTEMCLOCK_SENSOR_DESCRIPTION = "Sensor interno de paso del tiempo"; 

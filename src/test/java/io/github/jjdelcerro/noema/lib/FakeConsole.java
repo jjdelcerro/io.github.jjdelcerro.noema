@@ -10,4 +10,5 @@ public class FakeConsole implements AgentConsole {
     @Override public void printSystemLog(String message, Format format) { System.out.println("[LOG] " + message); }
     @Override public void printUserMessage(String message) { System.out.println("USER > " + message); }
     @Override public void printModelResponse(String message) { System.out.println("MODEL > " + message); }
+    @Override public void printModelReasoning(String message) { System.out.println("REASONING > " + message); }
 }

@@ -23,7 +23,6 @@ import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
-import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SENSOR_SUBCHANNEL_MAIN;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
@@ -110,7 +109,8 @@ public class AgentImpl implements Agent {
     this.accessControl = (accessControl != null) ? accessControl : new AgentAccessControlImpl(
             this.settings,
             this.actions,
-            Paths.get(".").toAbsolutePath().normalize()
+            Paths.get(".").toAbsolutePath().normalize(),
+            this::getCurrentConsole
     );
     
     this.servicesDatabase = servicesDatabase;
@@ -408,14 +408,6 @@ public class AgentImpl implements Agent {
     return service;
   }
 
-  @Override
-  public void showSession(String subchannel) {
-    ReasoningServiceImpl reasoning = (ReasoningServiceImpl) this.getService(ReasoningServiceImpl.NAME);
-    if (reasoning != null) {
-      reasoning.showSession(subchannel);
-    }
-  }
-
   public String getCurrentSubchannel() {
     ReasoningServiceImpl reasoning = (ReasoningServiceImpl) this.getService(ReasoningServiceImpl.NAME);
     if (reasoning != null) {
@@ -483,10 +475,10 @@ public class AgentImpl implements Agent {
     sensors.putEvent(USER_SENSOR_NAME, subchannel, text, PRIORITY_NORMAL, null, LocalDateTime.now(), callback);
   }
 
-  public void putUsersMessage(String text, SensorsService.SensorEventCallback callback) {
-    SensorsService sensors = (SensorsService) this.getService(SensorsService.NAME);
-    sensors.putEvent(USER_SENSOR_NAME, SENSOR_SUBCHANNEL_MAIN, text, PRIORITY_NORMAL, null, LocalDateTime.now(), callback);
-  }
+//  public void putUsersMessage(String text, SensorsService.SensorEventCallback callback) {
+//    SensorsService sensors = (SensorsService) this.getService(SensorsService.NAME);
+//    sensors.putEvent(USER_SENSOR_NAME, DEFAULT_SUBCHANNEL, text, PRIORITY_NORMAL, null, LocalDateTime.now(), callback);
+//  }
 
   @Override
   public SensorInformation registerSensor(String channel, String label, SensorNature nature, String description) {

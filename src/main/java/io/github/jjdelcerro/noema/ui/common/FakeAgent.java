@@ -132,11 +132,6 @@ public class FakeAgent implements Agent {
   }
 
   @Override
-  public void showSession(String subchannel) {
-
-  }
-
-  @Override
   public AgentPaths getPaths() {
     return settings.getPaths();
   }
@@ -148,11 +143,6 @@ public class FakeAgent implements Agent {
 
   @Override
   public void stop() {
-
-  }
-
-  @Override
-  public void putUsersMessage(String text, SensorsService.SensorEventCallback callback) {
 
   }
 
@@ -205,6 +195,10 @@ public class FakeAgent implements Agent {
 
     @Override
     public void printSystemLog(String message, Format format) {
+    }
+
+    @Override
+    public void printModelReasoning(String message) {
     }
 
   }
