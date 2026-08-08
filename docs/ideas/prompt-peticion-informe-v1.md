@@ -14,7 +14,7 @@ Puntos a tener en cuenta a la hora de realizar el analisis del proyecto:
 *   Esta pensado para mantener una unica sesion que se extienda a lo largo del tiempo, 
     con lo que no existe el concepto de sesiones antiguas o guardadas.
 
-*   Como proyecto personal que es la migración de la búsqueda vectorial a BBDD 
+*   Como proyecto personal que es, la migración de la búsqueda vectorial a BBDD 
     con soporte vectorial o similares no esta contemplada en estos momentos.
     
 *   No debe requerir nunca una infraestructura mas alla de la necesaria para ejecutar
@@ -26,6 +26,7 @@ Puntos a tener en cuenta a la hora de realizar el analisis del proyecto:
 **No uses conceptos como "memoria infinita" o "contexto infinito" para referirte a como gestiona la memoria el agente. Si utilizas conceptos como memoria o contexto infinito FALLAS en la realizacion del informe.**
 
 Trata de no utilizar referencias biologicas para definer conportamientos de la aplicacion.
+No uses tablas para presentar la informacion.
     
 Teniendo en cuenta todo esto prepara un informe que incluya como minimo:
 

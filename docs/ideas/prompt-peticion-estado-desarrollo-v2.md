@@ -26,6 +26,8 @@ Puntos a tener en cuenta a la hora de realizar el analisis del proyecto:
 **No uses conceptos como "memoria infinita" o "contexto infinito" para referirte a como gestiona la memoria el agente. Si utilizas conceptos como memoria o contexto infinito FALLAS en la realizacion del informe.**
 
 Trata de no utilizar referencias biologicas para definer conportamientos de la aplicacion.
+
+No uses tablas excepto en la seccion "Resumen del Estado".
     
 Elabora un informe del estado de desarrollo en el que se encuentra el proyecto. 
 
@@ -83,6 +85,7 @@ XXX
 ### E. Interfaces de Usuario (XXX% Completo)
 *   **Consola:** XXX
 *   **Swing:** XXX
+*   **Web:** XXX
 *   **Faltante:** XXX
 *   **Limitaciones:** XXX
 
