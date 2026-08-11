@@ -1,6 +1,7 @@
 package io.github.jjdelcerro.noema.lib.settings;
 
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -26,6 +27,8 @@ public interface AgentSettingsGroup extends AgentSettingsItem {
   AgentSettingsGroup getPropertyGroup(String path);
 
   AgentSettingsCheckedList getPropertyAsCheckedList(String path);
+  
+  AgentSettingsList getPropertyAsList(String path);
 
   void setProperty(String path, String value);
 
@@ -35,4 +38,6 @@ public interface AgentSettingsGroup extends AgentSettingsItem {
    * Actualiza o añade el estado de un elemento dentro de una lista marcada.
    */
   void setChecked(String path, String value, boolean checked);
+  
+  Collection<String> getPropertyNames();
 }

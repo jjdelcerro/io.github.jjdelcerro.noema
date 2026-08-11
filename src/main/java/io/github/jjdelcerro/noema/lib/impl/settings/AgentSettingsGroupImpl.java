@@ -3,10 +3,12 @@ package io.github.jjdelcerro.noema.lib.impl.settings;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsCheckedList;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsGroup;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsItem;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettingsList;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsPaths;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsString;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -163,5 +165,19 @@ public class AgentSettingsGroupImpl implements AgentSettingsGroup {
   // Usado por el serializador
   public Map<String, AgentSettingsItem> getItems() {
     return items;
+  }
+
+  @Override
+  public Collection<String> getPropertyNames() {
+    return this.items.keySet();
+  }
+  
+  @Override
+  public AgentSettingsList getPropertyAsList(String path) {
+    AgentSettingsItem item = getProperty(path);
+    if (item instanceof AgentSettingsList list) {
+      return list;
+    }
+    return null;
   }
 }

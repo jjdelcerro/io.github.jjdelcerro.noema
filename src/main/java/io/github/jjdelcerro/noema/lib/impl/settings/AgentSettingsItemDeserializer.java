@@ -11,6 +11,7 @@ import com.google.gson.JsonSerializer;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsCheckedList;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsGroup;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsItem;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettingsList;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsPaths;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsString;
 import java.lang.reflect.Type;
@@ -38,6 +39,13 @@ public class AgentSettingsItemDeserializer
     if (src instanceof AgentSettingsCheckedList cl) {
       return context.serialize(((AgentSettingsCheckedListImpl) cl).getInternalItems());
     }
+    if (src instanceof AgentSettingsList list) {
+      JsonArray array = new JsonArray();
+      for (AgentSettingsItem item : list) {
+        array.add(context.serialize(item));
+      }
+      return array;
+    }
     if (src instanceof AgentSettingsGroup g) {
       JsonObject obj = new JsonObject();
       Map<String, AgentSettingsItem> map = ((AgentSettingsGroupImpl) g).getItems();
@@ -57,21 +65,30 @@ public class AgentSettingsItemDeserializer
       return new AgentSettingsStringImpl(json.getAsString());
     }
 
-    // 2. Si es una lista (Array) -> Puede ser AgentSettingsPaths o AgentSettingsCheckedList
+    // 2. Si es una lista (Array) -> Puede ser AgentSettingsPaths o AgentSettingsCheckedList o o AgentSettingsList
     if (json.isJsonArray()) {
       JsonArray array = json.getAsJsonArray();
 
-      // Lógica del Anexo I: Detectar si es una lista de elementos marcables
+      // Criterio A: CheckedList
       if (isLikelyCheckedList(array)) {
         List<AgentSettingsCheckedListImpl.CheckedItemImpl> items = new ArrayList<>();
         for (JsonElement element : array) {
-          // Delegamos a Gson para deserializar el objeto interno {checked, value}
           items.add(context.deserialize(element, AgentSettingsCheckedListImpl.CheckedItemImpl.class));
         }
         return new AgentSettingsCheckedListImpl(items);
       }
 
-      // Por defecto, tratamos los arrays como listas de Strings (Rutas)
+      // Criterio B: Lista de Objetos/Items complejos (AgentSettingsList)
+      if (isLikelyObjectList(array)) {
+        List<AgentSettingsItem> items = new ArrayList<>();
+        for (JsonElement element : array) {
+          // Deserializa recursivamente cada elemento
+          items.add(context.deserialize(element, AgentSettingsItem.class));
+        }
+        return new AgentSettingsListImpl(items);
+      }
+
+      // Criterio C: Por defecto, lista de Strings/Paths (AgentSettingsPaths)
       List<String> paths = new ArrayList<>();
       for (JsonElement element : array) {
         if (element.isJsonPrimitive()) {
@@ -114,4 +131,14 @@ public class AgentSettingsItemDeserializer
     }
     return false;
   }
+
+  private boolean isLikelyObjectList(JsonArray array) {
+    if (array.isEmpty()) {
+      return false;
+    }
+    JsonElement first = array.get(0);
+    // Si el primer elemento es un objeto JSON (y no era CheckedList), es una lista de objetos
+    return first.isJsonObject();
+  }
+
 }

@@ -76,11 +76,14 @@
         </dependency>
         <dependency>
             <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-mcp</artifactId>
+            <version>1.16.3-beta26</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-embeddings</artifactId>
             <version>1.13.0-beta23</version>
-            <type>jar</type>
         </dependency>
-                
         <!-- Integracion con OpenAI -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
