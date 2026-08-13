@@ -32,10 +32,12 @@ public class MainLanterna {
                     new EmptySpace()
             );
 
-            // 2. Crear Ventana y Consola Lanterna
+            // 2. Crear Ventana y Consola Lanterna, y mostramos la ventana principal
             MainLanternaWindow chatWindow = new MainLanternaWindow();
             AgentLanternaConsoleImpl console = new AgentLanternaConsoleImpl(chatWindow, gui);
 
+            gui.addWindow(chatWindow);
+            
             // 3. Registrar el UIManager
             AgentUILocator.registerAgentUIManager(new AgentLanternaManagerImpl(console));
 
@@ -52,8 +54,8 @@ public class MainLanterna {
 
             chatWindow.setAgent(agent);
             
-            // 5. Iniciar la interfaz GUI de Lanterna (Bloqueante)
-            gui.addWindowAndWait(chatWindow);
+            // 5. Esperamos a que se cierre la ventana (Bloqueante)
+            chatWindow.waitUntilClosed();
 
             // 6. Al cerrar la ventana, apagar el agente limpiamente
             agent.stop();

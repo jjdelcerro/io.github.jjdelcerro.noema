@@ -28,13 +28,10 @@ import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.SensorEven
 import io.github.jjdelcerro.noema.ui.AgentUILocator;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 public class MainLanternaWindow extends BasicWindow {
@@ -170,9 +167,35 @@ public class MainLanternaWindow extends BasicWindow {
       inputArea.setReadOnly(false);
       btnSend.setEnabled(true);
       btnConfig.setEnabled(true);
-      setFocusedInteractable(inputArea);
-      updateMetadata();
-      showHistory(agent);
+      runOnGuiThread( () -> {
+        // Limpieza total del buffer de la pantalla
+        if (getTextGUI() != null && getTextGUI().getScreen() != null) {
+            try {
+                getTextGUI().getScreen().clear();
+            } catch (Exception ignored) {}
+        }        
+        setFocusedInteractable(inputArea);
+        updateMetadata();
+        showHistory(agent);
+      });
+    }
+  }
+
+  private void runOnGuiThread(Runnable action) {
+    TextGUIThread guiThread = (getTextGUI() != null) ? getTextGUI().getGUIThread() : null;
+
+    if (guiThread == null) {
+      // Si aún no hay hilo GUI adjunto, ejecutamos directamente
+      action.run();
+    } else {
+      // Si venimos de un hilo secundario (segundo plano), delegamos al hilo de la GUI
+      guiThread.invokeLater(() -> {
+        action.run();
+        try {
+          getTextGUI().updateScreen();
+        } catch (Exception ignored) {
+        }
+      });
     }
   }
 
@@ -313,24 +336,35 @@ public class MainLanternaWindow extends BasicWindow {
       return;
     }
     Runnable action = () -> {
-      int width = chatHistoryBox.getSize().getColumns();
+      int width = 0;
+
+      // 1. Intentar obtener el ancho del componente
+      if (chatHistoryBox.getSize() != null && chatHistoryBox.getSize().getColumns() > 0) {
+        width = chatHistoryBox.getSize().getColumns();
+      } // 2. Si aún no se ha dibujado, obtener el ancho real de la terminal
+      else if (getTextGUI() != null && getTextGUI().getScreen() != null) {
+        width = getTextGUI().getScreen().getTerminalSize().getColumns();
+      }
+
+      // 3. Fallback final por seguridad si todo falla
       if (width <= 0) {
         width = 80;
       }
+
       String text = theText;
       String prefix = "";
       if (text.startsWith("[USR] ")) {
         prefix = "[USR] ";
-        text = text.substring(5, text.length() - 5);
+        text = text.substring(6);
       } else if (text.startsWith("[SIS] ")) {
         prefix = "[SIS] ";
-        text = text.substring(5, text.length() - 5);
+        text = text.substring(6);
       } else if (text.startsWith("[ERR] ")) {
         prefix = "[ERR] ";
-        text = text.substring(5, text.length() - 5);
+        text = text.substring(6);
       } else if (text.startsWith("[RES] ")) {
         prefix = "[RES] ";
-        text = text.substring(5, text.length() - 5);
+        text = text.substring(6);
       }
 
       int maxLineLength = Math.max(20, width - 2);
@@ -369,15 +403,7 @@ public class MainLanternaWindow extends BasicWindow {
       chatHistoryBox.setCaretPosition(totalLineas - 1, 0);
 
     };
-    TextGUIThread guiThread = null;
-    if (this.getTextGUI() != null) {
-      guiThread = this.getTextGUI().getGUIThread();
-    };
-    if (guiThread == null) {
-      action.run();
-    } else {
-      guiThread.invokeLater(action);
-    }
+    runOnGuiThread(action);
   }
 
   private static class ColoredHistoryRenderer extends DefaultTextBoxRenderer {
@@ -415,16 +441,16 @@ public class MainLanternaWindow extends BasicWindow {
         // Seleccionar color según cómo empieza la línea
         if (line.startsWith("[USR]")) {
           graphics.setForegroundColor(COLOR_USER);
-          line = line.substring(5, line.length());
+          line = line.substring(6);
         } else if (line.startsWith("[SIS]")) {
           graphics.setForegroundColor(COLOR_LOG);
-          line = line.substring(5, line.length());
+          line = line.substring(6);
         } else if (line.startsWith("[ERR]")) {
           graphics.setForegroundColor(COLOR_ERR);
-          line = line.substring(5, line.length());
+          line = line.substring(6);
         } else if (line.startsWith("[RES]")) {
           graphics.setForegroundColor(COLOR_MODEL);
-          line = line.substring(5, line.length());
+          line = line.substring(6);
         }
 
         graphics.putString(0, row, line);
