@@ -46,8 +46,12 @@ public class MainLanterna {
             settings.setupSettings();
 
             Agent agent = BootUtils.init(settings);
+            BootUtils.disableConsoleLogging(); 
+            
             agent.start();
 
+            chatWindow.setAgent(agent);
+            
             // 5. Iniciar la interfaz GUI de Lanterna (Bloqueante)
             gui.addWindowAndWait(chatWindow);
 

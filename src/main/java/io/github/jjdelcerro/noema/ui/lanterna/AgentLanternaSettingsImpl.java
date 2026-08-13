@@ -55,9 +55,9 @@ public class AgentLanternaSettingsImpl implements AgentUISettings {
         // Panel Principal Dividido (Izquierda: Menú / Derecha: Formulario)
         Panel bodyPanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
 
-        navigationList = new ActionListBox(new TerminalSize(30, 15));
+        navigationList = new ActionListBox(new TerminalSize(30, 23));
         detailPanel = new Panel(new LinearLayout(Direction.VERTICAL));
-        detailPanel.setPreferredSize(new TerminalSize(45, 15));
+        detailPanel.setPreferredSize(new TerminalSize(45, 23));
 
         bodyPanel.addComponent(navigationList.withBorder(Borders.singleLine("Secciones")));
         bodyPanel.addComponent(detailPanel.withBorder(Borders.singleLine("Parámetros")));
