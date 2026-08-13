@@ -10,8 +10,6 @@ import com.googlecode.lanterna.gui2.Label;
 import com.googlecode.lanterna.gui2.LinearLayout;
 import com.googlecode.lanterna.gui2.Panel;
 import com.googlecode.lanterna.gui2.TextBox;
-import com.googlecode.lanterna.gui2.TextBox.DefaultTextBoxRenderer;
-import com.googlecode.lanterna.gui2.TextGUIGraphics;
 import com.googlecode.lanterna.gui2.TextGUIThread;
 import com.googlecode.lanterna.gui2.Window.Hint;
 import com.googlecode.lanterna.input.KeyStroke;
@@ -50,7 +48,7 @@ public class MainLanternaWindow extends BasicWindow {
   private String currentStatus = "Desconectado";
 
   public MainLanternaWindow() {
-    super("Noema Agent - Terminal UI");
+    super("Noema Agent");
     // Quitar bordes y título exterior
     setHints(Arrays.asList(Hint.FULL_SCREEN, Hint.NO_DECORATIONS));
 
@@ -167,13 +165,14 @@ public class MainLanternaWindow extends BasicWindow {
       inputArea.setReadOnly(false);
       btnSend.setEnabled(true);
       btnConfig.setEnabled(true);
-      runOnGuiThread( () -> {
+      runOnGuiThread(() -> {
         // Limpieza total del buffer de la pantalla
         if (getTextGUI() != null && getTextGUI().getScreen() != null) {
-            try {
-                getTextGUI().getScreen().clear();
-            } catch (Exception ignored) {}
-        }        
+          try {
+            getTextGUI().getScreen().clear();
+          } catch (Exception ignored) {
+          }
+        }
         setFocusedInteractable(inputArea);
         updateMetadata();
         showHistory(agent);
@@ -238,6 +237,51 @@ public class MainLanternaWindow extends BasicWindow {
             contextK
     );
     statusLabel.setText(text);
+  }
+
+  private void showHistory(Agent agent) {
+    AgentConsole console = agent.getConsole(DEFAULT_SUBCHANNEL);
+    String subchannel = agent.getCurrentSubchannel();
+    try {
+      SourceOfTruth sot = agent.getSourceOfTruth();
+
+      // Cargar el punto de guardado (resumen/relato activo) si existe
+      CheckPoint activeCheckPoint = sot.getLatestCheckPoint(subchannel);
+
+      // Cargar la lista de turnos sin consolidar
+      List<Turn> turns = sot.getUnconsolidatedTurns(subchannel);
+
+      // 2. Renderizar los elementos de forma secuencial en el hilo de Swing (EDT)
+      // a) Si hay un CheckPoint anterior, mostramos el relato/resumen consolidado
+      if (activeCheckPoint != null && StringUtils.isNotBlank(activeCheckPoint.getText())) {
+        console.printSystemLog(activeCheckPoint.getText(), AgentConsole.Format.Markdown);
+      }
+
+      // b) Recorremos los turnos no consolidados y dibujamos sus componentes
+      for (Turn turn : turns) {
+        // Mensaje original del usuario
+        if (StringUtils.isNotBlank(turn.getTextUser())) {
+          console.printUserMessage(turn.getTextUser());
+        }
+
+        // Logs de llamadas a herramientas (si las hubo)
+        if (StringUtils.isNotBlank(turn.getToolCall())) {
+          console.printSystemLog(turn.getToolCall());
+        }
+
+        // Mensajes de error en herramientas (si aplica)
+        if ("error".equals(turn.getContenttype()) && StringUtils.isNotBlank(turn.getToolResult())) {
+          console.printSystemError(turn.getToolResult());
+        }
+
+        // Respuesta final del modelo
+        if (StringUtils.isNotBlank(turn.getTextModel())) {
+          console.printModelResponse(turn.getTextModel());
+        }
+      }
+    } catch (Exception e) {
+      console.printSystemError("Error al cargar el historial del terminal: " + e.getMessage());
+    }
   }
 
   // --- FLUJO DE ENVÍO Y PENSAMIENTO ---
@@ -315,191 +359,26 @@ public class MainLanternaWindow extends BasicWindow {
   }
 
   public void appendUserMessage(String text) {
-    this.addWrappedLine("[USR] " + text);
+    this.addHistoryLine("[USR] " + text);
   }
 
   public void appendModelResponse(String text) {
-    this.addWrappedLine("[RES] " + text);
+    this.addHistoryLine("[RES] " + text);
   }
 
   public void appendSystemLog(String text) {
-    this.addWrappedLine("[SIS] " + text);
+    this.addHistoryLine("[SIS] " + text);
   }
 
-  private void chatHistoryScrollBottom() {
-    int totalLineas = this.chatHistoryBox.getLineCount();
-    this.chatHistoryBox.setCaretPosition(totalLineas - 1, 0);
-  }
-
-  private void addWrappedLine(String theText) {
-    if (theText == null || theText.isEmpty()) {
+  private void addHistoryLine(String text) {
+    if (text == null || text.isEmpty()) {
       return;
     }
-    Runnable action = () -> {
-      int width = 0;
-
-      // 1. Intentar obtener el ancho del componente
-      if (chatHistoryBox.getSize() != null && chatHistoryBox.getSize().getColumns() > 0) {
-        width = chatHistoryBox.getSize().getColumns();
-      } // 2. Si aún no se ha dibujado, obtener el ancho real de la terminal
-      else if (getTextGUI() != null && getTextGUI().getScreen() != null) {
-        width = getTextGUI().getScreen().getTerminalSize().getColumns();
-      }
-
-      // 3. Fallback final por seguridad si todo falla
-      if (width <= 0) {
-        width = 80;
-      }
-
-      String text = theText;
-      String prefix = "";
-      if (text.startsWith("[USR] ")) {
-        prefix = "[USR] ";
-        text = text.substring(6);
-      } else if (text.startsWith("[SIS] ")) {
-        prefix = "[SIS] ";
-        text = text.substring(6);
-      } else if (text.startsWith("[ERR] ")) {
-        prefix = "[ERR] ";
-        text = text.substring(6);
-      } else if (text.startsWith("[RES] ")) {
-        prefix = "[RES] ";
-        text = text.substring(6);
-      }
-
-      int maxLineLength = Math.max(20, width - 2);
-
-      for (String rawLine : text.split("\r?\n")) {
-        if (rawLine.length() <= maxLineLength) {
-          chatHistoryBox.addLine(prefix + rawLine);
-        } else {
-          StringBuilder currentLine = new StringBuilder();
-          for (String word : rawLine.split(" ")) {
-            while (word.length() > maxLineLength) {
-              if (currentLine.length() > 0) {
-                chatHistoryBox.addLine(prefix + currentLine.toString());
-                currentLine.setLength(0);
-              }
-              chatHistoryBox.addLine(prefix + word.substring(0, maxLineLength));
-              word = word.substring(maxLineLength);
-            }
-
-            if (currentLine.length() + word.length() + (currentLine.length() > 0 ? 1 : 0) > maxLineLength) {
-              chatHistoryBox.addLine(prefix + currentLine.toString());
-              currentLine = new StringBuilder(word);
-            } else {
-              if (currentLine.length() > 0) {
-                currentLine.append(" ");
-              }
-              currentLine.append(word);
-            }
-          }
-          if (currentLine.length() > 0) {
-            chatHistoryBox.addLine(prefix + currentLine.toString());
-          }
-        }
-      }
+    runOnGuiThread(() -> {
+      chatHistoryBox.addLine(text);
       int totalLineas = chatHistoryBox.getLineCount();
       chatHistoryBox.setCaretPosition(totalLineas - 1, 0);
-
-    };
-    runOnGuiThread(action);
+    });
   }
 
-  private static class ColoredHistoryRenderer extends DefaultTextBoxRenderer {
-
-    // Paleta de colores Codex
-    private static final TextColor COLOR_USER = TextColor.Factory.fromString("#3FB950"); // Verde
-    private static final TextColor COLOR_LOG = TextColor.Factory.fromString("#8B949E"); // Gris tenue
-    private static final TextColor COLOR_ERR = TextColor.Factory.fromString("#F85149"); // Rojo error
-    private static final TextColor COLOR_MODEL = TextColor.Factory.fromString("#E1E4E8"); // Blanco brillante
-
-    @Override
-    public void drawComponent(TextGUIGraphics graphics, TextBox textBox) {
-      // 1. Limpiar fondo con el color del tema
-      graphics.applyThemeStyle(textBox.getThemeDefinition().getNormal());
-      graphics.fill(' ');
-
-      String cleanText = textBox.getText().replace("\r", "");
-      String[] lines = StringUtils.splitPreserveAllTokens(cleanText, "\n");
-
-      int height = graphics.getSize().getRows();
-
-      // 2. Calcular qué línea queda arriba según la posición del cursor (scroll)
-      int caretRow = textBox.getCaretPosition().getRow();
-      int topLine = Math.max(0, caretRow - height + 1);
-
-      // 3. Dibujar sólo las líneas visibles en pantalla asignando color por prefijo
-      for (int row = 0; row < height; row++) {
-        int lineIndex = topLine + row;
-        if (lineIndex >= lines.length) {
-          break;
-        }
-
-        String line = lines[lineIndex];
-
-        // Seleccionar color según cómo empieza la línea
-        if (line.startsWith("[USR]")) {
-          graphics.setForegroundColor(COLOR_USER);
-          line = line.substring(6);
-        } else if (line.startsWith("[SIS]")) {
-          graphics.setForegroundColor(COLOR_LOG);
-          line = line.substring(6);
-        } else if (line.startsWith("[ERR]")) {
-          graphics.setForegroundColor(COLOR_ERR);
-          line = line.substring(6);
-        } else if (line.startsWith("[RES]")) {
-          graphics.setForegroundColor(COLOR_MODEL);
-          line = line.substring(6);
-        }
-
-        graphics.putString(0, row, line);
-      }
-    }
-  }
-
-  private void showHistory(Agent agent) {
-    AgentConsole console = agent.getConsole(DEFAULT_SUBCHANNEL);
-    String subchannel = agent.getCurrentSubchannel();
-    try {
-      SourceOfTruth sot = agent.getSourceOfTruth();
-
-      // Cargar el punto de guardado (resumen/relato activo) si existe
-      CheckPoint activeCheckPoint = sot.getLatestCheckPoint(subchannel);
-
-      // Cargar la lista de turnos sin consolidar
-      List<Turn> turns = sot.getUnconsolidatedTurns(subchannel);
-
-      // 2. Renderizar los elementos de forma secuencial en el hilo de Swing (EDT)
-      // a) Si hay un CheckPoint anterior, mostramos el relato/resumen consolidado
-      if (activeCheckPoint != null && StringUtils.isNotBlank(activeCheckPoint.getText())) {
-        console.printSystemLog(activeCheckPoint.getText(), AgentConsole.Format.Markdown);
-      }
-
-      // b) Recorremos los turnos no consolidados y dibujamos sus componentes
-      for (Turn turn : turns) {
-        // Mensaje original del usuario
-        if (StringUtils.isNotBlank(turn.getTextUser())) {
-          console.printUserMessage(turn.getTextUser());
-        }
-
-        // Logs de llamadas a herramientas (si las hubo)
-        if (StringUtils.isNotBlank(turn.getToolCall())) {
-          console.printSystemLog(turn.getToolCall());
-        }
-
-        // Mensajes de error en herramientas (si aplica)
-        if ("error".equals(turn.getContenttype()) && StringUtils.isNotBlank(turn.getToolResult())) {
-          console.printSystemError(turn.getToolResult());
-        }
-
-        // Respuesta final del modelo
-        if (StringUtils.isNotBlank(turn.getTextModel())) {
-          console.printModelResponse(turn.getTextModel());
-        }
-      }
-    } catch (Exception e) {
-      console.printSystemError("Error al cargar el historial del terminal: " + e.getMessage());
-    }
-  }
 }
