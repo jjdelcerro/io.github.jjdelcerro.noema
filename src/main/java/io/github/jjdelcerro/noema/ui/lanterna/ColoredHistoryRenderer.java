@@ -29,6 +29,10 @@ public class ColoredHistoryRenderer extends DefaultTextBoxRenderer {
     private static final TextColor COLOR_SCROLL_TRACK = TextColor.Factory.fromString("#292C34"); // Pista en gris muy oscuro
     private static final TextColor COLOR_SCROLL_THUMB = TextColor.Factory.fromString("#58A6FF"); // Indicador en cian brillante
 
+    // Conmutadores de visibilidad de la terminal
+    private boolean showSystemLogs = true;
+    private boolean showErrorLogs = true;
+
     private static record VisualSegment(String text, TextColor color, EnumSet<SGR> modifiers) {}
 
     private static class VisualLine {
@@ -49,6 +53,22 @@ public class ColoredHistoryRenderer extends DefaultTextBoxRenderer {
         }
     }
 
+    public boolean isShowSystemLogs() {
+        return showSystemLogs;
+    }
+
+    public void setShowSystemLogs(boolean showSystemLogs) {
+        this.showSystemLogs = showSystemLogs;
+    }
+
+    public boolean isShowErrorLogs() {
+        return showErrorLogs;
+    }
+
+    public void setShowErrorLogs(boolean showErrorLogs) {
+        this.showErrorLogs = showErrorLogs;
+    }
+
     @Override
     public TerminalSize getPreferredSize(TextBox textBox) {
         return new TerminalSize(80, Math.max(1, textBox.getLineCount()));
@@ -61,9 +81,9 @@ public class ColoredHistoryRenderer extends DefaultTextBoxRenderer {
 
     @Override
     public void drawComponent(TextGUIGraphics graphics, TextBox textBox) {
-        // 1. Limpiar fondo con el color base
         ThemeStyle style = textBox.getThemeDefinition().getNormal();
         graphics.applyThemeStyle(style);
+        graphics.setBackgroundColor(LanternaUtils.BG_DARK);
         graphics.fill(' ');
 
         String text = textBox.getText();
@@ -74,14 +94,12 @@ public class ColoredHistoryRenderer extends DefaultTextBoxRenderer {
         int width = graphics.getSize().getColumns();
         int height = graphics.getSize().getRows();
 
-        // 2. Comprobar si necesitaremos barra de scroll para reservar la última columna al texto
         List<Integer> paragraphToVisualIdxTemp = new ArrayList<>();
         List<VisualLine> tempVisualLines = buildVisualLines(text, Math.max(10, width), paragraphToVisualIdxTemp);
 
         boolean needsScrollbar = tempVisualLines.size() > height;
         int textWidth = needsScrollbar ? Math.max(10, width - 1) : Math.max(10, width);
 
-        // 3. Generar líneas visuales adaptadas al ancho útil del texto
         List<Integer> paragraphToVisualIdx = new ArrayList<>();
         List<VisualLine> visualLines = needsScrollbar 
                 ? buildVisualLines(text, textWidth, paragraphToVisualIdx)
@@ -91,14 +109,12 @@ public class ColoredHistoryRenderer extends DefaultTextBoxRenderer {
             return;
         }
 
-        // 4. Mapear la posición del cursor de Lanterna al índice visual
         int caretRow = textBox.getCaretPosition().getRow();
         int targetVisualRow = visualLines.size() - 1;
         if (caretRow >= 0 && caretRow < paragraphToVisualIdx.size()) {
             targetVisualRow = paragraphToVisualIdx.get(caretRow);
         }
 
-        // 5. Ajustar el viewport (topLine) de forma dinámicamente navegable
         int maxTopLine = Math.max(0, visualLines.size() - height);
         int topLine = Math.min(targetVisualRow, maxTopLine);
         if (targetVisualRow >= topLine + height) {
@@ -106,7 +122,6 @@ public class ColoredHistoryRenderer extends DefaultTextBoxRenderer {
         }
         topLine = Math.max(0, topLine);
 
-        // 6. Dibujar las líneas visuales en las columnas asignadas al texto
         for (int row = 0; row < height; row++) {
             int lineIndex = topLine + row;
             if (lineIndex >= visualLines.size()) {
@@ -118,7 +133,7 @@ public class ColoredHistoryRenderer extends DefaultTextBoxRenderer {
 
             for (VisualSegment seg : vLine.segments) {
                 if (col >= textWidth) {
-                    break; // No invadir la columna reservada a la barra de scroll
+                    break;
                 }
 
                 graphics.setForegroundColor(seg.color);
@@ -141,14 +156,12 @@ public class ColoredHistoryRenderer extends DefaultTextBoxRenderer {
             }
         }
 
-        // 7. Dibujar la barra de scroll vertical en la última columna si hay desbordamiento
         if (needsScrollbar) {
             drawVerticalScrollbar(graphics, width - 1, height, visualLines.size(), topLine);
         }
     }
 
     private void drawVerticalScrollbar(TextGUIGraphics graphics, int scrollCol, int viewHeight, int totalLines, int topLine) {
-        // Tamaño proporcional del indicador de posición (Thumb)
         int thumbHeight = Math.max(1, (int) Math.round((double) viewHeight * viewHeight / totalLines));
         if (thumbHeight > viewHeight) {
             thumbHeight = viewHeight;
@@ -186,17 +199,23 @@ public class ColoredHistoryRenderer extends DefaultTextBoxRenderer {
             TextColor baseColor = COLOR_MODEL;
             String body = rawParagraph;
 
-            // Aislamiento de mensajes por rol
+            // Aislamiento de mensajes por rol y filtrado de visibilidad
             if (rawParagraph.startsWith("[USR] ")) {
                 inCodeBlock = false;
                 baseColor = COLOR_USER;
                 body = rawParagraph.substring(6);
             } else if (rawParagraph.startsWith("[SIS] ")) {
                 inCodeBlock = false;
+                if (!showSystemLogs) {
+                    continue; // Filtrar mensajes del sistema si están desactivados
+                }
                 baseColor = COLOR_LOG;
                 body = rawParagraph.substring(6);
             } else if (rawParagraph.startsWith("[ERR] ")) {
                 inCodeBlock = false;
+                if (!showErrorLogs) {
+                    continue; // Filtrar mensajes de error si están desactivados
+                }
                 baseColor = COLOR_ERR;
                 body = rawParagraph.substring(6);
             } else if (rawParagraph.startsWith("[RES] ")) {

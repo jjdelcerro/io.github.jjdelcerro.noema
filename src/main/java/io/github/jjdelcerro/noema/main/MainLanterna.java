@@ -60,9 +60,10 @@ public class MainLanterna {
             // 6. Al cerrar la ventana, apagar el agente limpiamente
             agent.stop();
             screen.stopScreen();
-
+            
         } catch (Exception e) {
             e.printStackTrace();
         }
+        System.exit(0);
     }
 }

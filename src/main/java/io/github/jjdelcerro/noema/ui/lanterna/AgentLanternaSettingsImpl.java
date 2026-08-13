@@ -49,7 +49,8 @@ public class AgentLanternaSettingsImpl implements AgentUISettings {
 
         BasicWindow window = new BasicWindow("Configuración de Noema");
         window.setHints(Arrays.asList(Window.Hint.CENTERED));
-
+        window.setTheme(LanternaUtils.getMainTheme());   
+        
         Panel rootPanel = new Panel(new LinearLayout(Direction.VERTICAL));
 
         // Panel Principal Dividido (Izquierda: Menú / Derecha: Formulario)
