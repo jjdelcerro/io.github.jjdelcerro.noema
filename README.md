@@ -5,6 +5,8 @@
 > Este repositorio contiene el código fuente que acompaña a mi serie de artículos sobre *Arquitectura de Agentes y Memoria Híbrida*.
 >
 > **No es un producto de consumo final.** Es una **Prueba de Concepto (PoC)** funcional diseñada para validar arquitecturas de IA locales, proactividad y gestión de memoria a largo plazo. Úsalo para estudiar la arquitectura, extraer patrones o como base para experimentos.
+> **¿Problemas al compilar o ejecutar?** Dame un toque y lo vemos. El estado del código cambia rápido y puede que haya algo roto que no haya detectado o haya dejado aparcado. Puedo tener cosas sin commitar o sin subir. Si te interesa el proyecto, me alegrará ayudarte a que funcione.
+
 
 ## Propósito del Proyecto
 
