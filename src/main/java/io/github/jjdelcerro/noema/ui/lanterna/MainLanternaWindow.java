@@ -19,6 +19,10 @@ import com.googlecode.lanterna.input.KeyType;
 
 import io.github.jjdelcerro.noema.lib.Agent;
 import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
+import io.github.jjdelcerro.noema.lib.AgentConsole;
+import io.github.jjdelcerro.noema.lib.persistence.CheckPoint;
+import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
+import io.github.jjdelcerro.noema.lib.persistence.Turn;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.SensorEventCallback;
 import io.github.jjdelcerro.noema.ui.AgentUILocator;
@@ -73,8 +77,8 @@ public class MainLanternaWindow extends BasicWindow {
             LinearLayout.Alignment.Fill,
             LinearLayout.GrowPolicy.CanGrow
     ));
-    chatHistoryBox.setRenderer(new ColoredHistoryRenderer());    
-    
+    chatHistoryBox.setRenderer(new ColoredHistoryRenderer());
+
     mainPanel.addComponent(chatHistoryBox);
 
     // 2. Barra de estado superior + Cronómetro (Status Panel)
@@ -168,6 +172,7 @@ public class MainLanternaWindow extends BasicWindow {
       btnConfig.setEnabled(true);
       setFocusedInteractable(inputArea);
       updateMetadata();
+      showHistory(agent);
     }
   }
 
@@ -314,19 +319,19 @@ public class MainLanternaWindow extends BasicWindow {
       }
       String text = theText;
       String prefix = "";
-        if (text.startsWith("[USR] ")) {
-          prefix = "[USR] ";
-          text = text.substring(5, text.length()-5);
-        } else if (text.startsWith("[SIS] ")) {
-          prefix = "[SIS] ";
-          text = text.substring(5, text.length()-5);
-        } else if (text.startsWith("[ERR] ")) {
-          prefix = "[ERR] ";
-          text = text.substring(5, text.length()-5);
-        } else if (text.startsWith("[RES] ")) {
-          prefix = "[RES] ";
-          text = text.substring(5, text.length()-5);
-        }
+      if (text.startsWith("[USR] ")) {
+        prefix = "[USR] ";
+        text = text.substring(5, text.length() - 5);
+      } else if (text.startsWith("[SIS] ")) {
+        prefix = "[SIS] ";
+        text = text.substring(5, text.length() - 5);
+      } else if (text.startsWith("[ERR] ")) {
+        prefix = "[ERR] ";
+        text = text.substring(5, text.length() - 5);
+      } else if (text.startsWith("[RES] ")) {
+        prefix = "[RES] ";
+        text = text.substring(5, text.length() - 5);
+      }
 
       int maxLineLength = Math.max(20, width - 2);
 
@@ -389,10 +394,9 @@ public class MainLanternaWindow extends BasicWindow {
       graphics.applyThemeStyle(textBox.getThemeDefinition().getNormal());
       graphics.fill(' ');
 
-
       String cleanText = textBox.getText().replace("\r", "");
       String[] lines = StringUtils.splitPreserveAllTokens(cleanText, "\n");
-        
+
       int height = graphics.getSize().getRows();
 
       // 2. Calcular qué línea queda arriba según la posición del cursor (scroll)
@@ -411,14 +415,16 @@ public class MainLanternaWindow extends BasicWindow {
         // Seleccionar color según cómo empieza la línea
         if (line.startsWith("[USR]")) {
           graphics.setForegroundColor(COLOR_USER);
-        } else if (line.startsWith("[LOG]")) {
+          line = line.substring(5, line.length());
+        } else if (line.startsWith("[SIS]")) {
           graphics.setForegroundColor(COLOR_LOG);
+          line = line.substring(5, line.length());
         } else if (line.startsWith("[ERR]")) {
           graphics.setForegroundColor(COLOR_ERR);
+          line = line.substring(5, line.length());
         } else if (line.startsWith("[RES]")) {
           graphics.setForegroundColor(COLOR_MODEL);
-//        } else {
-//          graphics.setForegroundColor(COLOR_MODEL);
+          line = line.substring(5, line.length());
         }
 
         graphics.putString(0, row, line);
@@ -426,4 +432,48 @@ public class MainLanternaWindow extends BasicWindow {
     }
   }
 
+  private void showHistory(Agent agent) {
+    AgentConsole console = agent.getConsole(DEFAULT_SUBCHANNEL);
+    String subchannel = agent.getCurrentSubchannel();
+    try {
+      SourceOfTruth sot = agent.getSourceOfTruth();
+
+      // Cargar el punto de guardado (resumen/relato activo) si existe
+      CheckPoint activeCheckPoint = sot.getLatestCheckPoint(subchannel);
+
+      // Cargar la lista de turnos sin consolidar
+      List<Turn> turns = sot.getUnconsolidatedTurns(subchannel);
+
+      // 2. Renderizar los elementos de forma secuencial en el hilo de Swing (EDT)
+      // a) Si hay un CheckPoint anterior, mostramos el relato/resumen consolidado
+      if (activeCheckPoint != null && StringUtils.isNotBlank(activeCheckPoint.getText())) {
+        console.printSystemLog(activeCheckPoint.getText(), AgentConsole.Format.Markdown);
+      }
+
+      // b) Recorremos los turnos no consolidados y dibujamos sus componentes
+      for (Turn turn : turns) {
+        // Mensaje original del usuario
+        if (StringUtils.isNotBlank(turn.getTextUser())) {
+          console.printUserMessage(turn.getTextUser());
+        }
+
+        // Logs de llamadas a herramientas (si las hubo)
+        if (StringUtils.isNotBlank(turn.getToolCall())) {
+          console.printSystemLog(turn.getToolCall());
+        }
+
+        // Mensajes de error en herramientas (si aplica)
+        if ("error".equals(turn.getContenttype()) && StringUtils.isNotBlank(turn.getToolResult())) {
+          console.printSystemError(turn.getToolResult());
+        }
+
+        // Respuesta final del modelo
+        if (StringUtils.isNotBlank(turn.getTextModel())) {
+          console.printModelResponse(turn.getTextModel());
+        }
+      }
+    } catch (Exception e) {
+      console.printSystemError("Error al cargar el historial del terminal: " + e.getMessage());
+    }
+  }
 }
