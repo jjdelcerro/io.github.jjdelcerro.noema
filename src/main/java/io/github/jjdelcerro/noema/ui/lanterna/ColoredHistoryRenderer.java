@@ -16,7 +16,7 @@ import java.util.List;
 
 public class ColoredHistoryRenderer extends DefaultTextBoxRenderer {
 
-    // Paleta de colores estilo Codex
+    // Paleta de colores estilo 
     private static final TextColor COLOR_USER         = TextColor.Factory.fromString("#3FB950"); // Verde
     private static final TextColor COLOR_LOG          = TextColor.Factory.fromString("#8B949E"); // Gris tenue
     private static final TextColor COLOR_ERR          = TextColor.Factory.fromString("#F85149"); // Rojo error

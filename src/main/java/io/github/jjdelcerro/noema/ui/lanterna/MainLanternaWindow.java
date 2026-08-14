@@ -1,8 +1,6 @@
 package io.github.jjdelcerro.noema.ui.lanterna;
 
 import com.googlecode.lanterna.TerminalSize;
-import com.googlecode.lanterna.TextColor;
-import com.googlecode.lanterna.graphics.SimpleTheme;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.dialogs.ActionListDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.TextInputDialog;
@@ -10,6 +8,7 @@ import com.googlecode.lanterna.gui2.Window.Hint;
 import com.googlecode.lanterna.gui2.dialogs.ActionListDialog;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
+import com.googlecode.lanterna.terminal.Terminal;
 
 import io.github.jjdelcerro.noema.lib.Agent;
 import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
@@ -23,6 +22,7 @@ import io.github.jjdelcerro.noema.ui.AgentUILocator;
 
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,25 +35,135 @@ import org.apache.commons.lang3.StringUtils;
 
 public class MainLanternaWindow extends BasicWindow {
 
-  private final ColoredHistoryRenderer historyRenderer;
-  private final TextBox chatHistoryBox;
-  private final TextBox inputArea;
-  private final Label statusLabel;
-  private final Label lblTimer;
-  private final Label lblWorkspace;
-  private final Button btnSend;
+  private Panel mainPanel;
+  private ColoredHistoryRenderer historyRenderer;
+  private TextBox chatHistoryBox;
+  private TextBox inputArea;
+  private Label statusLabel;
+  private Label lblTimer;
+  private Label lblWorkspace;
+  private Button btnSend;
 
   private Agent agent;
   private Timer thinkingTimer;
   private long thinkingStartTime;
   private String currentStatus = "Desconectado";
+  private final Terminal terminal;
 
-  public MainLanternaWindow() {
+  public MainLanternaWindow(Terminal terminal) {
     super("Noema Agent");
+    this.terminal = terminal;
+
     setHints(Arrays.asList(Hint.FULL_SCREEN, Hint.NO_DECORATIONS));
 
-    Panel mainPanel = new Panel(new LinearLayout(Direction.VERTICAL));
+    mainPanel = new Panel(new LinearLayout(Direction.VERTICAL));
     mainPanel.setTheme(LanternaUtils.getMainTheme());
+
+    setComponent(mainPanel);
+  }
+
+  public void setAgent(Agent agent) {
+    if (this.agent == null) {
+      this.agent = agent;
+
+      try {
+        this.terminal.clearScreen();
+      } catch (IOException ex) {
+        // Do nothing
+      }
+
+      initComponents();
+
+      runOnGuiThread(() -> {
+        if (getTextGUI() != null) {
+          try {
+            getTextGUI().updateScreen();
+          } catch (Exception ignored) {
+          }
+        }
+        currentStatus = "Listo";
+        getInputArea().setReadOnly(false);
+        getButtonSend().setEnabled(true);
+        setFocusedInteractable(getInputArea());
+        updateMetadata();
+        showHistory(agent);
+      });
+    }
+  }
+
+  private TextBox getChatHistoryBox() {
+    if (this.chatHistoryBox == null) {
+      chatHistoryBox = new TextBox(new TerminalSize(0, 0), TextBox.Style.MULTI_LINE);
+      chatHistoryBox.setReadOnly(false);
+      chatHistoryBox.setTheme(LanternaUtils.getMainTheme());
+      chatHistoryBox.setLayoutData(LinearLayout.createLayoutData(
+              LinearLayout.Alignment.Fill,
+              LinearLayout.GrowPolicy.CanGrow
+      ));
+
+      historyRenderer = new ColoredHistoryRenderer();
+      chatHistoryBox.setRenderer(historyRenderer);
+    }
+    return chatHistoryBox;
+  }
+
+  private Label getStatusLabel() {
+    if (statusLabel == null) {
+      statusLabel = new Label("Estado: Desconectado | Esperando agente...");
+//    statusLabel.setTheme(new SimpleTheme(textMuted, bgDark));
+      statusLabel.setTheme(LanternaUtils.getMainTheme());
+      statusLabel.setLayoutData(LinearLayout.createLayoutData(
+              LinearLayout.Alignment.Fill,
+              LinearLayout.GrowPolicy.CanGrow
+      ));
+    }
+    return statusLabel;
+  }
+
+  private Label getLabelTimer() {
+    if (lblTimer == null) {
+      lblTimer = new Label("");
+//    lblTimer.setTheme(new SimpleTheme(textWhite, bgDark));
+      lblTimer.setTheme(LanternaUtils.getMainTheme());
+    }
+    return lblTimer;
+  }
+
+  private TextBox getInputArea() {
+    if (inputArea == null) {
+      inputArea = new TextBox(new TerminalSize(0, 3), TextBox.Style.MULTI_LINE);
+      inputArea.setTheme(LanternaUtils.getInputTheme());
+      inputArea.setReadOnly(true);
+      inputArea.setLayoutData(LinearLayout.createLayoutData(LinearLayout.Alignment.Fill));
+    }
+    return inputArea;
+  }
+
+  private Label getLabelWorkspace() {
+    if (lblWorkspace == null) {
+      lblWorkspace = new Label("");
+//    lblWorkspace.setTheme(new SimpleTheme(textMuted, bgDark));
+      lblWorkspace.setTheme(LanternaUtils.getMainTheme());
+      lblWorkspace.setLayoutData(LinearLayout.createLayoutData(
+              LinearLayout.Alignment.Fill,
+              LinearLayout.GrowPolicy.CanGrow
+      ));
+    }
+    return lblWorkspace;
+
+  }
+
+  private Button getButtonSend() {
+    if (btnSend == null) {
+      btnSend = new Button("Enviar", this::handleSend);
+      btnSend.setTheme(LanternaUtils.getMainTheme());
+      btnSend.setEnabled(false);
+      btnSend.setRenderer(new HighlightedButtonRenderer('E'));
+    }
+    return btnSend;
+  }
+
+  private final void initComponents() {
 
     // --- 0. BARRA SUPERIOR (HEADER) ---
     Panel headerPanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
@@ -82,38 +192,15 @@ public class MainLanternaWindow extends BasicWindow {
     mainPanel.addComponent(headerPanel);
 
     // --- 1. HISTORIAL DE CONVERSACIÓN ---
-    chatHistoryBox = new TextBox(new TerminalSize(0, 0), TextBox.Style.MULTI_LINE);
-    chatHistoryBox.setReadOnly(false);
-    chatHistoryBox.setTheme(LanternaUtils.getMainTheme());
-    chatHistoryBox.setLayoutData(LinearLayout.createLayoutData(
-            LinearLayout.Alignment.Fill,
-            LinearLayout.GrowPolicy.CanGrow
-    ));
-
-    historyRenderer = new ColoredHistoryRenderer();
-    chatHistoryBox.setRenderer(historyRenderer);
-
-    mainPanel.addComponent(chatHistoryBox);
+    mainPanel.addComponent(this.getChatHistoryBox());
 
     // --- 2. BARRA DE ESTADO Y CRONÓMETRO ---
     Panel statusPanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
     statusPanel.setTheme(LanternaUtils.getMainTheme());
     statusPanel.setLayoutData(LinearLayout.createLayoutData(LinearLayout.Alignment.Fill));
 
-    statusLabel = new Label("Estado: Desconectado | Esperando agente...");
-//    statusLabel.setTheme(new SimpleTheme(textMuted, bgDark));
-    statusLabel.setTheme(LanternaUtils.getMainTheme());
-    statusLabel.setLayoutData(LinearLayout.createLayoutData(
-            LinearLayout.Alignment.Fill,
-            LinearLayout.GrowPolicy.CanGrow
-    ));
-
-    lblTimer = new Label("");
-//    lblTimer.setTheme(new SimpleTheme(textWhite, bgDark));
-    lblTimer.setTheme(LanternaUtils.getMainTheme());
-
-    statusPanel.addComponent(statusLabel);
-    statusPanel.addComponent(lblTimer);
+    statusPanel.addComponent(getStatusLabel());
+    statusPanel.addComponent(getLabelTimer());
     mainPanel.addComponent(statusPanel);
 
     // --- 3. PANEL DE ENTRADA Y FOOTER ---
@@ -121,40 +208,20 @@ public class MainLanternaWindow extends BasicWindow {
     inputPanel.setTheme(LanternaUtils.getMainTheme());
     inputPanel.setLayoutData(LinearLayout.createLayoutData(LinearLayout.Alignment.Fill));
 
-    inputArea = new TextBox(new TerminalSize(0, 3), TextBox.Style.MULTI_LINE);
-    inputArea.setTheme(LanternaUtils.getInputTheme());
-    inputArea.setReadOnly(true);
-    inputArea.setLayoutData(LinearLayout.createLayoutData(LinearLayout.Alignment.Fill));
-    inputPanel.addComponent(inputArea);
+    inputPanel.addComponent(getInputArea());
 
     Panel buttonPanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
     buttonPanel.setTheme(LanternaUtils.getMainTheme());
     buttonPanel.setLayoutData(LinearLayout.createLayoutData(LinearLayout.Alignment.Fill));
 
-    lblWorkspace = new Label("");
-//    lblWorkspace.setTheme(new SimpleTheme(textMuted, bgDark));
-    lblWorkspace.setTheme(LanternaUtils.getMainTheme());
-    lblWorkspace.setLayoutData(LinearLayout.createLayoutData(
-            LinearLayout.Alignment.Fill,
-            LinearLayout.GrowPolicy.CanGrow
-    ));
-
-    btnSend = new Button("Enviar", this::handleSend);
-    btnSend.setTheme(LanternaUtils.getMainTheme());
-    btnSend.setEnabled(false);
-    btnSend.setRenderer(new HighlightedButtonRenderer('E'));
-
-    buttonPanel.addComponent(lblWorkspace);
-    buttonPanel.addComponent(btnSend);
+    buttonPanel.addComponent(getLabelWorkspace());
+    buttonPanel.addComponent(getButtonSend());
 
     inputPanel.addComponent(buttonPanel);
     mainPanel.addComponent(inputPanel);
-
-    setComponent(mainPanel);
   }
 
   // --- ATAJOS DE TECLADO GLOBALES ---
-
   @Override
   public boolean handleInput(KeyStroke keyStroke) {
     Character c = keyStroke.getCharacter();
@@ -180,7 +247,6 @@ public class MainLanternaWindow extends BasicWindow {
   }
 
   // --- DELEGACIÓN DE PROPIEDADES AL RENDERIZADOR ---
-
   public boolean isShowSystemLogs() {
     return historyRenderer.isShowSystemLogs();
   }
@@ -191,7 +257,8 @@ public class MainLanternaWindow extends BasicWindow {
       if (getTextGUI() != null) {
         try {
           getTextGUI().updateScreen();
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
       }
     });
   }
@@ -206,13 +273,13 @@ public class MainLanternaWindow extends BasicWindow {
       if (getTextGUI() != null) {
         try {
           getTextGUI().updateScreen();
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
       }
     });
   }
 
   // --- MÉTODOS DE MENÚ Y ACCIONES ---
-
   private void onMenuPressed() {
     if (getTextGUI() == null) {
       return;
@@ -239,18 +306,21 @@ public class MainLanternaWindow extends BasicWindow {
   }
 
   private void onConfigPressed() {
-    if (agent != null) {
-      AgentUILocator.getAgentUIManager().createSettings(agent).showWindow();
+    if (agent == null) {
+      return;
     }
+    AgentUILocator.getAgentUIManager().createSettings(agent).showWindow();
   }
 
   private void onTerminalPreferencesPressed() {
-    if (getTextGUI() == null) return;
+    if (getTextGUI() == null) {
+      return;
+    }
 
     BasicWindow prefWindow = new BasicWindow("Preferencias de la Terminal");
     prefWindow.setHints(Arrays.asList(Hint.CENTERED));
     prefWindow.setTheme(LanternaUtils.getMainTheme());
-    
+
     Panel panel = new Panel(new LinearLayout(Direction.VERTICAL));
     panel.setTheme(LanternaUtils.getMainTheme());
     CheckBoxList<String> checkList = new CheckBoxList<>();
@@ -275,7 +345,9 @@ public class MainLanternaWindow extends BasicWindow {
   }
 
   private void onExportConversationPressed() {
-    if (getTextGUI() == null) return;
+    if (getTextGUI() == null) {
+      return;
+    }
 
     String defaultFileName = "noema-chat-" + System.currentTimeMillis() + ".md";
     String fileName = TextInputDialog.showDialog(
@@ -313,7 +385,7 @@ public class MainLanternaWindow extends BasicWindow {
   }
 
   private void onClearChatPressed() {
-    runOnGuiThread(() -> chatHistoryBox.setText(""));
+    runOnGuiThread(() -> getChatHistoryBox().setText(""));
   }
 
   private String generateMarkdownContent() {
@@ -322,7 +394,7 @@ public class MainLanternaWindow extends BasicWindow {
     sb.append("_Exportada el: ").append(java.time.LocalDateTime.now()).append("_\n\n");
     sb.append("---\n\n");
 
-    String rawText = chatHistoryBox.getText();
+    String rawText = getChatHistoryBox().getText();
     if (rawText != null) {
       for (String line : rawText.split("\n")) {
         if (line.startsWith("[USR] ")) {
@@ -342,27 +414,6 @@ public class MainLanternaWindow extends BasicWindow {
   }
 
   // --- GESTIÓN DEL AGENTE Y METADATOS ---
-
-  public void setAgent(Agent agent) {
-    this.agent = agent;
-    if (agent != null) {
-      currentStatus = "Listo";
-      inputArea.setReadOnly(false);
-      btnSend.setEnabled(true);
-
-      runOnGuiThread(() -> {
-        if (getTextGUI() != null && getTextGUI().getScreen() != null) {
-          try {
-            getTextGUI().getScreen().clear();
-          } catch (Exception ignored) {}
-        }
-        setFocusedInteractable(inputArea);
-        updateMetadata();
-        showHistory(agent);
-      });
-    }
-  }
-
   private void runOnGuiThread(Runnable action) {
     TextGUIThread guiThread = (getTextGUI() != null) ? getTextGUI().getGUIThread() : null;
 
@@ -373,27 +424,28 @@ public class MainLanternaWindow extends BasicWindow {
         action.run();
         try {
           getTextGUI().updateScreen();
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
       });
     }
   }
 
   public void updateMetadata() {
     if (agent == null) {
-      statusLabel.setText("Estado: Desconectado | Esperando agente...");
-      lblWorkspace.setText("");
+      getStatusLabel().setText("Estado: Desconectado | Esperando agente...");
+      getLabelWorkspace().setText("");
       return;
     }
 
     if (agent.getPaths() != null && agent.getPaths().getWorkspaceFolder() != null) {
-      lblWorkspace.setText(agent.getPaths().getWorkspaceFolder().toString());
+      getLabelWorkspace().setText(agent.getPaths().getWorkspaceFolder().toString());
     }
 
     ReasoningService reasoning = (ReasoningService) agent.getService(ReasoningService.NAME);
     String subchannel = agent.getCurrentSubchannel();
 
     if (reasoning == null) {
-      statusLabel.setText("Estado: " + currentStatus + " | Modelo: -");
+      getStatusLabel().setText("Estado: " + currentStatus + " | Modelo: -");
       return;
     }
 
@@ -415,7 +467,7 @@ public class MainLanternaWindow extends BasicWindow {
             tokensK,
             contextK
     );
-    statusLabel.setText(text);
+    getStatusLabel().setText(text);
   }
 
   private void showHistory(Agent agent) {
@@ -450,18 +502,17 @@ public class MainLanternaWindow extends BasicWindow {
   }
 
   // --- FLUJO DE ENVÍO Y PENSAMIENTO ---
-
   private void handleSend() {
-    if (agent == null || inputArea.isReadOnly()) {
+    if (agent == null || getInputArea().isReadOnly()) {
       return;
     }
 
-    String text = inputArea.getText().trim();
+    String text = getInputArea().getText().trim();
     if (text.isEmpty()) {
       return;
     }
 
-    inputArea.setText("");
+    getInputArea().setText("");
     appendUserMessage(text);
 
     startThinking();
@@ -486,18 +537,18 @@ public class MainLanternaWindow extends BasicWindow {
 
   private void startThinking() {
     currentStatus = "Pensando...";
-    inputArea.setReadOnly(true);
-    btnSend.setEnabled(false);
+    getInputArea().setReadOnly(true);
+    getButtonSend().setEnabled(false);
 
     thinkingStartTime = System.currentTimeMillis();
-    lblTimer.setText("0.0s");
+    getLabelTimer().setText("0.0s");
 
     thinkingTimer = new Timer(true);
     thinkingTimer.scheduleAtFixedRate(new TimerTask() {
       @Override
       public void run() {
         long elapsed = System.currentTimeMillis() - thinkingStartTime;
-        lblTimer.setText(String.format(Locale.ENGLISH, "%.1fs", elapsed / 1000.0));
+        getLabelTimer().setText(String.format(Locale.ENGLISH, "%.1fs", elapsed / 1000.0));
       }
     }, 100, 100);
   }
@@ -507,13 +558,13 @@ public class MainLanternaWindow extends BasicWindow {
       thinkingTimer.cancel();
       thinkingTimer = null;
     }
-    lblTimer.setText("");
+    getLabelTimer().setText("");
     currentStatus = "Listo";
 
-    inputArea.setReadOnly(false);
-    btnSend.setEnabled(true);
+    getInputArea().setReadOnly(false);
+    getButtonSend().setEnabled(true);
 
-    setFocusedInteractable(inputArea);
+    setFocusedInteractable(getInputArea());
   }
 
   public void appendUserMessage(String text) {
@@ -533,9 +584,9 @@ public class MainLanternaWindow extends BasicWindow {
       return;
     }
     runOnGuiThread(() -> {
-      chatHistoryBox.addLine(text);
-      int totalLineas = chatHistoryBox.getLineCount();
-      chatHistoryBox.setCaretPosition(totalLineas - 1, 0);
+      this.getChatHistoryBox().addLine(text);
+      int totalLineas = this.getChatHistoryBox().getLineCount();
+      this.getChatHistoryBox().setCaretPosition(totalLineas - 1, 0);
     });
   }
 }

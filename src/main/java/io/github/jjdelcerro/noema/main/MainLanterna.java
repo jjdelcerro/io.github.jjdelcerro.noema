@@ -31,12 +31,14 @@ public class MainLanterna {
                     new DefaultWindowManager(), 
                     new EmptySpace()
             );
-
+            terminal.setCursorPosition(0, 0);
+            
             // 2. Crear Ventana y Consola Lanterna, y mostramos la ventana principal
-            MainLanternaWindow chatWindow = new MainLanternaWindow();
+            MainLanternaWindow chatWindow = new MainLanternaWindow(terminal);
             AgentLanternaConsoleImpl console = new AgentLanternaConsoleImpl(chatWindow, gui);
 
             gui.addWindow(chatWindow);
+            terminal.clearScreen();
             
             // 3. Registrar el UIManager
             AgentUILocator.registerAgentUIManager(new AgentLanternaManagerImpl(console));

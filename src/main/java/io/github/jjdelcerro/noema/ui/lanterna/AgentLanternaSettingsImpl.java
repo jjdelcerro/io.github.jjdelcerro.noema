@@ -3,7 +3,17 @@ package io.github.jjdelcerro.noema.ui.lanterna;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.googlecode.lanterna.TerminalSize;
-import com.googlecode.lanterna.gui2.*;
+import com.googlecode.lanterna.gui2.ActionListBox;
+import com.googlecode.lanterna.gui2.BasicWindow;
+import com.googlecode.lanterna.gui2.Borders;
+import com.googlecode.lanterna.gui2.Button;
+import com.googlecode.lanterna.gui2.Component;
+import com.googlecode.lanterna.gui2.Direction;
+import com.googlecode.lanterna.gui2.EmptySpace;
+import com.googlecode.lanterna.gui2.LinearLayout;
+import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
+import com.googlecode.lanterna.gui2.Panel;
+import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
 
 import io.github.jjdelcerro.noema.lib.Agent;
@@ -46,7 +56,8 @@ public class AgentLanternaSettingsImpl implements AgentUISettings {
         if (gui == null) {
             return;
         }
-
+        TerminalSize terminalSize = gui.getScreen().getTerminalSize();
+        
         BasicWindow window = new BasicWindow("Configuración de Noema");
         window.setHints(Arrays.asList(Window.Hint.CENTERED));
         window.setTheme(LanternaUtils.getMainTheme());   
@@ -56,9 +67,9 @@ public class AgentLanternaSettingsImpl implements AgentUISettings {
         // Panel Principal Dividido (Izquierda: Menú / Derecha: Formulario)
         Panel bodyPanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
 
-        navigationList = new ActionListBox(new TerminalSize(30, 23));
+        navigationList = new ActionListBox(new TerminalSize((int) (0.3 * terminalSize.getColumns()), terminalSize.getRows()-10));
         detailPanel = new Panel(new LinearLayout(Direction.VERTICAL));
-        detailPanel.setPreferredSize(new TerminalSize(45, 23));
+        detailPanel.setPreferredSize(new TerminalSize((int) (0.5 * terminalSize.getColumns()), terminalSize.getRows()-10));
 
         bodyPanel.addComponent(navigationList.withBorder(Borders.singleLine("Secciones")));
         bodyPanel.addComponent(detailPanel.withBorder(Borders.singleLine("Parámetros")));
