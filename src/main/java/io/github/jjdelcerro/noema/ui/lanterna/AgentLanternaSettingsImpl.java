@@ -10,6 +10,7 @@ import com.googlecode.lanterna.gui2.Button;
 import com.googlecode.lanterna.gui2.Component;
 import com.googlecode.lanterna.gui2.Direction;
 import com.googlecode.lanterna.gui2.EmptySpace;
+import com.googlecode.lanterna.gui2.Label;
 import com.googlecode.lanterna.gui2.LinearLayout;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.gui2.Panel;
@@ -91,7 +92,7 @@ public class AgentLanternaSettingsImpl implements AgentUISettings {
         detailPanel.setTheme(LanternaUtils.getMainTheme());
 
         bodyPanel.addComponent(navigationList.withBorder(Borders.singleLine("Secciones")));
-        bodyPanel.addComponent(detailPanel.withBorder(Borders.singleLine("Parámetros")));
+        bodyPanel.addComponent(detailPanel); //.withBorder(Borders.singleLine("Parámetros")));
 
         rootPanel.addComponent(bodyPanel);
 
@@ -154,6 +155,11 @@ public class AgentLanternaSettingsImpl implements AgentUISettings {
     private void renderSectionDetails(AbstractAgentSettingsItemLanterna sectionNode) {
         detailPanel.removeAllComponents();
 
+        Label titleLabel = new Label("── Parámetros: " + sectionNode.getLabel() + " ──");
+        titleLabel.setTheme(LanternaUtils.getMainTheme());
+        detailPanel.addComponent(titleLabel);
+        detailPanel.addComponent(new EmptySpace(new TerminalSize(1, 1)));
+
         List<AgentSettingsItemUI> children = sectionNode.getChilds();
         if (children != null) {
             for (AgentSettingsItemUI child : children) {
@@ -164,6 +170,7 @@ public class AgentLanternaSettingsImpl implements AgentUISettings {
                     }
                     Component comp = item.getLanternaComponent();
                     if (comp != null) {
+                        comp.setLayoutData(LinearLayout.createLayoutData(LinearLayout.Alignment.Fill));
                         detailPanel.addComponent(comp);
                         detailPanel.addComponent(new EmptySpace(new TerminalSize(1, 1))); // Separador
                     }

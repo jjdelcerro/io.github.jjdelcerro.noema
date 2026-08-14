@@ -44,7 +44,7 @@ public class ComboItemLanterna extends AbstractAgentSettingsItemLanterna {
                 save();
             }
         });
-
+        comboBox.setLayoutData(LinearLayout.createLayoutData(LinearLayout.Alignment.Fill));
         panel.addComponent(comboBox);
         return panel;
     }

@@ -6,7 +6,6 @@ import com.googlecode.lanterna.gui2.Button;
 import com.googlecode.lanterna.gui2.Component;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.ui.common.AgentSettingsItemUI;
-import io.github.jjdelcerro.noema.ui.lanterna.settings.AbstractAgentSettingsItemLanterna;
 
 public class ActionItemLanterna extends AbstractAgentSettingsItemLanterna {
 
@@ -16,10 +15,12 @@ public class ActionItemLanterna extends AbstractAgentSettingsItemLanterna {
 
     @Override
     public Component getLanternaComponent() {
-        return new Button(getLabel(), () -> {
-            if (getActionName() != null) {
-                agent.getActions().call(getActionName(), agent.getSettings());
-            }
-        });
+      Button button = new Button(getLabel(), () -> {
+        if (getActionName() != null) {
+          agent.getActions().call(getActionName(), agent.getSettings());
+        }
+      });
+      button.setEnabled(false); // Por defecto de monento dejamos las acciones deshabilitadas.
+      return button;
     }
 }

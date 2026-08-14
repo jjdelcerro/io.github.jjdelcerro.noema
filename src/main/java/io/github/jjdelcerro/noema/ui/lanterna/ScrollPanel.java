@@ -4,6 +4,7 @@ import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.ThemeStyle;
+import com.googlecode.lanterna.gui2.BasePane;
 import com.googlecode.lanterna.gui2.Component;
 import com.googlecode.lanterna.gui2.ComponentRenderer;
 import com.googlecode.lanterna.gui2.Container;
@@ -13,13 +14,20 @@ import com.googlecode.lanterna.gui2.LayoutManager;
 import com.googlecode.lanterna.gui2.LinearLayout;
 import com.googlecode.lanterna.gui2.Panel;
 import com.googlecode.lanterna.gui2.TextGUIGraphics;
+import com.googlecode.lanterna.gui2.Window;
+import com.googlecode.lanterna.gui2.WindowListener;
+import com.googlecode.lanterna.gui2.WindowListenerAdapter;
+import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.MouseAction;
+import com.googlecode.lanterna.input.MouseActionType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Panel contenedor con scroll vertical automático y viewport virtual.
- * Soporta componentes compuestos anidados (paneles dentro de paneles).
+ * Panel contenedor con scroll vertical automático, viewport virtual,
+ * auto-scroll guiado por foco de teclado y soporte para rueda de ratón vía WindowListener.
  */
 public class ScrollPanel extends Panel {
 
@@ -27,6 +35,7 @@ public class ScrollPanel extends Panel {
     private static final TextColor COLOR_SCROLL_THUMB = TextColor.Factory.fromString("#58A6FF");
 
     private int topLine = 0;
+    private WindowListener windowListener;
 
     public ScrollPanel() {
         this(new LinearLayout(Direction.VERTICAL));
@@ -45,6 +54,61 @@ public class ScrollPanel extends Panel {
         this.topLine = Math.max(0, topLine);
     }
 
+    @Override
+    public synchronized void onAdded(Container container) {
+        super.onAdded(container);
+        if (container != null && container.getBasePane() instanceof Window window) {
+            registerWindowListener(window);
+        }
+    }
+
+    private synchronized void registerWindowListener(Window window) {
+        if (windowListener != null || window == null) {
+            return;
+        }
+        windowListener = new WindowListenerAdapter() {
+            @Override
+            public void onUnhandledInput(Window basePane, KeyStroke keyStroke, AtomicBoolean hasHandled) {
+                if (keyStroke instanceof MouseAction mouseAction) {
+                    handleMouseScroll(mouseAction, hasHandled);
+                }
+            }
+        };
+        window.addWindowListener(windowListener);
+    }
+
+    private void handleMouseScroll(MouseAction mouseAction, AtomicBoolean hasHandled) {
+        MouseActionType actionType = mouseAction.getActionType();
+        if (actionType == MouseActionType.SCROLL_UP || actionType == MouseActionType.SCROLL_DOWN) {
+            if (isMouseOverComponent(this, mouseAction.getPosition())) {
+                int delta = (actionType == MouseActionType.SCROLL_UP) ? -2 : 2;
+                setTopLine(topLine + delta);
+                invalidate(); // Notificar a Lanterna para solicitar repintado
+                hasHandled.set(true);
+            }
+        }
+    }
+
+    private boolean isMouseOverComponent(Component comp, TerminalPosition mousePos) {
+        if (comp == null || !comp.isVisible() || mousePos == null) {
+            return false;
+        }
+        BasePane basePane = comp.getBasePane();
+        if (basePane == null) {
+            return false;
+        }
+        TerminalPosition compAbsPos = comp.toBasePane(TerminalPosition.TOP_LEFT_CORNER);
+        TerminalSize compSize = comp.getSize();
+
+        int mouseCol = mousePos.getColumn();
+        int mouseRow = mousePos.getRow();
+
+        return mouseCol >= compAbsPos.getColumn()
+                && mouseCol < compAbsPos.getColumn() + compSize.getColumns()
+                && mouseRow >= compAbsPos.getRow()
+                && mouseRow < compAbsPos.getRow() + compSize.getRows();
+    }
+
     private class ScrollPanelRenderer implements ComponentRenderer<Panel> {
 
         @Override
@@ -56,9 +120,14 @@ public class ScrollPanel extends Panel {
 
         @Override
         public void drawComponent(TextGUIGraphics graphics, Panel panel) {
+            // Garantizar el registro del listener en el primer renderizado por si onAdded se ejecutó antes de asociarse a la ventana
+            if (windowListener == null && panel.getBasePane() instanceof Window window) {
+                registerWindowListener(window);
+            }
+
             ThemeStyle style = panel.getThemeDefinition().getNormal();
             graphics.applyThemeStyle(style);
-            graphics.fill(' '); // Limpiar fondo
+            graphics.fill(' '); // Limpiar el fondo del panel
 
             int viewWidth = graphics.getSize().getColumns();
             int viewHeight = graphics.getSize().getRows();
@@ -67,7 +136,7 @@ public class ScrollPanel extends Panel {
                 return;
             }
 
-            // 1. Calcular tamaño virtual sumando los componentes hijos
+            // 1. Calcular el tamaño virtual preferido sumando los componentes hijos
             LayoutManager layoutManager = panel.getLayoutManager();
             List<Component> children = new ArrayList<>(panel.getChildren());
             TerminalSize preferredSize = layoutManager.getPreferredSize(children);
@@ -76,10 +145,10 @@ public class ScrollPanel extends Panel {
             boolean needsScrollbar = virtualHeight > viewHeight;
             int textWidth = needsScrollbar ? Math.max(1, viewWidth - 1) : viewWidth;
 
-            // 2. Ejecutar la maquetación virtual
+            // 2. Ejecutar la maquetación virtual sobre el ancho útil del texto
             layoutManager.doLayout(new TerminalSize(textWidth, virtualHeight), children);
 
-            // 3. Rastreo RECURSIVO del foco para auto-scroll
+            // 3. Rastreo RECURSIVO del foco para auto-scroll por teclado (TAB / Flechas)
             int focusedY = -1;
             int focusedHeight = 1;
 
@@ -140,7 +209,7 @@ public class ScrollPanel extends Panel {
                 return true;
             }
             if (comp instanceof Container container) {
-                for (Component child : container.getChildren()) {
+                for (Component child : new ArrayList<>(container.getChildren())) {
                     if (isFocusedOrHasFocusedChild(child)) {
                         return true;
                     }

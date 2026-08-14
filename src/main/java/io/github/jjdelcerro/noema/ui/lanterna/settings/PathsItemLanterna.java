@@ -30,7 +30,7 @@ public class PathsItemLanterna extends AbstractAgentSettingsItemLanterna {
                 pathList.addItem(p.toString());
             }
         }
-
+        pathList.setLayoutData(LinearLayout.createLayoutData(LinearLayout.Alignment.Fill));
         panel.addComponent(pathList);
 
         // Botonera de gestión de rutas

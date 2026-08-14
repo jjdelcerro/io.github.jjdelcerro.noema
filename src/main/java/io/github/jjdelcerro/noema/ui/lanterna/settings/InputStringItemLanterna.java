@@ -34,7 +34,7 @@ public class InputStringItemLanterna extends AbstractAgentSettingsItemLanterna {
                 save(); // Guarda e invoca la acción si existe
             }
         });
-
+        textBox.setLayoutData(LinearLayout.createLayoutData(LinearLayout.Alignment.Fill));
         panel.addComponent(textBox);
         return panel;
     }

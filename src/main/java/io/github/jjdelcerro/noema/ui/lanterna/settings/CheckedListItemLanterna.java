@@ -52,14 +52,13 @@ public class CheckedListItemLanterna extends AbstractAgentSettingsItemLanterna {
                 save();
             }
         });
-
+        checkBoxList.setLayoutData(LinearLayout.createLayoutData(LinearLayout.Alignment.Fill));
         panel.addComponent(checkBoxList);
 
         // Botonera auxiliar
         Panel btnPanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
         btnPanel.addComponent(new Button("Marcar todas", () -> setAllStates(checkBoxList, availableOptions, true)));
         btnPanel.addComponent(new Button("Desmarcar todas", () -> setAllStates(checkBoxList, availableOptions, false)));
-
         panel.addComponent(btnPanel);
         return panel;
     }
