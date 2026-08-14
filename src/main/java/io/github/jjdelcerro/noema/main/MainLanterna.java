@@ -4,6 +4,7 @@ import com.googlecode.lanterna.gui2.DefaultWindowManager;
 import com.googlecode.lanterna.gui2.EmptySpace;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
@@ -20,6 +21,7 @@ import io.github.jjdelcerro.noema.ui.AgentUILocator;
 import io.github.jjdelcerro.noema.ui.AgentUISettings;
 import io.github.jjdelcerro.noema.ui.lanterna.AgentLanternaConsoleImpl;
 import io.github.jjdelcerro.noema.ui.lanterna.AgentLanternaManagerImpl;
+import io.github.jjdelcerro.noema.ui.lanterna.LanternaUtils;
 import io.github.jjdelcerro.noema.ui.lanterna.MainLanternaWindow;
 
 import java.io.IOException;
@@ -49,7 +51,7 @@ public class MainLanterna {
             MultiWindowTextGUI gui = new MultiWindowTextGUI(
                     screen,
                     new DefaultWindowManager(),
-                    new EmptySpace()
+                    new EmptySpace(LanternaUtils.COLOR_BASE_BG)
             );
             terminal.setCursorPosition(0, 0);
 
@@ -57,16 +59,16 @@ public class MainLanterna {
             Path agentFolder = workspace.resolve("." + AgentPaths.AGENT_FOLDER_NAME);
 
             if (!Files.exists(agentFolder)) {
-                MessageDialogButton confirm = MessageDialog.showMessageDialog(
-                        gui,
-                        "Nuevo Espacio de Trabajo",
-                        "No se ha encontrado la carpeta de configuracion (.noema-agent) en:\n\n"
-                        + workspace.toAbsolutePath().normalize() + "\n\n"
-                        + "¿Desea inicializar un nuevo espacio de trabajo de Noema en esta carpeta?",
-                        MessageDialogButton.Yes,
-                        MessageDialogButton.No
-                );
-
+              MessageDialog dialog = new MessageDialogBuilder()
+                      .setTitle("Nuevo Espacio de Trabajo")
+                      .setText("No se ha encontrado la carpeta de configuracion (.noema-agent) en:\n\n"
+                              + workspace.toAbsolutePath().normalize() + "\n\n"
+                              + "¿Desea inicializar un nuevo espacio de trabajo de Noema en esta carpeta?")
+                      .addButton(MessageDialogButton.Yes)
+                      .addButton(MessageDialogButton.No)
+                      .build();
+              dialog.setTheme(LanternaUtils.getMainTheme());
+              MessageDialogButton confirm = dialog.showDialog(gui);              
                 if (confirm != MessageDialogButton.Yes) {
                     return;
                 }
@@ -96,13 +98,15 @@ public class MainLanterna {
                 settingsUI.showWindow();
 
                 if (!BootUtils.areSettingsValid(settings)) {
-                    MessageDialog.showMessageDialog(
-                            gui,
-                            "Configuracion Incompleta",
-                            "La configuracion del agente sigue siendo incompleta.\nLa aplicacion se cerrara.",
-                            MessageDialogButton.OK
-                    );
-                    return;
+                  MessageDialog dialogError = new MessageDialogBuilder()
+                          .setTitle("Configuracion Incompleta")
+                          .setText("La configuracion del agente sigue siendo incompleta.\nLa aplicacion se cerrara.")
+                          .addButton(MessageDialogButton.OK)
+                          .build();
+
+                  dialogError.setTheme(LanternaUtils.getMainTheme());
+                  dialogError.showDialog(gui);                  
+                  return;
                 }
             }
 
