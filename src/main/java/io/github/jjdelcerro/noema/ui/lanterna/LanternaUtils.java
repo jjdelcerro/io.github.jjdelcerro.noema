@@ -8,7 +8,7 @@ public class LanternaUtils {
   // --- PALETA BASE ---
   public static final TextColor COLOR_BASE_BG = TextColor.Factory.fromString("#171A21"); 
   public static final TextColor COLOR_BASE_BG_INPUT = TextColor.Factory.fromString("#1D2029"); 
-  public static final TextColor COLOR_BASE_TEXT = TextColor.Factory.fromString("#9296A5"); 
+  public static final TextColor COLOR_BASE_TEXT = TextColor.Factory.fromString("#C5C8D4"); 
   public static final TextColor COLOR_BASE_TEXT_BRIGHT = TextColor.Factory.fromString("#E9EAF0");
   public static final TextColor COLOR_BASE_TEXT_MUTED = TextColor.Factory.fromString("#9296A5"); 
 
