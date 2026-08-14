@@ -48,8 +48,8 @@ public class AgentLanternaSettingsImpl implements AgentUISettings {
         this.explicitGui = gui;
     }
 
-    public AgentLanternaSettingsImpl(AgentUIManager manager, AgentSettings settings) {
-        this(manager, new FakeAgent(settings));
+    public AgentLanternaSettingsImpl(AgentUIManager manager, AgentSettings settings, AgentConsole console) {
+        this(manager, new FakeAgent(settings, console));
     }
 
     @Override

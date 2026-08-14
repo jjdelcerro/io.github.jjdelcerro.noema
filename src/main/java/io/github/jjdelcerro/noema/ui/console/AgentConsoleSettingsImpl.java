@@ -4,6 +4,7 @@ import io.github.jjdelcerro.noema.ui.common.FakeAgent;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.ui.AgentUIManager;
 import io.github.jjdelcerro.noema.ui.AgentUISettings;
@@ -289,8 +290,8 @@ public class AgentConsoleSettingsImpl implements AgentUISettings {
     this.root = new MenuItem(null, agent, uiroot);
   }
 
-  public AgentConsoleSettingsImpl(AgentUIManager agentUIManager, AgentSettings settings) {
-    this(agentUIManager, new FakeAgent(settings));
+  public AgentConsoleSettingsImpl(AgentUIManager agentUIManager, AgentSettings settings, AgentConsole console) {
+    this(agentUIManager, new FakeAgent(settings,console));
   }
 
   public void showWindow() {

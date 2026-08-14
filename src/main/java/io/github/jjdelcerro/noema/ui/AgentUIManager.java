@@ -14,6 +14,6 @@ public interface AgentUIManager {
 
     public AgentUISettings createSettings(Agent agent);
     
-    public AgentUISettings createSettings(AgentSettings settings);
+    public AgentUISettings createSettings(AgentSettings settings, AgentConsole console);
   
 }

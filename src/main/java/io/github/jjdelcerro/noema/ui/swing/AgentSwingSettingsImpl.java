@@ -5,6 +5,7 @@ import io.github.jjdelcerro.noema.ui.swing.settings.AgentSettingsItemSwing;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.ui.AgentUIManager;
 import io.github.jjdelcerro.noema.ui.AgentUISettings;
@@ -51,8 +52,8 @@ public class AgentSwingSettingsImpl extends JPanel implements AgentUISettings {
     loadConfiguration();
   }
 
-  public AgentSwingSettingsImpl(AgentUIManager agentUIManager, AgentSettings settings) {
-    this(agentUIManager, new FakeAgent(settings));
+  public AgentSwingSettingsImpl(AgentUIManager agentUIManager, AgentSettings settings, AgentConsole console) {
+    this(agentUIManager, new FakeAgent(settings, console));
   }
 
   private void initUI() {

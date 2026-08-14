@@ -16,8 +16,7 @@ public class Main {
     private static final String MODE_WEB = "web";
 
     public static void main(String[] args) {
-        String mode = MODE_SWING;
-        Configurator.setRootLevel(Level.OFF);
+        String mode = MODE_TUI;
         
         // Comprobamos si existe el parámetro -c entre los argumentos
         for (String arg : args) {
@@ -25,8 +24,8 @@ public class Main {
                 mode = MODE_CONSOLE;
                 break;
             }
-            if ("--tui".equalsIgnoreCase(arg)) {
-                mode = MODE_TUI;
+            if ("--gui".equalsIgnoreCase(arg) || "--swing".equalsIgnoreCase(arg)) {
+                mode = MODE_SWING;
                 break;
             }
             if ("--web".equalsIgnoreCase(arg)) {
@@ -39,13 +38,13 @@ public class Main {
           case MODE_CONSOLE:
             MainConsole.main(args);
             break;
-          case MODE_TUI:
-            MainLanterna.main(args);
+          case MODE_SWING:
+            MainGUI.main(args);
             break;
           case MODE_WEB: // De momento no hay un modo que solo inicia el servidor web.
-          case MODE_SWING:
+          case MODE_TUI:
           default:
-            MainGUI.main(args);
+            MainLanterna.main(args);
         }
     }
 }

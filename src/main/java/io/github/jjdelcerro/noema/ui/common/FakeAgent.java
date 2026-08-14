@@ -32,11 +32,11 @@ public class FakeAgent implements Agent {
   private AgentConsole console;
   private final AgentActions actions;
 
-  public FakeAgent(AgentSettings settings) {
+  public FakeAgent(AgentSettings settings, AgentConsole console) {
     AgentManager agentManager = AgentLocator.getAgentManager();
     this.settings = settings;
     this.actions = new FakeAgentActions(agentManager.createActions());
-    this.console = new FakeConsole();
+    this.console = console==null?new FakeConsole():console;
     this.settings.load();
 
     AgentManager manager = AgentLocator.getAgentManager();

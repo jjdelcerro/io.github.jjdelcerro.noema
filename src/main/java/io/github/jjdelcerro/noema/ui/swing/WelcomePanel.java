@@ -233,7 +233,7 @@ Asegúrese de ejecutar el agente en un entorno controlado o con backups actualiz
     }
     this.settings.setupSettings(paths);
 //    AgentUISettings settingsUI = AgentUILocator.getAgentUIManager().createSettings(this.settings); FIXME Por que no va?
-    AgentSwingSettingsImpl settingsUI = new AgentSwingSettingsImpl(null, settings);
+    AgentSwingSettingsImpl settingsUI = new AgentSwingSettingsImpl(null, settings, null);
     settingsUI.showWindow(this.window);
 
     // Al volver, refrescamos los datos para ver si ya podemos habilitar "Continuar"

@@ -25,7 +25,7 @@ public class AgentLanternaManagerImpl implements AgentUIManager {
     }
 
     @Override
-    public AgentUISettings createSettings(AgentSettings settings) {
-        return new AgentLanternaSettingsImpl(this, settings);
+    public AgentUISettings createSettings(AgentSettings settings, AgentConsole console) {
+        return new AgentLanternaSettingsImpl(this, settings, console);
     }
 }

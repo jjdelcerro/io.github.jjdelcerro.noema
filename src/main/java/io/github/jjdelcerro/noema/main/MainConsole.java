@@ -21,6 +21,8 @@ import io.github.jjdelcerro.noema.ui.AgentUILocator;
 import io.github.jjdelcerro.noema.ui.AgentUISettings;
 import io.github.jjdelcerro.noema.ui.console.AgentConsoleInitializer;
 import java.nio.file.Path;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 
 public class MainConsole {
 
@@ -28,6 +30,8 @@ public class MainConsole {
   public static void main(String[] args) {
     Agent agent = null;
     AgentConsole console;
+    Path workspace = Path.of(".").toAbsolutePath().normalize();
+
     try {
       // Inicialización de JLine (Terminal y LineReader)
       Terminal terminal = TerminalBuilder.builder()
@@ -52,17 +56,19 @@ public class MainConsole {
       if (kent != null) {
         lineReader.getKeyMaps().get(LineReader.MAIN).bind(new Reference("insert-newline"), kent);
       }
+      Configurator.setRootLevel(Level.OFF);
+      
       AgentConsoleInitializer.init(terminal, lineReader);
       
       
       AgentManager manager = AgentLocator.getAgentManager();
-      AgentPaths paths = manager.createAgentPaths(Path.of("."));
+      AgentPaths paths = manager.createAgentPaths(workspace);
       AgentSettings settings = manager.createSettings(paths);
 
       settings.setupSettings();
       
       if( !BootUtils.areSettingsValid(settings) ) {
-        AgentUISettings settingsUI = AgentUILocator.getAgentUIManager().createSettings(settings);
+        AgentUISettings settingsUI = AgentUILocator.getAgentUIManager().createSettings(settings, null);
         settingsUI.showWindow();        
         if( !BootUtils.areSettingsValid(settings) ) {
           System.err.println("Configuración cancelada. Saliendo de la aplicacion.");

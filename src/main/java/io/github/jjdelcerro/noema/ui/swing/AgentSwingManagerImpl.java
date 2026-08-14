@@ -30,8 +30,8 @@ public class AgentSwingManagerImpl implements AgentUIManager {
   }
   
   @Override
-  public AgentUISettings createSettings(AgentSettings settings) {
-    return new AgentSwingSettingsImpl(this, settings);
+  public AgentUISettings createSettings(AgentSettings settings, AgentConsole console) {
+    return new AgentSwingSettingsImpl(this, settings, console);
   }
   
 }

@@ -34,8 +34,8 @@ public class AgentConsoleManagerImpl implements AgentUIManager {
   }
   
   @Override
-  public AgentUISettings createSettings(AgentSettings settings) {
-    return new AgentConsoleSettingsImpl(this, settings);
+  public AgentUISettings createSettings(AgentSettings settings, AgentConsole console) {
+    return new AgentConsoleSettingsImpl(this, settings, console);
   }
   
 }
