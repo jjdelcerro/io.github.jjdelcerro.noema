@@ -137,7 +137,7 @@ public class HistoryChatBox extends TextBox {
             case PageDown:
             case Home:
             case End:
-                return super.handleInput(keyStroke);
+                return super.handleKeyStroke(keyStroke);
             default:
                 // Consumir cualquier otra tecla (letras, numeros, borrado, etc.)
                 return Result.HANDLED;

@@ -16,20 +16,6 @@ import java.util.List;
 
 public class ColoredHistoryRenderer extends DefaultTextBoxRenderer {
 
-    // Paleta de colores estilo 
-    private static final TextColor COLOR_USER         = TextColor.Factory.fromString("#3FB950"); // Verde
-    private static final TextColor COLOR_LOG          = TextColor.Factory.fromString("#8B949E"); // Gris tenue
-    private static final TextColor COLOR_ERR          = TextColor.Factory.fromString("#F85149"); // Rojo error
-    private static final TextColor COLOR_MODEL        = TextColor.Factory.fromString("#E1E4E8"); // Blanco brillante
-    private static final TextColor COLOR_HEADING      = TextColor.Factory.fromString("#B8A0FF"); // Púrpura acento
-    private static final TextColor COLOR_CODE_INLINE   = TextColor.Factory.fromString("#79C0FF"); // Cian código inline
-    private static final TextColor COLOR_CODE_BLOCK    = TextColor.Factory.fromString("#A5D6FF"); // Azul pastel bloque
-
-    // Colores de la barra de scroll vertical
-    private static final TextColor COLOR_SCROLL_TRACK = TextColor.Factory.fromString("#292C34"); // Pista en gris muy oscuro
-    private static final TextColor COLOR_SCROLL_THUMB = TextColor.Factory.fromString("#58A6FF"); // Indicador en cian brillante
-
-    // Conmutadores de visibilidad de la terminal
     private boolean showSystemLogs = true;
     private boolean showErrorLogs = true;
 
@@ -76,14 +62,14 @@ public class ColoredHistoryRenderer extends DefaultTextBoxRenderer {
 
     @Override
     public TerminalPosition getCursorLocation(TextBox textBox) {
-        return null; // Ocultar cursor de edición en el historial
+        return null;
     }
 
     @Override
     public void drawComponent(TextGUIGraphics graphics, TextBox textBox) {
         ThemeStyle style = textBox.getThemeDefinition().getNormal();
         graphics.applyThemeStyle(style);
-        graphics.setBackgroundColor(LanternaUtils.BG_DARK);
+        graphics.setBackgroundColor(LanternaUtils.COLOR_CHATHISTORY_BG);
         graphics.fill(' ');
 
         String text = textBox.getText();
@@ -177,10 +163,10 @@ public class ColoredHistoryRenderer extends DefaultTextBoxRenderer {
         for (int row = 0; row < viewHeight; row++) {
             boolean isThumb = (row >= thumbTop && row < thumbTop + thumbHeight);
             if (isThumb) {
-                graphics.setForegroundColor(COLOR_SCROLL_THUMB);
+                graphics.setForegroundColor(LanternaUtils.COLOR_SCROLL_THUMB);
                 graphics.putString(scrollCol, row, "█");
             } else {
-                graphics.setForegroundColor(COLOR_SCROLL_TRACK);
+                graphics.setForegroundColor(LanternaUtils.COLOR_SCROLL_TRACK);
                 graphics.putString(scrollCol, row, "│");
             }
         }
@@ -196,31 +182,30 @@ public class ColoredHistoryRenderer extends DefaultTextBoxRenderer {
         for (String rawParagraph : rawParagraphs) {
             paragraphToVisualIdx.add(visualLines.size());
 
-            TextColor baseColor = COLOR_MODEL;
+            TextColor baseColor = LanternaUtils.COLOR_ROLE_MODEL;
             String body = rawParagraph;
 
-            // Aislamiento de mensajes por rol y filtrado de visibilidad
             if (rawParagraph.startsWith("[USR] ")) {
                 inCodeBlock = false;
-                baseColor = COLOR_USER;
+                baseColor = LanternaUtils.COLOR_ROLE_USER;
                 body = rawParagraph.substring(6);
             } else if (rawParagraph.startsWith("[SIS] ")) {
                 inCodeBlock = false;
                 if (!showSystemLogs) {
-                    continue; // Filtrar mensajes del sistema si están desactivados
+                    continue;
                 }
-                baseColor = COLOR_LOG;
+                baseColor = LanternaUtils.COLOR_ROLE_LOG;
                 body = rawParagraph.substring(6);
             } else if (rawParagraph.startsWith("[ERR] ")) {
                 inCodeBlock = false;
                 if (!showErrorLogs) {
-                    continue; // Filtrar mensajes de error si están desactivados
+                    continue;
                 }
-                baseColor = COLOR_ERR;
+                baseColor = LanternaUtils.COLOR_ROLE_ERR;
                 body = rawParagraph.substring(6);
             } else if (rawParagraph.startsWith("[RES] ")) {
                 inCodeBlock = false;
-                baseColor = COLOR_MODEL;
+                baseColor = LanternaUtils.COLOR_ROLE_MODEL;
                 body = rawParagraph.substring(6);
             }
 
@@ -228,13 +213,13 @@ public class ColoredHistoryRenderer extends DefaultTextBoxRenderer {
                 inCodeBlock = !inCodeBlock;
                 VisualLine fenceLine = new VisualLine();
                 String lang = body.length() > 3 ? " [" + body.substring(3).trim() + "]" : "";
-                fenceLine.addSegment("─── código" + lang + " ───", COLOR_LOG, EnumSet.of(SGR.ITALIC));
+                fenceLine.addSegment("─── codigo" + lang + " ───", LanternaUtils.COLOR_ROLE_LOG, EnumSet.of(SGR.ITALIC));
                 visualLines.add(fenceLine);
                 continue;
             }
 
             if (inCodeBlock) {
-                wrapCodeLine(body, maxLen, COLOR_CODE_BLOCK, visualLines);
+                wrapCodeLine(body, maxLen, LanternaUtils.COLOR_MARKDOWN_CODE_BLOCK, visualLines);
                 continue;
             }
 
@@ -260,7 +245,7 @@ public class ColoredHistoryRenderer extends DefaultTextBoxRenderer {
         if (body.startsWith("# ") || body.startsWith("## ") || body.startsWith("### ")) {
             int firstSpace = body.indexOf(' ');
             body = body.substring(firstSpace + 1);
-            activeColor = COLOR_HEADING;
+            activeColor = LanternaUtils.COLOR_MARKDOWN_HEADING;
             baseModifiers.add(SGR.BOLD);
             baseModifiers.add(SGR.UNDERLINE);
         } else if (body.startsWith("- ") || body.startsWith("* ")) {
@@ -302,7 +287,7 @@ public class ColoredHistoryRenderer extends DefaultTextBoxRenderer {
         }
 
         if (currentText.length() > 0) {
-            TextColor colorForSeg = code ? COLOR_CODE_INLINE : activeColor;
+            TextColor colorForSeg = code ? LanternaUtils.COLOR_MARKDOWN_CODE_INLINE : activeColor;
             segments.add(new VisualSegment(currentText.toString(), colorForSeg, combineModifiers(baseModifiers, bold, italic, code)));
         }
 
