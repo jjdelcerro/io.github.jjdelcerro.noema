@@ -8,8 +8,8 @@ public class LanternaUtils {
   // --- PALETA BASE ---
   public static final TextColor COLOR_BASE_BG = TextColor.Factory.fromString("#171A21"); 
   public static final TextColor COLOR_BASE_BG_INPUT = TextColor.Factory.fromString("#1D2029"); 
-  public static final TextColor COLOR_BASE_TEXT = TextColor.Factory.fromString("#E9EAF0"); 
-  public static final TextColor COLOR_BASE_TEXT_BRIGHT = TextColor.Factory.fromString("#FFFFFF");
+  public static final TextColor COLOR_BASE_TEXT = TextColor.Factory.fromString("#9296A5"); 
+  public static final TextColor COLOR_BASE_TEXT_BRIGHT = TextColor.Factory.fromString("#E9EAF0");
   public static final TextColor COLOR_BASE_TEXT_MUTED = TextColor.Factory.fromString("#9296A5"); 
 
   // --- FONDO ESPECIFICO DEL HISTORIAL DE CHAT ---
@@ -22,13 +22,13 @@ public class LanternaUtils {
   public static final TextColor COLOR_ROLE_ERR = TextColor.Factory.fromString("#DA6575");
 
   // --- SINTAXIS Y MARKDOWN ---
-  public static final TextColor COLOR_MARKDOWN_HEADING = TextColor.Factory.fromString("#B8A0FF"); // --accent
+  public static final TextColor COLOR_MARKDOWN_HEADING = TextColor.Factory.fromString("#B8A0FF");
   public static final TextColor COLOR_MARKDOWN_CODE_INLINE = TextColor.Factory.fromString("#79C0FF");
   public static final TextColor COLOR_MARKDOWN_CODE_BLOCK = TextColor.Factory.fromString("#A5D6FF");
 
   // --- BARRAS DE SCROLL ---
-  public static final TextColor COLOR_SCROLL_TRACK = TextColor.Factory.fromString("#1D2029");
-  public static final TextColor COLOR_SCROLL_THUMB = TextColor.Factory.fromString("#8F71F5"); // --accent2
+  public static final TextColor COLOR_SCROLL_TRACK = TextColor.Factory.fromString("#9296A5");
+  public static final TextColor COLOR_SCROLL_THUMB = TextColor.Factory.fromString("#9296A5");
 
   private static SimpleTheme mainTheme;
   private static SimpleTheme inputTheme;
