@@ -6,6 +6,7 @@ import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
+import com.googlecode.lanterna.terminal.MouseCaptureMode;
 import com.googlecode.lanterna.terminal.Terminal;
 
 import io.github.jjdelcerro.noema.lib.Agent;
@@ -22,7 +23,12 @@ public class MainLanterna {
     public static void main(String[] args) {
         try {
             // 1. Inicializar pantalla de Lanterna
-            Terminal terminal = new DefaultTerminalFactory().createTerminal();
+            DefaultTerminalFactory factory = new DefaultTerminalFactory();
+
+            // Activar la captura de clics y arrastres de ratón
+            factory.setMouseCaptureMode(MouseCaptureMode.CLICK_RELEASE_DRAG);
+            Terminal terminal = factory.createTerminal();            
+            
             Screen screen = new TerminalScreen(terminal);
             screen.startScreen();
 

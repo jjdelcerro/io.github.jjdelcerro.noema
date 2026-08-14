@@ -34,11 +34,17 @@ import java.util.List;
 public class AgentLanternaSettingsImpl implements AgentUISettings {
 
     private final Agent agent;
+    private MultiWindowTextGUI explicitGui;
     private Panel detailPanel;
     private ActionListBox navigationList;
 
     public AgentLanternaSettingsImpl(AgentUIManager manager, Agent agent) {
         this.agent = agent;
+    }
+
+    public AgentLanternaSettingsImpl(MultiWindowTextGUI gui, Agent agent) {
+        this.agent = agent;
+        this.explicitGui = gui;
     }
 
     public AgentLanternaSettingsImpl(AgentUIManager manager, AgentSettings settings) {
@@ -47,42 +53,55 @@ public class AgentLanternaSettingsImpl implements AgentUISettings {
 
     @Override
     public void showWindow() {
-        MultiWindowTextGUI gui = null;
-        AgentConsole console = agent.getCurrentConsole();
-        if (console instanceof AgentLanternaConsoleImpl lanternaConsole) {
-            gui = lanternaConsole.getGui();
+        MultiWindowTextGUI gui = this.explicitGui;
+        if (gui == null) {
+            AgentConsole console = agent.getCurrentConsole();
+            if (console instanceof AgentLanternaConsoleImpl lanternaConsole) {
+                gui = lanternaConsole.getGui();
+            }
         }
 
         if (gui == null) {
             return;
         }
+
         TerminalSize terminalSize = gui.getScreen().getTerminalSize();
-        
+
         BasicWindow window = new BasicWindow("Configuración de Noema");
         window.setHints(Arrays.asList(Window.Hint.CENTERED));
-        window.setTheme(LanternaUtils.getMainTheme());   
-        
+        window.setTheme(LanternaUtils.getMainTheme());
+
         Panel rootPanel = new Panel(new LinearLayout(Direction.VERTICAL));
+        rootPanel.setTheme(LanternaUtils.getMainTheme());
 
-        // Panel Principal Dividido (Izquierda: Menú / Derecha: Formulario)
         Panel bodyPanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        bodyPanel.setTheme(LanternaUtils.getMainTheme());
 
-        navigationList = new ActionListBox(new TerminalSize((int) (0.3 * terminalSize.getColumns()), terminalSize.getRows()-10));
-        detailPanel = new Panel(new LinearLayout(Direction.VERTICAL));
-        detailPanel.setPreferredSize(new TerminalSize((int) (0.5 * terminalSize.getColumns()), terminalSize.getRows()-10));
+        int navWidth = Math.max(30, (int) (0.35 * terminalSize.getColumns()));
+        int detailWidth = Math.max(40, (int) (0.50 * terminalSize.getColumns()));
+        int height = Math.max(15, terminalSize.getRows() - 10);
+
+        navigationList = new ActionListBox(new TerminalSize(navWidth, height));
+        navigationList.setTheme(LanternaUtils.getMainTheme());
+
+//        detailPanel = new Panel(new LinearLayout(Direction.VERTICAL));
+        detailPanel = new ScrollPanel(new LinearLayout(Direction.VERTICAL));
+
+        detailPanel.setPreferredSize(new TerminalSize(detailWidth, height));
+        detailPanel.setTheme(LanternaUtils.getMainTheme());
 
         bodyPanel.addComponent(navigationList.withBorder(Borders.singleLine("Secciones")));
         bodyPanel.addComponent(detailPanel.withBorder(Borders.singleLine("Parámetros")));
 
         rootPanel.addComponent(bodyPanel);
 
-        // Botón inferior para cerrar
         Button btnClose = new Button("Cerrar", window::close);
+        btnClose.setTheme(LanternaUtils.getMainTheme());
         rootPanel.addComponent(btnClose, LinearLayout.createLayoutData(LinearLayout.Alignment.End));
 
         window.setComponent(rootPanel);
 
-        // Cargar árbol desde settingsui.json
+        // Cargar árbol desde settingsui.json de forma inductiva/recursiva
         loadTree(gui);
 
         // Mostrar ventana de forma modal
@@ -95,22 +114,42 @@ public class AgentLanternaSettingsImpl implements AgentUISettings {
             JsonObject uiroot = JsonParser.parseReader(reader).getAsJsonObject();
             MenuItemLanterna rootItem = new MenuItemLanterna(null, agent, uiroot);
 
-            // Poblamos el menú izquierdo con las secciones principales
-            List<AgentSettingsItemUI> sections = rootItem.getChilds();
-            if (sections != null) {
-                for (AgentSettingsItemUI section : sections) {
-                    if (section instanceof AbstractAgentSettingsItemLanterna lanternaItem) {
-                        navigationList.addItem(section.getLabel(), () -> renderSectionDetails(lanternaItem));
-                    }
-                }
-            }
+            // Poblamos el menú de la izquierda recursivamente con sangrías ("árbol todo expandido")
+            populateNavigationList(rootItem, 0);
+
         } catch (Exception e) {
             MessageDialog.showMessageDialog(gui, "Error", "No se pudo cargar settingsui.json: " + e.getMessage());
         }
     }
 
     /**
-     * Reconstruye el panel de la derecha al seleccionar una sección de la izquierda.
+     * Recorre recursivamente los nodos de menú y los añade a la lista de la izquierda con sangrías.
+     */
+    private void populateNavigationList(AgentSettingsItemUI node, int depth) {
+        List<AgentSettingsItemUI> children = node.getChilds();
+        if (children == null) {
+            return;
+        }
+
+        for (AgentSettingsItemUI child : children) {
+            if (child instanceof AbstractAgentSettingsItemLanterna lanternaItem) {
+                // Solo añadimos como fila seleccionable los nodos de tipo "menu"
+                if ("menu".equalsIgnoreCase(child.getType())) {
+                    String indent = "  ".repeat(depth);
+                    String prefix = (depth > 0) ? "↳ " : "";
+                    String label = indent + prefix + child.getLabel();
+
+                    navigationList.addItem(label, () -> renderSectionDetails(lanternaItem));
+
+                    // Recursión: añadir submenús inmediatamente debajo
+                    populateNavigationList(child, depth + 1);
+                }
+            }
+        }
+    }
+
+    /**
+     * Reconstruye el panel derecho mostrando únicamente los componentes directos del nodo seleccionado.
      */
     private void renderSectionDetails(AbstractAgentSettingsItemLanterna sectionNode) {
         detailPanel.removeAllComponents();
@@ -119,6 +158,10 @@ public class AgentLanternaSettingsImpl implements AgentUISettings {
         if (children != null) {
             for (AgentSettingsItemUI child : children) {
                 if (child instanceof AbstractAgentSettingsItemLanterna item) {
+                    // Omitir submenús para no saturar el panel derecho con secciones vacías
+                    if ("menu".equalsIgnoreCase(child.getType())) {
+                        continue;
+                    }
                     Component comp = item.getLanternaComponent();
                     if (comp != null) {
                         detailPanel.addComponent(comp);
