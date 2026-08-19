@@ -128,7 +128,7 @@ public class ModelParametersImpl implements Agent.ModelParameters {
      * @return el valor convertido a su tipo Java correspondiente, o null si no existe
      */
     public Object getExtraValue(String name) {
-        if (!this.extraValues.has(name)) {
+        if (this.extraValues == null || !this.extraValues.has(name)) {
             return null;
         }
         JsonElement v = this.extraValues.get(name);

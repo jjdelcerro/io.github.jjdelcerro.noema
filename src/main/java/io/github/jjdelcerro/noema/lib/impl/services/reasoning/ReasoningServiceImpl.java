@@ -23,7 +23,9 @@ import io.github.jjdelcerro.noema.lib.persistence.Turn;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
@@ -93,459 +95,459 @@ import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
  */
 public class ReasoningServiceImpl implements ReasoningService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ReasoningServiceImpl.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ReasoningServiceImpl.class);
 
-    protected String lastestSystemPrompt;
-    protected String currentSubchannel;
+  protected String lastestSystemPrompt;
+  protected String currentSubchannel;
 
-    private static class AvailableAgentTool {
+  private static class AvailableAgentTool {
 
-        private final AgentTool tool;
-        private boolean active;
+    private final AgentTool tool;
+    private boolean active;
 
-        public AvailableAgentTool(AgentTool tool) {
-            this.tool = tool;
-            this.active = tool.isAvailableByDefault();
+    public AvailableAgentTool(AgentTool tool) {
+      this.tool = tool;
+      this.active = tool.isAvailableByDefault();
+    }
+  }
+
+  private final AgentServiceFactory factory;
+  private final Agent agent;
+  private final SourceOfTruth sourceOfTruth;
+  private final Map<String, Session> sessions;
+  private Agent.ChatModel model;
+  private boolean running;
+
+  private Map<String, CheckPoint> activesCheckPoint;
+
+  // Registro de herramientas
+  private final Map<String, AvailableAgentTool> availableTools = new LinkedHashMap<>();
+
+  public ReasoningServiceImpl(AgentServiceFactory factory, Agent agent) {
+    this.factory = factory;
+    this.agent = agent;
+    this.sourceOfTruth = agent.getSourceOfTruth();
+    this.sessions = new HashMap<>();
+    this.activesCheckPoint = new HashMap<>();
+    this.running = false;
+    this.currentSubchannel = DEFAULT_SUBCHANNEL;
+  }
+
+  public Session createSession(String subchannel) {
+    SessionImpl session = new SessionImpl(
+            agent.getPaths().getDataFolder(),
+            agent.getSettings(),
+            subchannel
+    );
+    return session;
+  }
+
+  private Session getSession(String subchannel) {
+    Session session = this.sessions.get(subchannel);
+    if (session == null) {
+      session = this.createSession(subchannel);
+      this.sessions.put(subchannel, session);
+    }
+    return session;
+  }
+
+  public CheckPoint getActiveCheckPoint(String subchannel) {
+    CheckPoint checkPoint = this.activesCheckPoint.get(subchannel);
+    if (checkPoint == null) {
+      try {
+        checkPoint = sourceOfTruth.getLatestCheckPoint(subchannel);
+      } catch (Exception e) {
+        LOGGER.warn("No se ha podido recuperar el ultimo checkpoint", e);
+      }
+      this.activesCheckPoint.put(subchannel, checkPoint);
+    }
+    return checkPoint;
+  }
+
+  private CheckPoint setActiveCheckPoint(String subchannel, CheckPoint checkPoint) {
+    this.activesCheckPoint.put(subchannel, checkPoint);
+    return checkPoint;
+  }
+
+  @Override
+  public AgentServiceFactory getFactory() {
+    return factory;
+  }
+
+  @Override
+  public void start() {
+    String[] resources = new String[]{
+      "var/config/prompts/reasoning-system.md",
+      "var/identity/core/readme.md",
+      "var/identity/environ/readme.md",
+      "var/skills/readme.md"
+    };
+    for (String resPath : resources) {
+      this.agent.installResource(resPath);
+    }
+
+    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_REASONING_PROVIDER) {
+      @Override
+      public boolean perform(AgentSettings settings) {
+        model = agent.createChatModel(ReasoningService.ID);
+        return true;
+      }
+    });
+    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_REASONING_MODEL) {
+      @Override
+      public boolean perform(AgentSettings settings) {
+        model = agent.createChatModel(ReasoningService.ID);
+        return true;
+      }
+    });
+    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, "COMPACT_REASONING_SESSION") {
+      @Override
+      public boolean perform(AgentSettings settings) {
+        for (Session session : sessions.values()) {
+          try {
+            SessionImpl.SessionMark mark1 = session.getOldestMark();
+            SessionImpl.SessionMark mark2 = session.getCompactMark();
+            performCompaction(session, mark1, mark2);
+          } catch (Exception ex) {
+            LOGGER.warn("Can't compact conversation", ex);
+            return false;
+          }
         }
-    }
-
-    private final AgentServiceFactory factory;
-    private final Agent agent;
-    private final SourceOfTruth sourceOfTruth;
-    private final Map<String, Session> sessions;
-    private Agent.ChatModel model;
-    private boolean running;
-
-    private Map<String, CheckPoint> activesCheckPoint;
-
-    // Registro de herramientas
-    private final Map<String, AvailableAgentTool> availableTools = new LinkedHashMap<>();
-
-    public ReasoningServiceImpl(AgentServiceFactory factory, Agent agent) {
-        this.factory = factory;
-        this.agent = agent;
-        this.sourceOfTruth = agent.getSourceOfTruth();
-        this.sessions = new HashMap<>();
-        this.activesCheckPoint = new HashMap<>();
-        this.running = false;
-        this.currentSubchannel = DEFAULT_SUBCHANNEL;
-    }
-
-    public Session createSession(String subchannel) {
-        SessionImpl session = new SessionImpl(
-                agent.getPaths().getDataFolder(),
-                agent.getSettings(),
-                subchannel
-        );
-        return session;
-    }
-
-    private Session getSession(String subchannel) {
-        Session session = this.sessions.get(subchannel);
-        if (session == null) {
-            session = this.createSession(subchannel);
-            this.sessions.put(subchannel, session);
+        return true;
+      }
+    });
+    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, "COMPACT_REASONING_FULL_SESSION") {
+      @Override
+      public boolean perform(AgentSettings settings) {
+        for (Session session : sessions.values()) {
+          try {
+            SessionImpl.SessionMark mark1 = session.getOldestMark();
+            SessionImpl.SessionMark mark2 = session.getNewestMark();
+            performCompaction(session, mark1, mark2);
+          } catch (Exception ex) {
+            LOGGER.warn("Can't compact conversation", ex);
+            return false;
+          }
         }
-        return session;
-    }
-
-    public CheckPoint getActiveCheckPoint(String subchannel) {
-        CheckPoint checkPoint = this.activesCheckPoint.get(subchannel);
-        if (checkPoint == null) {
-            try {
-                checkPoint = sourceOfTruth.getLatestCheckPoint(subchannel);
-            } catch (Exception e) {
-                LOGGER.warn("No se ha podido recuperar el ultimo checkpoint", e);
-            }
-            this.activesCheckPoint.put(subchannel, checkPoint);
+        return true;
+      }
+    });
+    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, "REFRESH_REASONING_TOOLS") {
+      @Override
+      public boolean perform(AgentSettings settings) {
+        try {
+          refresh_available_tools();
+          return true;
+        } catch (Exception ex) {
+          LOGGER.warn("Can't refresh active tools", ex);
+          return false;
         }
-        return checkPoint;
-    }
-
-    private CheckPoint setActiveCheckPoint(String subchannel, CheckPoint checkPoint) {
-        this.activesCheckPoint.put(subchannel, checkPoint);
-        return checkPoint;
-    }
-
-    @Override
-    public AgentServiceFactory getFactory() {
-        return factory;
-    }
-
-    @Override
-    public void start() {
-        String[] resources = new String[]{
-            "var/config/prompts/reasoning-system.md",
-            "var/identity/core/readme.md",
-            "var/identity/environ/readme.md",
-            "var/skills/readme.md"
-        };
-        for (String resPath : resources) {
-            this.agent.installResource(resPath);
-        }
-
-        this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_REASONING_PROVIDER) {
-            @Override
-            public boolean perform(AgentSettings settings) {
-                model = agent.createChatModel(ReasoningService.ID);
-                return true;
-            }
-        });
-        this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_REASONING_MODEL) {
-            @Override
-            public boolean perform(AgentSettings settings) {
-                model = agent.createChatModel(ReasoningService.ID);
-                return true;
-            }
-        });
-        this.agent.getActions().addAction(new AbstractAgentAction(this.agent, "COMPACT_REASONING_SESSION") {
-            @Override
-            public boolean perform(AgentSettings settings) {
-                for (Session session : sessions.values()) {
-                    try {
-                        SessionImpl.SessionMark mark1 = session.getOldestMark();
-                        SessionImpl.SessionMark mark2 = session.getCompactMark();
-                        performCompaction(session, mark1, mark2);
-                    } catch (Exception ex) {
-                        LOGGER.warn("Can't compact conversation", ex);
-                        return false;
-                    }
-                }
-                return true;
-            }
-        });
-        this.agent.getActions().addAction(new AbstractAgentAction(this.agent, "COMPACT_REASONING_FULL_SESSION") {
-            @Override
-            public boolean perform(AgentSettings settings) {
-                for (Session session : sessions.values()) {
-                    try {
-                        SessionImpl.SessionMark mark1 = session.getOldestMark();
-                        SessionImpl.SessionMark mark2 = session.getNewestMark();
-                        performCompaction(session, mark1, mark2);
-                    } catch (Exception ex) {
-                        LOGGER.warn("Can't compact conversation", ex);
-                        return false;
-                    }
-                }
-                return true;
-            }
-        });
-        this.agent.getActions().addAction(new AbstractAgentAction(this.agent, "REFRESH_REASONING_TOOLS") {
-            @Override
-            public boolean perform(AgentSettings settings) {
-                try {
-                    refresh_available_tools();
-                    return true;
-                } catch (Exception ex) {
-                    LOGGER.warn("Can't refresh active tools", ex);
-                    return false;
-                }
-            }
-        });
+      }
+    });
 //    for (AgentTool tool : this.getAvailableTools()) {
 //      LOGGER.info(tool.getSpecification().toString());
 //    }
-        this.refresh_available_tools();
-        this.model = this.agent.createChatModel(ReasoningService.ID);
+    this.refresh_available_tools();
+    this.model = this.agent.createChatModel(ReasoningService.ID);
 //    Thread.ofVirtual().name(AgentManager.AGENT_NAME + "-Event-Dispatcher").start(this::eventDispatcher);
-        Thread.ofPlatform().name(AgentManager.AGENT_NAME + "-Event-Dispatcher").start(this::eventDispatcher);
-        this.running = true;
-        this.agent.getConsole(DEFAULT_SUBCHANNEL).printSystemLog("Reasoning service " + getModelName());
+    Thread.ofPlatform().name(AgentManager.AGENT_NAME + "-Event-Dispatcher").start(this::eventDispatcher);
+    this.running = true;
+    this.agent.getConsole(DEFAULT_SUBCHANNEL).printSystemLog("Reasoning service " + getModelName());
 
+  }
+
+  @Override
+  public void addTool(AgentTool tool) {
+    this.availableTools.put(tool.getName(), new AvailableAgentTool(tool));
+  }
+
+  public String getBaseSystemPrompt() {
+    StringBuilder sb = new StringBuilder();
+
+    // --- CAPA 1: Instrucciones Operativas (Sistema Nervioso Autónomo) ---
+    // Cargamos las instrucciones de comportamiento base
+    String basePrompt = agent.getResourceAsString("var/config/prompts/reasoning-system.md");
+    if (StringUtils.isBlank(basePrompt)) {
+      LOGGER.error("No se pudo cargar el recurso base: var/config/prompts/reasoning-system.md");
+      throw new RuntimeException("Error crítico: Prompt de sistema base no encontrado.");
     }
+    sb.append(basePrompt).append("\n\n");
 
-    @Override
-    public void addTool(AgentTool tool) {
-        this.availableTools.put(tool.getName(), new AvailableAgentTool(tool));
-    }
+    // --- CAPA 2a: Constitución (Identidad Core / ADN Técnico) ---
+    // Solo cargamos los módulos que el usuario ha marcado en la configuración
+    sb.append("# CONSTITUCIÓN Y REGLAS OPERATIVAS\n");
+    sb.append("Debes cumplir estrictamente con las siguientes normas técnicas y metodológicas:\n\n");
 
-    public String getBaseSystemPrompt() {
-        StringBuilder sb = new StringBuilder();
+    AgentSettingsCheckedList coreSettings = agent.getSettings().getPropertyAsCheckedList("reasoning/identity/core");
+    List<Path> coreFiles = agent.getPaths().listAgentPath("var/identity/core");
 
-        // --- CAPA 1: Instrucciones Operativas (Sistema Nervioso Autónomo) ---
-        // Cargamos las instrucciones de comportamiento base
-        String basePrompt = agent.getResourceAsString("var/config/prompts/reasoning-system.md");
-        if (StringUtils.isBlank(basePrompt)) {
-            LOGGER.error("No se pudo cargar el recurso base: var/config/prompts/reasoning-system.md");
-            throw new RuntimeException("Error crítico: Prompt de sistema base no encontrado.");
+    if (coreFiles != null && !coreFiles.isEmpty()) {
+      Collections.sort(coreFiles); // Nos aseguramos que s epresenten siempre en el mismo orden
+      for (Path path : coreFiles) {
+        String fileName = path.getFileName().toString();
+        if (StringUtils.equalsIgnoreCase(fileName, "readme.md")) {
+          continue;
         }
-        sb.append(basePrompt).append("\n\n");
-
-        // --- CAPA 2a: Constitución (Identidad Core / ADN Técnico) ---
-        // Solo cargamos los módulos que el usuario ha marcado en la configuración
-        sb.append("# CONSTITUCIÓN Y REGLAS OPERATIVAS\n");
-        sb.append("Debes cumplir estrictamente con las siguientes normas técnicas y metodológicas:\n\n");
-
-        AgentSettingsCheckedList coreSettings = agent.getSettings().getPropertyAsCheckedList("reasoning/identity/core");
-        List<Path> coreFiles = agent.getPaths().listAgentPath("var/identity/core");
-
-        if (coreFiles != null && !coreFiles.isEmpty()) {
-            Collections.sort(coreFiles); // Nos aseguramos que s epresenten siempre en el mismo orden
-            for (Path path : coreFiles) {
-                String fileName = path.getFileName().toString();
-                if (StringUtils.equalsIgnoreCase(fileName, "readme.md")) {
-                    continue;
-                }
-                // Verificamos si el módulo está activo en la CheckedList de configuración
-                boolean isActive = true;
-                if (coreSettings != null) {
-                    // "01_stack_tecnico.md" -> "01_stack_tecnico"
-                    String baseName = org.apache.commons.io.FilenameUtils.getBaseName(fileName);
-                    isActive = coreSettings.getItems().stream()
-                            .filter(item -> baseName.equals(item.getValue()))
-                            .anyMatch(AgentSettingsCheckedList.CheckedItem::isChecked);
-                }
-                if (isActive) {
-                    String content = agent.getResourceAsString("var/identity/core/" + fileName);
-                    if (StringUtils.isNotBlank(content)) {
-                        sb.append("## Módulo: ").append(fileName).append("\n");
-                        sb.append(content).append("\n\n");
-                    }
-                }
-            }
+        // Verificamos si el módulo está activo en la CheckedList de configuración
+        boolean isActive = true;
+        if (coreSettings != null) {
+          // "01_stack_tecnico.md" -> "01_stack_tecnico"
+          String baseName = org.apache.commons.io.FilenameUtils.getBaseName(fileName);
+          isActive = coreSettings.getItems().stream()
+                  .filter(item -> baseName.equals(item.getValue()))
+                  .anyMatch(AgentSettingsCheckedList.CheckedItem::isChecked);
         }
-
-        // --- CAPA 2b: Consciencia de Entorno (Índice de Referencias .ref.md) ---
-        // Cargamos todas las anclas semánticas disponibles para que el agente sepa qué "puede recordar"
-        sb.append("# CONSCIENCIA DE ENTORNO (MEMORIA VIRTUAL)\n");
-        sb.append("A continuación se lista un índice de referencias sobre el mundo, biografía y proyectos del usuario. ");
-        sb.append("No posees los detalles en este momento, pero si detectas que un tema es relevante, ");
-        sb.append("DEBES usar la herramienta {CONSULTENVIRON} para recuperar la información completa antes de responder.\n\n");
-
-        List<Path> environFiles = agent.getPaths().listAgentPath("var/identity/environ");
-        if (environFiles != null && !environFiles.isEmpty()) {
-            Collections.sort(environFiles); // Nos aseguramos que s epresenten siempre en el mismo orden
-            for (Path path : environFiles) {
-                String fileName = path.getFileName().toString();
-                if (StringUtils.equalsIgnoreCase(fileName, "readme.md")) {
-                    continue;
-                }
-                // Solo cargamos los archivos de referencia ligera
-                if (fileName.endsWith(".ref.md")) {
-                    String refContent = agent.getResourceAsString("var/identity/environ/" + fileName);
-                    if (StringUtils.isNotBlank(refContent)) {
-                        sb.append(refContent).append("\n");
-                        sb.append("---\n"); // Separador visual entre anclas
-                    }
-                }
-            }
+        if (isActive) {
+          String content = agent.getResourceAsString("var/identity/core/" + fileName);
+          if (StringUtils.isNotBlank(content)) {
+            sb.append("## Módulo: ").append(fileName).append("\n");
+            sb.append(content).append("\n\n");
+          }
         }
+      }
+    }
 
-        // sb.append("**Momento actual de la conversación:** {NOW}\n"); // Ojo, penaliza la cache en la llamada al API
-        // --- CAPA FINAL: Resolución de Placeholders ---
-        String finalPrompt = sb.toString();
-        finalPrompt = StringUtils.replace(finalPrompt, "{NOW}", DateUtils.now());
-        finalPrompt = StringUtils.replace(finalPrompt, "{LOOKUPTURN}", LookupTurnTool.NAME);
-        finalPrompt = StringUtils.replace(finalPrompt, "{SEARCHFULLHISTORY}", SearchFullHistoryTool.NAME);
-        finalPrompt = StringUtils.replace(finalPrompt, "{CONSULTENVIRON}", ConsultEnvironTool.NAME);
+    // --- CAPA 2b: Consciencia de Entorno (Índice de Referencias .ref.md) ---
+    // Cargamos todas las anclas semánticas disponibles para que el agente sepa qué "puede recordar"
+    sb.append("# CONSCIENCIA DE ENTORNO (MEMORIA VIRTUAL)\n");
+    sb.append("A continuación se lista un índice de referencias sobre el mundo, biografía y proyectos del usuario. ");
+    sb.append("No posees los detalles en este momento, pero si detectas que un tema es relevante, ");
+    sb.append("DEBES usar la herramienta {CONSULTENVIRON} para recuperar la información completa antes de responder.\n\n");
 
-        try {
-            FileUtils.writeStringToFile(
-                    agent.getPaths().getAgentFolder().resolve("var/tmp/reasoning-system-prompt.md").toFile(),
-                    finalPrompt,
-                    StandardCharsets.UTF_8
-            );
-        } catch (IOException ex) {
-            LOGGER.warn("Can't write system prompt", ex);
+    List<Path> environFiles = agent.getPaths().listAgentPath("var/identity/environ");
+    if (environFiles != null && !environFiles.isEmpty()) {
+      Collections.sort(environFiles); // Nos aseguramos que s epresenten siempre en el mismo orden
+      for (Path path : environFiles) {
+        String fileName = path.getFileName().toString();
+        if (StringUtils.equalsIgnoreCase(fileName, "readme.md")) {
+          continue;
         }
-        this.lastestSystemPrompt = finalPrompt;
-        return finalPrompt;
-    }
-
-    private String getLastestSystemPrompt() {
-        if (this.lastestSystemPrompt != null) {
-            return this.lastestSystemPrompt;
+        // Solo cargamos los archivos de referencia ligera
+        if (fileName.endsWith(".ref.md")) {
+          String refContent = agent.getResourceAsString("var/identity/environ/" + fileName);
+          if (StringUtils.isNotBlank(refContent)) {
+            sb.append(refContent).append("\n");
+            sb.append("---\n"); // Separador visual entre anclas
+          }
         }
-        return this.getBaseSystemPrompt();
+      }
     }
 
-    private AgentConsole console(String subchannel) {
-        return this.agent.getConsole(subchannel);
+    // sb.append("**Momento actual de la conversación:** {NOW}\n"); // Ojo, penaliza la cache en la llamada al API
+    // --- CAPA FINAL: Resolución de Placeholders ---
+    String finalPrompt = sb.toString();
+    finalPrompt = StringUtils.replace(finalPrompt, "{NOW}", DateUtils.now());
+    finalPrompt = StringUtils.replace(finalPrompt, "{LOOKUPTURN}", LookupTurnTool.NAME);
+    finalPrompt = StringUtils.replace(finalPrompt, "{SEARCHFULLHISTORY}", SearchFullHistoryTool.NAME);
+    finalPrompt = StringUtils.replace(finalPrompt, "{CONSULTENVIRON}", ConsultEnvironTool.NAME);
+
+    try {
+      FileUtils.writeStringToFile(
+              agent.getPaths().getAgentFolder().resolve("var/tmp/reasoning-system-prompt.md").toFile(),
+              finalPrompt,
+              StandardCharsets.UTF_8
+      );
+    } catch (IOException ex) {
+      LOGGER.warn("Can't write system prompt", ex);
     }
+    this.lastestSystemPrompt = finalPrompt;
+    return finalPrompt;
+  }
 
-    private String executeTool(Session session, ToolExecutionRequest request) {
-        String toolName = request.name();
-        String args = request.arguments();
+  private String getLastestSystemPrompt() {
+    if (this.lastestSystemPrompt != null) {
+      return this.lastestSystemPrompt;
+    }
+    return this.getBaseSystemPrompt();
+  }
 
-        AvailableAgentTool availableTool = availableTools.get(toolName);
-        String subchannel = session.getSubchannel();
-        if (availableTool != null && availableTool.tool != null) {
-            AgentTool tool = availableTool.tool;
-            if (tool.getMode() != AgentTool.MODE_READ && agent.getAccessControl().isHumanConfirmationRequired()) {
-                boolean authorized = this.console(subchannel).confirm(
-                        String.format("El agente quiere ejecutar la herramienta: %s\nArgumentos: %s\n¿Autorizar?", toolName, args)
-                );
+  private AgentConsole console(String subchannel) {
+    return this.agent.getConsole(subchannel);
+  }
 
-                if (!authorized) {
-                    String msg = String.format("Ejecucion de herramienta '%s' denegada por el usuario.", toolName);
-                    LOGGER.info(msg);
-                    this.console(subchannel).printSystemLog(msg);
-                    return msg;
-                }
-            }
-            String msg = String.format("Ejecutando herramienta: %s\n    Argumentos: %s", toolName, args);
-            LOGGER.info(msg);
-            this.console(subchannel).printSystemLog(msg);
-            try {
-                return tool.execute(args);
-            } catch (Exception e) {
-                String msg1 = "Error ejecutando herramienta '" + toolName + "'.";
-                LOGGER.info(msg1, e);
-                return msg1 + " " + e.getMessage();
-            }
-        } else {
-            String msg = "Herramienta '" + toolName + "' no encontrada.";
-            LOGGER.info(msg);
-            return msg;
+  private String executeTool(Session session, ToolExecutionRequest request) {
+    String toolName = request.name();
+    String args = request.arguments();
+
+    AvailableAgentTool availableTool = availableTools.get(toolName);
+    String subchannel = session.getSubchannel();
+    if (availableTool != null && availableTool.tool != null) {
+      AgentTool tool = availableTool.tool;
+      if (tool.getMode() != AgentTool.MODE_READ && agent.getAccessControl().isHumanConfirmationRequired()) {
+        boolean authorized = this.console(subchannel).confirm(
+                String.format("El agente quiere ejecutar la herramienta: %s\nArgumentos: %s\n¿Autorizar?", toolName, args)
+        );
+
+        if (!authorized) {
+          String msg = String.format("Ejecucion de herramienta '%s' denegada por el usuario.", toolName);
+          LOGGER.info(msg);
+          this.console(subchannel).printSystemLog(msg);
+          return msg;
         }
+      }
+      String msg = String.format("Ejecutando herramienta: %s\n    Argumentos: %s", toolName, args);
+      LOGGER.info(msg);
+      this.console(subchannel).printSystemLog(msg);
+      try {
+        return tool.execute(args);
+      } catch (Exception e) {
+        String msg1 = "Error ejecutando herramienta '" + toolName + "'.";
+        LOGGER.info(msg1, e);
+        return msg1 + " " + e.getMessage();
+      }
+    } else {
+      String msg = "Herramienta '" + toolName + "' no encontrada.";
+      LOGGER.info(msg);
+      return msg;
+    }
+  }
+
+  private boolean isMemoryTool(String toolName) {
+    AvailableAgentTool tool = availableTools.get(toolName);
+    return tool.tool.getType() == AgentTool.TYPE_MEMORY;
+  }
+
+  private void performCompaction(Session session) throws SQLException {
+    SessionImpl.SessionMark mark1 = session.getOldestMark();
+    SessionImpl.SessionMark mark2 = session.getCompactMark();
+    this.performCompaction(session, mark1, mark2);
+  }
+
+  private void performCompaction(Session session, SessionImpl.SessionMark mark1, SessionImpl.SessionMark mark2) throws SQLException {
+    String subchannel = session.getSubchannel();
+    this.console(subchannel).printSystemLog("Iniciando proceso de compactación de memoria...");
+
+    if (mark1 == null || mark2 == null) {
+      String msg = "No hay suficientes datos consolidados para compactar.";
+      LOGGER.warn(msg);
+      this.console(subchannel).printSystemLog(msg);
+      return;
     }
 
-    private boolean isMemoryTool(String toolName) {
-        AvailableAgentTool tool = availableTools.get(toolName);
-        return tool.tool.getType() == AgentTool.TYPE_MEMORY;
+    // Recuperar turnos de la DB usando el rango de IDs de las marcas
+    List<Turn> compactTurns = this.sourceOfTruth.getTurnsByIds(subchannel, mark1.getTurnId(), mark2.getTurnId());
+
+    if (compactTurns.isEmpty()) {
+      String msg = String.format("No se han podido recuperar los turnos a compactar (turns[%s:%s]).", mark1.getTurnId(), mark2.getTurnId());
+      LOGGER.warn(msg);
+      this.console(subchannel).printSystemLog(msg);
+      return;
     }
 
-    private void performCompaction(Session session) throws SQLException {
-        SessionImpl.SessionMark mark1 = session.getOldestMark();
-        SessionImpl.SessionMark mark2 = session.getCompactMark();
-        this.performCompaction(session, mark1, mark2);
+    // MemoryManager crea el CheckPoint
+    MemoryServiceImpl memory = (MemoryServiceImpl) this.agent.getService(MemoryServiceImpl.NAME);
+    CheckPoint newCheckPoint = memory.compact(subchannel, this.getActiveCheckPoint(subchannel), compactTurns);
+
+    // SourceOfTruth persiste
+    sourceOfTruth.add(newCheckPoint);
+
+    // Limpieza de Sesion (Borrar mensajes ya compactados)
+    session.remove(mark1, mark2);
+
+    // Actualizar punteros del Agente
+    this.setActiveCheckPoint(subchannel, newCheckPoint);
+
+    this.console(subchannel).printSystemLog("Memoria compactada con éxito. Nuevo CheckPoint ID: " + newCheckPoint.getId());
+  }
+
+  @Override
+  public Agent.ChatModel getModel() {
+    return model;
+  }
+
+  @Override
+  public Agent.ModelParameters getModelParameters(String name) {
+    AgentSettings settings = this.agent.getSettings();
+    switch (name) {
+      case ReasoningService.ID:
+        return new ModelParametersImpl(
+                settings.getPropertyAsString(REASONING_PROVIDER_URL),
+                settings.getPropertyAsString(REASONING_PROVIDER_API_KEY),
+                settings.getPropertyAsString(REASONING_MODEL_ID),
+                0.7
+        );
     }
+    return null;
+  }
 
-    private void performCompaction(Session session, SessionImpl.SessionMark mark1, SessionImpl.SessionMark mark2) throws SQLException {
-        String subchannel = session.getSubchannel();
-        this.console(subchannel).printSystemLog("Iniciando proceso de compactación de memoria...");
+  @Override
+  public boolean canStart() {
+    return this.factory.canStart(agent.getSettings());
+  }
 
-        if (mark1 == null || mark2 == null) {
-            String msg = "No hay suficientes datos consolidados para compactar.";
-            LOGGER.warn(msg);
-            this.console(subchannel).printSystemLog(msg);
-            return;
-        }
-
-        // Recuperar turnos de la DB usando el rango de IDs de las marcas
-        List<Turn> compactTurns = this.sourceOfTruth.getTurnsByIds(subchannel, mark1.getTurnId(), mark2.getTurnId());
-
-        if (compactTurns.isEmpty()) {
-            String msg = String.format("No se han podido recuperar los turnos a compactar (turns[%s:%s]).", mark1.getTurnId(), mark2.getTurnId());
-            LOGGER.warn(msg);
-            this.console(subchannel).printSystemLog(msg);
-            return;
-        }
-
-        // MemoryManager crea el CheckPoint
-        MemoryServiceImpl memory = (MemoryServiceImpl) this.agent.getService(MemoryServiceImpl.NAME);
-        CheckPoint newCheckPoint = memory.compact(subchannel, this.getActiveCheckPoint(subchannel), compactTurns);
-
-        // SourceOfTruth persiste
-        sourceOfTruth.add(newCheckPoint);
-
-        // Limpieza de Sesion (Borrar mensajes ya compactados)
-        session.remove(mark1, mark2);
-
-        // Actualizar punteros del Agente
-        this.setActiveCheckPoint(subchannel, newCheckPoint);
-
-        this.console(subchannel).printSystemLog("Memoria compactada con éxito. Nuevo CheckPoint ID: " + newCheckPoint.getId());
-    }
-
-    @Override
-    public Agent.ChatModel getModel() {
-        return model;
-    }
-
-    @Override
-    public Agent.ModelParameters getModelParameters(String name) {
-        AgentSettings settings = this.agent.getSettings();
-        switch (name) {
-            case ReasoningService.ID:
-                return new ModelParametersImpl(
-                        settings.getPropertyAsString(REASONING_PROVIDER_URL),
-                        settings.getPropertyAsString(REASONING_PROVIDER_API_KEY),
-                        settings.getPropertyAsString(REASONING_MODEL_ID),
-                        0.7
-                );
-        }
-        return null;
-    }
-
-    @Override
-    public boolean canStart() {
-        return this.factory.canStart(agent.getSettings());
-    }
-
-    @Override
-    public List<AgentTool> getTools() {
-        AgentTool[] tools0 = new AgentTool[]{
-            new ConsultEnvironTool(this.agent),
-            new ListSkillsTool(this.agent),
-            new LoadSkillTool(this.agent),
-            new FileFindTool(this.agent),
-            new FileGrepTool(this.agent),
-            new FileReadTool(this.agent),
-            new FileWriteTool(this.agent),
-            new FileSearchAndReplaceTool(this.agent),
-            new FilePatchTool(this.agent),
-            new FileMkdirTool(this.agent),
-            new FileExtractTextTool(this.agent),
-            new WebGetTikaTool(this.agent),
-            new WeatherTool(this.agent),
-            new LocationTool(this.agent),
-            new TimeTool(this.agent),
-            new ShellExecuteTool(this.agent),
-            new ReadPaginatedResourceTool(this.agent),
-            new FileRecoveryTool(this.agent)
-        };
-        List<AgentTool> tools = new ArrayList<>(Arrays.asList(tools0));
+  @Override
+  public List<AgentTool> getTools() {
+    AgentTool[] tools0 = new AgentTool[]{
+      new ConsultEnvironTool(this.agent),
+      new ListSkillsTool(this.agent),
+      new LoadSkillTool(this.agent),
+      new FileFindTool(this.agent),
+      new FileGrepTool(this.agent),
+      new FileReadTool(this.agent),
+      new FileWriteTool(this.agent),
+      new FileSearchAndReplaceTool(this.agent),
+      new FilePatchTool(this.agent),
+      new FileMkdirTool(this.agent),
+      new FileExtractTextTool(this.agent),
+      new WebGetTikaTool(this.agent),
+      new WeatherTool(this.agent),
+      new LocationTool(this.agent),
+      new TimeTool(this.agent),
+      new ShellExecuteTool(this.agent),
+      new ReadPaginatedResourceTool(this.agent),
+      new FileRecoveryTool(this.agent)
+    };
+    List<AgentTool> tools = new ArrayList<>(Arrays.asList(tools0));
 
 //    String braveApiKey = this.agent.getSettings().getPropertyAsString(BraveWebSearchTool.BRAVE_SEARCH_API_KEY);
 //    if (StringUtils.isNotBlank(braveApiKey)) {
 //      tools.add(new BraveWebSearchTool(this.agent));
 //    }
-        String tavilyApiKey = this.agent.getSettings().getPropertyAsString(TavilyWebSearchTool.TAVILY_API_KEY);
-        if (StringUtils.isNotBlank(tavilyApiKey)) {
-            tools.add(new TavilyWebSearchTool(this.agent));
-        }
-        return tools;
+    String tavilyApiKey = this.agent.getSettings().getPropertyAsString(TavilyWebSearchTool.TAVILY_API_KEY);
+    if (StringUtils.isNotBlank(tavilyApiKey)) {
+      tools.add(new TavilyWebSearchTool(this.agent));
     }
+    return tools;
+  }
 
-    @Override
-    public String getName() {
-        return NAME;
-    }
+  @Override
+  public String getName() {
+    return NAME;
+  }
 
-    @Override
-    public boolean isRunning() {
-        return this.running;
-    }
+  @Override
+  public boolean isRunning() {
+    return this.running;
+  }
 
-    @Override
-    public int estimateSystemPromptTokenCount(String subchannel) {
-        List<ChatMessage> messages = Collections.singletonList(UserMessage.from(this.getLastestSystemPrompt()));
-        return this.agent.estimateTokenCount(messages, null);
-    }
+  @Override
+  public int estimateSystemPromptTokenCount(String subchannel) {
+    List<ChatMessage> messages = Collections.singletonList(UserMessage.from(this.getLastestSystemPrompt()));
+    return this.agent.estimateTokenCount(messages, null);
+  }
 
-    @Override
-    public int estimateToolsTokenCount(String subchannel) {
-        return this.agent.estimateTokenCount(null, this.getToolSpecifications());
-    }
+  @Override
+  public int estimateToolsTokenCount(String subchannel) {
+    return this.agent.estimateTokenCount(null, this.getToolSpecifications());
+  }
 
-    @Override
-    public int estimateMessagesTokenCount(String subchannel) {
-        List<ChatMessage> messages = this.getSession(subchannel).getContextMessages(
-                this.getActiveCheckPoint(subchannel),
-                this.getLastestSystemPrompt()
-        );
-        return this.agent.estimateTokenCount(messages, null);
-    }
+  @Override
+  public int estimateMessagesTokenCount(String subchannel) {
+    List<ChatMessage> messages = this.getSession(subchannel).getContextMessages(
+            this.getActiveCheckPoint(subchannel),
+            this.getLastestSystemPrompt()
+    );
+    return this.agent.estimateTokenCount(messages, null);
+  }
 
-    @Override
-    public String getModelName() {
-        Agent.ChatModel theModel = this.getModel();
-        if (theModel == null) {
-            return null;
-        }
-        return theModel.getParameters().modelId();
+  @Override
+  public String getModelName() {
+    Agent.ChatModel theModel = this.getModel();
+    if (theModel == null) {
+      return null;
     }
+    return theModel.getParameters().modelId();
+  }
 
 //    public void showSession(String subchannel) {
 //        List<ChatMessage> history = this.getSession(subchannel).getMessages();
@@ -575,385 +577,398 @@ public class ReasoningServiceImpl implements ReasoningService {
 //            }
 //        }
 //    }
+  private List<ToolSpecification> getToolSpecifications() {
+    List<ToolSpecification> toolSpecifications = new ArrayList<>();
+    AgentAccessControl accessControl = this.agent.getAccessControl();
+    for (AvailableAgentTool availableTool : this.availableTools.values()) {
+      if (accessControl.isToolAllowed(availableTool.tool) && availableTool.active) {
+        toolSpecifications.add(availableTool.tool.getSpecification().build());
+      }
+    }
+    return toolSpecifications;
+  }
 
-    private List<ToolSpecification> getToolSpecifications() {
-        List<ToolSpecification> toolSpecifications = new ArrayList<>();
-        AgentAccessControl accessControl = this.agent.getAccessControl();
-        for (AvailableAgentTool availableTool : this.availableTools.values()) {
-            if (accessControl.isToolAllowed(availableTool.tool) && availableTool.active) {
-                toolSpecifications.add(availableTool.tool.getSpecification().build());
-            }
+  @Override
+  public List<AgentTool> getAvailableTools() {
+    List<AgentTool> tools = new ArrayList<>();
+    for (AvailableAgentTool tool : this.availableTools.values()) {
+      tools.add(tool.tool);
+    }
+    return tools;
+  }
+
+  @Override
+  public AgentTool getAvailableTool(String name) {
+    for (AvailableAgentTool tool : this.availableTools.values()) {
+      if (StringUtils.equals(name, tool.tool.getName())) {
+        return tool.tool;
+      }
+    }
+    return null;
+  }
+
+  @Override
+  public boolean isToolActive(String name) {
+    return this.availableTools.get(name).active;
+  }
+
+  @Override
+  public void setToolActive(String name, boolean active) {
+    this.availableTools.get(name).active = active;
+  }
+
+  /**
+   * Sincroniza el estado de activación de las herramientas con lo definido por
+   * el usuario en la configuración. Si una herramienta no figura en la
+   * configuracion, conserva su estado actual en memoria.
+   */
+  private void refresh_available_tools() {
+    AgentSettingsCheckedList persistedList = agent.getSettings().getPropertyAsCheckedList(ACTIVE_TOOLS);
+    if (persistedList == null) {
+      return;
+    }
+    for (AgentSettingsCheckedList.CheckedItem item : persistedList.getItems()) {
+      String technicalName = item.getValue();
+      // Buscamos si la herramienta referenciada en el JSON está cargada en el servicio
+      AvailableAgentTool available = availableTools.get(technicalName);
+      if (available != null) {
+        // Sincronizamos el estado: lo que diga el usuario manda sobre el valor en memoria
+        available.active = item.isChecked();
+        LOGGER.debug("Herramienta '{}' sincronizada desde configuración: {}",
+                technicalName, available.active ? "ACTIVA" : "INACTIVA");
+      }
+    }
+    // Nota: Las herramientas que están en 'availableTools' pero NO en 'persistedList' 
+    // mantienen el valor 'active' que recibieron al ser añadidas (isAvailableByDefault).
+  }
+
+  @Override
+  public void stop() {
+    this.running = false;
+  }
+
+  private void checkAndInsertTimestamp(String subchannel, Session session) {
+    LocalDateTime now = LocalDateTime.now();
+    // FIXME: ¿¿ Deberia usarse el SensorsService.getSensorStatistics(USER_SENSOR_NAME).getLastEventTimestamp() 
+    // en lugar de session.getLastInteractionTime() y quitar de la session LastInteractionTime ??
+    if (session.getLastInteractionTime() != null && !session.isEmpty()) {
+      // Introduccion de la percepcion temporal.
+      Duration delta = Duration.between(session.getLastInteractionTime(), now);
+      if (delta.toHours() >= 1) {
+        SensorsServiceImpl sensors = (SensorsServiceImpl) agent.getService(SensorsService.NAME);
+        String content = "Ha pasado " + DateUtils.timeAgo(session.getLastInteractionTime()) + " desde la última interacción con el usuario.";
+        ConsumableSensorEvent timerEvent = sensors.createSensorEvent(
+                SYSTEMCLOCK_SENSOR_NAME,
+                content,
+                subchannel,
+                PRIORITY_NORMAL,
+                "A pasado el tiempo",
+                now,
+                null
+        );
+        session.add(timerEvent.getChatMessage());
+        session.add(timerEvent.getResponseMessage());
+      }
+    }
+  }
+
+  /**
+   * Bucle perpetuo de consciencia. Consume señales de los sensores y las
+   * procesa íntegramente hasta generar una respuesta o acción.
+   */
+  @SuppressWarnings("UseSpecificCatch")
+  private void eventDispatcher() {
+    SensorsServiceImpl sensors = (SensorsServiceImpl) this.agent.getService(SensorsService.NAME);
+
+    while (this.isRunning()) {
+      ConsumableSensorEvent event;
+      try {
+        event = sensors.getEvent();
+        if (event == null) {
+          continue;
         }
-        return toolSpecifications;
+        this.processSingleEvent(event);
+      } catch (Throwable e) {
+        LOGGER.error("Error crítico en el bucle de consciencia", e);
+        this.console(currentSubchannel).printSystemError("Dispatcher Critical Error: " + e.getMessage());
+      }
     }
+  }
 
-    @Override
-    public List<AgentTool> getAvailableTools() {
-        List<AgentTool> tools = new ArrayList<>();
-        for (AvailableAgentTool tool : this.availableTools.values()) {
-            tools.add(tool.tool);
-        }
-        return tools;
-    }
-
-    @Override
-    public AgentTool getAvailableTool(String name) {
-        for (AvailableAgentTool tool : this.availableTools.values()) {
-            if (StringUtils.equals(name, tool.tool.getName())) {
-                return tool.tool;
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public boolean isToolActive(String name) {
-        return this.availableTools.get(name).active;
-    }
-
-    @Override
-    public void setToolActive(String name, boolean active) {
-        this.availableTools.get(name).active = active;
-    }
-
-    /**
-     * Sincroniza el estado de activación de las herramientas con lo definido
-     * por el usuario en la configuración. Si una herramienta no figura en la
-     * configuracion, conserva su estado actual en memoria.
-     */
-    private void refresh_available_tools() {
-        AgentSettingsCheckedList persistedList = agent.getSettings().getPropertyAsCheckedList(ACTIVE_TOOLS);
-        if (persistedList == null) {
-            return;
-        }
-        for (AgentSettingsCheckedList.CheckedItem item : persistedList.getItems()) {
-            String technicalName = item.getValue();
-            // Buscamos si la herramienta referenciada en el JSON está cargada en el servicio
-            AvailableAgentTool available = availableTools.get(technicalName);
-            if (available != null) {
-                // Sincronizamos el estado: lo que diga el usuario manda sobre el valor en memoria
-                available.active = item.isChecked();
-                LOGGER.debug("Herramienta '{}' sincronizada desde configuración: {}",
-                        technicalName, available.active ? "ACTIVA" : "INACTIVA");
-            }
-        }
-        // Nota: Las herramientas que están en 'availableTools' pero NO en 'persistedList' 
-        // mantienen el valor 'active' que recibieron al ser añadidas (isAvailableByDefault).
-    }
-
-    @Override
-    public void stop() {
-        this.running = false;
-    }
-
-    private void checkAndInsertTimestamp(String subchannel, Session session) {
-        LocalDateTime now = LocalDateTime.now();
-        // FIXME: ¿¿ Deberia usarse el SensorsService.getSensorStatistics(USER_SENSOR_NAME).getLastEventTimestamp() 
-        // en lugar de session.getLastInteractionTime() y quitar de la session LastInteractionTime ??
-        if (session.getLastInteractionTime() != null && !session.isEmpty()) {
-            // Introduccion de la percepcion temporal.
-            Duration delta = Duration.between(session.getLastInteractionTime(), now);
-            if (delta.toHours() >= 1) {
-                SensorsServiceImpl sensors = (SensorsServiceImpl) agent.getService(SensorsService.NAME);
-                String content = "Ha pasado " + DateUtils.timeAgo(session.getLastInteractionTime()) + " desde la última interacción con el usuario.";
-                ConsumableSensorEvent timerEvent = sensors.createSensorEvent(
-                        SYSTEMCLOCK_SENSOR_NAME,
-                        content,
-                        subchannel,
-                        PRIORITY_NORMAL,
-                        "A pasado el tiempo",
-                        now,
-                        null
-                );
-                session.add(timerEvent.getChatMessage());
-                session.add(timerEvent.getResponseMessage());
-            }
-        }
-    }
-
-    /**
-     * Bucle perpetuo de consciencia. Consume señales de los sensores y las
-     * procesa íntegramente hasta generar una respuesta o acción.
-     */
-    @SuppressWarnings("UseSpecificCatch")
-    private void eventDispatcher() {
-        SensorsServiceImpl sensors = (SensorsServiceImpl) this.agent.getService(SensorsService.NAME);
-
-        while (this.isRunning()) {
-            ConsumableSensorEvent event;
-            try {
-                event = sensors.getEvent();
-                if (event == null) {
-                    continue;
-                }
-                this.processSingleEvent(event);
-            } catch (Throwable e) {
-                LOGGER.error("Error crítico en el bucle de consciencia", e);
-                this.console(currentSubchannel).printSystemError("Dispatcher Critical Error: " + e.getMessage());
-            }
-        }
-    }
-
-    public void processSingleEvent(ConsumableSensorEvent event) throws Throwable {
+  public void processSingleEvent(ConsumableSensorEvent event) throws Throwable {
 //      TODO: **IMPORTANTE**. hay que ver que pasa cuando el primer mensaje que se envia al LLM
 //      es un llamada simulda a pool_event. El otro dia me dio la sensacion que peto la llamada
 //      al llm por esto. Habria que ver de reproducirlo y que hecemos si falla.
 //              
-        StringBuilder finalLlmResponse = new StringBuilder();
-        int toolExecutionRetries;
-        MutableBoolean abort = new MutableBoolean(false);
-        try {
-            this.currentSubchannel = event.getSubchannel();
-            String channel = event.getChannel();
-            String textUser = null;
-            Session session = this.getSession(currentSubchannel);
+    StringBuilder finalLlmResponse = new StringBuilder();
+    int toolExecutionRetries;
+    MutableBoolean abort = new MutableBoolean(false);
+    try {
+      this.currentSubchannel = event.getSubchannel();
+      String channel = event.getChannel();
+      String textUser = null;
+      Session session = this.getSession(currentSubchannel);
 
-            if (event instanceof SensorEventUser) {
-                // Caso Usuario: Guardamos el prompt para el turno final 'chat'
-                this.checkAndInsertTimestamp(currentSubchannel, session);
-                textUser = event.getContents();
-                session.add(event.getChatMessage());
-            } else {
-                // Caso Sensor: Inyectamos el engaño al protocolo y persistimos el turno de observación
-                session.add(event.getChatMessage());
-                session.add(event.getResponseMessage());
+      if (event instanceof SensorEventUser) {
+        // Caso Usuario: Guardamos el prompt para el turno final 'chat'
+        this.checkAndInsertTimestamp(currentSubchannel, session);
+        textUser = event.getContents();
+        session.add(event.getChatMessage());
+      } else {
+        // Caso Sensor: Inyectamos el engaño al protocolo y persistimos el turno de observación
+        session.add(event.getChatMessage());
+        session.add(event.getResponseMessage());
 
-                Turn obsTurn = this.sourceOfTruth.createTurn(
-                        LocalDateTime.now(),
-                        "tool_execution",
-                        currentSubchannel,
-                        null, null, null,
-                        event.getChatMessage().toString(),
-                        event.getResponseMessage().toString(),
-                        null
-                );
-                this.sourceOfTruth.add(obsTurn);
-                session.consolideTurn(obsTurn);
+        Turn obsTurn = this.sourceOfTruth.createTurn(
+                LocalDateTime.now(),
+                "tool_execution",
+                currentSubchannel,
+                null, null, null,
+                event.getChatMessage().toString(),
+                event.getResponseMessage().toString(),
+                null
+        );
+        this.sourceOfTruth.add(obsTurn);
+        session.consolideTurn(obsTurn);
+      }
+      toolExecutionRetries = 0;
+      boolean turnFinished = false;
+      while (!turnFinished && this.isRunning()) {
+        List<ChatMessage> context = session.getContextMessages(
+                this.getActiveCheckPoint(currentSubchannel),
+                getBaseSystemPrompt()
+        );
+        this.prepareContextForLLM(session, context);
+        this.dump_context(session, context);
+
+        Response<AiMessage> response = this.getModel().generate(context, this.getToolSpecifications(), abort);
+        AiMessage aiMessage = response.content();
+        session.add(aiMessage);
+
+        if (aiMessage.hasToolExecutionRequests()) {
+          for (ToolExecutionRequest request : aiMessage.toolExecutionRequests()) {
+            String result = executeTool(session, request);
+            String contentType = "tool_execution";
+            if (isMemoryTool(request.name())) {
+              contentType = "lookup_turn";
             }
+            Turn toolTurn = this.sourceOfTruth.createTurn(
+                    LocalDateTime.now(),
+                    contentType,
+                    currentSubchannel,
+                    null,
+                    null,
+                    null,
+                    request.toString(),
+                    result,
+                    null
+            );
+            this.sourceOfTruth.add(toolTurn);
+            session.add(ToolExecutionResultMessage.from(request, result));
+            session.consolideTurn(toolTurn);
+          }
+          toolExecutionRetries = 0;
+        } else {
+          String aiText = aiMessage.text();
+          finalLlmResponse.append(aiText); // No esta claro que sea necesario mantener el finalLlmResponse
+          this.console(currentSubchannel).printModelResponse(aiText);
+          Turn responseTurn = this.sourceOfTruth.createTurn(
+                  LocalDateTime.now(),
+                  "chat",
+                  currentSubchannel,
+                  textUser, // Original (si fue UserEvent) o null (si fue Sensor)
+                  null,
+                  aiText, // Respuesta final del modelo
+                  null,
+                  null,
+                  null
+          );
+          this.sourceOfTruth.add(responseTurn);
+          session.consolideTurn(responseTurn);
+          if (response.finishReason() == FinishReason.TOOL_EXECUTION) {
+            // El modelo anunció una tool en texto pero no la ejecutó formalmente
+            // Reinyectamos forzando la ejecución
+            if (toolExecutionRetries++ > 3) {
+              throw new RuntimeException("Too many retries for executing tool");
+            }
+            session.add(new UserMessage("(reintenta la llamada a la herramienta sin ninguna explicacion)"));
+          } else {
+            turnFinished = true;
             toolExecutionRetries = 0;
-            boolean turnFinished = false;
-            while (!turnFinished && this.isRunning()) {
-                List<ChatMessage> context = session.getContextMessages(
-                        this.getActiveCheckPoint(currentSubchannel),
-                        getBaseSystemPrompt()
-                );
-                this.prepareContextForLLM(session, context);
-                this.dump_context(session, context);
+          }
+        }
+        if (session.needCompaction()) {
+          performCompaction(session);
+        }
+      }
+      if (textUser != null) {
+        session.setLastInteractionTime(LocalDateTime.now());
+      }
+      session.save();
 
-                Response<AiMessage> response = this.getModel().generate(context, this.getToolSpecifications(), abort);
-                AiMessage aiMessage = response.content();
-                session.add(aiMessage);
+      if (session.needCompaction()) {
+        performCompaction(session);
+      }
+    } finally {
+      try {
+        if (event != null && event.getCallback() != null) {
+          event.getCallback().onComplete(finalLlmResponse.toString());
+        }
+      } catch (Exception e) {
+        LOGGER.error("Error ejecutando onComplete", e);
+        this.console(currentSubchannel).printSystemError("Dispatcher error onComplete: " + e.getMessage());
+      }
+    }
+  }
 
-                if (aiMessage.hasToolExecutionRequests()) {
-                    for (ToolExecutionRequest request : aiMessage.toolExecutionRequests()) {
-                        String result = executeTool(session, request);
-                        String contentType = "tool_execution";
-                        if (isMemoryTool(request.name())) {
-                            contentType = "lookup_turn";
-                        }
-                        Turn toolTurn = this.sourceOfTruth.createTurn(
-                                LocalDateTime.now(),
-                                contentType,
-                                currentSubchannel,
-                                null,
-                                null,
-                                null,
-                                request.toString(),
-                                result,
-                                null
-                        );
-                        this.sourceOfTruth.add(toolTurn);
-                        session.add(ToolExecutionResultMessage.from(request, result));
-                        session.consolideTurn(toolTurn);
-                    }
-                    toolExecutionRetries = 0;
-                } else {
-                    String aiText = aiMessage.text();
-                    finalLlmResponse.append(aiText); // No esta claro que sea necesario mantener el finalLlmResponse
-                    this.console(currentSubchannel).printModelResponse(aiText);
-                    Turn responseTurn = this.sourceOfTruth.createTurn(
-                            LocalDateTime.now(),
-                            "chat",
-                            currentSubchannel,
-                            textUser, // Original (si fue UserEvent) o null (si fue Sensor)
-                            null,
-                            aiText, // Respuesta final del modelo
-                            null,
-                            null,
-                            null
-                    );
-                    this.sourceOfTruth.add(responseTurn);
-                    session.consolideTurn(responseTurn);
-                    if (response.finishReason() == FinishReason.TOOL_EXECUTION) {
-                        // El modelo anunció una tool en texto pero no la ejecutó formalmente
-                        // Reinyectamos forzando la ejecución
-                        if (toolExecutionRetries++ > 3) {
-                            throw new RuntimeException("Too many retries for executing tool");
-                        }
-                        session.add(new UserMessage("(reintenta la llamada a la herramienta sin ninguna explicacion)"));
-                    } else {
-                        turnFinished = true;
-                        toolExecutionRetries = 0;
-                    }
-                }
-              if (session.needCompaction()) {
-                  performCompaction(session);
+  private int getNumberOfMessagesToKeep() {
+    return 20;
+  }
+
+  private int getNumberOfMessagesToNotify() {
+    int n = getNumberOfMessagesToKeep();
+    return n - (n / 3);
+  }
+
+  private int getMinimumSizeForTrim() {
+    return 1024;
+  }
+
+  private List<String> getResourcesPendingAnnotation(List<ChatMessage> messages) {
+    int total = messages.size();
+    int keep = getNumberOfMessagesToKeep(); // Ej: 20
+    if (total < keep) {
+      return Collections.emptyList(); // No hay suficientes mensajes
+    }
+
+    int riskStartIdx = total - keep;       // Inicio de la zona de riesgo
+    int riskEndIdx = total - (keep / 2);   // Fin de la zona de riesgo
+
+    // PASO 1: Anotar en qué turno exacto se tomó la ÚLTIMA nota de cada recurso.
+    // Recorremos todo el contexto para tener la información más actualizada posible.
+    Map<String, Integer> lastAnnotatedIdx = new HashMap<>();
+    for (int i = 0; i < total; i++) {
+      ChatMessage msg = messages.get(i);
+      if (msg instanceof ToolExecutionResultMessage toolMsg) {
+        AgentTool tool = this.getAvailableTool(toolMsg.toolName());
+        if (tool instanceof AnnotateObservationTool annotateTool) {
+          String resourceId = annotateTool.getResourceIdFromResultMessage(toolMsg);
+          if (StringUtils.isNotBlank(resourceId)) {
+            lastAnnotatedIdx.put(resourceId, i); // Se actualiza con el índice más reciente
+          }
+        }
+      }
+    }
+
+    // PASO 2: Buscar lecturas "huérfanas" SOLO dentro de la zona de riesgo.
+    Set<String> pending = new LinkedHashSet<>(); // Usamos Set para que no haya duplicados
+    for (int i = riskStartIdx; i < riskEndIdx; i++) {
+      ChatMessage msg = messages.get(i);
+      if (msg instanceof ToolExecutionResultMessage toolMsg) {
+        AgentTool tool = this.getAvailableTool(toolMsg.toolName());
+
+        // Si es una herramienta de lectura paginada...
+        if (tool instanceof AbstractPaginatedAgentTool paginatedTool) {
+          String text = toolMsg.text();
+
+          // ... y el texto es lo bastante grande como para sufrir poda
+          if (text != null && text.length() > this.getMinimumSizeForTrim()) {
+            String resourceId = paginatedTool.getResourceIdFromResultMessage(toolMsg);
+
+            if (StringUtils.isNotBlank(resourceId)) {
+              // ¿Cuándo fue la última vez que el agente anotó sobre este archivo?
+              int lastAnnotated = lastAnnotatedIdx.getOrDefault(resourceId, -1);
+
+              // Si esta lectura concreta (índice i) ocurrió DESPUÉS de la última nota,
+              // o si nunca se ha anotado, significa que la información de ESTE bloque
+              // está a punto de perderse sin haber sido asimilada.
+              if (i > lastAnnotated) {
+                pending.add(resourceId);
               }
             }
-            if (textUser != null) {
-                session.setLastInteractionTime(LocalDateTime.now());
-            }
-            session.save();
-
-            if (session.needCompaction()) {
-                performCompaction(session);
-            }
-        } finally {
-            try {
-                if (event != null && event.getCallback() != null) {
-                    event.getCallback().onComplete(finalLlmResponse.toString());
-                }
-            } catch (Exception e) {
-                LOGGER.error("Error ejecutando onComplete", e);
-                this.console(currentSubchannel).printSystemError("Dispatcher error onComplete: " + e.getMessage());
-            }
+          }
         }
+      }
+    }
+    return new ArrayList<>(pending);
+  }
+
+  private void prepareContextForLLM(Session session, List<ChatMessage> context) {
+    for (int i = 0; i < context.size(); i++) {
+      if (i > context.size() - this.getNumberOfMessagesToKeep()) {
+        break;
+      }
+      ChatMessage message = context.get(i);
+      if (message instanceof ToolExecutionResultMessage toolResult) {
+        AvailableAgentTool tool = availableTools.get(toolResult.toolName());
+        if (tool != null && tool.tool != null) {
+          String text = toolResult.text();
+          if (text.length() > this.getMinimumSizeForTrim()) {
+            TrimResultType trimResultType = TrimResultType.Trim;
+            text = tool.tool.trimResult(text, trimResultType);
+            if (text != null) {
+              ToolExecutionResultMessage x = ToolExecutionResultMessage.from(toolResult.id(), toolResult.toolName(), text);
+              context.set(i, x);
+            }
+          }
+        }
+      }
     }
 
-    private int getNumberOfMessagesToKeep() {
-        return 20;
-    }
-
-    private int getNumberOfMessagesToNotify() {
-        int n = getNumberOfMessagesToKeep();
-        return n - (n / 3);
-    }
-
-    private int getMinimumSizeForTrim() {
-        return 1024;
-    }
-
-private List<String> getResourcesPendingAnnotation(List<ChatMessage> messages) {
-        int total = messages.size();
-        int keep = getNumberOfMessagesToKeep(); // ej. 20
-        if (total < keep) {
-            return Collections.emptyList(); // no hay suficientes mensajes 
-        }
-        int riskStartIdx = total - keep;
-        int riskEndIdx = total - keep / 2; // exclusivo
-
-        Map<String, Integer> lastReadIdx = new HashMap<>();
-        Map<String, Integer> lastAnnotatedIdx = new HashMap<>();
-
-        for (int i = riskStartIdx; i < total; i++) {
-            ChatMessage msg = messages.get(i);
-            if (msg instanceof ToolExecutionResultMessage toolResultMessage) {
-                String toolName = toolResultMessage.toolName();
-                AgentTool tool = this.getAvailableTool(toolName);
-                if (tool instanceof AbstractPaginatedAgentTool paginatedTool) {
-                    String text = toolResultMessage.text();
-                    if (text != null && text.length() > this.getMinimumSizeForTrim()) {
-                        String resourceId = paginatedTool.getResourceIdFromResultMessage(toolResultMessage);
-                        if (StringUtils.isNotBlank(resourceId)) {
-                            lastReadIdx.put(resourceId, i);
-                        }
-                    }
-                } else if (tool instanceof AnnotateObservationTool annotateTool) {
-                    String resourceId = annotateTool.getResourceIdFromResultMessage(toolResultMessage);
-                    if (StringUtils.isNotBlank(resourceId)) {
-                        lastAnnotatedIdx.put(resourceId, i);
-                    }
-                }
-            }
-        }
-
-        List<String> pending = new ArrayList<>();
-        for (Map.Entry<String, Integer> entry : lastReadIdx.entrySet()) {
-            String rid = entry.getKey();
-            int lastRead = entry.getValue();
-            int lastAnnotated = lastAnnotatedIdx.getOrDefault(rid, -1);
-            if (lastAnnotated < lastRead && lastRead < riskEndIdx) {
-                pending.add(rid);
-            }
-        }
-        return pending;
-    }
-    private void prepareContextForLLM(Session session, List<ChatMessage> context) {
-        for (int i = 0; i < context.size(); i++) {
-            if (i > context.size() - this.getNumberOfMessagesToKeep()) {
-                break;
-            }
-            ChatMessage message = context.get(i);
-            if (message instanceof ToolExecutionResultMessage toolResult) {
-                AvailableAgentTool tool = availableTools.get(toolResult.toolName());
-                if (tool != null && tool.tool != null) {
-                    String text = toolResult.text();
-                    if (text.length() > this.getMinimumSizeForTrim()) {
-                        TrimResultType trimResultType = TrimResultType.Trim;
-                        text = tool.tool.trimResult(text, trimResultType);
-                        if (text != null) {
-                            ToolExecutionResultMessage x = ToolExecutionResultMessage.from(toolResult.id(), toolResult.toolName(), text);
-                            context.set(i, x);
-                        }
-                    }
-                }
-            }
-        }
-
-        List<String> resourcesPendingAnnotation = getResourcesPendingAnnotation(context);
-        if (!resourcesPendingAnnotation.isEmpty()) {
-            String responseContents = StringUtils.replace("""
+    List<String> resourcesPendingAnnotation = getResourcesPendingAnnotation(context);
+    if (!resourcesPendingAnnotation.isEmpty()) {
+      String responseContents = StringUtils.replace("""
 Has leído informacion de recursos sin extraer y consolidar información relevante. 
 Si hay datos que deban conservarse relacionados con estos recursos usa la herramienta 'annotate_observation' con el parámetro 'resource_id' correspondiente.
 Los recursos involucrados son: {RESOURCES_LIST}
                            """, "{RESOURCES_LIST}", StringUtils.join(resourcesPendingAnnotation, ","));
-            Map<String, Object> responseMap = Map.of(
-                    "event_time", DateUtils.now(),
-                    "current_time", DateUtils.now(),
-                    "channel", SYSTEMNOTIFICATION_SENSOR_NAME,
-                    "status", "ok",
-                    "priority", PRIORITY_HIGH,
-                    "contents", responseContents
-            );
-            Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-            ToolExecutionRequest request = ToolExecutionRequest.builder()
-                    .id("AnnotateSuggestion" + "_" + UUID.randomUUID().toString().replace("-", ""))
-                    .name("pool_event")
-                    .arguments("{}")
-                    .build();
-            context.add(AiMessage.from(request));
-            context.add(ToolExecutionResultMessage.from(request, GSON.toJson(responseMap)));
-        }
-
+      Map<String, Object> responseMap = Map.of(
+              "event_time", DateUtils.now(),
+              "current_time", DateUtils.now(),
+              "channel", SYSTEMNOTIFICATION_SENSOR_NAME,
+              "status", "ok",
+              "priority", PRIORITY_HIGH,
+              "contents", responseContents
+      );
+      Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+      ToolExecutionRequest request = ToolExecutionRequest.builder()
+              .id("AnnotateSuggestion" + "_" + UUID.randomUUID().toString().replace("-", ""))
+              .name("pool_event")
+              .arguments("{}")
+              .build();
+      context.add(AiMessage.from(request));
+      context.add(ToolExecutionResultMessage.from(request, GSON.toJson(responseMap)));
     }
 
-    private void dump_context(Session session, List<ChatMessage> context) {
-        // Guardo en disco como ha quedado el ultimo contexto para depuracion
-        Gson gson = new GsonBuilder()
-                .setPrettyPrinting()
-                .registerTypeAdapter(ChatMessage.class, new SessionImpl.ChatMessageAdapter())
-                .registerTypeAdapter(Content.class, new SessionImpl.ContentAdapter())
-                .enableComplexMapKeySerialization()
-                .create();
-        Timestamp tm = Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC));
+  }
 
-        Path tempPath = agent.getPaths().getTempFolder().resolve("context-" + session.getSubchannel() + "-" + tm.toString() + ".json");
-        try {
-            try (Writer writer = Files.newBufferedWriter(tempPath, StandardCharsets.UTF_8)) {
-                gson.toJson(context, writer);
-                writer.flush();
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Error guardando contexto: " + e.getMessage(), e);
-        }
-    }
+  private void dump_context(Session session, List<ChatMessage> context) {
+    // Guardo en disco como ha quedado el ultimo contexto para depuracion
+    Gson gson = new GsonBuilder()
+            .setPrettyPrinting()
+            .registerTypeAdapter(ChatMessage.class, new SessionImpl.ChatMessageAdapter())
+            .registerTypeAdapter(Content.class, new SessionImpl.ContentAdapter())
+            .enableComplexMapKeySerialization()
+            .create();
+    Timestamp tm = Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC));
 
-    @Override
-    public int getTurnsCount(String subchannel) {
-        return this.getSession(subchannel).getTurnsCount();
+    Path tempPath = agent.getPaths().getTempFolder().resolve("context-" + session.getSubchannel() + "-" + tm.toString() + ".json");
+    try {
+      try (Writer writer = Files.newBufferedWriter(tempPath, StandardCharsets.UTF_8)) {
+        gson.toJson(context, writer);
+        writer.flush();
+      }
+    } catch (IOException e) {
+      throw new RuntimeException("Error guardando contexto: " + e.getMessage(), e);
     }
+  }
 
-    public String getCurrentSubchannel() {
-        return this.currentSubchannel;
-    }
+  @Override
+  public int getTurnsCount(String subchannel) {
+    return this.getSession(subchannel).getTurnsCount();
+  }
+
+  public String getCurrentSubchannel() {
+    return this.currentSubchannel;
+  }
 }

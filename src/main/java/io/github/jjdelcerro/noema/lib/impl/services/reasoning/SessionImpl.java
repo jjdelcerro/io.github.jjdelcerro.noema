@@ -47,7 +47,7 @@ public class SessionImpl implements Session {
   private static final Logger LOGGER = LoggerFactory.getLogger(SessionImpl.class);
 
   private static final int DEFAULT_COMPACTION_THRESHOLD = 40;
-    private final String subchannel;
+  private final String subchannel;
 
   private static class ChatMessageInfo {
 
@@ -100,26 +100,26 @@ public class SessionImpl implements Session {
   public SessionImpl(Path dataFolder, AgentSettings settings, String subchannel) {
     this.subchannel = subchannel;
     this.settings = settings;
-    this.sessionPath = dataFolder.resolve("active_session-"+subchannel+".json");    
-    this.tempPath = dataFolder.resolve("active_session-"+subchannel+".json.tmp");
+    this.sessionPath = dataFolder.resolve("active_session-" + subchannel + ".json");
+    this.tempPath = dataFolder.resolve("active_session-" + subchannel + ".json.tmp");
     this.load();
   }
 
-    @Override
+  @Override
   public String getSubchannel() {
-      return subchannel;
+    return subchannel;
   }
-  
+
   // =================================================================================
   // API GESTION DE CONVERSACION
   // =================================================================================
-    @Override
+  @Override
   public void add(ChatMessage message) {
     this.messages.add(message);
     this.save();
   }
 
-    @Override
+  @Override
   public void consolideTurn(Turn turn) {
     if (messages.isEmpty()) {
       return;
@@ -137,7 +137,7 @@ public class SessionImpl implements Session {
     this.save();
   }
 
-    @Override
+  @Override
   public List<ChatMessage> getContextMessages(CheckPoint checkpoint, String systemPrompt) {
     List<ChatMessage> context = new ArrayList<>();
 
@@ -161,7 +161,7 @@ public class SessionImpl implements Session {
     return context;
   }
 
-    @Override
+  @Override
   public void clear() {
     this.messages.clear();
     this.turnOfMessage.clear();
@@ -174,7 +174,7 @@ public class SessionImpl implements Session {
    *
    * @return true si el numero de turnos unicos consolidados supera el umbral.
    */
-    @Override
+  @Override
   public boolean needCompaction() {
     if (turnOfMessage.isEmpty()) {
       return false;
@@ -193,7 +193,7 @@ public class SessionImpl implements Session {
     return uniqueTurns.size() >= getCompactationThreshold();
   }
 
-    @Override
+  @Override
   public int getTurnsCount() {
     Set<ChatMessageInfo> uniqueTurns = new HashSet<>(turnOfMessage.values());
     return uniqueTurns.size();
@@ -211,7 +211,7 @@ public class SessionImpl implements Session {
   // =================================================================================
   // API COMPACTACION (SessionMark)
   // =================================================================================
-    @Override
+  @Override
   public SessionMark getOldestMark() {
     if (messages.isEmpty()) {
       return null;
@@ -224,7 +224,7 @@ public class SessionImpl implements Session {
     return new SessionMarkImpl(0, turnOfMessage.get(0).turnId, messages.get(0));
   }
 
-    @Override
+  @Override
   public SessionMark getNewestMark() {
     if (messages.isEmpty()) {
       return null;
@@ -237,16 +237,16 @@ public class SessionImpl implements Session {
     return new SessionMarkImpl(0, turnOfMessage.get(turnOfMessage.size() - 1).turnId, messages.get(messages.size() - 1));
   }
 
-    @Override
+  @Override
   public SessionMark getCompactMark() {
     if (turnOfMessage.isEmpty()) {
       return null;
     }
 
-    // Punto de partida: la mitad de los mensajes
+    // 1. Punto de partida: la mitad de los mensajes
     int mid = messages.size() / 2;
 
-    // Ajustar hacia atras hasta encontrar un mensaje consolidado
+    // 2. Ajustar hacia atras hasta encontrar un mensaje consolidado
     while (mid >= 0 && !turnOfMessage.containsKey(mid)) {
       mid--;
     }
@@ -257,7 +257,7 @@ public class SessionImpl implements Session {
 
     int currentTurnId = turnOfMessage.get(mid).turnId;
 
-    // Avanzar hasta el final del bloque del mismo turno para no romper la secuencia.
+    // 3. Avanzar hasta el final del bloque del mismo turno
     int candidate = mid;
     while (candidate + 1 < messages.size()) {
       if (!turnOfMessage.containsKey(candidate + 1)) {
@@ -269,10 +269,26 @@ public class SessionImpl implements Session {
       candidate++;
     }
 
+    // 4. Garantizar la atomicidad de bloques de herramientas:
+    // Si el mensaje inmediatamente posterior al corte es un ToolExecutionResultMessage
+    // (por ejemplo, en llamadas paralelas donde cada tool tiene distinto turnId),
+    // avanzamos obligatoriamente hasta consumir todas las respuestas de herramientas consecutivas.
+    while (candidate + 1 < messages.size()) {
+      ChatMessage nextMsg = messages.get(candidate + 1);
+      if (nextMsg instanceof ToolExecutionResultMessage) {
+        candidate++;
+        if (turnOfMessage.containsKey(candidate)) {
+          currentTurnId = turnOfMessage.get(candidate).turnId;
+        }
+      } else {
+        break;
+      }
+    }
+
     return new SessionMarkImpl(candidate, currentTurnId, messages.get(candidate));
   }
 
-    @Override
+  @Override
   public void remove(SessionMark mark1, SessionMark mark2) {
     if (!(mark1 instanceof SessionMarkImpl) || !(mark2 instanceof SessionMarkImpl)) {
       throw new IllegalArgumentException("Marcas invalidas");
@@ -364,7 +380,7 @@ public class SessionImpl implements Session {
     }
   }
 
-    @Override
+  @Override
   public void save() {
     Gson gson = createGson();
     String lastTimeStr = this.lastInteractionTime != null ? this.lastInteractionTime.toString() : null;
@@ -478,13 +494,13 @@ public class SessionImpl implements Session {
     }
   }
 
-    @Override
+  @Override
   public List<ChatMessage> getMessages() {
     // Devolvemos una copia para evitar problemas de concurrencia
     return new ArrayList<>(this.messages);
   }
 
-    @Override
+  @Override
   public LocalDateTime getLastInteractionTime() {
     return lastInteractionTime;
   }
@@ -494,7 +510,7 @@ public class SessionImpl implements Session {
     return this.messages.isEmpty();
   }
 
-    @Override
+  @Override
   public void setLastInteractionTime(LocalDateTime lastInteractionTime) {
     this.lastInteractionTime = lastInteractionTime;
   }

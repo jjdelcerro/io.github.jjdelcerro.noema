@@ -106,12 +106,18 @@ public class AgentImpl implements Agent {
     this.consoles.put(DEFAULT_SUBCHANNEL, console);
     this.services = new LinkedHashMap<>();
     
+    
+    Path sandboxRoot = (this.getPaths() != null && this.getPaths().getWorkspaceFolder() != null)
+            ? this.getPaths().getWorkspaceFolder()
+            : Paths.get(".").toAbsolutePath().normalize();
+
     this.accessControl = (accessControl != null) ? accessControl : new AgentAccessControlImpl(
             this.settings,
             this.actions,
-            Paths.get(".").toAbsolutePath().normalize(),
+            sandboxRoot,
             this::getCurrentConsole
-    );
+    );    
+    
     
     this.servicesDatabase = servicesDatabase;
     this.memoryDatabase = memoryDatabase;

@@ -94,7 +94,7 @@ public class ReasoningServiceTest {
             }      
 
             @Override
-            protected String getBaseSystemPrompt() {
+            public String getBaseSystemPrompt() {
                 String prompt = "Eres un agente personal";
                 this.lastestSystemPrompt = prompt;
                 return prompt;
