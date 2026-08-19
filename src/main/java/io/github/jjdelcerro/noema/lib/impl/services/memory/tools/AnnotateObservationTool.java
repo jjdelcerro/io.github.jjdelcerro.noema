@@ -41,7 +41,7 @@ Esto permite vincular la anotación al recurso original y evita que el sistema t
 """)
                 .addStringParameter("source", false, "El origen de la información (ej: nombre del archivo, URL o 'instrucción del usuario').")
                 .addStringParameter("note", false, "Los hechos clave que deseas fijar en tu memoria episódica.")
-                .addStringParameter("resource_id", true, "Opcional: Identificador del recurso paginado al que se refiere esta anotación. Debe ser el valor RESOURCE_ID devuelto por la herramienta de lectura.");
+                .addStringParameter("resource_id", true, "OBLIGATORIO si la información proviene de la lectura de un archivo o web. Debes copiar exactamente el RESOURCE_ID proporcionado por la herramienta de lectura. Dejar vacío ÚNICAMENTE si el dato proviene directamente de una instrucción del usuario en el chat.");
     }
 
     @Override

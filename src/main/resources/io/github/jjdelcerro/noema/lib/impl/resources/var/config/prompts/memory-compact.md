@@ -88,7 +88,25 @@ Cuando el agente consulta su propio historial, los turnos recuperados se **inyec
     *   *CSV Input:* (Turno 40 con `tool_call` a `lookup_turn`) seguido de (Turnos 3, 4, 5 con `contenttype: lookup_turn` y fechas antiguas).
     *   *Narrativa correcta:* "Para responder con precisión a la pregunta del usuario sobre sus motivaciones, el agente **consultó sus registros históricos**. Recuperó la conversación original donde se detallaba la 'crisis de sentido' con SHRDLU y el posterior giro hacia la filosofía kantiana {cite:40}."
 
-    
+
+#### **4.3. Anotaciones: narrar el conocimiento y el mandato**
+
+Las llamadas a la herramienta `annotate_observation` contienen información vital. Tu objetivo no es registrar mecánicamente un log del tipo *"el agente usó la herramienta para tomar nota"*, sino explicar **qué conocimiento** se ha adquirido o **qué directiva** se ha fijado en la memoria. 
+
+Para saber cómo integrar esta información tanto en "El Viaje" como en el "Resumen", debes fijarte en un detalle técnico de la llamada: la presencia o ausencia del parámetro `resource_id`.
+
+*   **ESCENARIO A: Anotación CON `resource_id` (Conocimiento Extraído)**
+    *   *Qué significa:* El agente ha analizado un archivo, un log o una web y ha destilado una conclusión.
+    *   *Cómo narrarlo en El Viaje:* Redáctalo como un descubrimiento, un diagnóstico o una síntesis fruto de la investigación.
+    *   *Ejemplo correcto:* "Al procesar el archivo de configuración, el sistema identificó que el timeout estaba fijado en 30 segundos, lo que explicaba los cortes de conexión {cite:45}."
+    *   *Elevación al Resumen:* Si este hallazgo es un punto importante o explica un problema crítico, inclúyelo en la sección **Resumen**.
+
+*   **ESCENARIO B: Anotación SIN `resource_id` (Conocimiento Declarado o Mandato)**
+    *   *Qué significa:* El usuario ha proporcionado un dato duro (una contraseña, un puerto, una regla de negocio) o ha dado la instrucción explícita de guardar una información para el futuro.
+    *   *Cómo narrarlo en El Viaje:* Redáctalo como una premisa establecida, un acuerdo o una directiva explícita del usuario.
+    *   *Ejemplo correcto:* "El usuario estableció como directiva guardar la clave secreta de despliegue ('TitanSecret-9942') para la fase final {cite:12}."
+    *   *Elevación al Resumen:* Debido a su naturaleza normativa o de configuración (datos duros que el agente no debe olvidar), el contenido de estas anotaciones debe figurar en la sección **Resumen** (como decisiones clave o estado del sistema), además de mencionarse orgánicamente en "El Viaje".
+
 ## **5. Modos de funcionamiento**
 
 Los modos de guardado son unicamente dos:
