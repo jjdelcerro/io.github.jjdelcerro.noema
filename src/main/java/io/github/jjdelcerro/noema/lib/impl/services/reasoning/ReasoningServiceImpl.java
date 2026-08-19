@@ -149,7 +149,7 @@ public class ReasoningServiceImpl implements ReasoningService {
         return session;
     }
 
-    private CheckPoint getActiveCheckPoint(String subchannel) {
+    public CheckPoint getActiveCheckPoint(String subchannel) {
         CheckPoint checkPoint = this.activesCheckPoint.get(subchannel);
         if (checkPoint == null) {
             try {
@@ -259,7 +259,7 @@ public class ReasoningServiceImpl implements ReasoningService {
         this.availableTools.put(tool.getName(), new AvailableAgentTool(tool));
     }
 
-    protected String getBaseSystemPrompt() {
+    public String getBaseSystemPrompt() {
         StringBuilder sb = new StringBuilder();
 
         // --- CAPA 1: Instrucciones Operativas (Sistema Nervioso Autónomo) ---
@@ -796,6 +796,9 @@ public class ReasoningServiceImpl implements ReasoningService {
                         toolExecutionRetries = 0;
                     }
                 }
+              if (session.needCompaction()) {
+                  performCompaction(session);
+              }
             }
             if (textUser != null) {
                 session.setLastInteractionTime(LocalDateTime.now());
@@ -830,7 +833,7 @@ public class ReasoningServiceImpl implements ReasoningService {
         return 1024;
     }
 
-    private List<String> getResourcesPendingAnnotation(List<ChatMessage> messages) {
+private List<String> getResourcesPendingAnnotation(List<ChatMessage> messages) {
         int total = messages.size();
         int keep = getNumberOfMessagesToKeep(); // ej. 20
         if (total < keep) {
@@ -848,11 +851,13 @@ public class ReasoningServiceImpl implements ReasoningService {
                 String toolName = toolResultMessage.toolName();
                 AgentTool tool = this.getAvailableTool(toolName);
                 if (tool instanceof AbstractPaginatedAgentTool paginatedTool) {
-                    String resourceId = paginatedTool.getResourceIdFromResultMessage(toolResultMessage);
-                    if (StringUtils.isNotBlank(resourceId)) {
-                        lastReadIdx.put(resourceId, i);
+                    String text = toolResultMessage.text();
+                    if (text != null && text.length() > this.getMinimumSizeForTrim()) {
+                        String resourceId = paginatedTool.getResourceIdFromResultMessage(toolResultMessage);
+                        if (StringUtils.isNotBlank(resourceId)) {
+                            lastReadIdx.put(resourceId, i);
+                        }
                     }
-
                 } else if (tool instanceof AnnotateObservationTool annotateTool) {
                     String resourceId = annotateTool.getResourceIdFromResultMessage(toolResultMessage);
                     if (StringUtils.isNotBlank(resourceId)) {
@@ -873,7 +878,6 @@ public class ReasoningServiceImpl implements ReasoningService {
         }
         return pending;
     }
-
     private void prepareContextForLLM(Session session, List<ChatMessage> context) {
         for (int i = 0; i < context.size(); i++) {
             if (i > context.size() - this.getNumberOfMessagesToKeep()) {
