@@ -8,8 +8,6 @@ import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
-import io.github.jjdelcerro.noema.lib.persistence.CheckPoint;
-import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
 import io.github.jjdelcerro.noema.lib.persistence.Turn;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
@@ -49,6 +47,8 @@ import javax.swing.Timer;
 import javax.swing.UIManager;
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.lang3.StringUtils;
+import io.github.jjdelcerro.noema.lib.persistence.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.persistence.CompactedMemory;
 
 public class MainChatPanel extends JPanel {
 
@@ -348,7 +348,6 @@ public class MainChatPanel extends JPanel {
     public void setAgent(Agent agent) {
         this.agent = agent;
         SwingUtilities.invokeLater(() -> {
-//      Thread.ofVirtual().start(() -> agent.showSession());
             Thread.ofPlatform().start(() -> showHistory(agent));
             inputArea.setEnabled(true);
             updateMetadata();
@@ -371,10 +370,10 @@ public class MainChatPanel extends JPanel {
     private void showHistory(Agent agent) {
         String subchannel = agent.getCurrentSubchannel();
         try {
-            SourceOfTruth sot = agent.getSourceOfTruth();
+            EpisodicMemory sot = agent.getEpisodicMemory();
 
             // Cargar el punto de guardado (resumen/relato activo) si existe
-            CheckPoint activeCheckPoint = sot.getLatestCheckPoint(subchannel);
+            CompactedMemory activeCheckPoint = sot.getLatestCompactedMemory(subchannel);
 
             // Cargar la lista de turnos sin consolidar
             List<Turn> turns = sot.getUnconsolidatedTurns(subchannel);

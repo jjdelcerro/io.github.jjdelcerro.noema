@@ -1,14 +1,14 @@
 package io.github.jjdelcerro.noema.lib.impl.persistence;
 
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.Session;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.SessionImpl;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.RecentMemoryImpl;
 import java.nio.file.Path;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.RecentMemory;
 
-public class FakeSession extends SessionImpl implements Session {
+public class FakeRecentMemory extends RecentMemoryImpl implements RecentMemory {
 
     private Boolean forcedNeedCompaction = null;
 
-    public FakeSession(String subchannel) {
+    public FakeRecentMemory(String subchannel) {
         // Le pasamos una ruta dummy. Al no existir el archivo en disco, 
         // el método load() heredado en el constructor no intentará leer nada.
         super(Path.of("."), null, subchannel);
@@ -19,7 +19,7 @@ public class FakeSession extends SessionImpl implements Session {
      */
     @Override
     public void save() {
-        // No-op: Evita la creación/escritura de active_session-subchannel.json
+        // No-op: Evita la creación/escritura la memoria reciente en el json de disco
     }
 
     /**

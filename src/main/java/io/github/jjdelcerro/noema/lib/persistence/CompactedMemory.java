@@ -1,13 +1,15 @@
 package io.github.jjdelcerro.noema.lib.persistence;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 /**
  *
+ *
+ * TODO: Antes CheckPoint, habria que actualizar la documentacion con este cambio
+ *
  * @author jjdelcerro
  */
-public interface CheckPoint {
+public interface CompactedMemory {
 
   int getTurnFirst();
 
@@ -32,7 +34,7 @@ public interface CheckPoint {
   String getText();
 
   LocalDateTime getTimestamp();
-  
+
   String getSubchannel();
 
 }

@@ -21,7 +21,6 @@ import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
 import io.github.jjdelcerro.noema.lib.impl.DateUtils;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
-import io.github.jjdelcerro.noema.lib.persistence.CheckPoint;
 import io.github.jjdelcerro.noema.lib.persistence.Turn;
 import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.MEMORY_COMPACTION_TURNS;
 import java.io.IOException;
@@ -36,15 +35,18 @@ import java.time.LocalDateTime;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.github.jjdelcerro.noema.lib.persistence.CompactedMemory;
 
 /**
  * Agregado que gobierna el estado de la sesion activa de conversacion. Gestiona
  * la lista de mensajes (Protocolo) y su sincronizacion con los Turnos
  * (Archivo).
+ * 
+ * TODO: Antes SessionImpl, habria que actualizar la documentacion con este cambio
  */
-public class SessionImpl implements Session {
+public class RecentMemoryImpl implements RecentMemory {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(SessionImpl.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(RecentMemoryImpl.class);
 
   private static final int DEFAULT_COMPACTION_THRESHOLD = 40;
   private final String subchannel;
@@ -80,7 +82,7 @@ public class SessionImpl implements Session {
     }
   }
 
-  private final Path sessionPath;
+  private final Path recentMemoryPath;
   private final Path tempPath;
 
   // ESTADO INTERNO
@@ -97,11 +99,11 @@ public class SessionImpl implements Session {
    * @param settings
    * @param subchannel
    */
-  public SessionImpl(Path dataFolder, AgentSettings settings, String subchannel) {
+  public RecentMemoryImpl(Path dataFolder, AgentSettings settings, String subchannel) {
     this.subchannel = subchannel;
     this.settings = settings;
-    this.sessionPath = dataFolder.resolve("active_session-" + subchannel + ".json");
-    this.tempPath = dataFolder.resolve("active_session-" + subchannel + ".json.tmp");
+    this.recentMemoryPath = dataFolder.resolve("recent_memory-" + subchannel + ".json");
+    this.tempPath = dataFolder.resolve("recent_memory-" + subchannel + ".json.tmp");
     this.load();
   }
 
@@ -138,7 +140,7 @@ public class SessionImpl implements Session {
   }
 
   @Override
-  public List<ChatMessage> getContextMessages(CheckPoint checkpoint, String systemPrompt) {
+  public List<ChatMessage> getContextMessages(CompactedMemory checkpoint, String systemPrompt) {
     List<ChatMessage> context = new ArrayList<>();
 
     StringBuilder sb = new StringBuilder();
@@ -190,7 +192,7 @@ public class SessionImpl implements Session {
 
     // Contamos cuantos IDs de turnos unicos tenemos en la sesion
     Set<ChatMessageInfo> uniqueTurns = new HashSet<>(turnOfMessage.values());
-    return uniqueTurns.size() >= getCompactationThreshold();
+    return uniqueTurns.size() >= getCompactionThreshold();
   }
 
   @Override
@@ -199,7 +201,7 @@ public class SessionImpl implements Session {
     return uniqueTurns.size();
   }
 
-  private int getCompactationThreshold() {
+  private int getCompactionThreshold() {
     int x = (int) this.settings.getPropertyAsLong(MEMORY_COMPACTION_TURNS, -1);
     if (x < 0) {
       this.settings.setProperty(MEMORY_COMPACTION_TURNS, String.valueOf(DEFAULT_COMPACTION_THRESHOLD));
@@ -208,11 +210,8 @@ public class SessionImpl implements Session {
     return x;
   }
 
-  // =================================================================================
-  // API COMPACTACION (SessionMark)
-  // =================================================================================
   @Override
-  public SessionMark getOldestMark() {
+  public RecentMemoryMark getOldestMark() {
     if (messages.isEmpty()) {
       return null;
     }
@@ -221,11 +220,11 @@ public class SessionImpl implements Session {
       return null;
     }
 
-    return new SessionMarkImpl(0, turnOfMessage.get(0).turnId, messages.get(0));
+    return new RecentMemoryMarkImpl(0, turnOfMessage.get(0).turnId, messages.get(0));
   }
 
   @Override
-  public SessionMark getNewestMark() {
+  public RecentMemoryMark getNewestMark() {
     if (messages.isEmpty()) {
       return null;
     }
@@ -234,11 +233,11 @@ public class SessionImpl implements Session {
       return null;
     }
 
-    return new SessionMarkImpl(0, turnOfMessage.get(turnOfMessage.size() - 1).turnId, messages.get(messages.size() - 1));
+    return new RecentMemoryMarkImpl(0, turnOfMessage.get(turnOfMessage.size() - 1).turnId, messages.get(messages.size() - 1));
   }
 
   @Override
-  public SessionMark getCompactMark() {
+  public RecentMemoryMark getCompactMark() {
     if (turnOfMessage.isEmpty()) {
       return null;
     }
@@ -285,17 +284,17 @@ public class SessionImpl implements Session {
       }
     }
 
-    return new SessionMarkImpl(candidate, currentTurnId, messages.get(candidate));
+    return new RecentMemoryMarkImpl(candidate, currentTurnId, messages.get(candidate));
   }
 
   @Override
-  public void remove(SessionMark mark1, SessionMark mark2) {
-    if (!(mark1 instanceof SessionMarkImpl) || !(mark2 instanceof SessionMarkImpl)) {
+  public void remove(RecentMemoryMark mark1, RecentMemoryMark mark2) {
+    if (!(mark1 instanceof RecentMemoryMarkImpl) || !(mark2 instanceof RecentMemoryMarkImpl)) {
       throw new IllegalArgumentException("Marcas invalidas");
     }
 
-    SessionMarkImpl m1 = (SessionMarkImpl) mark1;
-    SessionMarkImpl m2 = (SessionMarkImpl) mark2;
+    RecentMemoryMarkImpl m1 = (RecentMemoryMarkImpl) mark1;
+    RecentMemoryMarkImpl m2 = (RecentMemoryMarkImpl) mark2;
 
     int idx1 = m1.index;
     int idx2 = m2.index;
@@ -340,30 +339,30 @@ public class SessionImpl implements Session {
   // =================================================================================
   // PERSISTENCIA (Interna)
   // =================================================================================
-  private static class SessionState {
+  private static class RecentMemoryState {
 
     List<ChatMessage> messages;
     Map<Integer, ChatMessageInfo> turnOfMessage;
     String lastInteractionTime;
 
-    SessionState(List<ChatMessage> m, Map<Integer, ChatMessageInfo> t, String l) {
+    RecentMemoryState(List<ChatMessage> m, Map<Integer, ChatMessageInfo> t, String l) {
       this.messages = m;
       this.turnOfMessage = t;
       this.lastInteractionTime = l;
     }
 
     @SuppressWarnings("unused")
-    SessionState() {
+    RecentMemoryState() {
     }
   }
 
   private void load() {
-    if (!Files.exists(sessionPath)) {
+    if (!Files.exists(recentMemoryPath)) {
       return;
     }
     Gson gson = createGson();
-    try (Reader reader = Files.newBufferedReader(sessionPath, StandardCharsets.UTF_8)) {
-      SessionState state = gson.fromJson(reader, SessionState.class);
+    try (Reader reader = Files.newBufferedReader(recentMemoryPath, StandardCharsets.UTF_8)) {
+      RecentMemoryState state = gson.fromJson(reader, RecentMemoryState.class);
       if (state != null) {
         if (state.messages != null) {
           this.messages.addAll(state.messages);
@@ -384,13 +383,13 @@ public class SessionImpl implements Session {
   public void save() {
     Gson gson = createGson();
     String lastTimeStr = this.lastInteractionTime != null ? this.lastInteractionTime.toString() : null;
-    SessionState state = new SessionState(this.messages, this.turnOfMessage, lastTimeStr);
+    RecentMemoryState state = new RecentMemoryState(this.messages, this.turnOfMessage, lastTimeStr);
     try {
       try (Writer writer = Files.newBufferedWriter(tempPath, StandardCharsets.UTF_8)) {
         gson.toJson(state, writer);
         writer.flush();
       }
-      Files.move(tempPath, sessionPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+      Files.move(tempPath, recentMemoryPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
     } catch (IOException e) {
       throw new RuntimeException("Error guardando sesion: " + e.getMessage(), e);
     }
@@ -408,13 +407,13 @@ public class SessionImpl implements Session {
   // =================================================================================
   // MEMENTO IMPL
   // =================================================================================
-  private static class SessionMarkImpl implements SessionMark {
+  private static class RecentMemoryMarkImpl implements RecentMemoryMark {
 
     final int index;
     final int turnId;
     final ChatMessage message;
 
-    public SessionMarkImpl(int index, int turnId, ChatMessage message) {
+    public RecentMemoryMarkImpl(int index, int turnId, ChatMessage message) {
       this.index = index;
       this.turnId = turnId;
       this.message = message;

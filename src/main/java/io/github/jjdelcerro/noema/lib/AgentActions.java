@@ -12,6 +12,11 @@ public interface AgentActions {
   public static final String CHANGE_MEMORY_MODEL = "CHANGE_MEMORY_MODEL";
   public static final String CHANGE_REASONING_PROVIDER = "CHANGE_REASONING_PROVIDER";
   public static final String CHANGE_REASONING_MODEL = "CHANGE_REASONING_MODEL";
+  
+  public static final String COMPACT_REASONING_MEMORY = "COMPACT_REASONING_SESSION";
+  public static final String COMPACT_REASONING_FULL_MEMORY = "COMPACT_REASONING_FULL_SESSION";
+  
+  
 
   public interface AgentAction {
     public boolean perform(AgentSettings settings);

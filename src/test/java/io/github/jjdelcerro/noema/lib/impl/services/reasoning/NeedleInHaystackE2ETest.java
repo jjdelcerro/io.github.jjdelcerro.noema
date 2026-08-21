@@ -11,7 +11,6 @@ import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.LookupTurnTool;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.SearchFullHistoryTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileReadTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.ReadPaginatedResourceTool;
-import io.github.jjdelcerro.noema.lib.persistence.CheckPoint;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.main.BootUtils;
@@ -39,6 +38,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import io.github.jjdelcerro.noema.lib.persistence.CompactedMemory;
 
 @Tag("e2e")
 public class NeedleInHaystackE2ETest {
@@ -194,7 +194,7 @@ public class NeedleInHaystackE2ETest {
         assertNotNull(res3);
 
         // Verificamos que se ha generado al menos un CheckPoint en la base de datos
-        CheckPoint checkpoint = agent.getSourceOfTruth().getLatestCheckPoint(Agent.DEFAULT_SUBCHANNEL);
+        CompactedMemory checkpoint = agent.getEpisodicMemory().getLatestCompactedMemory(Agent.DEFAULT_SUBCHANNEL);
         assertNotNull(checkpoint, "La memoria deberia haberse compactado generando al menos un CheckPoint.");
         System.out.println(">>> [E2E INFO] CheckPoint generado: " + checkpoint.getCode());
 

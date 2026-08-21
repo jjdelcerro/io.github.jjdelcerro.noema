@@ -61,7 +61,7 @@ herramienta.
       SearchArgs args = gson.fromJson(jsonArguments, SearchArgs.class);
       int safeLimit = Math.min(args.limit > 0 ? args.limit : 10, 50);
 
-      List<Turn> turns = this.agent.getSourceOfTruth().getTurnsByText(
+      List<Turn> turns = this.agent.getEpisodicMemory().getTurnsByText(
               this.agent.getCurrentSubchannel(),
               args.query, 
               safeLimit

@@ -1,6 +1,5 @@
 package io.github.jjdelcerro.noema.lib.impl.services.memory;
 
-import io.github.jjdelcerro.noema.lib.services.memory.MemoryService;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
@@ -9,8 +8,6 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.Agent.ModelParameters;
 import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_MEMORY_MODEL;
 import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_MEMORY_PROVIDER;
-import io.github.jjdelcerro.noema.lib.persistence.CheckPoint;
-import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
 import io.github.jjdelcerro.noema.lib.persistence.Turn;
 
 import java.util.List;
@@ -33,27 +30,32 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
+import io.github.jjdelcerro.noema.lib.persistence.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.persistence.CompactedMemory;
+import io.github.jjdelcerro.noema.lib.services.memory.MemoryCompactionService;
 
 /**
  * Componente cognitivo encargado de la consolidación de la memoria. Ejecuta el
  * "Protocolo de Generación de Puntos de Guardado" utilizando un LLM.
+ * 
+ * TODO: Antes MemoryServiceImpl, habria que actualizar la documentacion con este cambio 
  */
-public class MemoryServiceImpl implements MemoryService {
+public class MemoryCompactionServiceImpl implements MemoryCompactionService {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(MemoryServiceImpl.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MemoryCompactionServiceImpl.class);
 
   private final Agent agent;
-  private final SourceOfTruth sourceOfTruth;
+  private final EpisodicMemory episodicMemory;
   private AgentConsole console;
   private Agent.ChatModel model;
   private String systemPrompt;
   private boolean running;
   private final AgentServiceFactory factory;
 
-  public MemoryServiceImpl(AgentServiceFactory factory, Agent agent) {
+  public MemoryCompactionServiceImpl(AgentServiceFactory factory, Agent agent) {
     this.factory = factory;
     this.agent = agent;
-    this.sourceOfTruth = agent.getSourceOfTruth();
+    this.episodicMemory = agent.getEpisodicMemory();
     this.console = agent.getConsole(DEFAULT_SUBCHANNEL);
   }
 
@@ -73,18 +75,18 @@ public class MemoryServiceImpl implements MemoryService {
     this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_MEMORY_PROVIDER) {
       @Override
       public boolean perform(AgentSettings settings) {
-        model = agent.createChatModel(MemoryService.ID);
+        model = agent.createChatModel(MemoryCompactionService.ID);
         return true;
       }
     });
     this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_MEMORY_MODEL) {
       @Override
       public boolean perform(AgentSettings settings) {
-        model = agent.createChatModel(MemoryService.ID);
+        model = agent.createChatModel(MemoryCompactionService.ID);
         return true;
       }
     });
-    this.model = this.agent.createChatModel(MemoryService.ID);
+    this.model = this.agent.createChatModel(MemoryCompactionService.ID);
     loadSystemPrompt();
     this.running = true;
 
@@ -107,7 +109,7 @@ public class MemoryServiceImpl implements MemoryService {
    * @return Un nuevo CheckPoint TRANSITORIO (ID -1) con el texto generado.
    */
   @Override
-  public CheckPoint compact(String subchannel, CheckPoint previous, List<Turn> newTurns) {
+  public CompactedMemory compact(String subchannel, CompactedMemory previous, List<Turn> newTurns) {
     if (newTurns == null || newTurns.isEmpty()) {
       throw new IllegalArgumentException("No hay turnos para compactar.");
     }
@@ -153,7 +155,7 @@ public class MemoryServiceImpl implements MemoryService {
       firstId = previous.getTurnFirst();
     }
 
-    CheckPoint cp = this.sourceOfTruth.createCheckPoint(subchannel, firstId, lastId, LocalDateTime.now(), generatedText);
+    CompactedMemory cp = this.episodicMemory.createCompactedMemory(subchannel, firstId, lastId, LocalDateTime.now(), generatedText);
     LOGGER.info("Compactacion finalizada.");
     return cp;
   }
@@ -189,7 +191,7 @@ public class MemoryServiceImpl implements MemoryService {
     return foundIds;
   }
 
-  private String buildUserPrompt(CheckPoint previous, List<Turn> newTurns) {
+  private String buildUserPrompt(CompactedMemory previous, List<Turn> newTurns) {
     StringBuilder sb = new StringBuilder();
 
     // --- CONTEXTO PREVIO (Si existe) ---
@@ -232,7 +234,7 @@ public class MemoryServiceImpl implements MemoryService {
   public ModelParameters getModelParameters(String name) {
     AgentSettings settings = this.agent.getSettings();
     switch (name) {
-      case MemoryService.ID:
+      case MemoryCompactionService.ID:
         return new ModelParametersImpl(
                 settings.getPropertyAsString(MEMORY_PROVIDER_URL),
                 settings.getPropertyAsString(MEMORY_PROVIDER_API_KEY),

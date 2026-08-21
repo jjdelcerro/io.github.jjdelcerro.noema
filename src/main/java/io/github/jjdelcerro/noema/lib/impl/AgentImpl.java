@@ -13,8 +13,7 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentActions;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
-import io.github.jjdelcerro.noema.lib.impl.persistence.SourceOfTruthImpl;
-import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
+import io.github.jjdelcerro.noema.lib.impl.persistence.EpisodicMemoryImpl;
 import java.nio.file.Paths;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.AgentManager;
@@ -47,6 +46,7 @@ import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.github.jjdelcerro.noema.lib.persistence.EpisodicMemory;
 
 /**
  *
@@ -66,7 +66,7 @@ public class AgentImpl implements Agent {
   private Map<String,AgentConsole> consoles;
   private final AgentSettings settings;
   private final AgentActions actions;
-  private final SourceOfTruth sourceOfTruth;
+  private final EpisodicMemory episodicMemory;
 
   private final AgentAccessControl accessControl;
 
@@ -89,14 +89,14 @@ public class AgentImpl implements Agent {
      * @param settings
      * @param accessControl
      * @param console
-     * @param sourceOfTruth
+     * @param episodicMemory
    */
   public AgentImpl(
           ConnectionSupplier memoryDatabase, 
           ConnectionSupplier servicesDatabase, 
           AgentSettings settings, 
           AgentConsole console,
-          SourceOfTruth sourceOfTruth,
+          EpisodicMemory episodicMemory,
           AgentAccessControl accessControl
   ) {
     this.running = false;
@@ -124,10 +124,10 @@ public class AgentImpl implements Agent {
     
     // Si se inyecta un SourceOfTruth (ej: en tests), lo usamos directamente.
     // Si no, instanciamos la implementación real conectada a la BBDD.
-    if (sourceOfTruth != null) {
-      this.sourceOfTruth = sourceOfTruth;
+    if (episodicMemory != null) {
+      this.episodicMemory = episodicMemory;
     } else {
-      this.sourceOfTruth = SourceOfTruthImpl.from(this);
+      this.episodicMemory = EpisodicMemoryImpl.from(this);
     }
 
     if (this.accessControl != null && this.getPaths() != null && this.getPaths().getAgentFolder() != null) {
@@ -239,8 +239,8 @@ public class AgentImpl implements Agent {
   }
   
   @Override
-  public SourceOfTruth getSourceOfTruth() {
-    return this.sourceOfTruth;
+  public EpisodicMemory getEpisodicMemory() {
+    return this.episodicMemory;
   }
 
   @Override

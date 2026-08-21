@@ -11,13 +11,12 @@ import io.github.jjdelcerro.noema.lib.FakeChatModel;
 import io.github.jjdelcerro.noema.lib.FakeConsole;
 import io.github.jjdelcerro.noema.lib.impl.AgentImpl;
 import io.github.jjdelcerro.noema.lib.impl.AgentPathsImpl;
-import io.github.jjdelcerro.noema.lib.impl.persistence.FakeSession;
-import io.github.jjdelcerro.noema.lib.impl.persistence.FakeSourceOfTruth;
+import io.github.jjdelcerro.noema.lib.impl.persistence.FakeRecentMemory;
+import io.github.jjdelcerro.noema.lib.impl.persistence.FakeEpisodicMemory;
 
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorInformationImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.user.SensorEventUserImpl;
 import io.github.jjdelcerro.noema.lib.impl.settings.AgentSettingsImpl;
-import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
 import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
@@ -35,6 +34,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import io.github.jjdelcerro.noema.lib.persistence.EpisodicMemory;
 
 
 public class ReasoningServiceTest {
@@ -56,7 +56,7 @@ public class ReasoningServiceTest {
             }
         };
 
-        SourceOfTruth sot = new FakeSourceOfTruth();
+        EpisodicMemory episodicMemory = new FakeEpisodicMemory();
 
         // 3. Simulamos la respuesta del LLM
         String respuestaEsperada = "¡Hola! ¿En qué puedo ayudarte?";
@@ -68,14 +68,14 @@ public class ReasoningServiceTest {
         };
 
         // 4. Instanciamos el Agente de prueba
-        Agent testAgent = new AgentImpl(null, null, settings, console, sot, null);
+        Agent testAgent = new AgentImpl(null, null, settings, console, episodicMemory, null);
 
-        // 5. Instanciamos el servicio sobreescribiendo Session y ChatModel
+        // 5. Instanciamos el servicio sobreescribiendo RecentMemory y ChatModel
         ReasoningServiceFactory factory = new ReasoningServiceFactory();
         ReasoningServiceImpl reasoningService = new ReasoningServiceImpl(factory, testAgent) {
             @Override
-            public Session createSession(String subchannel) {
-                return new FakeSession(subchannel) {
+            public RecentMemory createRecentMemory(String subchannel) {
+                return new FakeRecentMemory(subchannel) {
                     @Override
                     public boolean needCompaction() {
                         return false;

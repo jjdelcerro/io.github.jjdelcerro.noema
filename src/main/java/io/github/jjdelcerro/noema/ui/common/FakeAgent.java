@@ -8,7 +8,6 @@ import io.github.jjdelcerro.noema.lib.AgentActions;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
-import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
@@ -19,6 +18,7 @@ import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
 import java.util.List;
 import java.util.function.Supplier;
+import io.github.jjdelcerro.noema.lib.persistence.EpisodicMemory;
 
 /**
  * Mínima implementación de Agent para permitir la configuración inicial sin
@@ -63,7 +63,7 @@ public class FakeAgent implements Agent {
   }
 
   @Override
-  public SourceOfTruth getSourceOfTruth() {
+  public EpisodicMemory getEpisodicMemory() {
     throw new UnsupportedOperationException("FakeAgent no tiene SourceOfTruth.");
   }
 

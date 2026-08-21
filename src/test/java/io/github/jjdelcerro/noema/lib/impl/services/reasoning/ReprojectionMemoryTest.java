@@ -10,12 +10,11 @@ import io.github.jjdelcerro.noema.lib.impl.AgentAccessControlImpl;
 import io.github.jjdelcerro.noema.lib.impl.AgentActionsImpl;
 import io.github.jjdelcerro.noema.lib.impl.AgentImpl;
 import io.github.jjdelcerro.noema.lib.impl.AgentPathsImpl;
-import io.github.jjdelcerro.noema.lib.impl.persistence.FakeSession;
-import io.github.jjdelcerro.noema.lib.impl.persistence.FakeSourceOfTruth;
+import io.github.jjdelcerro.noema.lib.impl.persistence.FakeRecentMemory;
+import io.github.jjdelcerro.noema.lib.impl.persistence.FakeEpisodicMemory;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.AnnotateObservationTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileReadTool;
 import io.github.jjdelcerro.noema.lib.impl.settings.AgentSettingsImpl;
-import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import io.github.jjdelcerro.noema.lib.persistence.EpisodicMemory;
 
 @SuppressWarnings("unused")
 public class ReprojectionMemoryTest extends AbstractScriptedTest {
@@ -37,7 +37,7 @@ public class ReprojectionMemoryTest extends AbstractScriptedTest {
 
   private Agent agent;
   private ScriptedChatModel scriptedModel;
-  private FakeSession fakeSession;
+  private FakeRecentMemory recentMemory;
   private ReasoningServiceImpl reasoningService;
 
   @BeforeEach
@@ -48,19 +48,19 @@ public class ReprojectionMemoryTest extends AbstractScriptedTest {
     AgentSettings settings = new AgentSettingsImpl(paths);
     AgentActions actions = new AgentActionsImpl();
     AgentAccessControl accessControl = new AgentAccessControlImpl(settings, actions, workspaceDir);
-    SourceOfTruth sot = new FakeSourceOfTruth();
+    EpisodicMemory episodicMemory = new FakeEpisodicMemory();
 
-    agent = new AgentImpl(null, null, settings, new FakeConsole(), sot, accessControl);
+    agent = new AgentImpl(null, null, settings, new FakeConsole(), episodicMemory, accessControl);
     scriptedModel = new ScriptedChatModel();
 
-    fakeSession = new FakeSession(Agent.DEFAULT_SUBCHANNEL);
-    fakeSession.setNeedCompaction(false);
+    recentMemory = new FakeRecentMemory(Agent.DEFAULT_SUBCHANNEL);
+    recentMemory.setNeedCompaction(false);
 
     ReasoningServiceFactory factory = new ReasoningServiceFactory();
     reasoningService = new ReasoningServiceImpl(factory, agent) {
       @Override
-      public Session createSession(String subchannel) {
-        return fakeSession;
+      public RecentMemory createRecentMemory(String subchannel) {
+        return recentMemory;
       }
 
       @Override
@@ -104,8 +104,8 @@ public class ReprojectionMemoryTest extends AbstractScriptedTest {
   }
 
   @Override
-  protected Session getSession() {
-    return this.fakeSession;
+  protected RecentMemory getRecentMemory() {
+    return this.recentMemory;
   }
 
   @Override
@@ -131,14 +131,14 @@ public class ReprojectionMemoryTest extends AbstractScriptedTest {
     boolean recentFullInProjected = hasFullResource("servidor_reciente.log");
     boolean recentBodyPresentInProjected = projectedContextContainsText("ERROR_RECIENTE");
 
-    boolean oldBodyPreservedInSession = sessionContainsText("ERROR_ANTIGUO");
+    boolean oldBodyPreservedInRecentMemory = recentMemoryContainsText("ERROR_ANTIGUO");
     boolean noNotificationActive = !hasEphemeralNotification();
 
     return oldTrimmedInProjected
             && oldBodyMissingInProjected
             && recentFullInProjected
             && recentBodyPresentInProjected
-            && oldBodyPreservedInSession
+            && oldBodyPreservedInRecentMemory
             && noNotificationActive;
   }
 
@@ -146,13 +146,13 @@ public class ReprojectionMemoryTest extends AbstractScriptedTest {
     boolean oldLogTrimmed = hasTrimmedResource("servidor_antiguo.log");
     boolean oldLogRawGone = !projectedContextContainsText("Detalle log antiguo");
     boolean notePreservedInProjected = projectedContextContainsText("NOTA_CRITICA_TIMEOUT_0312");
-    boolean notePreservedInSession = sessionContainsText("NOTA_CRITICA_TIMEOUT_0312");
+    boolean notePreservedInRecentMemory = recentMemoryContainsText("NOTA_CRITICA_TIMEOUT_0312");
     boolean noNotificationActive = !hasEphemeralNotification();
 
     return oldLogTrimmed
             && oldLogRawGone
             && notePreservedInProjected
-            && notePreservedInSession
+            && notePreservedInRecentMemory
             && noNotificationActive;
   }
 
@@ -365,7 +365,7 @@ public class ReprojectionMemoryTest extends AbstractScriptedTest {
     boolean bodyInProjected = projectedContextContainsText("TEXTO_CORTO_CONFIG");
 
     // 4. La sesion en RAM conserva el texto original
-    boolean bodyInSession = sessionContainsText("TEXTO_CORTO_CONFIG");
+    boolean bodyInRecentMemory = recentMemoryContainsText("TEXTO_CORTO_CONFIG");
 
     // 5. No debe haber ningun aviso efimero activo
     boolean noNotification = !hasEphemeralNotification();
@@ -373,7 +373,7 @@ public class ReprojectionMemoryTest extends AbstractScriptedTest {
     return notTrimmed
             && isFull
             && bodyInProjected
-            && bodyInSession
+            && bodyInRecentMemory
             && noNotification;
   }
 

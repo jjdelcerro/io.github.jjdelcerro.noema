@@ -1,25 +1,23 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Interface.java to edit this template
- */
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning;
 
 import dev.langchain4j.data.message.ChatMessage;
-import io.github.jjdelcerro.noema.lib.persistence.CheckPoint;
 import io.github.jjdelcerro.noema.lib.persistence.Turn;
 import java.time.LocalDateTime;
 import java.util.List;
+import io.github.jjdelcerro.noema.lib.persistence.CompactedMemory;
 
 /**
  *
+ * TODO: Antes Session, habria que actualizar la documentacion con este cambio
+ * 
  * @author jjdelcerro
  */
-public interface Session {
+public interface RecentMemory {
 
     /**
      * Interfaz publica para marcas de compactacion.
      */
-    public interface SessionMark {
+    public interface RecentMemoryMark {
 
         int getTurnId();
 
@@ -34,17 +32,17 @@ public interface Session {
     
     public boolean isEmpty();
 
-    SessionMark getCompactMark();
+    RecentMemoryMark getCompactMark();
 
-    List<ChatMessage> getContextMessages(CheckPoint checkpoint, String systemPrompt);
+    List<ChatMessage> getContextMessages(CompactedMemory checkpoint, String systemPrompt);
 
     LocalDateTime getLastInteractionTime();
 
     List<ChatMessage> getMessages();
 
-    SessionMark getNewestMark();
+    RecentMemoryMark getNewestMark();
 
-    SessionMark getOldestMark();
+    RecentMemoryMark getOldestMark();
 
     String getSubchannel();
 
@@ -58,7 +56,7 @@ public interface Session {
      */
     boolean needCompaction();
 
-    void remove(SessionMark mark1, SessionMark mark2);
+    void remove(RecentMemoryMark mark1, RecentMemoryMark mark2);
 
     void save();
 

@@ -17,8 +17,6 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.LookupTurnTool;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.SearchFullHistoryTool;
-import io.github.jjdelcerro.noema.lib.persistence.CheckPoint;
-import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
 import io.github.jjdelcerro.noema.lib.persistence.Turn;
 
 import java.sql.SQLException;
@@ -49,7 +47,7 @@ import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.Location
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.TimeTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.WeatherTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.WebGetTikaTool;
-import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryServiceImpl;
+import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryCompactionServiceImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
 import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorEventUser;
@@ -88,6 +86,12 @@ import java.util.UUID;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
+import io.github.jjdelcerro.noema.lib.AgentActions;
+import static io.github.jjdelcerro.noema.lib.AgentActions.COMPACT_REASONING_FULL_MEMORY;
+import static io.github.jjdelcerro.noema.lib.AgentActions.COMPACT_REASONING_MEMORY;
+import io.github.jjdelcerro.noema.lib.persistence.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.persistence.CompactedMemory;
+import java.util.function.Function;
 
 /**
  * Orquestador principal del sistema. Gestiona el bucle de razonamiento, la
@@ -113,12 +117,12 @@ public class ReasoningServiceImpl implements ReasoningService {
 
   private final AgentServiceFactory factory;
   private final Agent agent;
-  private final SourceOfTruth sourceOfTruth;
-  private final Map<String, Session> sessions;
+  private final EpisodicMemory episodicMemory;
+  private final Map<String, RecentMemory> recentMemories;
   private Agent.ChatModel model;
   private boolean running;
 
-  private Map<String, CheckPoint> activesCheckPoint;
+  private Map<String, CompactedMemory> activesCompactedMemories;
 
   // Registro de herramientas
   private final Map<String, AvailableAgentTool> availableTools = new LinkedHashMap<>();
@@ -126,47 +130,47 @@ public class ReasoningServiceImpl implements ReasoningService {
   public ReasoningServiceImpl(AgentServiceFactory factory, Agent agent) {
     this.factory = factory;
     this.agent = agent;
-    this.sourceOfTruth = agent.getSourceOfTruth();
-    this.sessions = new HashMap<>();
-    this.activesCheckPoint = new HashMap<>();
+    this.episodicMemory = agent.getEpisodicMemory();
+    this.recentMemories = new HashMap<>();
+    this.activesCompactedMemories = new HashMap<>();
     this.running = false;
     this.currentSubchannel = DEFAULT_SUBCHANNEL;
   }
 
-  public Session createSession(String subchannel) {
-    SessionImpl session = new SessionImpl(
+  public RecentMemory createRecentMemory(String subchannel) {
+    RecentMemoryImpl recentMemory = new RecentMemoryImpl(
             agent.getPaths().getDataFolder(),
             agent.getSettings(),
             subchannel
     );
-    return session;
+    return recentMemory;
   }
 
-  private Session getSession(String subchannel) {
-    Session session = this.sessions.get(subchannel);
-    if (session == null) {
-      session = this.createSession(subchannel);
-      this.sessions.put(subchannel, session);
+  private RecentMemory getRecentMemory(String subchannel) {
+    RecentMemory recentMemory = this.recentMemories.get(subchannel);
+    if (recentMemory == null) {
+      recentMemory = this.createRecentMemory(subchannel);
+      this.recentMemories.put(subchannel, recentMemory);
     }
-    return session;
+    return recentMemory;
   }
 
-  public CheckPoint getActiveCheckPoint(String subchannel) {
-    CheckPoint checkPoint = this.activesCheckPoint.get(subchannel);
-    if (checkPoint == null) {
+  public CompactedMemory getActiveCompactedMemory(String subchannel) {
+    CompactedMemory compactedMemory = this.activesCompactedMemories.get(subchannel);
+    if (compactedMemory == null) {
       try {
-        checkPoint = sourceOfTruth.getLatestCheckPoint(subchannel);
+        compactedMemory = episodicMemory.getLatestCompactedMemory(subchannel);
       } catch (Exception e) {
-        LOGGER.warn("No se ha podido recuperar el ultimo checkpoint", e);
+        LOGGER.warn("No se ha podido recuperar el ultimo CompactedMemory", e);
       }
-      this.activesCheckPoint.put(subchannel, checkPoint);
+      this.activesCompactedMemories.put(subchannel, compactedMemory);
     }
-    return checkPoint;
+    return compactedMemory;
   }
 
-  private CheckPoint setActiveCheckPoint(String subchannel, CheckPoint checkPoint) {
-    this.activesCheckPoint.put(subchannel, checkPoint);
-    return checkPoint;
+  private CompactedMemory setActiveCompactedMemory(String subchannel, CompactedMemory compactedMemory) {
+    this.activesCompactedMemories.put(subchannel, compactedMemory);
+    return compactedMemory;
   }
 
   @Override
@@ -200,14 +204,14 @@ public class ReasoningServiceImpl implements ReasoningService {
         return true;
       }
     });
-    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, "COMPACT_REASONING_SESSION") {
+    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, COMPACT_REASONING_MEMORY) {
       @Override
       public boolean perform(AgentSettings settings) {
-        for (Session session : sessions.values()) {
+        for (RecentMemory recentMemory : recentMemories.values()) {
           try {
-            SessionImpl.SessionMark mark1 = session.getOldestMark();
-            SessionImpl.SessionMark mark2 = session.getCompactMark();
-            performCompaction(session, mark1, mark2);
+            RecentMemoryImpl.RecentMemoryMark mark1 = recentMemory.getOldestMark();
+            RecentMemoryImpl.RecentMemoryMark mark2 = recentMemory.getCompactMark();
+            performCompaction(recentMemory, mark1, mark2);
           } catch (Exception ex) {
             LOGGER.warn("Can't compact conversation", ex);
             return false;
@@ -216,14 +220,14 @@ public class ReasoningServiceImpl implements ReasoningService {
         return true;
       }
     });
-    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, "COMPACT_REASONING_FULL_SESSION") {
+    this.agent.getActions().addAction(new AbstractAgentAction(this.agent, COMPACT_REASONING_FULL_MEMORY) {
       @Override
       public boolean perform(AgentSettings settings) {
-        for (Session session : sessions.values()) {
+        for (RecentMemory recentMemory : recentMemories.values()) {
           try {
-            SessionImpl.SessionMark mark1 = session.getOldestMark();
-            SessionImpl.SessionMark mark2 = session.getNewestMark();
-            performCompaction(session, mark1, mark2);
+            RecentMemoryImpl.RecentMemoryMark mark1 = recentMemory.getOldestMark();
+            RecentMemoryImpl.RecentMemoryMark mark2 = recentMemory.getNewestMark();
+            performCompaction(recentMemory, mark1, mark2);
           } catch (Exception ex) {
             LOGGER.warn("Can't compact conversation", ex);
             return false;
@@ -365,12 +369,12 @@ public class ReasoningServiceImpl implements ReasoningService {
     return this.agent.getConsole(subchannel);
   }
 
-  private String executeTool(Session session, ToolExecutionRequest request) {
+  private String executeTool(RecentMemory recentMemory, ToolExecutionRequest request) {
     String toolName = request.name();
     String args = request.arguments();
 
     AvailableAgentTool availableTool = availableTools.get(toolName);
-    String subchannel = session.getSubchannel();
+    String subchannel = recentMemory.getSubchannel();
     if (availableTool != null && availableTool.tool != null) {
       AgentTool tool = availableTool.tool;
       if (tool.getMode() != AgentTool.MODE_READ && agent.getAccessControl().isHumanConfirmationRequired()) {
@@ -407,14 +411,14 @@ public class ReasoningServiceImpl implements ReasoningService {
     return tool.tool.getType();
   }
 
-  private void performCompaction(Session session) throws SQLException {
-    SessionImpl.SessionMark mark1 = session.getOldestMark();
-    SessionImpl.SessionMark mark2 = session.getCompactMark();
-    this.performCompaction(session, mark1, mark2);
+  private void performCompaction(RecentMemory recentMemory) throws SQLException {
+    RecentMemoryImpl.RecentMemoryMark mark1 = recentMemory.getOldestMark();
+    RecentMemoryImpl.RecentMemoryMark mark2 = recentMemory.getCompactMark();
+    this.performCompaction(recentMemory, mark1, mark2);
   }
 
-  private void performCompaction(Session session, SessionImpl.SessionMark mark1, SessionImpl.SessionMark mark2) throws SQLException {
-    String subchannel = session.getSubchannel();
+  private void performCompaction(RecentMemory recentMemory, RecentMemory.RecentMemoryMark mark1, RecentMemory.RecentMemoryMark mark2) throws SQLException {
+    String subchannel = recentMemory.getSubchannel();
     this.console(subchannel).printSystemLog("Iniciando proceso de compactación de memoria...");
 
     if (mark1 == null || mark2 == null) {
@@ -425,7 +429,7 @@ public class ReasoningServiceImpl implements ReasoningService {
     }
 
     // Recuperar turnos de la DB usando el rango de IDs de las marcas
-    List<Turn> compactTurns = this.sourceOfTruth.getTurnsByIds(subchannel, mark1.getTurnId(), mark2.getTurnId());
+    List<Turn> compactTurns = this.episodicMemory.getTurnsByIds(subchannel, mark1.getTurnId(), mark2.getTurnId());
 
     if (compactTurns.isEmpty()) {
       String msg = String.format("No se han podido recuperar los turnos a compactar (turns[%s:%s]).", mark1.getTurnId(), mark2.getTurnId());
@@ -434,20 +438,20 @@ public class ReasoningServiceImpl implements ReasoningService {
       return;
     }
 
-    // MemoryManager crea el CheckPoint
-    MemoryServiceImpl memory = (MemoryServiceImpl) this.agent.getService(MemoryServiceImpl.NAME);
-    CheckPoint newCheckPoint = memory.compact(subchannel, this.getActiveCheckPoint(subchannel), compactTurns);
+    // MemoryCompactionService crea el CompactedMemory
+    MemoryCompactionServiceImpl memoryCompactionService = (MemoryCompactionServiceImpl) this.agent.getService(MemoryCompactionServiceImpl.NAME);
+    CompactedMemory newCompactedMemory = memoryCompactionService.compact(subchannel, this.getActiveCompactedMemory(subchannel), compactTurns);
 
-    // SourceOfTruth persiste
-    sourceOfTruth.add(newCheckPoint);
+    // episodicMemory persiste
+    episodicMemory.add(newCompactedMemory);
 
-    // Limpieza de Sesion (Borrar mensajes ya compactados)
-    session.remove(mark1, mark2);
+    // Limpieza de la RecentMemory (Borrar mensajes ya compactados)
+    recentMemory.remove(mark1, mark2);
 
     // Actualizar punteros del Agente
-    this.setActiveCheckPoint(subchannel, newCheckPoint);
+    this.setActiveCompactedMemory(subchannel, newCompactedMemory);
 
-    this.console(subchannel).printSystemLog("Memoria compactada con éxito. Nuevo CheckPoint ID: " + newCheckPoint.getId());
+    this.console(subchannel).printSystemLog("Memoria compactada con éxito. Nuevo CompactedMemory ID: " + newCompactedMemory.getId());
   }
 
   @Override
@@ -533,11 +537,14 @@ public class ReasoningServiceImpl implements ReasoningService {
 
   @Override
   public int estimateMessagesTokenCount(String subchannel) {
-    List<ChatMessage> messages = this.getSession(subchannel).getContextMessages(
-            this.getActiveCheckPoint(subchannel),
-            this.getLastestSystemPrompt()
-    );
-    return this.agent.estimateTokenCount(messages, null);
+      ProjectedMemory projection = new ProjectedMemoryImpl(
+              this.agent,
+              this::getAvailableTool,
+              this.getRecentMemory(subchannel),
+              this.getActiveCompactedMemory(subchannel),
+              this.getLastestSystemPrompt()
+      );
+      return this.agent.estimateTokenCount(projection.getMessages(), null);
   }
 
   @Override
@@ -619,16 +626,16 @@ public class ReasoningServiceImpl implements ReasoningService {
     this.running = false;
   }
 
-  private void checkAndInsertTimestamp(String subchannel, Session session) {
+  private void checkAndInsertTimestamp(String subchannel, RecentMemory recentMemory) {
     LocalDateTime now = LocalDateTime.now();
     // FIXME: ¿¿ Deberia usarse el SensorsService.getSensorStatistics(USER_SENSOR_NAME).getLastEventTimestamp() 
-    // en lugar de session.getLastInteractionTime() y quitar de la session LastInteractionTime ??
-    if (session.getLastInteractionTime() != null && !session.isEmpty()) {
+    // en lugar de recentMemory.getLastInteractionTime() y quitar de la recentMemory LastInteractionTime ??
+    if (recentMemory.getLastInteractionTime() != null && !recentMemory.isEmpty()) {
       // Introduccion de la percepcion temporal.
-      Duration delta = Duration.between(session.getLastInteractionTime(), now);
+      Duration delta = Duration.between(recentMemory.getLastInteractionTime(), now);
       if (delta.toHours() >= 1) {
         SensorsServiceImpl sensors = (SensorsServiceImpl) agent.getService(SensorsService.NAME);
-        String content = "Ha pasado " + DateUtils.timeAgo(session.getLastInteractionTime()) + " desde la última interacción con el usuario.";
+        String content = "Ha pasado " + DateUtils.timeAgo(recentMemory.getLastInteractionTime()) + " desde la última interacción con el usuario.";
         ConsumableSensorEvent timerEvent = sensors.createSensorEvent(
                 SYSTEMCLOCK_SENSOR_NAME,
                 content,
@@ -638,8 +645,8 @@ public class ReasoningServiceImpl implements ReasoningService {
                 now,
                 null
         );
-        session.add(timerEvent.getChatMessage());
-        session.add(timerEvent.getResponseMessage());
+        recentMemory.add(timerEvent.getChatMessage());
+        recentMemory.add(timerEvent.getResponseMessage());
       }
     }
   }
@@ -679,19 +686,19 @@ public class ReasoningServiceImpl implements ReasoningService {
       this.currentSubchannel = event.getSubchannel();
       String channel = event.getChannel();
       String textUser = null;
-      Session session = this.getSession(currentSubchannel);
+      RecentMemory recentMemory = this.getRecentMemory(currentSubchannel);
 
       if (event instanceof SensorEventUser) {
         // Caso Usuario: Guardamos el prompt para el turno final 'chat'
-        this.checkAndInsertTimestamp(currentSubchannel, session);
+        this.checkAndInsertTimestamp(currentSubchannel, recentMemory);
         textUser = event.getContents();
-        session.add(event.getChatMessage());
+        recentMemory.add(event.getChatMessage());
       } else {
         // Caso Sensor: Inyectamos el engaño al protocolo y persistimos el turno de observación
-        session.add(event.getChatMessage());
-        session.add(event.getResponseMessage());
+        recentMemory.add(event.getChatMessage());
+        recentMemory.add(event.getResponseMessage());
 
-        Turn obsTurn = this.sourceOfTruth.createTurn(
+        Turn obsTurn = this.episodicMemory.createTurn(
                 LocalDateTime.now(),
                 "tool_execution",
                 currentSubchannel,
@@ -700,26 +707,33 @@ public class ReasoningServiceImpl implements ReasoningService {
                 event.getResponseMessage().toString(),
                 null
         );
-        this.sourceOfTruth.add(obsTurn);
-        session.consolideTurn(obsTurn);
+        this.episodicMemory.add(obsTurn);
+        recentMemory.consolideTurn(obsTurn);
       }
       toolExecutionRetries = 0;
       boolean turnFinished = false;
       while (!turnFinished && this.isRunning()) {
-        List<ChatMessage> context = session.getContextMessages(
-                this.getActiveCheckPoint(currentSubchannel),
-                getBaseSystemPrompt()
+        recentMemory = this.getRecentMemory(currentSubchannel);
+        CompactedMemory compactedMemory = this.getActiveCompactedMemory(currentSubchannel);
+        ProjectedMemory projectedMemory = new ProjectedMemoryImpl(
+                this.agent,
+                this::getAvailableTool,
+                recentMemory,
+                compactedMemory,
+                this.getBaseSystemPrompt()
         );
-        this.prepareContextForLLM(session, context);
-        this.dump_context(session, context);
 
-        Response<AiMessage> response = this.getModel().generate(context, this.getToolSpecifications(), abort);
+        Timestamp tm = Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC));
+        Path debugPath = agent.getPaths().getTempFolder().resolve("context-" + currentSubchannel + "-" + tm.toString() + ".json");
+        projectedMemory.dump(debugPath);
+
+        Response<AiMessage> response = this.getModel().generate(projectedMemory.getMessages(), this.getToolSpecifications(), abort);        
         AiMessage aiMessage = response.content();
-        session.add(aiMessage);
+        recentMemory.add(aiMessage);
 
         if (aiMessage.hasToolExecutionRequests()) {
           for (ToolExecutionRequest request : aiMessage.toolExecutionRequests()) {
-            String result = executeTool(session, request);
+            String result = executeTool(recentMemory, request);
 
             String contentType;
             switch(this.getToolType(request.name())) {
@@ -733,7 +747,7 @@ public class ReasoningServiceImpl implements ReasoningService {
               default:
                 contentType = "tool_execution";
             }
-            Turn toolTurn = this.sourceOfTruth.createTurn(
+            Turn toolTurn = this.episodicMemory.createTurn(
                     LocalDateTime.now(),
                     contentType,
                     currentSubchannel,
@@ -744,16 +758,16 @@ public class ReasoningServiceImpl implements ReasoningService {
                     result,
                     null
             );
-            this.sourceOfTruth.add(toolTurn);
-            session.add(ToolExecutionResultMessage.from(request, result));
-            session.consolideTurn(toolTurn);
+            this.episodicMemory.add(toolTurn);
+            recentMemory.add(ToolExecutionResultMessage.from(request, result));
+            recentMemory.consolideTurn(toolTurn);
           }
           toolExecutionRetries = 0;
         } else {
           String aiText = aiMessage.text();
           finalLlmResponse.append(aiText); // No esta claro que sea necesario mantener el finalLlmResponse
           this.console(currentSubchannel).printModelResponse(aiText);
-          Turn responseTurn = this.sourceOfTruth.createTurn(
+          Turn responseTurn = this.episodicMemory.createTurn(
                   LocalDateTime.now(),
                   "chat",
                   currentSubchannel,
@@ -764,31 +778,31 @@ public class ReasoningServiceImpl implements ReasoningService {
                   null,
                   null
           );
-          this.sourceOfTruth.add(responseTurn);
-          session.consolideTurn(responseTurn);
+          this.episodicMemory.add(responseTurn);
+          recentMemory.consolideTurn(responseTurn);
           if (response.finishReason() == FinishReason.TOOL_EXECUTION) {
             // El modelo anunció una tool en texto pero no la ejecutó formalmente
             // Reinyectamos forzando la ejecución
             if (toolExecutionRetries++ > 3) {
               throw new RuntimeException("Too many retries for executing tool");
             }
-            session.add(new UserMessage("(reintenta la llamada a la herramienta sin ninguna explicacion)"));
+            recentMemory.add(new UserMessage("(reintenta la llamada a la herramienta sin ninguna explicacion)"));
           } else {
             turnFinished = true;
             toolExecutionRetries = 0;
           }
         }
-        if (session.needCompaction()) {
-          performCompaction(session);
+        if (recentMemory.needCompaction()) {
+          performCompaction(recentMemory);
         }
       }
       if (textUser != null) {
-        session.setLastInteractionTime(LocalDateTime.now());
+        recentMemory.setLastInteractionTime(LocalDateTime.now());
       }
-      session.save();
+      recentMemory.save();
 
-      if (session.needCompaction()) {
-        performCompaction(session);
+      if (recentMemory.needCompaction()) {
+        performCompaction(recentMemory);
       }
     } finally {
       try {
@@ -802,151 +816,9 @@ public class ReasoningServiceImpl implements ReasoningService {
     }
   }
 
-  private int getNumberOfMessagesToKeep() {
-    return 20;
-  }
-
-  private int getNumberOfMessagesToNotify() {
-    int n = getNumberOfMessagesToKeep();
-    return n - (n / 3);
-  }
-
-  private int getMinimumSizeForTrim() {
-    return 1024;
-  }
-
-  private List<String> getResourcesPendingAnnotation(List<ChatMessage> messages) {
-    int total = messages.size();
-    int keep = getNumberOfMessagesToKeep(); // Ej: 20
-    if (total < keep) {
-      return Collections.emptyList(); // No hay suficientes mensajes
-    }
-
-    int riskStartIdx = total - keep;       // Inicio de la zona de riesgo
-    int riskEndIdx = total - (keep / 2);   // Fin de la zona de riesgo
-
-    // PASO 1: Anotar en qué turno exacto se tomó la ÚLTIMA nota de cada recurso.
-    // Recorremos todo el contexto para tener la información más actualizada posible.
-    Map<String, Integer> lastAnnotatedIdx = new HashMap<>();
-    for (int i = 0; i < total; i++) {
-      ChatMessage msg = messages.get(i);
-      if (msg instanceof ToolExecutionResultMessage toolMsg) {
-        AgentTool tool = this.getAvailableTool(toolMsg.toolName());
-        if (tool instanceof AnnotateObservationTool annotateTool) {
-          String resourceId = annotateTool.getResourceIdFromResultMessage(toolMsg);
-          if (StringUtils.isNotBlank(resourceId)) {
-            lastAnnotatedIdx.put(resourceId, i); // Se actualiza con el índice más reciente
-          }
-        }
-      }
-    }
-
-    // PASO 2: Buscar lecturas "huérfanas" SOLO dentro de la zona de riesgo.
-    Set<String> pending = new LinkedHashSet<>(); // Usamos Set para que no haya duplicados
-    for (int i = riskStartIdx; i < riskEndIdx; i++) {
-      ChatMessage msg = messages.get(i);
-      if (msg instanceof ToolExecutionResultMessage toolMsg) {
-        AgentTool tool = this.getAvailableTool(toolMsg.toolName());
-
-        // Si es una herramienta de lectura paginada...
-        if (tool instanceof AbstractPaginatedAgentTool paginatedTool) {
-          String text = toolMsg.text();
-
-          // ... y el texto es lo bastante grande como para sufrir poda
-          if (text != null && text.length() > this.getMinimumSizeForTrim()) {
-            String resourceId = paginatedTool.getResourceIdFromResultMessage(toolMsg);
-
-            if (StringUtils.isNotBlank(resourceId)) {
-              // ¿Cuándo fue la última vez que el agente anotó sobre este archivo?
-              int lastAnnotated = lastAnnotatedIdx.getOrDefault(resourceId, -1);
-
-              // Si esta lectura concreta (índice i) ocurrió DESPUÉS de la última nota,
-              // o si nunca se ha anotado, significa que la información de ESTE bloque
-              // está a punto de perderse sin haber sido asimilada.
-              if (i > lastAnnotated) {
-                pending.add(resourceId);
-              }
-            }
-          }
-        }
-      }
-    }
-    return new ArrayList<>(pending);
-  }
-
-  private void prepareContextForLLM(Session session, List<ChatMessage> context) {
-    for (int i = 0; i < context.size(); i++) {
-      if (i > context.size() - this.getNumberOfMessagesToKeep()) {
-        break;
-      }
-      ChatMessage message = context.get(i);
-      if (message instanceof ToolExecutionResultMessage toolResult) {
-        AvailableAgentTool tool = availableTools.get(toolResult.toolName());
-        if (tool != null && tool.tool != null) {
-          String text = toolResult.text();
-          if (text.length() > this.getMinimumSizeForTrim()) {
-            TrimResultType trimResultType = TrimResultType.Trim;
-            text = tool.tool.trimResult(text, trimResultType);
-            if (text != null) {
-              ToolExecutionResultMessage x = ToolExecutionResultMessage.from(toolResult.id(), toolResult.toolName(), text);
-              context.set(i, x);
-            }
-          }
-        }
-      }
-    }
-
-    List<String> resourcesPendingAnnotation = getResourcesPendingAnnotation(context);
-    if (!resourcesPendingAnnotation.isEmpty()) {
-      String responseContents = StringUtils.replace("""
-Has leído informacion de recursos sin extraer y consolidar información relevante. 
-Si hay datos que deban conservarse relacionados con estos recursos usa la herramienta 'annotate_observation' con el parámetro 'resource_id' correspondiente.
-Los recursos involucrados son: {RESOURCES_LIST}
-                           """, "{RESOURCES_LIST}", StringUtils.join(resourcesPendingAnnotation, ","));
-      Map<String, Object> responseMap = Map.of(
-              "event_time", DateUtils.now(),
-              "current_time", DateUtils.now(),
-              "channel", SYSTEMNOTIFICATION_SENSOR_NAME,
-              "status", "ok",
-              "priority", PRIORITY_HIGH,
-              "contents", responseContents
-      );
-      Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-      ToolExecutionRequest request = ToolExecutionRequest.builder()
-              .id("AnnotateSuggestion" + "_" + UUID.randomUUID().toString().replace("-", ""))
-              .name("pool_event")
-              .arguments("{}")
-              .build();
-      context.add(AiMessage.from(request));
-      context.add(ToolExecutionResultMessage.from(request, GSON.toJson(responseMap)));
-    }
-
-  }
-
-  private void dump_context(Session session, List<ChatMessage> context) {
-    // Guardo en disco como ha quedado el ultimo contexto para depuracion
-    Gson gson = new GsonBuilder()
-            .setPrettyPrinting()
-            .registerTypeAdapter(ChatMessage.class, new SessionImpl.ChatMessageAdapter())
-            .registerTypeAdapter(Content.class, new SessionImpl.ContentAdapter())
-            .enableComplexMapKeySerialization()
-            .create();
-    Timestamp tm = Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC));
-
-    Path tempPath = agent.getPaths().getTempFolder().resolve("context-" + session.getSubchannel() + "-" + tm.toString() + ".json");
-    try {
-      try (Writer writer = Files.newBufferedWriter(tempPath, StandardCharsets.UTF_8)) {
-        gson.toJson(context, writer);
-        writer.flush();
-      }
-    } catch (IOException e) {
-      throw new RuntimeException("Error guardando contexto: " + e.getMessage(), e);
-    }
-  }
-
   @Override
   public int getTurnsCount(String subchannel) {
-    return this.getSession(subchannel).getTurnsCount();
+    return this.getRecentMemory(subchannel).getTurnsCount();
   }
 
   public String getCurrentSubchannel() {

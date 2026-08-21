@@ -41,7 +41,7 @@ public abstract class AbstractScriptedTest {
 
   protected abstract ScriptedChatModel getScriptedModel();
 
-  protected abstract Session getSession();
+  protected abstract RecentMemory getRecentMemory();
 
   protected abstract ReasoningServiceImpl getReasoningService();
 
@@ -302,12 +302,12 @@ public abstract class AbstractScriptedTest {
     return false;
   }
 
-  protected boolean sessionContainsText(String textFragment) {
-    Session currentSession = getSession();
-    if (currentSession == null) {
+  protected boolean recentMemoryContainsText(String textFragment) {
+    RecentMemory currentRecentMemory = getRecentMemory();
+    if (currentRecentMemory == null) {
       return false;
     }
-    return contextContainsText(currentSession.getMessages(), textFragment);
+    return contextContainsText(currentRecentMemory.getMessages(), textFragment);
   }
 
   protected boolean hasEphemeralNotification() {

@@ -6,7 +6,7 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.impl.persistence.FakeSession;
+import io.github.jjdelcerro.noema.lib.impl.persistence.FakeRecentMemory;
 import io.github.jjdelcerro.noema.lib.impl.persistence.FakeTurn;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,14 +21,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class SessionCompactionBoundaryTest {
+public class RecentMemoryCompactionBoundaryTest {
 
-    private FakeSession session;
+    private FakeRecentMemory recentMemory;
 
     @BeforeEach
     public void setUp() {
-        session = new FakeSession(Agent.DEFAULT_SUBCHANNEL);
-        session.setNeedCompaction(false);
+        recentMemory = new FakeRecentMemory(Agent.DEFAULT_SUBCHANNEL);
+        recentMemory.setNeedCompaction(false);
     }
 
     // =========================================================================
@@ -36,14 +36,14 @@ public class SessionCompactionBoundaryTest {
     // =========================================================================
 
     private void addChatTurn(int turnId, String userText, String aiText) {
-        session.add(UserMessage.from(userText));
-        session.add(AiMessage.from(aiText));
-        session.consolideTurn(new FakeTurn(turnId, "chat", userText, aiText));
+        recentMemory.add(UserMessage.from(userText));
+        recentMemory.add(AiMessage.from(aiText));
+        recentMemory.consolideTurn(new FakeTurn(turnId, "chat", userText, aiText));
     }
 
     private void addMultiToolTurn(int startTurnId, String userText, String... toolNames) {
         // 1. Mensaje de usuario
-        session.add(UserMessage.from(userText));
+        recentMemory.add(UserMessage.from(userText));
 
         // 2. AiMessage con multiples llamadas a herramientas en paralelo
         List<ToolExecutionRequest> requests = new ArrayList<>();
@@ -55,14 +55,14 @@ public class SessionCompactionBoundaryTest {
                     .build());
         }
         AiMessage aiMessage = AiMessage.from(requests);
-        session.add(aiMessage);
+        recentMemory.add(aiMessage);
 
         // 3. Resultados de cada herramienta con consolidacion progresiva
         int currentTurnId = startTurnId;
         for (ToolExecutionRequest req : requests) {
             ToolExecutionResultMessage resultMsg = ToolExecutionResultMessage.from(req, "{\"status\":\"ok\"}");
-            session.add(resultMsg);
-            session.consolideTurn(new FakeTurn(currentTurnId++, "tool_execution", null, null));
+            recentMemory.add(resultMsg);
+            recentMemory.consolideTurn(new FakeTurn(currentTurnId++, "tool_execution", null, null));
         }
     }
 
@@ -78,22 +78,22 @@ public class SessionCompactionBoundaryTest {
             addChatTurn(i, "Usuario " + i, "Modelo " + i);
         }
 
-        assertEquals(20, session.getMessages().size());
+        assertEquals(20, recentMemory.getMessages().size());
 
         // mid = 20 / 2 = 10 (UserMessage del turno 6).
         // getCompactMark() debe avanzar hasta el indice 11 (AiMessage del turno 6).
-        Session.SessionMark compactMark = session.getCompactMark();
+        RecentMemory.RecentMemoryMark compactMark = recentMemory.getCompactMark();
         assertNotNull(compactMark);
         assertEquals(6, compactMark.getTurnId());
         assertTrue(compactMark.getMessage() instanceof AiMessage);
 
         // Ejecutamos el recorte
-        Session.SessionMark oldestMark = session.getOldestMark();
-        session.remove(oldestMark, compactMark);
+        RecentMemory.RecentMemoryMark oldestMark = recentMemory.getOldestMark();
+        recentMemory.remove(oldestMark, compactMark);
 
         // Verificamos el estado de la sesion restante:
         // Deben quedar 8 mensajes (turnos 7 al 10) y el primero debe ser el UserMessage del turno 7
-        List<ChatMessage> remaining = session.getMessages();
+        List<ChatMessage> remaining = recentMemory.getMessages();
         assertEquals(8, remaining.size());
         assertTrue(remaining.get(0) instanceof UserMessage);
         assertEquals("Usuario 7", ((UserMessage) remaining.get(0)).singleText());
@@ -109,14 +109,14 @@ public class SessionCompactionBoundaryTest {
 
         // mid = 18 / 2 = 9 (AiMessage del turno 5).
         // Debe cerrar exactamente en el indice 9 (turno 5 completo).
-        Session.SessionMark compactMark = session.getCompactMark();
+        RecentMemory.RecentMemoryMark compactMark = recentMemory.getCompactMark();
         assertNotNull(compactMark);
         assertEquals(5, compactMark.getTurnId());
 
-        session.remove(session.getOldestMark(), compactMark);
+        recentMemory.remove(recentMemory.getOldestMark(), compactMark);
 
         // La sesion restante debe empezar limpiamente con el UserMessage del turno 6
-        List<ChatMessage> remaining = session.getMessages();
+        List<ChatMessage> remaining = recentMemory.getMessages();
         assertEquals(8, remaining.size());
         assertTrue(remaining.get(0) instanceof UserMessage);
         assertEquals("Usuario 6", ((UserMessage) remaining.get(0)).singleText());
@@ -139,18 +139,18 @@ public class SessionCompactionBoundaryTest {
             addChatTurn(i, "Usuario " + i, "Modelo " + i);
         }
 
-        assertEquals(20, session.getMessages().size());
+        assertEquals(20, recentMemory.getMessages().size());
 
         // mid = 20 / 2 = 10 (UserMessage del turno 6).
         // En el bug anterior, si mid caia en 8 (ResultA - Turn 4), cortaba dejando ResultB (indice 9) huerfano.
         // Con la correccion, getCompactMark() DEBE avanzar obligatoriamente hasta consumir ResultB si corta el bloque.
-        Session.SessionMark compactMark = session.getCompactMark();
+        RecentMemory.RecentMemoryMark compactMark = recentMemory.getCompactMark();
         assertNotNull(compactMark);
 
-        session.remove(session.getOldestMark(), compactMark);
+        recentMemory.remove(recentMemory.getOldestMark(), compactMark);
 
         // Verificamos que la sesion restante NUNCA empieza con un ToolExecutionResultMessage
-        List<ChatMessage> remaining = session.getMessages();
+        List<ChatMessage> remaining = recentMemory.getMessages();
         assertFalse(remaining.isEmpty());
         assertFalse(remaining.get(0) instanceof ToolExecutionResultMessage,
                 "El primer mensaje de la sesion restante no puede ser un ToolExecutionResultMessage huerfano.");
@@ -166,18 +166,18 @@ public class SessionCompactionBoundaryTest {
             addChatTurn(i, "Usuario " + i, "Modelo " + i);
         }
 
-        assertEquals(80, session.getMessages().size());
+        assertEquals(80, recentMemory.getMessages().size());
 
         // mid = 80 / 2 = 40 (UserMessage del turno 21).
         // Debe avanzar al indice 41 (AiMessage del turno 21).
-        Session.SessionMark compactMark = session.getCompactMark();
+        RecentMemory.RecentMemoryMark compactMark = recentMemory.getCompactMark();
         assertNotNull(compactMark);
         assertEquals(21, compactMark.getTurnId());
 
-        session.remove(session.getOldestMark(), compactMark);
+        recentMemory.remove(recentMemory.getOldestMark(), compactMark);
 
         // Quedan 38 mensajes (turnos 22 al 40)
-        List<ChatMessage> remaining = session.getMessages();
+        List<ChatMessage> remaining = recentMemory.getMessages();
         assertEquals(38, remaining.size());
         assertTrue(remaining.get(0) instanceof UserMessage);
         assertEquals("Usuario 22", ((UserMessage) remaining.get(0)).singleText());

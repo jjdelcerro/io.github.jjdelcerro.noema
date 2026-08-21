@@ -7,7 +7,6 @@ import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
-import io.github.jjdelcerro.noema.lib.services.memory.MemoryService;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.ui.AgentUILocator;
@@ -23,6 +22,7 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.h2.tools.Server;
+import io.github.jjdelcerro.noema.lib.services.memory.MemoryCompactionService;
 
 /**
  *
@@ -135,7 +135,7 @@ public class BootUtils {
     AgentManager agentManager = AgentLocator.getAgentManager();
 
     AgentServiceFactory[] services = {
-      agentManager.getServiceFactory(MemoryService.ID),
+      agentManager.getServiceFactory(MemoryCompactionService.ID),
       agentManager.getServiceFactory(ReasoningService.ID)
     };
     for (AgentServiceFactory service : services) {

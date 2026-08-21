@@ -1,10 +1,8 @@
 package io.github.jjdelcerro.noema.lib.impl.persistence;
 
-import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
-import io.github.jjdelcerro.noema.lib.persistence.CheckPointException;
+import io.github.jjdelcerro.noema.lib.persistence.CompactedMemoryException;
 import io.github.jjdelcerro.noema.lib.persistence.TurnException;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.persistence.CheckPoint;
 import io.github.jjdelcerro.noema.lib.persistence.Turn;
 
 import java.io.FileWriter;
@@ -27,42 +25,46 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.github.jjdelcerro.noema.lib.persistence.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.persistence.CompactedMemory;
 
 /**
  * Repositorio central que gestiona la persistencia (H2) y la indexación
  * vectorial. Actúa como "Source of Truth" para el estado del agente.
+ * 
+ * TODO: Antes SourceOfTruthImpl, habria que actualizar la documentacion con este cambio 
  */
 @SuppressWarnings("UseSpecificCatch")
-public class SourceOfTruthImpl implements SourceOfTruth {
+public class EpisodicMemoryImpl implements EpisodicMemory {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(SourceOfTruthImpl.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(EpisodicMemoryImpl.class);
 
   private static final int MAX_DB_TEXT_SIZE = 2048; // 2KB
 
-  private static final String CHECKPOINTS_FOLDER = "checkpoints";
+  private static final String COMPACTEDMEMORY_FOLDER = "compactedmemory";
   private static final String CSVLOG_FILE = "turns.csv";
 
   private final Counter turnCounter;
-  private final Counter checkpointCounter;
+  private final Counter compactedMemoryCounter;
   private final Agent agent;
   
-  private SourceOfTruthImpl(Agent agent) {
+  private EpisodicMemoryImpl(Agent agent) {
     this.agent = agent;
     createTables();
-    this.turnCounter = Counter.from(this.getConnection(), "turnos");
-    this.checkpointCounter = Counter.from(this.getConnection(), "checkpoints");
+    this.turnCounter = Counter.from(this.getConnection(), "episodicmemory");
+    this.compactedMemoryCounter = Counter.from(this.getConnection(), "compactedmemory");
   }
 
-  public static SourceOfTruth from(Agent agent) {
-    return new SourceOfTruthImpl(agent);
+  public static EpisodicMemory from(Agent agent) {
+    return new EpisodicMemoryImpl(agent);
   }
 
   private Counter getTurnCounter() {
     return this.turnCounter;
   }
 
-  private Counter getCheckpointCounter() {
-    return this.checkpointCounter;
+  private Counter getCompactedMemoryCounter() {
+    return this.compactedMemoryCounter;
   }
 
   private ConnectionSupplier getConnection() {
@@ -80,9 +82,9 @@ public class SourceOfTruthImpl implements SourceOfTruth {
   private void createTables() {
 
     try (Connection conn = this.getConnection().get(); Statement stmt = conn.createStatement()) {
-      // Tabla de Turnos con soporte BLOB para vectores
+      // Tabla de episodicmemory con soporte BLOB para vectores
       stmt.execute(SQLProvider.from(getConnection()).get("SourceOfTtuth_createTables_turnos", """
-            CREATE TABLE IF NOT EXISTS turnos (
+            CREATE TABLE IF NOT EXISTS episodicmemory (
                 id INT PRIMARY KEY,
                 timestamp TIMESTAMP,
                 contenttype VARCHAR(50),
@@ -97,18 +99,18 @@ public class SourceOfTruthImpl implements SourceOfTruth {
             )                                                                                              
             """));
 
-      // Tabla de CheckPoints (solo metadatos)
+      // Tabla de CompactedMemory (solo metadatos)
       stmt.execute(SQLProvider.from(getConnection()).get("SourceOfTtuth_createTables_checkpoints", """
-                CREATE TABLE IF NOT EXISTS checkpoints (
+                CREATE TABLE IF NOT EXISTS compactedmemory (
                     id INT PRIMARY KEY,
-                    cp_first INT,
-                    cp_last INT,
+                    cm_first INT,
+                    cm_last INT,
                     timestamp TIMESTAMP,
                     subchannel VARCHAR(20)
                 )
             """));
     } catch (SQLException ex) {
-      throw new RuntimeException("Can't create tables turnos/checkpoints", ex);
+      throw new RuntimeException("Can't create tables episodicmemory/compactedmemory", ex);
     }
   }
 
@@ -156,7 +158,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
 
       String sql = SQLProvider.from(getConnection()).get("SourceOfTruth_add_turn",
               """
-                INSERT INTO turnos (id, timestamp, contenttype, subchannel, annotation_type, 
+                INSERT INTO episodicmemory (id, timestamp, contenttype, subchannel, annotation_type, 
                                   text_user, text_thinking, text_model, tool_call, tool_result, embedding_blob) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)                            
             """);
@@ -216,40 +218,40 @@ public class SourceOfTruthImpl implements SourceOfTruth {
   }
 
   /**
-   * Persiste los metadatos de un CheckPoint en la base de datos.
+   * Persiste los metadatos de un CompactedMemory en la base de datos.
    * <p>
    * Nota: El contenido textual (archivo .md) ya debe haber sido gestionado por
-   * la clase CheckPoint antes de llamar a este método.
+   * la clase CompactedMemory antes de llamar a este método.
    * <p>
    * Lógica de ID: - Si cp.getId() < 0: Se genera un nuevo ID usando el contador
-   * interno. @param checkpoint
+   * interno. @param compactedMemory
    */
   @Override
-  public synchronized void add(CheckPoint checkpoint) {
+  public synchronized void add(CompactedMemory compactedMemory) {
     try {
       // 1. Gestión del ID
-      int checkpointid = checkpoint.getId();
-      if (checkpointid < 0) {
-        checkpointid = this.getCheckpointCounter().get();
-        ((CheckPointImpl) checkpoint).setId(checkpointid);
+      int compactedMemoryId = compactedMemory.getId();
+      if (compactedMemoryId < 0) {
+        compactedMemoryId = this.getCompactedMemoryCounter().get();
+        ((CompactedMemoryImpl) compactedMemory).setId(compactedMemoryId);
       }
 
       // 2. Persistencia de metadatos
       String sql = SQLProvider.from(getConnection()).get(
               "SourceOfTtuth_add_checkpoint",
-              "INSERT INTO checkpoints (id, cp_first, cp_last, timestamp, subchannel) VALUES (?, ?, ?, ?, ?)"
+              "INSERT INTO compactedmemory (id, cm_first, cm_last, timestamp, subchannel) VALUES (?, ?, ?, ?, ?)"
       );
       try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
-        ps.setInt(1, checkpointid);
-        ps.setInt(2, checkpoint.getTurnFirst());
-        ps.setInt(3, checkpoint.getTurnLast());
-        ps.setTimestamp(4, Timestamp.valueOf(checkpoint.getTimestamp()));
-        ps.setString(5, checkpoint.getSubchannel());
+        ps.setInt(1, compactedMemoryId);
+        ps.setInt(2, compactedMemory.getTurnFirst());
+        ps.setInt(3, compactedMemory.getTurnLast());
+        ps.setTimestamp(4, Timestamp.valueOf(compactedMemory.getTimestamp()));
+        ps.setString(5, compactedMemory.getSubchannel());
         ps.executeUpdate();
       }
-      ((CheckPointImpl) checkpoint).saveTextToDisk();
+      ((CompactedMemoryImpl) compactedMemory).saveTextToDisk();
     } catch (Exception ex) {
-      throw new CheckPointException("Can't add turn", ex);
+      throw new CompactedMemoryException("Can't add turn", ex);
     }
   }
 
@@ -258,7 +260,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
     try {
       String sql = SQLProvider.from(getConnection()).get(
               "SourceOfTtuth_getTurnById",
-              "SELECT * FROM turnos WHERE id = ?"
+              "SELECT * FROM episodicmemory WHERE id = ?"
       );
       try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setInt(1, id);
@@ -275,17 +277,17 @@ public class SourceOfTruthImpl implements SourceOfTruth {
   }
 
   @Override
-  public synchronized CheckPoint getCheckPointById(int id) {
+  public synchronized CompactedMemory getCheckPointById(int id) {
     try {
       String sql = SQLProvider.from(getConnection()).get(
               "SourceOfTtuth_getCheckPointById",
-              "SELECT * FROM checkpoints WHERE id = ?"
+              "SELECT * FROM compactedmemory WHERE id = ?"
       );
       try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setInt(1, id);
         try (ResultSet rs = ps.executeQuery()) {
           if (rs.next()) {
-            return mapResultSetToCheckPoint(rs);
+            return mapResultSetToCompactedMemory(rs);
           }
         }
       }
@@ -297,17 +299,17 @@ public class SourceOfTruthImpl implements SourceOfTruth {
   }
 
   @Override
-  public synchronized CheckPoint getLatestCheckPoint(String subchannel) {
+  public synchronized CompactedMemory getLatestCompactedMemory(String subchannel) {
     try {
       String sql = SQLProvider.from(getConnection()).get(
               "SourceOfTtuth_getLatestCheckPoint",
-              "SELECT * FROM checkpoints WHERE subchannel = ? ORDER BY id DESC LIMIT 1"
+              "SELECT * FROM compactedmemory WHERE subchannel = ? ORDER BY id DESC LIMIT 1"
       );
       try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setString(1, subchannel);
         try (ResultSet rs = ps.executeQuery()) {
           if (rs.next()) {
-            return mapResultSetToCheckPoint(rs);
+            return mapResultSetToCompactedMemory(rs);
           }
           return null;
         }
@@ -319,7 +321,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
 
   /**
    * Recupera todos los turnos que aún no han sido consolidados en un
-   * CheckPoint.Estrategia: Obtener el último CP y pedir turnos con ID >
+   * CompactedMemory. Estrategia: Obtener el último CP y pedir turnos con ID >
    * CP.last_turn_id.
    *
    * @return
@@ -327,13 +329,13 @@ public class SourceOfTruthImpl implements SourceOfTruth {
   @Override
   public synchronized List<Turn> getUnconsolidatedTurns(String subchannel) {
     try {
-      CheckPoint lastCp = getLatestCheckPoint(subchannel);
+      CompactedMemory lastCp = getLatestCompactedMemory(subchannel);
       int thresholdId = (lastCp != null) ? lastCp.getTurnLast() : 0;
 
       List<Turn> result = new ArrayList<>();
       String sql = SQLProvider.from(getConnection()).get(
               "SourceOfTtuth_getUnconsolidatedTurns",
-              "SELECT * FROM turnos WHERE id > ? AND subchannel = ? ORDER BY id ASC"
+              "SELECT * FROM episodicmemory WHERE id > ? AND subchannel = ? ORDER BY id ASC"
       );
 
       try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -357,7 +359,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
       List<Turn> result = new ArrayList<>();
       String sql = SQLProvider.from(getConnection()).get(
               "SourceOfTtuth_getTurnsByIds",
-              "SELECT * FROM turnos WHERE subchannel = ? AND id BETWEEN ? AND ? ORDER BY id ASC"
+              "SELECT * FROM episodicmemory WHERE subchannel = ? AND id BETWEEN ? AND ? ORDER BY id ASC"
       );
       try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setString(1, subchannel);
@@ -385,7 +387,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
         // Corregido el ID de la SQL y la columna (subchannel en lugar de sunchannel)
         String sql = SQLProvider.from(getConnection()).get(
                 "SourceOfTruth_getTurnsByText",
-                "SELECT * FROM turnos WHERE subchannel = ? AND embedding_blob IS NOT NULL"
+                "SELECT * FROM episodicmemory WHERE subchannel = ? AND embedding_blob IS NOT NULL"
         );
 
         try (Connection conn = getConnection().get(); 
@@ -434,20 +436,20 @@ public class SourceOfTruthImpl implements SourceOfTruth {
     );
   }
 
-  private CheckPoint mapResultSetToCheckPoint(ResultSet rs) throws SQLException {
-    return CheckPointImpl.from(
+  private CompactedMemory mapResultSetToCompactedMemory(ResultSet rs) throws SQLException {
+    return CompactedMemoryImpl.from(
             rs.getString("subchannel"),
             rs.getInt("id"),
-            rs.getInt("cp_first"),
-            rs.getInt("cp_last"),
+            rs.getInt("cm_first"),
+            rs.getInt("cm_last"),
             rs.getTimestamp("timestamp").toLocalDateTime(),
-            this.getDataFolder().resolve(CHECKPOINTS_FOLDER)
+            this.getDataFolder().resolve(COMPACTEDMEMORY_FOLDER)
     );
   }
 
   @Override
-  public synchronized CheckPoint createCheckPoint(String subchannel, int turnFirst, int turnLast, LocalDateTime timestamp, String text) {
-    CheckPoint cp = CheckPointImpl.create(subchannel, -1, turnFirst, turnLast, timestamp, text, getDataFolder().resolve(CHECKPOINTS_FOLDER));
+  public synchronized CompactedMemory createCompactedMemory(String subchannel, int turnFirst, int turnLast, LocalDateTime timestamp, String text) {
+    CompactedMemory cp = CompactedMemoryImpl.create(subchannel, -1, turnFirst, turnLast, timestamp, text, getDataFolder().resolve(COMPACTEDMEMORY_FOLDER));
     return cp;
   }
 

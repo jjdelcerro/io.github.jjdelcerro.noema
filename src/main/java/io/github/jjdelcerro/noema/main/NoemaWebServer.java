@@ -133,7 +133,7 @@ public class NoemaWebServer {
 
     private void handleGetHistory(Context ctx) throws Exception {
         String terminalId = ctx.pathParam("terminalId");
-        List<Turn> turns = this.agent.getSourceOfTruth().getUnconsolidatedTurns(terminalId);
+        List<Turn> turns = this.agent.getEpisodicMemory().getUnconsolidatedTurns(terminalId);
         List<FlatMessage> flatHistory = new ArrayList<>();
 
         for (Turn turn : turns) {

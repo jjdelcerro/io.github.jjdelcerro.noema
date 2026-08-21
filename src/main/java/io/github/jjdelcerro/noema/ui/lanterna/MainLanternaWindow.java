@@ -21,8 +21,6 @@ import com.googlecode.lanterna.terminal.Terminal;
 import io.github.jjdelcerro.noema.lib.Agent;
 import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
-import io.github.jjdelcerro.noema.lib.persistence.CheckPoint;
-import io.github.jjdelcerro.noema.lib.persistence.SourceOfTruth;
 import io.github.jjdelcerro.noema.lib.persistence.Turn;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.SensorEventCallback;
@@ -40,6 +38,8 @@ import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 import org.apache.commons.lang3.StringUtils;
+import io.github.jjdelcerro.noema.lib.persistence.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.persistence.CompactedMemory;
 
 @SuppressWarnings("UseSpecificCatch")
 public class MainLanternaWindow extends BasicWindow {
@@ -440,8 +440,8 @@ public class MainLanternaWindow extends BasicWindow {
         AgentConsole console = agent.getConsole(DEFAULT_SUBCHANNEL);
         String subchannel = agent.getCurrentSubchannel();
         try {
-            SourceOfTruth sot = agent.getSourceOfTruth();
-            CheckPoint activeCheckPoint = sot.getLatestCheckPoint(subchannel);
+            EpisodicMemory sot = agent.getEpisodicMemory();
+            CompactedMemory activeCheckPoint = sot.getLatestCompactedMemory(subchannel);
             List<Turn> turns = sot.getUnconsolidatedTurns(subchannel);
 
             if (activeCheckPoint != null && StringUtils.isNotBlank(activeCheckPoint.getText())) {

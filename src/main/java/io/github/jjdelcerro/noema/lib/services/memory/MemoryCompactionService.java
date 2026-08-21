@@ -1,15 +1,16 @@
 package io.github.jjdelcerro.noema.lib.services.memory;
 
 import io.github.jjdelcerro.noema.lib.AgentService;
-import io.github.jjdelcerro.noema.lib.persistence.CheckPoint;
 import io.github.jjdelcerro.noema.lib.persistence.Turn;
 import java.util.List;
+import io.github.jjdelcerro.noema.lib.persistence.CompactedMemory;
 
 /**
- *
+ * 
+ * TODO: Antes MemoryService, habria que actualizar la documentacion con este cambio 
  * @author jjdelcerro
  */
-public interface MemoryService extends AgentService {
+public interface MemoryCompactionService extends AgentService {
 
   String MEMORY_MODEL_ID = "memory/provider/model_id";
   String MEMORY_PROVIDER_API_KEY = "memory/provider/api_key";
@@ -26,6 +27,6 @@ public interface MemoryService extends AgentService {
    * @param newTurns La lista de turnos recientes a consolidar.
    * @return Un nuevo CheckPoint TRANSITORIO (ID -1) con el texto generado.
    */
-  CheckPoint compact(String subchannel, CheckPoint previous, List<Turn> newTurns);
+  CompactedMemory compact(String subchannel, CompactedMemory previous, List<Turn> newTurns);
   
 }

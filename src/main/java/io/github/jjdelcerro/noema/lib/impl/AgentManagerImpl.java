@@ -14,7 +14,7 @@ import io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsServiceFa
 import io.github.jjdelcerro.noema.lib.impl.services.email.EmailServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.mcp.McpServiceFactory;
-import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryServiceFactory;
+import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryCompactionServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.scheduler.SchedulerServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.telegram.TelegramServiceFactory;
@@ -46,7 +46,7 @@ public class AgentManagerImpl implements AgentManager {
     this.registerService(new EmbeddingsServiceFactory());
     this.registerService(new SensorsServiceFactory());
     
-    this.registerService(new MemoryServiceFactory());
+    this.registerService(new MemoryCompactionServiceFactory());
     this.registerService(new McpServiceFactory());
     
     this.registerService(new SchedulerServiceFactory());

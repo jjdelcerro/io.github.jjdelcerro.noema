@@ -4,7 +4,7 @@ import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.FakeConsole;
 import io.github.jjdelcerro.noema.lib.impl.AgentImpl;
 import io.github.jjdelcerro.noema.lib.impl.AgentPathsImpl;
-import io.github.jjdelcerro.noema.lib.impl.persistence.FakeSourceOfTruth;
+import io.github.jjdelcerro.noema.lib.impl.persistence.FakeEpisodicMemory;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
 import io.github.jjdelcerro.noema.lib.impl.settings.AgentSettingsImpl;
@@ -30,7 +30,7 @@ public class SensorsServiceTest {
         AgentPaths paths = new AgentPathsImpl(tempDir);
         paths.setupHierarchy();
         AgentSettings settings = new AgentSettingsImpl(paths);
-        Agent testAgent = new AgentImpl(null, null, settings, new FakeConsole(), new FakeSourceOfTruth(), null);
+        Agent testAgent = new AgentImpl(null, null, settings, new FakeConsole(), new FakeEpisodicMemory(), null);
         return testAgent;
     }
     

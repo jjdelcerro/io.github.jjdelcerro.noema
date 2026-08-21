@@ -5,11 +5,15 @@ import java.util.List;
 
 /**
  *
+ * TODO: Antes SourceOfTruth, habria que actualizar la documentacion con este cambio 
+ * 
  * @author jjdelcerro
  */
-public interface SourceOfTruth {
+public interface EpisodicMemory {
 
-  CheckPoint createCheckPoint(String subchannel, int turnFirst, int turnLast, LocalDateTime timestamp, String text);
+  CompactedMemory createCompactedMemory(String subchannel, int turnFirst, int turnLast, LocalDateTime timestamp, String text);
+
+  CompactedMemory getLatestCompactedMemory(String subchannel);
 
   Turn createTurn(LocalDateTime timestamp, String contenttype, String subchannel, String textUser, String textModelThinking, String textModel, String toolCall, String toolResult, float[] embedding);
 
@@ -24,9 +28,7 @@ public interface SourceOfTruth {
    * Persiste los metadatos de un CheckPoint en la base de datos.
    * @param checkpoint
    */
-  void add(CheckPoint checkpoint);
-
-  CheckPoint getLatestCheckPoint(String subchannel);
+  void add(CompactedMemory checkpoint);
 
   /**
    * Recupera todos los turnos que aún no han sido consolidados en un
@@ -42,6 +44,6 @@ public interface SourceOfTruth {
 
   List<Turn> getTurnsByText(String subchannel, String query, int maxResults);
 
-  CheckPoint getCheckPointById(int id);
+  CompactedMemory getCheckPointById(int id);
 
 }

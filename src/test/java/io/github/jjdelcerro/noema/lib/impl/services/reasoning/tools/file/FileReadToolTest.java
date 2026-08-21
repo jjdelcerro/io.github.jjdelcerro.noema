@@ -9,7 +9,7 @@ import io.github.jjdelcerro.noema.lib.impl.AgentAccessControlImpl;
 import io.github.jjdelcerro.noema.lib.impl.AgentActionsImpl;
 import io.github.jjdelcerro.noema.lib.impl.AgentImpl;
 import io.github.jjdelcerro.noema.lib.impl.AgentPathsImpl;
-import io.github.jjdelcerro.noema.lib.impl.persistence.FakeSourceOfTruth;
+import io.github.jjdelcerro.noema.lib.impl.persistence.FakeEpisodicMemory;
 import io.github.jjdelcerro.noema.lib.impl.settings.AgentSettingsImpl;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,7 +50,7 @@ public class FileReadToolTest {
         AgentAccessControl accessControl = new AgentAccessControlImpl(settings, actions, workspaceDir);
 
         // Agente ligero usando Fakes
-        agent = new AgentImpl(null, null, settings, new FakeConsole(), new FakeSourceOfTruth(), accessControl);
+        agent = new AgentImpl(null, null, settings, new FakeConsole(), new FakeEpisodicMemory(), accessControl);
 
         // Herramienta a probar
         fileReadTool = new FileReadTool(agent);

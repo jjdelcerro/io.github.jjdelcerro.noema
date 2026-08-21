@@ -1,6 +1,5 @@
 package io.github.jjdelcerro.noema.lib.impl.persistence;
 
-import io.github.jjdelcerro.noema.lib.persistence.CheckPoint;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -9,6 +8,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.github.jjdelcerro.noema.lib.persistence.CompactedMemory;
 
 /**
  * Representa un punto de consolidación de la memoria.
@@ -16,10 +16,12 @@ import org.slf4j.LoggerFactory;
  * Sigue un patrón híbrido de persistencia: - Los metadatos (IDs, Timestamp)
  * viven en la Base de Datos. - El contenido textual (Resumen + El Viaje) vive
  * en un archivo físico (.md).
+ * 
+ * TODO: Antes CheckPointImpl, habria que actualizar la documentacion con este cambio 
  */
-public class CheckPointImpl implements CheckPoint {
+public class CompactedMemoryImpl implements CompactedMemory {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(CheckPointImpl.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(CompactedMemoryImpl.class);
 
   private int id;
   private final int turnFirst;
@@ -32,7 +34,7 @@ public class CheckPointImpl implements CheckPoint {
     private final String subchannel;
 
   // Constructor privado
-  private CheckPointImpl(String subchannel, int id, int turnFirst, int turnLast, LocalDateTime timestamp, Path storageFolder) {
+  private CompactedMemoryImpl(String subchannel, int id, int turnFirst, int turnLast, LocalDateTime timestamp, Path storageFolder) {
     this.id = id;
     this.turnFirst = turnFirst;
     this.turnLast = turnLast;
@@ -45,8 +47,8 @@ public class CheckPointImpl implements CheckPoint {
    * Factoría para rehidratar un CheckPoint desde los metadatos de la Base de
    * Datos. No carga el texto del disco inmediatamente (Lazy Loading).
    */
-  /*friend*/ static CheckPointImpl from(String subchannel, int id, int turnFirst, int turnLast, LocalDateTime timestamp, Path storageFolder) {
-    return new CheckPointImpl(subchannel, id, turnFirst, turnLast, timestamp, storageFolder);
+  /*friend*/ static CompactedMemoryImpl from(String subchannel, int id, int turnFirst, int turnLast, LocalDateTime timestamp, Path storageFolder) {
+    return new CompactedMemoryImpl(subchannel, id, turnFirst, turnLast, timestamp, storageFolder);
   }
 
   /**
@@ -54,8 +56,8 @@ public class CheckPointImpl implements CheckPoint {
    * contador. - Retorna la instancia para que SourceOfTruth guarde los
    * metadatos en BD.
    */
-  /*friend*/ static CheckPointImpl create(String subchannel, int id, int turnFirst, int turnLast, LocalDateTime timestamp, String text, Path storageFolder) {
-    CheckPointImpl cp = new CheckPointImpl(subchannel, id, turnFirst, turnLast, timestamp, storageFolder);
+  /*friend*/ static CompactedMemoryImpl create(String subchannel, int id, int turnFirst, int turnLast, LocalDateTime timestamp, String text, Path storageFolder) {
+    CompactedMemoryImpl cp = new CompactedMemoryImpl(subchannel, id, turnFirst, turnLast, timestamp, storageFolder);
 
     // Inyectamos el texto en cache
     cp.cachedText = text;
