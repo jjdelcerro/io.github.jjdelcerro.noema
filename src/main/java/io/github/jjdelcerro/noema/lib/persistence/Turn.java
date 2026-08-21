@@ -1,6 +1,5 @@
 package io.github.jjdelcerro.noema.lib.persistence;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 /**
@@ -11,7 +10,7 @@ public interface Turn {
 
   /**
    * Devuelve el texto concatenado que representa el contenido semántico del
-   * turno.Útil para que el SourceOfTruth calcule el embedding sobre esto.
+   * turno.Útil para que el EpisodicMemory calcule el embedding sobre esto.
    *
    * @return
    */

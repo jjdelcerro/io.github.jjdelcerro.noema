@@ -64,7 +64,7 @@ public class FakeAgent implements Agent {
 
   @Override
   public EpisodicMemory getEpisodicMemory() {
-    throw new UnsupportedOperationException("FakeAgent no tiene SourceOfTruth.");
+    throw new UnsupportedOperationException("FakeAgent no tiene EpisodicMemory.");
   }
 
   @Override
