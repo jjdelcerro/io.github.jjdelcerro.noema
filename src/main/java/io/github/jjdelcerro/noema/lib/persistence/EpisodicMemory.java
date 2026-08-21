@@ -34,6 +34,7 @@ public interface EpisodicMemory {
    * Recupera todos los turnos que aún no han sido consolidados en un
    * CheckPoint.
    *
+   * @param subchannel
    * @return
    */
   List<Turn> getUnconsolidatedTurns(String subchannel);
@@ -42,8 +43,8 @@ public interface EpisodicMemory {
 
   List<Turn> getTurnsByIds(String subchannel, int first, int last);
 
-  List<Turn> getTurnsByText(String subchannel, String query, int maxResults);
+  List<Turn> getTurnsByText(String subchannel, String query, int maxResults, double minSimilarity, String annotationType);
 
-  CompactedMemory getCheckPointById(int id);
+  CompactedMemory getCompactedMemoryById(int id);
 
 }

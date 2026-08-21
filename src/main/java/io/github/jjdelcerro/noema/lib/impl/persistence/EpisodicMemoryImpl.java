@@ -277,7 +277,7 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
   }
 
   @Override
-  public synchronized CompactedMemory getCheckPointById(int id) {
+  public synchronized CompactedMemory getCompactedMemoryById(int id) {
     try {
       String sql = SQLProvider.from(getConnection()).get(
               "SourceOfTtuth_getCheckPointById",
@@ -379,21 +379,29 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
   }
 
   @Override
-  public synchronized List<Turn> getTurnsByText(String subchannel, String query, int maxResults) {
+  public List<Turn> getTurnsByText(String subchannel, String query, int limit, double minSimilarity, String annotationType) {
     try {
         EmbeddingsService embedding = (EmbeddingsService) agent.getService(EmbeddingsService.NAME);
-        EmbeddingFilter<Turn> search = embedding.createEmbeddingFilter(query, maxResults);
+        EmbeddingFilter<Turn> search = embedding.createEmbeddingFilter(query, limit, minSimilarity);
 
         // Corregido el ID de la SQL y la columna (subchannel en lugar de sunchannel)
         String sql = SQLProvider.from(getConnection()).get(
                 "EpisodicMemory_getTurnsByText",
-                "SELECT * FROM episodicmemory WHERE subchannel = ? AND embedding_blob IS NOT NULL"
+                """
+                SELECT * FROM episodicmemory 
+                WHERE subchannel = ? 
+                  AND (? IS NULL OR annotation_type = ?)
+                  AND embedding_blob IS NOT NULL
+                ORDER BY id DESC      
+                """
         );
 
         try (Connection conn = getConnection().get(); 
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
           ps.setString(1, subchannel);
+          ps.setString(2, annotationType);
+          ps.setString(3, annotationType);
 
           try (ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {

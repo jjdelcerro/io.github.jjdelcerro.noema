@@ -38,12 +38,7 @@ public class FakeEpisodicMemory implements EpisodicMemory {
   }
 
   @Override
-  public List<Turn> getTurnsByText(String subchannel, String query, int maxResults) {
-    return List.of();
-  }
-
-  @Override
-  public CompactedMemory getCheckPointById(int id) {
+  public CompactedMemory getCompactedMemoryById(int id) {
     return null;
   }
 
@@ -55,5 +50,10 @@ public class FakeEpisodicMemory implements EpisodicMemory {
   @Override
   public Turn createTurn(LocalDateTime timestamp, String contenttype, String subchannel, String textUser, String textModelThinking, String textModel, String toolCall, String toolResult, float[] embedding) {
     return new FakeTurn(1, contenttype, textUser, textModel);
+  }
+
+  @Override
+  public List<Turn> getTurnsByText(String subchannel, String query, int maxResults, double minSimilarity, String annotationType) {
+    return List.of();
   }
 }
