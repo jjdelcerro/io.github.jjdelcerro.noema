@@ -55,25 +55,25 @@ Esta arquitectura permite que el núcleo del agente opere de manera agnóstica a
     *   `home/`: Directorio aislado para la ejecución de scripts en entorno seguro.
 
 ### 4.2. Capacidades Horizontales (Cross-cutting Concerns)
-*   **Seguridad y Control de Acceso (`AgentAccessControl`):** Gestiona de forma estricta los límites operativos del agente. Define un Sandbox para las operaciones de lectura/escritura (`nom_writable_paths`, `nom_readable_paths`, `allowed_external_paths`). Bloquea cualquier intento de ruta relativa maliciosa (Path Traversal). Evalúa globalmente si una herramienta tiene permisos de ejecución, escritura o red antes de exponerla al LLM.
-*   **Gestión de Rutas y Sandbox (`AgentPaths`):** Abstracción que resuelve rutas relativas asegurando que siempre apunten a ubicaciones válidas dentro de la jerarquía de `.noema-agent` o la carpeta local del proyecto.
+*   **[Seguridad y Control de Acceso](docs/seguridad-y-control-de-acceso.md) (`AgentAccessControl`):** Gestiona de forma estricta los límites operativos del agente. Define un Sandbox para las operaciones de lectura/escritura (`nom_writable_paths`, `nom_readable_paths`, `allowed_external_paths`). Bloquea cualquier intento de ruta relativa maliciosa (Path Traversal). Evalúa globalmente si una herramienta tiene permisos de ejecución, escritura o red antes de exponerla al LLM.
+*   **[Gestión de Rutas y Sandbox](docs/gestion-de-rutas.md) (`AgentPaths`):** Abstracción que resuelve rutas relativas asegurando que siempre apunten a ubicaciones válidas dentro de la jerarquía de `.noema-agent` o la carpeta local del proyecto.
 *   **Sistema de Configuración Jerárquica (`AgentSettings`):** Implementado como un árbol de nodos (String, Lists, Booleans). Permite evaluación dinámica mediante el motor MVEL. Por ejemplo, una configuración en la UI puede habilitarse o deshabilitarse basada en el valor de otra configuración (ej. bloquear herramientas de disco si el control de acceso a disco está apagado).
 
 ### 4.3. Servicios Cognitivos
 Esta capa gestiona cómo el agente piensa, recuerda y se comunica con el LLM. Comparten el acceso al **SourceOfTruth** (la capa de persistencia base que graba todo de forma inmutable).
 
 *   **Persistencia (Común):** El `SourceOfTruthImpl` guarda de forma atómica cada *Turno* de la conversación (Input de usuario, pensamiento del modelo, acción de herramienta, resultado, etc.) en H2.
-*   **ReasoningService (Orquestación del pensamiento):** Es el motor de inferencia. Construye el "System Prompt" consolidando la Identidad, el Entorno y las Habilidades. Gestiona la `Session` (ventana de contexto en RAM) y orquesta el bucle de ejecución: *Prepara contexto -> Llama al LLM -> Si hay Tool Call, valida y ejecuta -> Inyecta resultado -> Repite hasta que el modelo decida responder al usuario*. Emplea técnicas de *context trimming* (recorte de salidas largas de herramientas y notificación de las mismas).
-*   **MemoryService (Consolidación histórica y Checkpoints):** Encargado de la compresión semántica a largo plazo. Cuando los turnos exceden un límite, este servicio usa el LLM para leer los turnos pasados y redactar un **Punto de Guardado**. Este punto de guardado tiene formato Markdown y fusiona el resumen de lo ocurrido con una narrativa ("El viaje").
+*   **[ReasoningService](docs/reasoning-service.md) (Orquestación del pensamiento)** Es el motor de inferencia. Construye el "System Prompt" consolidando la Identidad, el Entorno y las Habilidades. Gestiona la `Session` (ventana de contexto en RAM) y orquesta el bucle de ejecución: *Prepara contexto -> Llama al LLM -> Si hay Tool Call, valida y ejecuta -> Inyecta resultado -> Repite hasta que el modelo decida responder al usuario*. Emplea técnicas de *context trimming* (recorte de salidas largas de herramientas y notificación de las mismas).
+*   **[MemoryService](docs/memory-service.md) (Consolidación histórica y Checkpoints):** Encargado de la compresión semántica a largo plazo. Cuando los turnos exceden un límite, este servicio usa el LLM para leer los turnos pasados y redactar un **Punto de Guardado**. Este punto de guardado tiene formato Markdown y fusiona el resumen de lo ocurrido con una narrativa ("El viaje").
 
 ### 4.4. Servicios de Periferia
 Manejan las capacidades sensoriales, de almacenamiento documental y de actuación sobre el mundo exterior.
 
-*   **SensorsService:** Implementa un bus de eventos concurrente para inyectar percepciones asíncronas en el modelo. Clasifica los eventos según su naturaleza (`DISCRETE`, `MERGEABLE`, `AGGREGATABLE`, `STATE`, `USER`) para evitar saturar al agente si ocurren demasiados eventos mientras está procesando o inactivo.
-*   **SchedulerService:** Un motor de tareas programadas. Permite al agente registrar alarmas persistentes en H2. Al cumplirse el plazo, inyecta un evento en el `SensorsService` para que el agente reciba el estímulo.
+*   **[SensorsService](docs/sensors-service.md)** Implementa un bus de eventos concurrente para inyectar percepciones asíncronas en el modelo. Clasifica los eventos según su naturaleza (`DISCRETE`, `MERGEABLE`, `AGGREGATABLE`, `STATE`, `USER`) para evitar saturar al agente si ocurren demasiados eventos mientras está procesando o inactivo.
+*   **[SchedulerService](docs/scheduler-service.md):** Un motor de tareas programadas. Permite al agente registrar alarmas persistentes en H2. Al cumplirse el plazo, inyecta un evento en el `SensorsService` para que el agente reciba el estímulo.
 *   **EmailService y TelegramService:** Adaptadores de comunicación. Escuchan pasivamente (IMAP IDLE y Long-Polling). En lugar de enviar un documento gigante al LLM, inyectan notificaciones breves ("Tienes un nuevo email del usuario"). El agente luego usa sus herramientas para leer el contenido real.
 *   **DocumentsService:** Servicio RAG (Retrieval-Augmented Generation) avanzado. Al ingestar un documento (PDF, texto), utiliza un proceso asíncrono y LLMs de bajo coste para parsear la estructura jerárquica (índice) y redactar resúmenes por sección. 
-*   **EmbeddingsService:** Mantiene la vectorización local. Al no usar BBDD vectoriales de terceros, carga un modelo cuantizado en proceso (ej. `AllMiniLmL6V2`). La búsqueda vectorial (`EmbeddingFilterImpl`) se hace en memoria calculando la distancia coseno mediante un *Min-Heap* (Priority Queue) para extraer el Top-K de similitudes contra los BLOBs almacenados en H2.
+*   **[EmbeddingsService](docs/embeddings-service.md):** Mantiene la vectorización local. Al no usar BBDD vectoriales de terceros, carga un modelo cuantizado en proceso (ej. `AllMiniLmL6V2`). La búsqueda vectorial (`EmbeddingFilterImpl`) se hace en memoria calculando la distancia coseno mediante un *Min-Heap* (Priority Queue) para extraer el Top-K de similitudes contra los BLOBs almacenados en H2.
 
 
 ## 5. Descripción Detallada de Mecanismos Principales
@@ -113,7 +113,7 @@ Emplea un enfoque de **DocMapper**.
 
 ## 6. Catálogo de Herramientas del Agente
 
-Las herramientas están repartidas por los diferentes servicios, heredando de `AbstractAgentTool` (o `AbstractPaginatedAgentTool` para gestionar salidas masivas).
+Las [herramientas](docs/agenttools.md) están repartidas por los diferentes servicios, heredando de `AbstractAgentTool` (o `AbstractPaginatedAgentTool` para gestionar salidas masivas).
 
 ### Sistema, Eventos y Memoria (`MemoryService` / `ReasoningService` / `SensorsService`)
 *   `pool_event`: Herramienta ficticia que consulta el bus de eventos pendientes.
