@@ -82,18 +82,19 @@ public class SourceOfTruthImpl implements SourceOfTruth {
     try (Connection conn = this.getConnection().get(); Statement stmt = conn.createStatement()) {
       // Tabla de Turnos con soporte BLOB para vectores
       stmt.execute(SQLProvider.from(getConnection()).get("SourceOfTtuth_createTables_turnos", """
-                CREATE TABLE IF NOT EXISTS turnos (
-                    id INT PRIMARY KEY,
-                    timestamp TIMESTAMP,
-                    contenttype VARCHAR(50),
-                    subchannel VARCHAR(20),
-                    text_user CLOB,
-                    text_thinking CLOB,
-                    text_model CLOB,
-                    tool_call CLOB,
-                    tool_result CLOB,
-                    embedding_blob BLOB
-                )
+            CREATE TABLE IF NOT EXISTS turnos (
+                id INT PRIMARY KEY,
+                timestamp TIMESTAMP,
+                contenttype VARCHAR(50),
+                subchannel VARCHAR(20),
+                annotation_type VARCHAR(100),
+                text_user CLOB,
+                text_thinking CLOB,
+                text_model CLOB,
+                tool_call CLOB,
+                tool_result CLOB,
+                embedding_blob BLOB
+            )                                                                                              
             """));
 
       // Tabla de CheckPoints (solo metadatos)
@@ -155,9 +156,9 @@ public class SourceOfTruthImpl implements SourceOfTruth {
 
       String sql = SQLProvider.from(getConnection()).get("SourceOfTruth_add_turn",
               """
-                INSERT INTO turnos (id, timestamp, contenttype, subchannel, text_user, text_thinking, 
-                                    text_model, tool_call, tool_result, embedding_blob) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO turnos (id, timestamp, contenttype, subchannel, annotation_type, 
+                                  text_user, text_thinking, text_model, tool_call, tool_result, embedding_blob) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)                            
             """);
 
       try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -165,12 +166,13 @@ public class SourceOfTruthImpl implements SourceOfTruth {
         ps.setTimestamp(2, Timestamp.valueOf(turn.getTimestamp()));
         ps.setString(3, dbContentType); // Usamos el tipo calculado para DB
         ps.setString(4, turn.getSubchannel());
-        ps.setString(5, turn.getTextUser());
-        ps.setString(6, turn.getTextModelThinking());
-        ps.setString(7, turn.getTextModel());
-        ps.setString(8, turn.getToolCall());
-        ps.setString(9, dbToolResult); // Usamos el texto procesado (Full o Resumen)
-        ps.setBytes(10, blobBytes);
+        ps.setString(5, turn.getAnnotationType());
+        ps.setString(6, turn.getTextUser());
+        ps.setString(7, turn.getTextModelThinking());
+        ps.setString(8, turn.getTextModel());
+        ps.setString(9, turn.getToolCall());
+        ps.setString(10, dbToolResult); // Usamos el texto procesado (Full o Resumen)
+        ps.setBytes(11, blobBytes);
         ps.executeUpdate();
       }
 
@@ -427,6 +429,7 @@ public class SourceOfTruthImpl implements SourceOfTruth {
             rs.getString("text_model"),
             rs.getString("tool_call"),
             rs.getString("tool_result"),
+            rs.getString("annotation_type"),
             cachedVec // Inyectamos el vector ya deserializado si lo tenemos
     );
   }

@@ -47,6 +47,7 @@ public class FakeTurn implements Turn {
     @Override public String getToolCall() { return toolCall; }
     @Override public String getToolResult() { return toolResult; }
     @Override public float[] getEmbedding() { return embedding; }
+    @Override public String getAnnotationType() { return null; }
 
     @Override
     public String getContentForEmbedding() {

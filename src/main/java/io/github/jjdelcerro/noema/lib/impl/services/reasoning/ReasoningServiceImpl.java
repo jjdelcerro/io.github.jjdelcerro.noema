@@ -402,9 +402,9 @@ public class ReasoningServiceImpl implements ReasoningService {
     }
   }
 
-  private boolean isMemoryTool(String toolName) {
+  private int getToolType(String toolName) {
     AvailableAgentTool tool = availableTools.get(toolName);
-    return tool.tool.getType() == AgentTool.TYPE_MEMORY;
+    return tool.tool.getType();
   }
 
   private void performCompaction(Session session) throws SQLException {
@@ -549,34 +549,6 @@ public class ReasoningServiceImpl implements ReasoningService {
     return theModel.getParameters().modelId();
   }
 
-//    public void showSession(String subchannel) {
-//        List<ChatMessage> history = this.getSession(subchannel).getMessages();
-//
-//        CheckPoint activeCheckPoint = this.getActiveCheckPoint(subchannel);
-//        if (activeCheckPoint != null) {
-//            console(subchannel).printSystemLog(activeCheckPoint.getText(), AgentConsole.Format.Markdown);
-//        }
-//        for (ChatMessage message : history) {
-//            if (message instanceof UserMessage userMsg) {
-//                console(subchannel).printUserMessage(userMsg.singleText());
-//
-//            } else if (message instanceof AiMessage aiMsg) {
-//                // 1. Si el modelo pidió ejecutar herramientas, informamos de cada una
-//                if (aiMsg.hasToolExecutionRequests()) {
-//                    for (ToolExecutionRequest req : aiMsg.toolExecutionRequests()) {
-//                        console(subchannel).printSystemLog(String.format("Ejecutando herramienta: %s\n    Argumentos: %s",
-//                                req.name(), req.arguments()));
-//                    }
-//                }
-//                // Los ToolExecutionResultMessage y SystemMessage se ignoran 
-//                // ya que no se presentan en la consola.
-//                // 2. Si el modelo respondió con texto, lo mostramos
-//                if (StringUtils.isNotBlank(aiMsg.text())) {
-//                    console(subchannel).printModelResponse(aiMsg.text());
-//                }
-//            }
-//        }
-//    }
   private List<ToolSpecification> getToolSpecifications() {
     List<ToolSpecification> toolSpecifications = new ArrayList<>();
     AgentAccessControl accessControl = this.agent.getAccessControl();
@@ -748,9 +720,18 @@ public class ReasoningServiceImpl implements ReasoningService {
         if (aiMessage.hasToolExecutionRequests()) {
           for (ToolExecutionRequest request : aiMessage.toolExecutionRequests()) {
             String result = executeTool(session, request);
-            String contentType = "tool_execution";
-            if (isMemoryTool(request.name())) {
-              contentType = "lookup_turn";
+
+            String contentType;
+            switch(this.getToolType(request.name())) {
+              case AgentTool.TYPE_ANNOTATION:
+                contentType = "annotation";
+                break;
+              case AgentTool.TYPE_MEMORY:
+                contentType = "lookup_turn";
+                break;
+              case AgentTool.TYPE_OPERATIONAL:
+              default:
+                contentType = "tool_execution";
             }
             Turn toolTurn = this.sourceOfTruth.createTurn(
                     LocalDateTime.now(),

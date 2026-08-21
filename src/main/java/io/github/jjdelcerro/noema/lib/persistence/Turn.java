@@ -37,6 +37,8 @@ public interface Turn {
 
   String getToolResult();
 
+  String getAnnotationType();
+  
   /**
    * Genera una línea CSV formateada y escapada para el protocolo de
    * compactación.
