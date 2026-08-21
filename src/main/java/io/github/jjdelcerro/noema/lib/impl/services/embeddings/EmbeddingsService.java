@@ -1,6 +1,8 @@
 package io.github.jjdelcerro.noema.lib.impl.services.embeddings;
 
 import dev.langchain4j.model.embedding.onnx.AbstractInProcessEmbeddingModel;
+import dev.langchain4j.model.embedding.onnx.OnnxEmbeddingModel;
+import dev.langchain4j.model.embedding.onnx.PoolingMode;
 import dev.langchain4j.model.embedding.onnx.allminilml6v2q.AllMiniLmL6V2QuantizedEmbeddingModel;
 import dev.langchain4j.model.embedding.onnx.bgesmallenv15q.BgeSmallEnV15QuantizedEmbeddingModel;
 import io.github.jjdelcerro.noema.lib.Agent;
@@ -9,6 +11,7 @@ import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
@@ -70,10 +73,8 @@ public class EmbeddingsService implements AgentService {
     private final AgentServiceFactory factory;
     private final Agent agent;
     private boolean running;
-    private EmbeddingModel[] embeddingModels = new EmbeddingModel[]{
-        new EmbeddingModel(0, AllMiniLmL6V2QuantizedEmbeddingModel.class, 384),
-        new EmbeddingModel(1, BgeSmallEnV15QuantizedEmbeddingModel.class, 384)
-    };
+    
+    private EmbeddingModel[] embeddingModels;
     private EmbeddingModel embeddingModel;
 
     public EmbeddingsService(AgentServiceFactory factory, Agent agent) {
@@ -95,6 +96,26 @@ public class EmbeddingsService implements AgentService {
     @Override
     public void start() {
         agent.getCurrentConsole().printSystemLog("Cargando motor de embeddings local...");
+        
+        String[] resources = new String[]{
+          "var/models/embeddings/paraphrase-multilingual-MiniLM-L12-v2/model_quantized.onnx",
+          "var/models/embeddings/paraphrase-multilingual-MiniLM-L12-v2/tokenizer.json"
+        };
+        for (String resPath : resources) {
+          this.agent.installResource(resPath);
+        }        
+        
+        this.embeddingModels = new EmbeddingModel[]{
+          new EmbeddingModel(
+                  0, 
+                  384, 
+                  agent.getPaths().getAgentPath(resources[0]),
+                  agent.getPaths().getAgentPath(resources[1])
+          ),
+          new EmbeddingModel(1, 384, AllMiniLmL6V2QuantizedEmbeddingModel.class),
+          new EmbeddingModel(2, 384, BgeSmallEnV15QuantizedEmbeddingModel.class)
+        };
+        
         this.embeddingModel = embeddingModels[0];
         this.embeddingModel.getModel(); // Fuerza que se carge el modelo de embedding.
         this.running = true;
@@ -153,13 +174,21 @@ public class EmbeddingsService implements AgentService {
         buffer.get(vector);
         return vector;
     }
-
+    
     public double cosineSimilarity(float[] vectorA, float[] vectorB) {
         Embedding embeddingA = new Embedding(vectorA);
         Embedding embeddingB = new Embedding(vectorB);
 
-        return embeddingA.cosineDistance(embeddingB);
+        // 1.0 - distancia = similitud real (donde 1.0 es coincidencia exacta)
+        return 1.0 - embeddingA.cosineDistance(embeddingB);
     }
+
+    public double cosineDistance(float[] vectorA, float[] vectorB) {
+        Embedding embeddingA = new Embedding(vectorA);
+        Embedding embeddingB = new Embedding(vectorB);
+
+        return embeddingA.cosineDistance(embeddingB);
+    }    
 
     public EmbeddingFilter createEmbeddingFilter(String query, int limit) {
         EmbeddingFilterImpl filter = new EmbeddingFilterImpl(this, query, limit, Double.NaN);
@@ -198,21 +227,41 @@ public class EmbeddingsService implements AgentService {
         private final int modelId;
         private final int dimensions;
         private final Class modelClass;
+        private final Path modelPath;
+        private final Path  tokenizerPath;
         private AbstractInProcessEmbeddingModel model;
 
-        public EmbeddingModel(int modelId, Class modelClass, int dimensions) {
+        public EmbeddingModel(int modelId, int dimensions, Path modelPath, Path  tokenizerPath) {
+            this.modelId = modelId;
+            this.modelClass = null;
+            this.dimensions = dimensions;
+            this.modelPath = modelPath;
+            this.tokenizerPath = tokenizerPath;
+        }
+        
+        public EmbeddingModel(int modelId, int dimensions, Class modelClass) {
             this.modelId = modelId;
             this.modelClass = modelClass;
             this.dimensions = dimensions;
+            this.modelPath = null;
+            this.tokenizerPath = null;
         }
 
         protected AbstractInProcessEmbeddingModel getModel() {
             if (this.model == null) {
+              if( this.modelClass != null ) {
                 try {
                     this.model = (AbstractInProcessEmbeddingModel) this.modelClass.getDeclaredConstructor().newInstance();
                 } catch (Exception ex) {
                     throw new RuntimeException("Can't create embedding model", ex);
                 }
+              } else {
+                  this.model = new OnnxEmbeddingModel(
+                      modelPath.toString(),
+                      tokenizerPath.toString(),
+                          PoolingMode.MEAN
+                  );
+              }
             }
             return this.model;
         }
