@@ -156,7 +156,7 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
         }
       }
 
-      String sql = SQLProvider.from(getConnection()).get("SourceOfTruth_add_turn",
+      String sql = SQLProvider.from(getConnection()).get("EpisodicMemory_add_turn",
               """
                 INSERT INTO episodicmemory (id, timestamp, contenttype, subchannel, annotation_type, 
                                   text_user, text_thinking, text_model, tool_call, tool_result, embedding_blob) 
@@ -386,7 +386,7 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
 
         // Corregido el ID de la SQL y la columna (subchannel en lugar de sunchannel)
         String sql = SQLProvider.from(getConnection()).get(
-                "SourceOfTruth_getTurnsByText",
+                "EpisodicMemory_getTurnsByText",
                 "SELECT * FROM episodicmemory WHERE subchannel = ? AND embedding_blob IS NOT NULL"
         );
 

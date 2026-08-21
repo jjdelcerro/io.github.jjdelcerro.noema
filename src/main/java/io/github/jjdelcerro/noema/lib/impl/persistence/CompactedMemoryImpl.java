@@ -53,7 +53,7 @@ public class CompactedMemoryImpl implements CompactedMemory {
 
   /**
    * Factoría para crear un NUEVO CheckPoint. - Obtiene el siguiente ID del
-   * contador. - Retorna la instancia para que SourceOfTruth guarde los
+   * contador. - Retorna la instancia para que EpisodicMemory guarde los
    * metadatos en BD.
    */
   /*friend*/ static CompactedMemoryImpl create(String subchannel, int id, int turnFirst, int turnLast, LocalDateTime timestamp, String text, Path storageFolder) {

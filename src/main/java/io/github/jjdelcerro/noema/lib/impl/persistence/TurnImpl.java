@@ -97,7 +97,7 @@ public class TurnImpl implements Turn {
 
   /**
    * Devuelve el texto concatenado que representa el contenido semántico del
-   * turno. Útil para que el SourceOfTruth calcule el embedding sobre esto.
+   * turno. Útil para que el EpisodicMemory calcule el embedding sobre esto.
    */
   @Override
   public String getContentForEmbedding() {

@@ -122,7 +122,7 @@ public class AgentImpl implements Agent {
     this.servicesDatabase = servicesDatabase;
     this.memoryDatabase = memoryDatabase;
     
-    // Si se inyecta un SourceOfTruth (ej: en tests), lo usamos directamente.
+    // Si se inyecta un episodicMemory (ej: en tests), lo usamos directamente.
     // Si no, instanciamos la implementación real conectada a la BBDD.
     if (episodicMemory != null) {
       this.episodicMemory = episodicMemory;
