@@ -71,7 +71,7 @@ Solo debes incluirlo cuando recibas una instrucción explícita que te indique b
   @Override
   public String execute(String jsonArguments) {
     // La herramienta en sí no hace nada funcional, el valor real 
-    // está en que el LLM formula los argumentos y el SourceOfTruth los guarda.
+    // está en que el LLM formula los argumentos y el EpisodicMemory los guarda.
 
     // Parsear argumentos para extraer el resource_id si está presente
     Map<String, Object> args = gson.fromJson(jsonArguments, Map.class);
