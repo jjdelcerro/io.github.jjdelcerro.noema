@@ -10,7 +10,6 @@ import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
 import io.github.jjdelcerro.noema.lib.Subagent;
 import io.github.jjdelcerro.noema.lib.SubagentDefinition;
-import io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.email.EmailServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.mcp.McpServiceFactory;
@@ -57,7 +56,6 @@ public class AgentManagerImpl implements AgentManager {
     this.registerService(new McpServiceFactory());
 
     this.registerService(new SchedulerServiceFactory());
-    this.registerService(new DocumentsServiceFactory());
     this.registerService(new EmailServiceFactory());
     this.registerService(new TelegramServiceFactory());
 
