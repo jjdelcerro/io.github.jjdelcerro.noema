@@ -2,184 +2,216 @@
 
 **Informe de Análisis Arquitectónico y Técnico: Proyecto "Noema"**
 
-**Versión Analizada:** 0.1.0
-**Fecha de Análisis:** 8 de Agosto de 2026
-**Autor del Informe:** Gemini (IA), basado en la inspección estática del código fuente.
+*   **Versión Analizada:** 0.1.0 (Extraída del `pom.xml`)
+*   **Fecha de Análisis:** 23 de Agosto de 2026
+*   **Autor del Informe:** Gemini (IA), basado en la inspección estática del código fuente.
 
+---
 
-## 1. Visión General
+## Visión General
 
-**Noema** es un proyecto personal y experimental desarrollado en Java que implementa un agente autónomo conversacional. Su propósito principal es servir como compañero de investigación y reflexión a lo largo del tiempo, manteniendo una única sesión persistente y continua. 
+El proyecto **Noema** es un agente autónomo conversacional diseñado como un compañero de investigación y reflexión a largo plazo. Desarrollado como un proyecto personal, su objetivo no es la automatización masiva de desarrollo de software, sino servir de asistente interactivo capaz de mantener una única sesión persistente y continua en el tiempo. 
 
-El proyecto destaca por su pragmatismo arquitectónico: no busca resolver el desarrollo automatizado de software, sino ofrecer un entorno autocontenido ("Zero-Infrastructure"). Todo el sistema opera localmente empaquetado en un archivo JAR, apoyándose en una base de datos relacional embebida (H2) y en el sistema de archivos del sistema operativo anfitrión. No requiere de infraestructuras externas pesadas (como bases de datos vectoriales dedicadas o buses de eventos tipo Kafka), confiando las operaciones intensivas de IA a llamadas API a Modelos de Lenguaje Grandes (LLMs).
+Para lograr esto, Noema descarta el concepto clásico de "múltiples chats" en favor de una única línea temporal. Aborda la limitación natural de la ventana de tokens de los LLM mediante un sofisticado mecanismo de compactación narrativa y poda selectiva, garantizando que el agente siempre tenga contexto sin importar la longevidad de la interacción.
 
-## 2. Stack Tecnológico
+Filosóficamente, el sistema es local, pragmático y con dependencias de infraestructura mínimas. Funciona de manera autónoma con solo el empaquetado Java y acceso a un LLM vía API (o modelos locales embebidos), delegando la persistencia a bases de datos relacionales embebidas y empleando bibliotecas nativas propias para el control de versiones local.
 
-El proyecto se apoya en un ecosistema de librerías sólido y actualizado:
+## Stack Tecnológico
 
-*   **Lenguaje:** Java 25.
-*   **Gestión de dependencias y construcción:** Maven (con empaquetado Fat JAR vía `maven-shade-plugin`).
-*   **Orquestación LLM:** LangChain4j (Core, integraciones con OpenAI, Jlama, y modelos de embeddings locales).
-*   **Persistencia:** H2 Database Engine (modo embebido `AUTO_SERVER=TRUE`).
-*   **Procesamiento de datos y parsing:** Gson (JSON), Apache Tika (extracción de texto y metadatos de ficheros binarios, PDF, DOCX, web), MVEL (evaluación de expresiones lógicas en configuración), Jsoup / flexmark (Markdown a HTML).
-*   **Comunicaciones:** Jakarta Mail (IMAP/SMTP), API de Telegram (`java-telegram-bot-api`), HttpClient nativo de Java 11+.
-*   **Control de Versiones y Diff:** Implementación propia e integrada en Java: [RCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs) y `java-diff-utils`.
-*   **Interfaces de Usuario:** 
-    *   **GUI:** Swing enriquecido con FlatLaf y RSyntaxTextArea.
-    *   **CLI:** JLine3 (con soporte para atajos, histórico y multilínea).
-    *   **Web:** Javalin (servidor web embebido para UI vía Server-Sent Events e interfaz HTML/JS).
+El proyecto se sustenta en un ecosistema de librerías Java modernas:
 
-## 3. Estructura de Paquetes, Interfaces e Implementación
+*   **Lenguaje:** Java 25 (configurado en Maven).
+*   **Gestión de LLM y RAG:** LangChain4j (versión 1.16.3). Actúa como capa de abstracción para conectar con proveedores como OpenAI, DeepSeek, Groq, OpenRouter o modelos locales (Jlama).
+*   **Persistencia:** Base de datos relacional embebida H2 (v2.2.224) para el almacenamiento de metadatos, turnos de conversación e índices vectoriales.
+*   **Interfaz de Usuario (Múltiple):**
+    *   *Desktop (GUI):* Swing apoyado en FlatLaf para un tema oscuro moderno, y RSyntaxTextArea para la edición de código.
+    *   *Terminal (TUI):* Lanterna para ventanas en modo texto.
+    *   *Consola Interactiva (CLI):* JLine3 para el manejo de REPL, autocompletado y edición.
+    *   *Web:* Javalin para exponer un servidor local con eventos SSE (Server-Sent Events) y una SPA en HTML/JS.
+*   **Manejo de Documentos y Texto:** Apache Tika para extracción de texto; commonmark-java para el renderizado de Markdown; Jsoup para limpieza HTML; y Natty para el parseo de fechas en lenguaje natural.
+*   **Control de Versiones y Diff:** Implementación nativa [JavaRCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs) y java-diff-utils.
+*   **Utilidades:** MVEL para la evaluación dinámica de expresiones lógicas en la configuración; Gson para serialización JSON; Log4j2 + SLF4J para trazabilidad.
 
-El código sigue un patrón estricto de separación de responsabilidades basado en el diseño por contratos:
+## Estructura de Paquetes e Interfaces/Implementación
 
-*   `io.github.jjdelcerro.noema.lib`: Contiene exclusivamente los contratos (Interfaces) del sistema (`Agent`, `AgentService`, `AgentTool`, `AgentConsole`, `SourceOfTruth`, `CheckPoint`, etc.).
-*   `io.github.jjdelcerro.noema.lib.impl`: Contiene las implementaciones físicas de dichos contratos. Dentro de este paquete, los servicios se dividen en subpaquetes (`memory`, `reasoning`, `sensors`, `documents`, etc.), los cuales a su vez exponen un subpaquete `tools` donde residen las herramientas que dicho servicio inyecta al agente.
-*   `io.github.jjdelcerro.noema.main`: Contiene los puntos de entrada de la aplicación (`Main`, `MainConsole`, `MainGUI`, `NoemaWebServer`, `BootUtils`).
-*   `io.github.jjdelcerro.noema.ui`: Contiene las abstracciones y adaptadores para las distintas interfaces (Consola nativa, Swing, o Web).
+El proyecto sigue una clara separación entre los contratos (interfaces) y su implementación lógica, promoviendo un bajo acoplamiento:
 
-Esta arquitectura permite que el núcleo del agente opere de manera agnóstica a la interfaz a través de la cual el usuario interactúa.
+*   `io.github.jjdelcerro.noema.main`: Puntos de entrada (`Main`, `MainConsole`, `MainGUI`, `MainLanterna`, `NoemaWebServer`), encargados del bootstrapping y selección del entorno de presentación.
+*   `io.github.jjdelcerro.noema.lib`: Contratos base del sistema (`Agent`, `AgentManager`, `AgentService`, interfaces de configuración y abstracciones de persistencia).
+*   `io.github.jjdelcerro.noema.lib.services.*`: Contratos de los dominios específicos (sensores, memoria, razonamiento, documentos).
+*   `io.github.jjdelcerro.noema.lib.impl.*`: Implementaciones reales de la lógica de negocio y de los servicios. Oculta la complejidad de H2, LangChain4j y la concurrencia.
+*   `io.github.jjdelcerro.noema.ui.*`: Lógica de la capa de presentación, separada por la tecnología subyacente (Swing, Lanterna, Console), permitiendo el patrón de [Comunicación Core-UI](docs/comunicacion-core-ui.md).
 
-## 4. Arquitectura y Diseño
+## Arquitectura y Diseño
 
-### 4.1. El Kernel (o Core)
-*   **`Agent` y `AgentManager`:** El `AgentManager` actúa como el Service Locator y la factoría principal del sistema. El `Agent` es el contenedor lógico que aglutina las configuraciones, el acceso a las interfaces, la base de conocimiento y los servicios.
-*   **Ciclo de Vida:** Los servicios se registran mediante un `AgentServiceFactory`. Durante el arranque (`start()`), se evalúa si el servicio cuenta con la configuración mínima requerida (`canStart()`). En la parada del sistema (`stop()`), un *shutdown hook* garantiza que los recursos, las conexiones H2 y los estados asíncronos se vuelquen a disco limpiamente.
-*   **Infraestructura de Datos:** `SQLProvider` aísla las consultas SQL nativas. La persistencia se divide en dos bases de datos físicas H2 separadas: `memory` (para el historial de turnos y checkpoints) y `service` (para tareas operativas como documentos, alarmas del scheduler, etc.).
-*   **Topología de Archivos:** Todo el estado del agente se circunscribe a un directorio de trabajo (Workspace) bajo la carpeta oculta `.noema-agent`. Esta contiene:
-    *   `var/config/`: Ficheros properties y el JSON principal de `settings`.
-    *   `var/lib/`: Bases de datos H2 y ficheros de estado (ej. `sensors.json`).
-    *   `var/cache/` y `var/tmp/`: Para descargas, parsing con Tika y salidas de consola.
-    *   `var/identity/`: Configuración del ADN técnico (`core`) y contexto del mundo del usuario (`environ`).
-    *   `var/skills/`: Manuales procedimentales de herramientas.
-    *   `home/`: Directorio aislado para la ejecución de scripts en entorno seguro.
+El agente está diseñado de manera modular. A continuación, se detalla la estructura organizativa de sus componentes.
 
-### 4.2. Capacidades Horizontales (Cross-cutting Concerns)
-*   **[Seguridad y Control de Acceso](docs/seguridad-y-control-de-acceso.md) (`AgentAccessControl`):** Gestiona de forma estricta los límites operativos del agente. Define un Sandbox para las operaciones de lectura/escritura (`nom_writable_paths`, `nom_readable_paths`, `allowed_external_paths`). Bloquea cualquier intento de ruta relativa maliciosa (Path Traversal). Evalúa globalmente si una herramienta tiene permisos de ejecución, escritura o red antes de exponerla al LLM.
-*   **[Gestión de Rutas y Sandbox](docs/gestion-de-rutas.md) (`AgentPaths`):** Abstracción que resuelve rutas relativas asegurando que siempre apunten a ubicaciones válidas dentro de la jerarquía de `.noema-agent` o la carpeta local del proyecto.
-*   **Sistema de Configuración Jerárquica (`AgentSettings`):** Implementado como un árbol de nodos (String, Lists, Booleans). Permite evaluación dinámica mediante el motor MVEL. Por ejemplo, una configuración en la UI puede habilitarse o deshabilitarse basada en el valor de otra configuración (ej. bloquear herramientas de disco si el control de acceso a disco está apagado).
+### 1. El Kernel (o Core)
 
-### 4.3. Servicios Cognitivos
-Esta capa gestiona cómo el agente piensa, recuerda y se comunica con el LLM. Comparten el acceso al **SourceOfTruth** (la capa de persistencia base que graba todo de forma inmutable).
+El núcleo del sistema gestiona la topología general y el arranque de todos los componentes.
 
-*   **Persistencia (Común):** El `SourceOfTruthImpl` guarda de forma atómica cada *Turno* de la conversación (Input de usuario, pensamiento del modelo, acción de herramienta, resultado, etc.) en H2.
-*   **[ReasoningService](docs/reasoning-service.md) (Orquestación del pensamiento)** Es el motor de inferencia. Construye el "System Prompt" consolidando la Identidad, el Entorno y las Habilidades. Gestiona la `Session` (ventana de contexto en RAM) y orquesta el bucle de ejecución: *Prepara contexto -> Llama al LLM -> Si hay Tool Call, valida y ejecuta -> Inyecta resultado -> Repite hasta que el modelo decida responder al usuario*. Emplea técnicas de *context trimming* (recorte de salidas largas de herramientas y notificación de las mismas).
-*   **[MemoryService](docs/memory-service.md) (Consolidación histórica y Checkpoints):** Encargado de la compresión semántica a largo plazo. Cuando los turnos exceden un límite, este servicio usa el LLM para leer los turnos pasados y redactar un **Punto de Guardado**. Este punto de guardado tiene formato Markdown y fusiona el resumen de lo ocurrido con una narrativa ("El viaje").
+*   **`Agent` y `AgentManager`:** El `Agent` representa el contexto en ejecución. En lugar de utilizar frameworks pesados, el `AgentManager` centraliza la [Inicialización e inyección de dependencias](docs/inicializacion-e-inyeccion-de-dependencias.md) de forma manual y predecible, registrando las factorías de servicios y facilitando las referencias cruzadas.
+*   **Ciclo de Vida:** Gestionado explícitamente a través de los métodos `start()` y `stop()`. El Kernel inicializa las bases de datos, carga la configuración y arranca secuencialmente los servicios permitidos.
+*   **Infraestructura de Datos:** A través de la interfaz `ConnectionSupplier`, el núcleo inyecta conexiones JDBC. La clase `SQLProvider` abstrae las consultas específicas, permitiendo gestionar de forma limpia el esquema relacional en H2.
+*   **Topología de Archivos:** Todo el estado del agente reside en un *sandbox* local gestionado por [AgentPaths](docs/gestion-de-rutas.md). La jerarquía bajo la carpeta `.noema-agent` aisla recursos:
+    *   `var/config`: Configuraciones, propiedades y *prompts*.
+    *   `var/lib`: Bases de datos (memoria y servicios), y archivos de *checkpoints*.
+    *   `var/tmp` y `var/cache`: Archivos volátiles para paginación de resultados masivos y cachés de extracción de documentos.
+    *   `var/identity` y `var/skills`: Definición de la constitución operativa y catálogos procedimentales.
 
-### 4.4. Servicios de Periferia
-Manejan las capacidades sensoriales, de almacenamiento documental y de actuación sobre el mundo exterior.
+### 2. Capacidades Horizontales (Cross-cutting Concerns)
 
-*   **[SensorsService](docs/sensors-service.md)** Implementa un bus de eventos concurrente para inyectar percepciones asíncronas en el modelo. Clasifica los eventos según su naturaleza (`DISCRETE`, `MERGEABLE`, `AGGREGATABLE`, `STATE`, `USER`) para evitar saturar al agente si ocurren demasiados eventos mientras está procesando o inactivo.
-*   **[SchedulerService](docs/scheduler-service.md):** Un motor de tareas programadas. Permite al agente registrar alarmas persistentes en H2. Al cumplirse el plazo, inyecta un evento en el `SensorsService` para que el agente reciba el estímulo.
-*   **EmailService y TelegramService:** Adaptadores de comunicación. Escuchan pasivamente (IMAP IDLE y Long-Polling). En lugar de enviar un documento gigante al LLM, inyectan notificaciones breves ("Tienes un nuevo email del usuario"). El agente luego usa sus herramientas para leer el contenido real.
-*   **DocumentsService:** Servicio RAG (Retrieval-Augmented Generation) avanzado. Al ingestar un documento (PDF, texto), utiliza un proceso asíncrono y LLMs de bajo coste para parsear la estructura jerárquica (índice) y redactar resúmenes por sección. 
-*   **[EmbeddingsService](docs/embeddings-service.md):** Mantiene la vectorización local. Al no usar BBDD vectoriales de terceros, carga un modelo cuantizado en proceso (ej. `AllMiniLmL6V2`). La búsqueda vectorial (`EmbeddingFilterImpl`) se hace en memoria calculando la distancia coseno mediante un *Min-Heap* (Priority Queue) para extraer el Top-K de similitudes contra los BLOBs almacenados en H2.
+Módulos que atraviesan transversalmente todo el sistema, proveyendo utilidades fundamentales.
 
+*   **Seguridad y Control de Acceso:** El componente [AgentAccessControl](docs/seguridad-y-control-de-acceso.md) ejerce como guardián. Define qué rutas pueden ser leídas o escritas, gestiona los permisos para ejecución de shell y peticiones de red, y fuerza la confirmación humana mediante diálogos síncronos ante operaciones destructivas. Adicionalmente, integra `firejail` para el aislamiento de comandos.
+*   **Sistema de Configuración Jerárquica:** Representado por `AgentSettings` y su serialización en `settings.json`. Permite la recarga en caliente de políticas y credenciales. Su interfaz de usuario (`settingsui.json`) es dinámica, utilizando expresiones MVEL para habilitar o deshabilitar opciones condicionalmente.
 
-## 5. Descripción Detallada de Mecanismos Principales
+### 3. Servicios Cognitivos y Persistencia
 
-### Gestión de la Memoria
-El sistema descarta el enfoque de mantener todo el diálogo crudo o confiar ciegamente en una base vectorial. Divide la memoria en tres fases:
+Este bloque gestiona la capacidad de pensar, recordar y procesar información en una línea temporal unificada.
 
-1.  **Turnos:** Inmutables y almacenados en H2 con su embedding correspondiente.
-2.  **Sesión (RAM):** La ventana de contexto deslizante y temporal de los eventos actuales.
-3.  **Checkpoints (Puntos de Guardado):** Cuando la sesión alcanza un umbral configurado (ej. 40 turnos), se dispara el protocolo de compactación. Un modelo LLM asimila los turnos y el Checkpoint anterior, generando un nuevo documento Markdown ("Resumen" + "El Viaje"). Crucialmente, el sistema instruye al LLM para que preserve marcadores de citas (`{cite:123}`) atados a los IDs de los turnos originales, garantizando que el agente siempre sepa cómo recuperar el detalle técnico exacto del pasado.
+*   **Orquestación:** El [ReasoningService](docs/reasoning-service.md) mantiene el hilo de ejecución principal (`eventDispatcher`). Extrae eventos de la periferia, ensambla el contexto dinámico, consulta al LLM, y enruta la ejecución de herramientas requeridas.
+*   **Compactación:** Para evitar agotar el límite de tokens, el [MemoryCompactionService](docs/memory-service.md) es invocado periódicamente. Utiliza un LLM para transformar los turnos más antiguos en un `CheckPoint` narrativo (un texto compuesto por un "Resumen" y una historia detallada llamada "El Viaje").
+*   **Vectores Locales:** El [EmbeddingsService](docs/embeddings-service.md) carga un modelo ONNX local en memoria (por defecto *all-MiniLM-L6-v2*) para calcular vectores densos. Esto permite el filtrado por similitud del coseno directamente en Java sin dependencias de infraestructura.
+*   **Abstracciones de Memoria:**
+    *   `EpisodicMemory`: Interfaz contra la base de datos H2 que guarda cada interacción inmutable (`Turn`) y los `CompactedMemory` (metadatos de los puntos de control).
+    *   `RecentMemory`: La memoria de trabajo en RAM, que mantiene los mensajes LangChain4j de los últimos intercambios y decide cuándo es necesaria la compactación.
+    *   `ProjectedMemory`: Genera la ventana de contexto final para el LLM. Aplica algoritmos de recorte (truncado de salidas grandes) e inyecta advertencias efímeras si el agente olvida extraer conocimiento clave de los textos leídos.
 
-### Identidad y Habilidades (Skills)
-*   **Identidad:** Se define en ficheros `.md` dentro de `var/identity/core` (reglas operativas estables) y `var/identity/environ` (biografía o estado del mundo).
-*   **Skills:** Son protocolos o manuales de instrucciones técnicos (`var/skills`). El agente tiene una herramienta para listar los títulos y resúmenes de estos manuales. Si el usuario pide una tarea (ej. "Haz un deploy"), el agente busca en el listado, localiza el manual correcto y usa otra herramienta para cargarlo en su contexto temporal de trabajo.
+### 4. Servicios de Periferia
 
-### Gestión de Eventos y Percepción Temporal
-Los eventos externos no interrumpen al LLM, sino que se encolan.
+Subsistemas que conectan al agente con el mundo exterior o fuentes de eventos asíncronos.
 
-*   **Inyección "Pool Event":** Cuando el LLM termina su turno, el motor verifica si hay eventos en cola. Si los hay, envuelve la información del evento fingiendo que el propio LLM llamó a una herramienta del sistema llamada `pool_event`. Esto mantiene intacta la pureza conversacional (User -> AI -> Tool -> Result).
-*   **Percepción Temporal:** Si transcurre mucho tiempo (ej. 1 hora) sin interacción, el sistema inyecta un evento silencioso (`SYSTEMCLOCK`). Esto dota al agente del sentido del paso del tiempo ("Han pasado X horas desde la última interacción"), permitiéndole comenzar respuestas de forma natural ("Ha pasado un rato, ¿en qué estábamos?").
+*   **Gestión de Eventos:** El [SensorsService](docs/sensors-service.md) actúa como el bus de entrada asíncrona. Normaliza las percepciones (mensajes, alarmas, estados) clasificándolas por su naturaleza (`DISCRETE`, `MERGEABLE`, `AGGREGATABLE`, `STATE`, `USER`), resolviendo posibles conflictos cronológicos en su cola de entrega.
+*   **Planificación:** El [SchedulerService](docs/scheduler-service.md) provee la capacidad de programar tareas diferidas (alarmas). Persiste las solicitudes en base de datos y, llegado el momento, inyecta un evento en la cola sensorial para que el agente reaccione.
+*   **Comunicaciones:**
+    *   `TelegramService`: Escucha proactivamente mensajes entrantes filtrados por un `chat_id` autorizado y provee capacidad de respuesta.
+    *   `EmailService`: Monitoriza bandejas IMAP e inyecta avisos ligeros de nuevos correos; adicionalmente permite enviar correos SMTP y leer cuerpos de mensaje bajo demanda.
+*   **Manejo Documental:** El `DocumentsService` encapsula el proceso RAG (Retrieval-Augmented Generation). Transforma archivos brutos mediante Tika en esquemas jerárquicos (índices), calcula embeddings de los resúmenes y permite la lectura de secciones específicas para no saturar al LLM.
+*   **Protocolo de Modelos (MCP):** El `McpService` descubre dinámicamente clientes MCP (por STDIO o HTTP/SSE), envolviendo sus funciones remotas como herramientas estándar dentro del ecosistema de Noema.
+
+---
+
+## Herramientas del Agente ([AgentTools](docs/agenttools.md))
+
+Noema posee un catálogo extenso de capacidades que el modelo de lenguaje puede invocar para interactuar con su entorno. Se enumeran a continuación categorizadas por su dominio:
+
+*   **Identidad y Memoria Interna**
+    *   `consult_environ`: Carga módulos de conocimiento denso o biográfico del entorno del usuario.
+    *   `list_skills`: Enumera el catálogo de habilidades y flujos de trabajo disponibles.
+    *   `load_skill`: Recupera el manual técnico completo de una habilidad concreta.
+    *   `fetch_citation` (`LookupTurnTool`): Recupera el contenido íntegro y el contexto de un turno histórico a partir de un identificador de cita (ej. `{cite:123}`).
+    *   `search_full_history`: Ejecuta búsqueda semántica local sobre todo el histórico de la conversación.
+    *   `annotate_observation`: Guarda conclusiones, notas o resúmenes de manera explícita para que se integren en la consolidación de la memoria a largo plazo.
+*   **Gestión Operativa y de Eventos**
+    *   `pool_event`: Herramienta ficticia utilizada estructuralmente para simular que el agente consulta su cola de eventos externos.
+    *   `schedule_alarm`: Programa notificaciones futuras parseando fechas en lenguaje natural.
+    *   `sensor_status`: Muestra estadísticas, salud y configuración de los canales de entrada.
+    *   `sensor_stop` / `sensor_start`: Permite al agente ignorar temporalmente ciertos canales (ej. silenciar notificaciones).
+    *   `get_current_time`: Informa de la fecha y hora del sistema para cálculo de temporalidades.
+*   **Interacción con Sistema de Archivos**
+    *   `file_find`: Busca recursivamente archivos por patrones *glob*.
+    *   `file_grep`: Busca contenido de texto (expresiones) dentro de un directorio o fichero.
+    *   `file_read`: Lee y sirve el contenido de ficheros de texto plano.
+    *   `read_paginated_resource`: Herramienta universal que sirve bloques de contenido masivo (ficheros, descargas, logs) usando *offsets* a partir de un identificador `tmp://` o `cache://`.
+    *   `file_write`: Crea o sobrescribe un archivo en disco.
+    *   `file_mkdir`: Crea directorios físicos en la ruta indicada.
+    *   `file_patch`: Modifica archivos aplicando un bloque *Unified Diff*.
+    *   `file_search_and_replace`: Reemplaza un texto exacto por otro en un documento.
+    *   `file_extract_text`: Extrae el texto de archivos binarios (PDF, DOCX) utilizando Apache Tika.
+    *   `file_history`: Muestra el registro de control de revisiones local (commits y fechas) de un fichero.
+    *   `file_recovery`: Restaura el estado de un fichero a una versión anterior específica.
+    *   `file_read_selectors`: Crea un *bundle* combinando el contenido de múltiples archivos basado en patrones *glob*.
+*   **Ejecución de Comandos**
+    *   `shell_execute`: Lanza procesos en el terminal del sistema operativo, capturando su salida de error y estándar hacia un fichero temporal paginado.
+*   **Web y Red**
+    *   `web_search`: Búsqueda de información en Internet utilizando el proveedor Tavily.
+    *   `web_search` (variante Brave): Implementación alternativa para el motor Brave Search.
+    *   `web_get_content`: Descarga código HTML de una URL y lo limpia utilizando Tika para extraer solo el texto relevante.
+    *   `get_weather`: Obtiene previsiones meteorológicas y clima actual vía Open-Meteo.
+    *   `get_current_location`: Determina la geolocalización basada en la IP externa del host.
+*   **Comunicaciones**
+    *   `email_list_inbox`: Lee las cabeceras (asunto, remitente, UID) de los últimos correos recibidos.
+    *   `email_read`: Descarga y limpia el cuerpo completo de un correo específico por su UID.
+    *   `email_send`: Redacta y transmite un correo mediante protocolo SMTP.
+    *   `telegram_send`: Envía mensajes push al usuario mediante la API de Telegram.
+*   **Gestión Documental Estructurada (RAG)**
+    *   `document_index`: Encola un documento para su análisis estructural asíncrono.
+    *   `document_search`: Búsqueda híbrida que cruza categorías estrictas con similitud vectorial en resúmenes.
+    *   `document_search_by_categories`: Filtra directamente los documentos por su tipología.
+    *   `document_search_by_sumaries`: Ejecuta exclusivamente búsqueda semántica sobre los resúmenes documentales.
+    *   `get_document_structure`: Recupera el índice jerárquico XML de un documento mapeado.
+    *   `get_partial_document`: Inyecta el contenido completo en formato XML solo para las secciones específicas que el modelo decida expandir.
+*   **Gestión de Subagentes**
+    *   `list_subagents`: Lista el catálogo de recetas de trabajadores en segundo plano disponibles en el sistema.
+    *   `launch_subagent`: Inicia de forma asíncrona una tarea especializada aislada.
+
+---
+
+## Mecanismos Principales Detallados
+
+### Gestión de Memoria
+
+El agente utiliza un flujo de estado continuo, sin fragmentación en sesiones pasadas. Cuando la ventana de trabajo en RAM (`RecentMemory`) alcanza un límite paramétrico (ej. 40 turnos), el orquestador congela el último bloque de mensajes y lo delega al servicio de compactación. 
+El LLM encargado de la compactación recibe el punto de guardado anterior y los nuevos turnos en formato CSV, y redacta una narrativa fluida denominada "El Viaje". Este resumen no pierde trazabilidad: mantiene identificadores rígidos (`{cite:123}`) atados a los registros inmutables de la base de datos H2. 
+Adicionalmente, herramientas con salida masiva sufren una recesión cognitiva (`trimResult`): se elimina su cuerpo del historial activo para ahorrar tokens, dejando solo metadatos y advirtiendo al modelo de que debe invocar la herramienta de anotación (`annotate_observation`) para cristalizar los conceptos clave antes de que la información se pode.
+
+### Gestión de la Identidad del Agente
+
+La constitución del agente no reside en su código, sino en archivos de texto editables en tiempo de ejecución. 
+*   **Core:** Instrucciones inmutables (metodologías, personalidad técnica) inyectadas directamente en el `SystemPrompt` en la construcción de cada contexto.
+*   **Entorno (Environ):** Archivos separados en dos capas. Un archivo `.ref.md` ligero que actúa como índice y se inyecta permanentemente, advirtiendo al agente de la existencia de información externa; y un archivo `.md` denso que solo se carga en la memoria de trabajo si el agente invoca `consult_environ` para estudiarlo en profundidad.
+
+### Gestión de Habilidades (Skills)
+
+El sistema de habilidades (`var/skills/`) replica la técnica del entorno. Se presentan al modelo los descriptores ligeros de las tareas que puede realizar (ej. "Refactorizar backend", "Desplegar servidor"). Ante peticiones complejas, el LLM puede utilizar `list_skills` para identificar su catálogo, y `load_skill` para adquirir de manera efímera el paso a paso del procedimiento manual en su memoria de trabajo, garantizando alta precisión operativa sin mantener promtps sobrecargados.
+
+### Gestión de Eventos
+
+Rompiendo el paradigma pasivo "Request-Response" de los LLM, la aplicación abstrae las notificaciones (Telegram, correos, alarmas, notificaciones del propio sistema) en una cola unificada concurrente gestionada por el servicio sensorial.
+Cuando un estímulo llega, el orquestador intercepta el bucle de razonamiento. Inyecta en el historial conversacional un mensaje artificial simulando que el modelo ejecutó la herramienta `pool_event`, seguido del mensaje de resultado que contiene el evento real. Esto preserva la ilusión de agencia y la estructura estricta del historial, permitiendo que el LLM reaccione proactivamente a eventos asíncronos como si hubiese sondeado el entorno por voluntad propia.
 
 ### Indexación de Documentos
-Emplea un enfoque de **DocMapper**. 
 
-1. `Tika` extrae el texto bruto.
-2. El sistema lo convierte a formato CSV (Línea, Contenido).
-3. Un LLM "razonador" analiza el CSV y extrae un XML con la jerarquía de los títulos.
-4. Un LLM "básico" lee el contenido entre títulos para extraer un resumen y etiquetas (categorías).
-5. Todo se guarda en H2 con embeddings. Posteriormente, el agente no busca "chunks ciegos", sino que explora el árbol estructural del documento y recupera la sección específica exacta.
+Noema implementa un RAG estructural en lugar de un RAG por fragmentación semántica ciega (chunking simple). 
+Al invocar `document_index`, un hilo asíncrono mapea el archivo. Si la estructura jerárquica no puede deducirse por reglas, se utiliza un LLM dedicado (`DOCMAPPER_REASONING_LLM`) para analizar el CSV paginado y devolver un JSON con la estructura (secciones, títulos, niveles lógicos). 
+Posteriormente, otro modelo más ligero (`DOCMAPPER_BASIC_LLM`) resume el texto contenido en cada sección delimitada y le asigna etiquetas/categorías. Finalmente, los resúmenes se vectorizan usando el servicio local de embeddings. 
+El LLM primario puede entonces navegar este árbol: primero buscando conceptualmente (`document_search`), luego solicitando el esqueleto del documento en XML (`get_document_structure`) y por último expandiendo para su lectura detallada solo los nodos específicos que necesita investigar (`get_partial_document`).
 
 ### Gestión de la Seguridad
-*   **Sandboxing:** Las herramientas de disco usan `AgentAccessControl` para verificar la ruta y bloquear Path Traversal (`../../`).
-*   **Human-in-the-Loop:** Herramientas de escritura de disco o de comandos Bash detienen la ejecución y disparan un prompt asíncrono (popup en Swing o pregunta en consola) pidiendo autorización humana antes de continuar.
-*   **RCS (Sistema de Control de Revisiones):** Antes de cualquier operación de modificación de archivos (`file_write`, `file_patch`, `file_search_and_replace`), el sistema inyecta automáticamente un comando Check-in (`ci`) a la librería interna [RCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs). Esto permite que el agente siempre pueda revertir errores si el LLM daña el código.
-*   **Firejail:** Para `shell_execute`, si el binario `firejail` está instalado en el sistema operativo, los comandos se enjaulan con acceso exclusivo de lectura/escritura al `home` del sandbox, protegiendo al equipo anfitrión.
 
+Dado el nivel de autonomía, el control de riesgos es vital:
+*   **Restricción de Acceso:** La resolución de rutas asegura que ninguna lectura/escritura escape del *Workspace* activo, o de la lista blanca de rutas externas configuradas explícitamente (`allowed_external_paths`). Protege activamente la escritura en zonas sensibles (como ficheros ocultos `.git` o copias de seguridad de versión).
+*   **Confirmación Humana:** Todas las herramientas marcan su potencial de riesgo (`MODE_WRITE`, `MODE_EXECUTION`). Al ser invocadas por el modelo, el hilo principal se bloquea levantando un diálogo síncrono en la interfaz gráfica (o un *prompt* en terminal). Si el usuario deniega la operación, la herramienta devuelve un texto de fallo formal que se inyecta de nuevo en el historial, permitiendo al LLM rectificar su estrategia.
+*   **Integración RCS Automática:** Antes de que las herramientas `file_write`, `file_patch` o `file_search_and_replace` alteren un documento, el sistema lanza de forma invisible un comando de *checkin* contra la librería [JavaRCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs). Esto encapsula el estado previo del archivo, posibilitando auditorías de historial (`file_history`) y revesiones absolutas del estado (`file_recovery`) por parte del agente o el usuario.
 
-## 6. Catálogo de Herramientas del Agente
+### Flujos en el Conversation Manager
 
-Las [herramientas](docs/agenttools.md) están repartidas por los diferentes servicios, heredando de `AbstractAgentTool` (o `AbstractPaginatedAgentTool` para gestionar salidas masivas).
+El orquestador de razonamiento corre en un bucle perenne (`eventDispatcher`). Su ciclo iterativo:
+1.  Espera bloqueado en la cola sensorial.
+2.  Extrae un evento, evaluando su marca temporal para ordenar lógicamente alarmas diferidas contra mensajes de red.
+3.  Carga el último `CheckPoint` en caché y los mensajes de la memoria de trabajo.
+4.  Aplica transformaciones de amnesia selectiva: recorta resultados grandes antiguos y verifica si hay "recursos sin anotar" para inyectar advertencias efímeras.
+5.  Despacha el *prompt* hacia el LLM.
+6.  Si el LLM devuelve peticiones de herramientas, las ejecuta secuencialmente, inyecta los resultados y vuelve al paso 3.
+7.  Si devuelve texto plano, lo transmite a la interfaz gráfica, sella el turno en la persistencia y comprueba el umbral para disparar un evento de compactación narrativa.
 
-### Sistema, Eventos y Memoria (`MemoryService` / `ReasoningService` / `SensorsService`)
-*   `pool_event`: Herramienta ficticia que consulta el bus de eventos pendientes.
-*   `get_current_time`: Devuelve la hora del sistema y zona horaria.
-*   `schedule_alarm`: Programa una notificación asíncrona mediante Natural Language Parsing (vía Natty).
-*   `sensor_start` / `sensor_stop` / `sensor_status`: Permiten al agente apagar canales (ej. silenciar Telegram) para "concentrarse" o consultar qué sensores tiene activos.
-*   `lookup_turn`: Recupera un fragmento exacto del historial basándose en una cita (`{cite:ID}`).
-*   `search_full_history`: Búsqueda vectorial semántica en toda la base de conocimiento pasada.
-*   `annotate_observation`: Permite al agente escribir "notas" en su flujo actual para forzar la consolidación de conclusiones en el próximo ciclo de memoria.
+### Subagentes
 
-### Identidad y Procedimientos (`ReasoningService`)
-*   `list_skills`: Escanea el directorio de habilidades y devuelve el catálogo de procedimientos disponibles.
-*   `load_skill`: Carga el contenido denso (`.md`) de un procedimiento específico en el contexto actual.
-*   `consult_environ`: Recupera un módulo de conocimiento denso sobre el usuario o el entorno basándose en los ficheros de referencias ligeras (`.ref.md`).
+Para tareas de procesamiento que consumirían demasiados turnos en el bucle principal (ej. recorrer un directorio inmenso, indexar varios manuales, procesar extracciones pesadas), el modelo puede utilizar `launch_subagent`. 
+A partir de un descriptor XML (`var/subagents/`), el sistema crea un espacio de trabajo efímero independiente y levanta una instancia secundaria aislada del agente. Este subagente ejecuta su instrucción en un hilo de plataforma en segundo plano. Cuando completa su objetivo (o falla por un *timeout*), inyecta los resultados a través del bus de eventos de sistema (`SYSTEMNOTIFICATION`) de vuelta al historial conversacional del agente principal, permitiéndole operar de forma asíncrona sin bloquear la interacción con el usuario humano.
 
-### Interacción con Archivos y Código (`ReasoningService`)
-*(Controladas por RCS y Sandbox)*
+---
 
-*   `file_find`: Búsqueda de rutas mediante patrones glob (con paginación temporal).
-*   `file_grep`: Búsqueda de cadenas de texto dentro de archivos o directorios.
-*   `file_read`: Lee ficheros de código o texto plano (paginado).
-*   `file_read_selectors`: Lee múltiples ficheros simultáneamente agrupándolos (paginado).
-*   `file_extract_text`: Usa Apache Tika para leer archivos binarios pesados (PDF, Word) almacenando la caché de la extracción.
-*   `file_write`: Sobrescribe o crea archivos nuevos.
-*   `file_mkdir`: Creación de rutas de directorios.
-*   `file_search_and_replace`: Reemplazo seguro y quirúrgico de un bloque de texto exacto.
-*   `file_patch`: Aplica un *Unified Diff* (@@) para refactorizaciones complejas (usa `java-diff-utils`).
-*   `file_history`: Muestra el log de un archivo usando [RCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs) (`rlog`).
-*   `file_recovery`: Restaura un fichero a una versión anterior usando [RCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs) (`co`).
-*   `read_paginated_resource`: Herramienta técnica que permite al LLM ir pidiendo el siguiente *chunk* de un recurso paginado (usado por lecturas web, grep, bash, etc.).
+## Construcción y Despliegue
 
-### Ejecución de Comandos
-*   `shell_execute`: Ejecuta bash. Gestiona la no interactividad, detiene la ejecución si el comando dura demasiado preguntando al usuario, e integra `firejail`.
+La solución está empaquetada de manera integral facilitando su distribución.
+Se apoya en Apache Maven y define la compatibilidad a nivel de lenguaje con Java 25. 
+El plugin `maven-shade-plugin` agrupa todas las dependencias transitivas (motores LLM, drivers H2, librerías de UI de FlatLaf y RSyntaxTextArea, parseadores, etc.) en un único Uber-JAR. Transforma adecuadamente el manifiesto de la aplicación y agrupa las firmas de servicios garantizando que todos los proveedores dinámicos (como SLF4J y servicios de Tika) estén correctamente instanciados en ejecución. 
+No se requiere infraestructura adicional ni dependencias en el host más allá de contar con la Máquina Virtual de Java correspondiente. 
 
-### Búsqueda e Interacción Web
-*   `web_search`: Integra APIs de búsqueda externa (Brave o Tavily).
-*   `web_get_content`: Descarga una URL y aplica Tika para limpiar el HTML o parsear documentos online (paginado).
-*   `get_weather`: Usa Open-Meteo para obtener previsión meteorológica.
-*   `get_current_location`: Geolocalización mediante IP pública (ip-api).
+## Conclusión
 
-### Comunicaciones y Periferia (`EmailService` / `TelegramService`)
-*   `email_list_inbox`: Lee las cabeceras de la bandeja de entrada vía IMAP.
-*   `email_read`: Lee el cuerpo de un email purgado y sanitizado.
-*   `email_send`: Redacta y envía correos vía SMTP.
-*   `telegram_send`: Envía mensajes push directos al cliente de Telegram del usuario.
+El proyecto Noema es un ejercicio de arquitectura pragmática excepcional. Rechaza deliberadamente soluciones sobredimensionadas como bases de datos vectoriales dedicadas o microservicios externos en favor de un sistema monolítico, portátil e introspectivo basado fundamentalmente en la persistencia por sistema de archivos local y SQL embebido.
 
-### Base Documental (DocMapper en `DocumentsService`)
-*   `document_index`: Dispara asíncronamente la vectorización y análisis estructural de un fichero nuevo.
-*   `document_search`: Búsqueda híbrida (categorías SQL + Similitud Coseno).
-*   `document_search_by_categories`: Filtrado directo SQL.
-*   `document_search_by_sumaries`: Búsqueda vectorial pura sobre los resúmenes del documento.
-*   `get_document_structure`: Devuelve el XML jerárquico del índice del documento generado por IA.
-*   `get_partial_document`: Expande el texto de una rama concreta del XML documental sin sobrecargar el contexto.
-
-
-## 7. Construcción y Despliegue
-
-La construcción se realiza mediante **Maven**. El objetivo principal es generar un ejecutable autocontenido (*Fat JAR*) que no dependa de infraestructura instalada.
-
-*   En el `pom.xml`, se utiliza el `maven-shade-plugin`. Es destacable el uso del `ServicesResourceTransformer`, indispensable cuando se empaquetan librerías modulares y factorías de SPI como `java.sql` o componentes de Log4j2.
-*   Existen filtros (`META-INF/*.SF`, `*.DSA`, `*.RSA`) para evitar conflictos de firmas digitales originados al fusionar dependencias.
-*   El punto de entrada dual `io.github.jjdelcerro.noema.main.Main` admite parámetros (ej. `-c` para iniciar en modo Consola JLine3) o arranca por defecto la GUI Swing (FlatLaf). Un hilo paralelo inicializa un servidor web Javalin (en puerto configurable, default 8080) para exponer la misma interfaz por navegador usando Server-Sent Events (SSE).
-
-
-## 8. Conclusión
-
-**Noema** es un proyecto arquitectónicamente sofisticado diseñado con mentalidad "Do It Yourself". Al prescindir intencionalmente de infraestructuras pesadas en la nube o complejas bases de datos vectoriales, obliga a resolver los problemas cognitivos mediante diseño de software clásico e ingeniería de prompts (como su sistema de Checkpoints Markdown en capas, su búsqueda M-MaxP, y su enrutador asíncrono de eventos). 
-
-Resulta una pieza de estudio brillante en cuanto al manejo de la "ilusión de consciencia y proactividad". La simulación de interrupciones asíncronas vía `pool_event`, el control de versiones silencioso integrado mediante [RCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs), y el cuidado extremo en la higiene del estado conversacional, convierten a este agente en un excelente y muy seguro compañero de reflexión técnica para largas jornadas.
+Destaca profundamente su abordaje del mayor desafío de los LLMs modernos: el límite de ventana de contexto. Sustituir un patrón de retención de texto ciego por un sistema activo de compactación narrativa —dotando al agente de herramientas para auditar su propio historial, recuperar recuerdos encapsulados y escribir memorándums preventivos— resulta en un paradigma cognitivo brillante. Todo esto, respaldado por un control de seguridad granular que pone siempre al humano como guardián último, transforma lo que podría ser un mero script de invocaciones a API en un genuino "compañero digital" continuo y predecible.
