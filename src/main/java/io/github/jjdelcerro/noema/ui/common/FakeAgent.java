@@ -170,6 +170,11 @@ public class FakeAgent implements Agent {
         return DEFAULT_SUBCHANNEL;
     }
 
+  @Override
+  public void addSharedService(AgentService service) {
+
+  }
+
   private static class FakeConsole implements AgentConsole {
 
     @Override
