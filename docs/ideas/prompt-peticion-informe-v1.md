@@ -47,11 +47,13 @@ Teniendo en cuenta todo esto prepara un informe que incluya como minimo:
         *   **Sistema de Configuración Jerárquica** (`AgentSettings`).
 
     3.  **Servicios Cognitivos** (puedes incluir aqui mencion a la parte de persistencia como algo comun a estos dos servicios).
-        *   [ReasoningService](docs/reasoning-service.md) (Orquestación del pensamiento).
-        *   MemoryService (Consolidación histórica y Checkpoints).
+        *   ReasoningService (Orquestación del pensamiento y subchannels).
+        *   MemoryCompactionService
+        *   EpisodicMemory, CompactedMemory, RecentMemory, ProyectedMemory
+
 
     4.  **Servicios de Periferia** (asegurate que en esta seccion se incluyan todos los servicios que no esten en el apartado de servicios Cognitivos).
-        *   [SensorsService](docs/sensors-service.md).
+        *   SensorsService.
         *   SchedulerService.
         *   Email / Telegram.
         *   DocumentsService.
@@ -62,6 +64,8 @@ Teniendo en cuenta todo esto prepara un informe que incluya como minimo:
 *   Construccion y despliegue
 *   Una conclusion
 
+El informe se generará en Markdown. Cuando cites un concepto, servicio, documento o proyecto que tenga una referencia asociada en la lista de documentación, debes insertar el enlace markdown correspondiente en ese punto, no solo mencionar el nombre.
+
 Opcionalmente puede incluir:
 
 * Otros detalles relevantes
@@ -69,24 +73,43 @@ Opcionalmente puede incluir:
 Organiza las herramientas por bloques funcionales. Ten en cuenta que estas pueden estar implementadas en cualquier parte del codigo, siendo su unica distincion en que son clases que implementan el interface AgentTool. No asumas que solo existen las que se encuentren usadas/nombradas en ficheros de configuracion.
 
 Incluye una descripcion detallada de los principales mecanismos:
-* Gestion de memoria (session vs persistencia de turnos vs puntos-de-guardado)
+* Gestion de memoria 
 * Gestion de la identidad del agente
 * Gestion de habilidades (skills)
 * Gestion de eventos
-* Percepcion temporal (insercion de marcas de silencio en la conversacion y tiempo en las respuestas a pool_event)
 * Indexacion de documentos. juego de herramientas, y mecanismo que emplea para el indexado de los documentos.
 * Gestion de la seguridad:
   * restriccion de acceso al sistema de ficheros
   * confirmacion por el usuario de operaciones de escritura
   * uso de CI automatico previo a modificaciones de archivos
 * Flujos en el conversation manager.
+* Subagentes
 
 Incluye previo a la seccion de vision general informacion sobre:
 * Versión Analizada
 * Fecha de Análisis
 * Autor del Informe: Gemini (IA), basado en la inspección estática del código fuente.
 
-Si nombras RCS o JavaRCS asegurate de poner un enlace a https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs. Ej: `[RCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs)`
+
+Los siguientes documentos y proyectos están disponibles y deben enlazarse en markdown **cuando el informe aborde el tema correspondiente**. No es obligatorio citar todos los documentos; solo debes enlazar la primera mención relevante de cada concepto o servicio en el cuerpo del informe. No introduzcas enlaces forzados si el tema no aparece de forma natural.
+
+Lista de referencias:
+
+* RCS o JavaRCS: https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs
+* "Las herramientas (AgentTools) y su sistema de paginación": docs/agenttools.md
+* "Servicio de Embeddings (`EmbeddingsService`)": docs/embeddings-service.md
+* "Servicio de compactacion de memoria (`MemoryCompactionService`)": docs/memory-service.md
+* "Servicio de Planificación (`SchedulerService`)": docs/scheduler-service.md
+* "Especificación técnica de la implementación de SensorsService": docs/sensors-service.md
+* "Comunicación Core-UI (Capa de Presentación)": docs/comunicacion-core-ui.md
+* "Gestión de Rutas (AgentPaths)": docs/gestion-de-rutas.md
+* "Inicialización e inyección de dependencias": docs/inicializacion-e-inyeccion-de-dependencias.md
+* "Especificación técnica de la implementación de ReasoningService": docs/reasoning-service.md
+* "Seguridad y Control de Acceso (`AgentAccessControl`)": docs/seguridad-y-control-de-acceso.md
+
+Cuando incluyas un enlace de la lista anterior, utiliza como **texto visible del enlace únicamente el nombre del concepto o servicio** que hayas introducido (por ejemplo, `ReasoningService`, `MemoryCompactionService`, `AgentAccessControl`, `SchedulerService`). No utilices como texto del enlace títulos largos de documentos ni frases como "Especificación técnica de la implementación de...". Evita introducir el enlace con expresiones como "Documentado en", "Detallado en", "Gobernado por", "Canalizada a través de". En lugar de eso, coloca el enlace directamente como sujeto de la frase o del elemento de lista. 
+
+Antes de finalizar, revisa que no has dejado sin enlazar ninguna mención a conceptos o servicios que aparecen en la lista de documentación. Si un documento no es mencionado en absoluto, no lo incluyas forzadamente.
 
 Cuanto mas detallado mejor.
 Es preferible que te extiendas y generes un analisis detallado. 
