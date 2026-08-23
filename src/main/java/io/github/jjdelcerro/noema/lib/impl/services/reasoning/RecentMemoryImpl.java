@@ -19,7 +19,6 @@ import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
-import io.github.jjdelcerro.noema.lib.impl.DateUtils;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.persistence.Turn;
 import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.MEMORY_COMPACTION_TURNS;
@@ -31,11 +30,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.time.LocalDateTime;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.jjdelcerro.noema.lib.persistence.CompactedMemory;
 
 /**
  * Agregado que gobierna el estado de la sesion activa de conversacion. Gestiona
@@ -89,7 +86,6 @@ public class RecentMemoryImpl implements RecentMemory {
   private final List<ChatMessage> messages = new ArrayList<>();
   // Key: Indice en 'messages', Value: ChatMessageInfo
   private Map<Integer, ChatMessageInfo> turnOfMessage = new HashMap<>();
-  private LocalDateTime lastInteractionTime;
   private final AgentSettings settings;
 
   /**
@@ -137,30 +133,6 @@ public class RecentMemoryImpl implements RecentMemory {
     }
 
     this.save();
-  }
-
-  @Override
-  public List<ChatMessage> getContextMessages(CompactedMemory checkpoint, String systemPrompt) {
-    List<ChatMessage> context = new ArrayList<>();
-
-    StringBuilder sb = new StringBuilder();
-    if (systemPrompt != null && !systemPrompt.isEmpty()) {
-      sb.append(systemPrompt);
-    }
-
-    if (checkpoint != null) {
-      sb.append("\n\n## Contexto consolidado de la conversacion\n");
-      sb.append("Resumen actualizado hasta: ").append(DateUtils.toString(checkpoint.getTimestamp())).append(".\n\n");
-      sb.append("--- INICIO DEL RELATO ---\n");
-      sb.append(checkpoint.getText()).append("\n");
-      sb.append("--- FIN DEL RELATO ---\n");
-    }
-
-    if (sb.length() > 0) {
-      context.add(SystemMessage.from(sb.toString()));
-    }
-    context.addAll(this.messages);
-    return context;
   }
 
   @Override
@@ -343,12 +315,10 @@ public class RecentMemoryImpl implements RecentMemory {
 
     List<ChatMessage> messages;
     Map<Integer, ChatMessageInfo> turnOfMessage;
-    String lastInteractionTime;
 
-    RecentMemoryState(List<ChatMessage> m, Map<Integer, ChatMessageInfo> t, String l) {
+    RecentMemoryState(List<ChatMessage> m, Map<Integer, ChatMessageInfo> t) {
       this.messages = m;
       this.turnOfMessage = t;
-      this.lastInteractionTime = l;
     }
 
     @SuppressWarnings("unused")
@@ -370,9 +340,6 @@ public class RecentMemoryImpl implements RecentMemory {
         if (state.turnOfMessage != null) {
           this.turnOfMessage.putAll(state.turnOfMessage);
         }
-        if (state.lastInteractionTime != null) {
-          this.lastInteractionTime = LocalDateTime.parse(state.lastInteractionTime);
-        }
       }
     } catch (Exception e) {
       LOGGER.warn("Error recuperando sesion", e);
@@ -382,8 +349,7 @@ public class RecentMemoryImpl implements RecentMemory {
   @Override
   public void save() {
     Gson gson = createGson();
-    String lastTimeStr = this.lastInteractionTime != null ? this.lastInteractionTime.toString() : null;
-    RecentMemoryState state = new RecentMemoryState(this.messages, this.turnOfMessage, lastTimeStr);
+    RecentMemoryState state = new RecentMemoryState(this.messages, this.turnOfMessage);
     try {
       try (Writer writer = Files.newBufferedWriter(tempPath, StandardCharsets.UTF_8)) {
         gson.toJson(state, writer);
@@ -500,18 +466,8 @@ public class RecentMemoryImpl implements RecentMemory {
   }
 
   @Override
-  public LocalDateTime getLastInteractionTime() {
-    return lastInteractionTime;
-  }
-
-  @Override
   public boolean isEmpty() {
     return this.messages.isEmpty();
-  }
-
-  @Override
-  public void setLastInteractionTime(LocalDateTime lastInteractionTime) {
-    this.lastInteractionTime = lastInteractionTime;
   }
 
 }

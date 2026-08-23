@@ -22,6 +22,7 @@ import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
+import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsService;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
@@ -79,6 +80,8 @@ public class AgentImpl implements Agent {
   private Thread shutdownHook;
   private boolean running;
   private TokenCountEstimator tokenEstimator;
+  private final Map<String,AgentService> sharedServices;
+  
 
 /**
    * Constructor reservado para entornos de pruebas y depuracion.
@@ -105,7 +108,7 @@ public class AgentImpl implements Agent {
     this.consoles = new HashMap<>();
     this.consoles.put(DEFAULT_SUBCHANNEL, console);
     this.services = new LinkedHashMap<>();
-    
+    this.sharedServices = new HashMap<>();
     
     Path sandboxRoot = (this.getPaths() != null && this.getPaths().getWorkspaceFolder() != null)
             ? this.getPaths().getWorkspaceFolder()
@@ -150,7 +153,12 @@ public class AgentImpl implements Agent {
   public synchronized void start() {
     AgentManager manager = AgentLocator.getAgentManager();
     for (AgentServiceFactory serviceFactory : manager.getServiceFactories()) {
-      this.services.put(serviceFactory.getName(), serviceFactory.createService(this));
+      AgentService sharedService = this.sharedServices.get(serviceFactory.getName());
+      if( sharedService!=null ) {
+        this.services.put(serviceFactory.getName(), sharedService);
+      } else {
+        this.services.put(serviceFactory.getName(), serviceFactory.createService(this));
+      }
     }
     SensorsService sensors = (SensorsService) this.getService(SensorsService.NAME);
     SensorInformation sensor = sensors.createSensorInformation(
@@ -203,7 +211,7 @@ public class AgentImpl implements Agent {
       // Es normal, simplemente ignoramos la excepción.
     }
     for (AgentService service : this.services.values()) {
-      if (service.isRunning()) {
+      if (service.isRunning() && !this.sharedServices.containsKey(service.getName()) ) {
         service.stop();
       }
     }
@@ -515,4 +523,7 @@ public class AgentImpl implements Agent {
     return n;
   }
 
+  public void addSharedService(AgentService service) {
+    this.sharedServices.put(service.getName(), service);
+  }
 }

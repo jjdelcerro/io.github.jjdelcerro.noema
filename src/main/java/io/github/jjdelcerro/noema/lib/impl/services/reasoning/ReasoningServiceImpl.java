@@ -1,12 +1,9 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.data.message.Content;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.output.FinishReason;
@@ -21,9 +18,7 @@ import io.github.jjdelcerro.noema.lib.persistence.Turn;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
@@ -60,38 +55,28 @@ import org.slf4j.LoggerFactory;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_REASONING_MODEL;
 import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_REASONING_PROVIDER;
-import io.github.jjdelcerro.noema.lib.AgentTool.TrimResultType;
-import io.github.jjdelcerro.noema.lib.impl.AbstractPaginatedAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.DateUtils;
-import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.AnnotateObservationTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.ConsultEnvironTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.ListSkillsTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.LoadSkillTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.TavilyWebSearchTool;
 import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SYSTEMCLOCK_SENSOR_NAME;
-import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SYSTEMNOTIFICATION_SENSOR_NAME;
-import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_HIGH;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
 import java.io.IOException;
-import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.HashMap;
-import java.util.UUID;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
-import io.github.jjdelcerro.noema.lib.AgentActions;
 import static io.github.jjdelcerro.noema.lib.AgentActions.COMPACT_REASONING_FULL_MEMORY;
 import static io.github.jjdelcerro.noema.lib.AgentActions.COMPACT_REASONING_MEMORY;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.subagent.LaunchSubagentTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.subagent.ListSubagentsTool;
 import io.github.jjdelcerro.noema.lib.persistence.EpisodicMemory;
 import io.github.jjdelcerro.noema.lib.persistence.CompactedMemory;
-import java.util.function.Function;
 
 /**
  * Orquestador principal del sistema. Gestiona el bucle de razonamiento, la
@@ -119,6 +104,7 @@ public class ReasoningServiceImpl implements ReasoningService {
   private final Agent agent;
   private final EpisodicMemory episodicMemory;
   private final Map<String, RecentMemory> recentMemories;
+  private final Map<String, ProjectedMemory> projectedMemories;
   private Agent.ChatModel model;
   private boolean running;
 
@@ -132,6 +118,7 @@ public class ReasoningServiceImpl implements ReasoningService {
     this.agent = agent;
     this.episodicMemory = agent.getEpisodicMemory();
     this.recentMemories = new HashMap<>();
+    this.projectedMemories = new HashMap<>();
     this.activesCompactedMemories = new HashMap<>();
     this.running = false;
     this.currentSubchannel = DEFAULT_SUBCHANNEL;
@@ -153,6 +140,24 @@ public class ReasoningServiceImpl implements ReasoningService {
       this.recentMemories.put(subchannel, recentMemory);
     }
     return recentMemory;
+  }
+
+  private ProjectedMemory createProjectedMemory(String subchannel) {
+    ProjectedMemory projectedMemory = new ProjectedMemoryImpl(
+            agent,
+            this::getAvailableTool,
+            subchannel
+    );
+    return projectedMemory;
+  }
+
+  private ProjectedMemory getProyectedMemory(String subchannel) {
+    ProjectedMemory projectedMemory = this.projectedMemories.get(subchannel);
+    if (projectedMemory == null) {
+      projectedMemory = this.createProjectedMemory(subchannel);
+      this.projectedMemories.put(subchannel, projectedMemory);
+    }
+    return projectedMemory;
   }
 
   public CompactedMemory getActiveCompactedMemory(String subchannel) {
@@ -485,6 +490,10 @@ public class ReasoningServiceImpl implements ReasoningService {
       new ConsultEnvironTool(this.agent),
       new ListSkillsTool(this.agent),
       new LoadSkillTool(this.agent),
+      new TimeTool(this.agent),
+      new LaunchSubagentTool(this.agent),
+      new ListSubagentsTool(this.agent),      
+      
       new FileFindTool(this.agent),
       new FileGrepTool(this.agent),
       new FileReadTool(this.agent),
@@ -496,7 +505,6 @@ public class ReasoningServiceImpl implements ReasoningService {
       new WebGetTikaTool(this.agent),
       new WeatherTool(this.agent),
       new LocationTool(this.agent),
-      new TimeTool(this.agent),
       new ShellExecuteTool(this.agent),
       new ReadPaginatedResourceTool(this.agent),
       new FileRecoveryTool(this.agent)
@@ -537,14 +545,15 @@ public class ReasoningServiceImpl implements ReasoningService {
 
   @Override
   public int estimateMessagesTokenCount(String subchannel) {
-      ProjectedMemory projection = new ProjectedMemoryImpl(
-              this.agent,
-              this::getAvailableTool,
-              this.getRecentMemory(subchannel),
-              this.getActiveCompactedMemory(subchannel),
-              this.getLastestSystemPrompt()
+      ProjectedMemory projection = this.getProyectedMemory(subchannel);
+      return this.agent.estimateTokenCount(
+              projection.getMessages(
+                this.getRecentMemory(subchannel),
+                this.getActiveCompactedMemory(subchannel),
+                this.getLastestSystemPrompt()
+              ), 
+              null
       );
-      return this.agent.estimateTokenCount(projection.getMessages(), null);
   }
 
   @Override
@@ -626,31 +635,6 @@ public class ReasoningServiceImpl implements ReasoningService {
     this.running = false;
   }
 
-  private void checkAndInsertTimestamp(String subchannel, RecentMemory recentMemory) {
-    LocalDateTime now = LocalDateTime.now();
-    // FIXME: ¿¿ Deberia usarse el SensorsService.getSensorStatistics(USER_SENSOR_NAME).getLastEventTimestamp() 
-    // en lugar de recentMemory.getLastInteractionTime() y quitar de la recentMemory LastInteractionTime ??
-    if (recentMemory.getLastInteractionTime() != null && !recentMemory.isEmpty()) {
-      // Introduccion de la percepcion temporal.
-      Duration delta = Duration.between(recentMemory.getLastInteractionTime(), now);
-      if (delta.toHours() >= 1) {
-        SensorsServiceImpl sensors = (SensorsServiceImpl) agent.getService(SensorsService.NAME);
-        String content = "Ha pasado " + DateUtils.timeAgo(recentMemory.getLastInteractionTime()) + " desde la última interacción con el usuario.";
-        ConsumableSensorEvent timerEvent = sensors.createSensorEvent(
-                SYSTEMCLOCK_SENSOR_NAME,
-                content,
-                subchannel,
-                PRIORITY_NORMAL,
-                "A pasado el tiempo",
-                now,
-                null
-        );
-        recentMemory.add(timerEvent.getChatMessage());
-        recentMemory.add(timerEvent.getResponseMessage());
-      }
-    }
-  }
-
   /**
    * Bucle perpetuo de consciencia. Consume señales de los sensores y las
    * procesa íntegramente hasta generar una respuesta o acción.
@@ -687,10 +671,11 @@ public class ReasoningServiceImpl implements ReasoningService {
       String channel = event.getChannel();
       String textUser = null;
       RecentMemory recentMemory = this.getRecentMemory(currentSubchannel);
+      CompactedMemory compactedMemory = this.getActiveCompactedMemory(currentSubchannel);
+      ProjectedMemory projectedMemory = getProyectedMemory(currentSubchannel);
 
       if (event instanceof SensorEventUser) {
         // Caso Usuario: Guardamos el prompt para el turno final 'chat'
-        this.checkAndInsertTimestamp(currentSubchannel, recentMemory);
         textUser = event.getContents();
         recentMemory.add(event.getChatMessage());
       } else {
@@ -713,21 +698,11 @@ public class ReasoningServiceImpl implements ReasoningService {
       toolExecutionRetries = 0;
       boolean turnFinished = false;
       while (!turnFinished && this.isRunning()) {
-        recentMemory = this.getRecentMemory(currentSubchannel);
-        CompactedMemory compactedMemory = this.getActiveCompactedMemory(currentSubchannel);
-        ProjectedMemory projectedMemory = new ProjectedMemoryImpl(
-                this.agent,
-                this::getAvailableTool,
-                recentMemory,
-                compactedMemory,
-                this.getBaseSystemPrompt()
-        );
-
-        Timestamp tm = Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC));
-        Path debugPath = agent.getPaths().getTempFolder().resolve("context-" + currentSubchannel + "-" + tm.toString() + ".json");
-        projectedMemory.dump(debugPath);
-
-        Response<AiMessage> response = this.getModel().generate(projectedMemory.getMessages(), this.getToolSpecifications(), abort);        
+        Response<AiMessage> response = this.getModel().generate(
+                projectedMemory.getMessages(recentMemory, compactedMemory, this.getBaseSystemPrompt()),
+                this.getToolSpecifications(), 
+                abort
+        );        
         AiMessage aiMessage = response.content();
         recentMemory.add(aiMessage);
 
@@ -797,9 +772,10 @@ public class ReasoningServiceImpl implements ReasoningService {
         }
       }
       if (textUser != null) {
-        recentMemory.setLastInteractionTime(LocalDateTime.now());
+        projectedMemory.setLastInteractionTime(LocalDateTime.now());
       }
       recentMemory.save();
+      projectedMemory.save();
 
       if (recentMemory.needCompaction()) {
         performCompaction(recentMemory);

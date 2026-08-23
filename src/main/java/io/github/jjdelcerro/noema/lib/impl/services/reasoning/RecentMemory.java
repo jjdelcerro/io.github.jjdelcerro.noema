@@ -34,10 +34,6 @@ public interface RecentMemory {
 
     RecentMemoryMark getCompactMark();
 
-    List<ChatMessage> getContextMessages(CompactedMemory checkpoint, String systemPrompt);
-
-    LocalDateTime getLastInteractionTime();
-
     List<ChatMessage> getMessages();
 
     RecentMemoryMark getNewestMark();
@@ -59,7 +55,5 @@ public interface RecentMemory {
     void remove(RecentMemoryMark mark1, RecentMemoryMark mark2);
 
     void save();
-
-    void setLastInteractionTime(LocalDateTime lastInteractionTime);
 
 }

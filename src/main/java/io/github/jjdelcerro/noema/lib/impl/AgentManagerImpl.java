@@ -7,18 +7,22 @@ import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceFactory;
+import io.github.jjdelcerro.noema.lib.Subagent;
+import io.github.jjdelcerro.noema.lib.SubagentDefinition;
 import io.github.jjdelcerro.noema.lib.impl.services.documents.DocumentsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.email.EmailServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.mcp.McpServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryCompactionServiceFactory;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.scheduler.SchedulerServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.telegram.TelegramServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.settings.AgentSettingsImpl;
+import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
+import java.io.IOException;
+
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,29 +30,32 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 /**
- *
- * @author jjdelcerro
+ * Default implementation of AgentManager. Central registry and factory for
+ * agent services, actions, paths, and active subagents.
  */
 public class AgentManagerImpl implements AgentManager {
 
-  private final Map<String,AgentServiceFactory> serviceFactories;
-  private final Map<String,SQLProvider> sqlProvider;
+  private final Map<String, AgentServiceFactory> serviceFactories;
+  private final Map<String, SQLProvider> sqlProvider;
   private final List<Supplier<AgentAction>> actions;
-  
+  private final Map<Integer, Subagent> activeSubagents;
+
   public AgentManagerImpl() {
     this.serviceFactories = new LinkedHashMap<>();
     this.sqlProvider = new HashMap<>();
     this.actions = new ArrayList<>();
-    
+    this.activeSubagents = new ConcurrentHashMap<>();
+
     this.registerService(new EmbeddingsServiceFactory());
     this.registerService(new SensorsServiceFactory());
-    
+
     this.registerService(new MemoryCompactionServiceFactory());
     this.registerService(new McpServiceFactory());
-    
+
     this.registerService(new SchedulerServiceFactory());
     this.registerService(new DocumentsServiceFactory());
     this.registerService(new EmailServiceFactory());
@@ -56,22 +63,21 @@ public class AgentManagerImpl implements AgentManager {
 
     this.registerService(new ReasoningServiceFactory());
   }
-  
+
   @Override
   public final void registerService(AgentServiceFactory factory) {
     this.serviceFactories.put(factory.getName().toUpperCase(), factory);
   }
-  
+
   @Override
   public Collection<AgentServiceFactory> getServiceFactories() {
     return this.serviceFactories.values();
   }
-  
+
   @Override
   public AgentServiceFactory getServiceFactory(String name) {
     return this.serviceFactories.get(name.toUpperCase());
   }
-  
 
   @Override
   public AgentActions createActions() {
@@ -88,11 +94,11 @@ public class AgentManagerImpl implements AgentManager {
     Agent agent = new AgentImpl(memoryDatabase, servicesDatabase, settings, console);
     return agent;
   }
-  
+
   @Override
   public SQLProvider getSQLProvider(String providerName) {
     SQLProvider prov = this.sqlProvider.get(providerName.toLowerCase());
-    if( prov==null ) {
+    if (prov == null) {
       prov = new SQLProviderImpl(providerName);
       this.sqlProvider.put(providerName.toLowerCase(), prov);
     }
@@ -110,13 +116,13 @@ public class AgentManagerImpl implements AgentManager {
   }
 
   @Override
-  public AgentPaths createAgentPaths(Path workspacetFolder) {
-    return new AgentPathsImpl(workspacetFolder);
+  public AgentPaths createAgentPaths(Path workspaceFolder) {
+    return new AgentPathsImpl(workspaceFolder);
   }
 
   @Override
   public String getName() {
-     return AGENT_NAME;
+    return AGENT_NAME;
   }
 
   @Override
@@ -129,5 +135,41 @@ public class AgentManagerImpl implements AgentManager {
     return new ModelParametersImpl(providerUrl, providerApiKey, modelId, Float.NaN);
   }
 
+  // =========================================================================
+  // SUBAGENT REGISTRY AND FACTORY
+  // =========================================================================
+  @Override
+  public void registerSubagent(Subagent subagent) {
+    if (subagent != null) {
+      this.activeSubagents.put(subagent.getId(), subagent);
+    }
+  }
+
+  @Override
+  public void unregisterSubagent(Subagent subagent) {
+    if (subagent != null) {
+      this.activeSubagents.remove(subagent.getId());
+    }
+  }
+
+  @Override
+  public List<Subagent> getSubagents() {
+    return new ArrayList<>(this.activeSubagents.values());
+  }
+
+  @Override
+  public Subagent getSubagent(int id) {
+    return this.activeSubagents.get(id);
+  }
+
+  @Override
+  public Subagent createSubagent(Agent parent, SubagentDefinition definition, Path workspace) {
+    return new SubagentImpl(parent, definition, workspace);
+  }
+
+  @Override
+  public SubagentDefinition createSubagentDefinition(Path xmlPath) throws IOException {
+    return SubagentDefinitionImpl.from(xmlPath);    
+  }
   
 }

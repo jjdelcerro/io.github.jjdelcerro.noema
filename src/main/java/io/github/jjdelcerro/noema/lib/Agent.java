@@ -151,4 +151,6 @@ public interface Agent {
   public int estimateTokenCount(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications);
   
   public String getCurrentSubchannel();  
+  
+  public void addSharedService(AgentService service);
 }
