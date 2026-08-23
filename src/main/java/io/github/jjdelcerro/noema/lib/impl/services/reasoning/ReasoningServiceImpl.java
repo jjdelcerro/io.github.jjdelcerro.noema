@@ -73,6 +73,7 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
 import static io.github.jjdelcerro.noema.lib.AgentActions.COMPACT_REASONING_FULL_MEMORY;
 import static io.github.jjdelcerro.noema.lib.AgentActions.COMPACT_REASONING_MEMORY;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.ScriptExecuteTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.subagent.LaunchSubagentTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.subagent.ListSubagentsTool;
 import io.github.jjdelcerro.noema.lib.persistence.EpisodicMemory;
@@ -492,11 +493,12 @@ public class ReasoningServiceImpl implements ReasoningService {
       new LoadSkillTool(this.agent),
       new TimeTool(this.agent),
       new LaunchSubagentTool(this.agent),
-      new ListSubagentsTool(this.agent),      
-      
-      new FileFindTool(this.agent),
+      new ListSubagentsTool(this.agent),   
+      new ScriptExecuteTool(this.agent),
       new FileGrepTool(this.agent),
       new FileReadTool(this.agent),
+      
+      new FileFindTool(this.agent),
       new FileWriteTool(this.agent),
       new FileSearchAndReplaceTool(this.agent),
       new FilePatchTool(this.agent),

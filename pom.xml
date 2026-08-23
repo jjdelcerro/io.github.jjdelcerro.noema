@@ -143,6 +143,20 @@
       <version>6.1.3</version>
     </dependency>
         
+    <!-- Motor de Scripting Groovy Embebido -->
+    <dependency>
+      <groupId>org.apache.groovy</groupId>
+      <artifactId>groovy</artifactId>
+      <version>4.0.24</version>
+    </dependency>
+    
+    <!-- Soporte JSON idiomático en Groovy (JsonSlurper / JsonOutput) -->
+    <dependency>
+      <groupId>org.apache.groovy</groupId>
+      <artifactId>groovy-json</artifactId>
+      <version>4.0.24</version>
+    </dependency>        
+        
     <!-- Lo suyo parece que sea usar directamente el runtime de onnx, esto es solo para una prueba -->
     <dependency>
       <groupId>io.github.inference4j</groupId>

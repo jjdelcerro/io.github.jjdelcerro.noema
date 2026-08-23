@@ -12,6 +12,7 @@ public interface AgentTool {
     public static final int MODE_WRITE = 2;
     public static final int MODE_WEB = 3;
     public static final int MODE_EXECUTION = 4;
+    public static final int MODE_SCRIPTING = 5;
     
     public enum TrimResultType {
       None,
