@@ -1,5 +1,5 @@
 
-## Servicio de Memoria (`MemoryService`)
+## Servicio de compactacion de memoria (`MemoryCompactionService`)
 
 ### 1. Introducción: el problema de la ventana de contexto
 
@@ -7,13 +7,13 @@ Los modelos de lenguaje actuales, por muy grandes que sean sus ventanas de conte
 
 Noema aborda este problema con un enfoque diferente: **la compactación narrativa**. En lugar de buscar fragmentos, **resume** la historia pasada en un texto denso pero legible, el **Punto de Guardado (CheckPoint)**. Este resumen se inyecta en el prompt del sistema junto con los turnos recientes, proporcionando al modelo una visión global de la conversación sin ocupar todo el espacio de contexto. La clave está en que el resumen no es un simple extracto; incluye referencias explícitas (`{cite:ID}`) a los turnos originales, permitiendo al agente recuperar el detalle exacto cuando sea necesario.
 
-`MemoryService` es el componente responsable de esta transformación. Su misión es tomar un bloque de turnos (decenas o cientos) y generar un nuevo Punto de Guardado que consolide la información de forma fiel, trazable y narrativamente coherente. No se limita a comprimir datos; interpreta el diálogo, identifica sus núcleos temáticos y redacta una crónica que captura tanto los hechos como la evolución del pensamiento.
+`MemoryCompactionService` es el componente responsable de esta transformación. Su misión es tomar un bloque de turnos (decenas o cientos) y generar un nuevo Punto de Guardado que consolide la información de forma fiel, trazable y narrativamente coherente. No se limita a comprimir datos; interpreta el diálogo, identifica sus núcleos temáticos y redacta una crónica que captura tanto los hechos como la evolución del pensamiento.
 
 ### 2. Arquitectura general: componentes y flujo
 
-`MemoryService` es un servicio más dentro del ecosistema del agente, registrado con el nombre `"Memory"`. Sus componentes principales son:
+`MemoryCompactionService` es un servicio más dentro del ecosistema del agente, registrado con el nombre `"Memory"`. Sus componentes principales son:
 
-- **`MemoryServiceImpl`**: la implementación concreta. Gestiona la lógica de compactación, la carga de prompts y la interacción con el LLM específico para memoria.
+- **`MemoryCompactionServiceImpl`**: la implementación concreta. Gestiona la lógica de compactación, la carga de prompts y la interacción con el LLM específico para memoria.
 - **`SourceOfTruth`**: proporciona los turnos a consolidar (mediante `getTurnsByIds()`) y persiste los nuevos puntos de guardado (`add(CheckPoint)`).
 - **`Agent.ChatModel`**: un modelo de lenguaje independiente (puede ser el mismo o distinto al de razonamiento), configurable mediante claves específicas en `settings.json`.
 - **Prompts**: archivos Markdown (`memory-compact.md`) que definen el protocolo de compactación: estilo narrativo, manejo de citas, interpretación de herramientas, etc.
@@ -23,15 +23,15 @@ El flujo se inicia en `ReasoningService`. Cuando la sesión acumula suficientes 
 
 1. Obtiene las marcas de inicio y fin del bloque a compactar (métodos de `Session`).
 2. Recupera los turnos correspondientes mediante `sourceOfTruth.getTurnsByIds(first, last)`.
-3. Llama a `MemoryService.compact(previousCheckPoint, turns)`.
+3. Llama a `MemoryCompactionService.compact(previousCheckPoint, turns)`.
 4. El servicio genera un nuevo `CheckPoint` y lo devuelve.
 5. Se persiste el nuevo checkpoint, se eliminan los mensajes compactados de la sesión y se actualiza el puntero `activeCheckPoint`.
 
-La separación de responsabilidades es clara: `ReasoningService` decide *cuándo* compactar; `MemoryService` sabe *cómo* hacerlo.
+La separación de responsabilidades es clara: `ReasoningService` decide *cuándo* compactar; `MemoryCompactionService` sabe *cómo* hacerlo.
 
-### 3. El contrato de `MemoryService`: el método `compact()`
+### 3. El contrato de `MemoryCompactionService`: el método `compact()`
 
-La interfaz `MemoryService` expone un único método público relevante para la compactación:
+La interfaz `MemoryCompactionService` expone un único método público relevante para la compactación:
 
 ```java
 CheckPoint compact(CheckPoint previous, List<Turn> newTurns);
@@ -41,7 +41,7 @@ CheckPoint compact(CheckPoint previous, List<Turn> newTurns);
 - **`newTurns`**: lista de turnos nuevos (no consolidados) que se deben integrar. Los turnos vienen ordenados cronológicamente por `id`.
 - **Devuelve**: un nuevo `CheckPoint` transitorio con ID `-1` (aún no persistido). Contiene el texto generado (dos secciones: "Resumen" y "El Viaje") y los rangos de turnos que abarca (`turnFirst`, `turnLast`).
 
-La implementación en `MemoryServiceImpl` realiza los siguientes pasos:
+La implementación en `MemoryCompactionServiceImpl` realiza los siguientes pasos:
 - Valida que `newTurns` no esté vacío.
 - Construye el conjunto de IDs de turno "válidos" (los del checkpoint anterior más los de `newTurns`) para posterior validación de citas.
 - Construye el `userPrompt` concatenando el checkpoint anterior (si existe) y el CSV de nuevos turnos.
@@ -54,7 +54,7 @@ Nótese que el checkpoint devuelto aún no está persistido; será `SourceOfTrut
 
 ### 4. El protocolo de generación de puntos de guardado (prompt)
 
-El prompt del sistema para `MemoryService` reside en `var/config/prompts/memory-compact.md` y es uno de los documentos más extensos y detallados de Noema. Define el **Protocolo de Generación de Puntos de Guardado**. Sus secciones principales son:
+El prompt del sistema para `MemoryCompactionService` reside en `var/config/prompts/memory-compact.md` y es uno de los documentos más extensos y detallados de Noema. Define el **Protocolo de Generación de Puntos de Guardado**. Sus secciones principales son:
 
 - **Objetivos y datos de entrada**: especifica que el `MemoryManager` recibe un CSV de turnos (con columnas como `code`, `timestamp`, `contenttype`, `text_user`, `text_model`, `tool_call`, `tool_result`) y opcionalmente un punto de guardado anterior.
 
@@ -101,7 +101,7 @@ Un detalle importante: los turnos de tipo `lookup_turn` (resultados de herramien
 
 ### 6. El modelo LLM de compactación: configuración y carga
 
-`MemoryService` no está obligado a usar el mismo modelo de lenguaje que `ReasoningService`. De hecho, se recomienda utilizar un modelo diferente (quizás más económico o especializado en resúmenes) para la compactación. La configuración se realiza mediante tres claves en `settings.json`:
+`MemoryCompactionService` no está obligado a usar el mismo modelo de lenguaje que `ReasoningService`. De hecho, se recomienda utilizar un modelo diferente (quizás más económico o especializado en resúmenes) para la compactación. La configuración se realiza mediante tres claves en `settings.json`:
 
 ```json
 "memory": {
@@ -113,7 +113,7 @@ Un detalle importante: los turnos de tipo `lookup_turn` (resultados de herramien
 }
 ```
 
-Estas claves se leen mediante `getModelParameters(MemoryService.ID)`, que devuelve un `ModelParametersImpl` con la URL, API key e identificador del modelo. La temperatura se fija a `0.7` (un poco de creatividad pero sin desviarse demasiado). El método `start()` del servicio crea el modelo invocando `agent.createChatModel(MemoryService.ID)`.
+Estas claves se leen mediante `getModelParameters(MemoryCompactionService.ID)`, que devuelve un `ModelParametersImpl` con la URL, API key e identificador del modelo. La temperatura se fija a `0.7` (un poco de creatividad pero sin desviarse demasiado). El método `start()` del servicio crea el modelo invocando `agent.createChatModel(MemoryCompactionService.ID)`.
 
 El servicio también registra dos acciones que permiten recargar el modelo en caliente:
 - `CHANGE_MEMORY_PROVIDER`: cuando se cambia la URL o la API key.
@@ -123,7 +123,7 @@ Así, el usuario puede ajustar el modelo de compactación sin reiniciar el agent
 
 ### 7. Validación de citas y corrección de errores
 
-Uno de los problemas más comunes al generar resúmenes con LLMs es la **alucinación de citas**: el modelo inventa un `{cite:123}` que no corresponde a ningún turno real, o mezcla IDs. Para mitigarlo, `MemoryService` implementa un paso de validación posterior al texto generado:
+Uno de los problemas más comunes al generar resúmenes con LLMs es la **alucinación de citas**: el modelo inventa un `{cite:123}` que no corresponde a ningún turno real, o mezcla IDs. Para mitigarlo, `MemoryCompactionService` implementa un paso de validación posterior al texto generado:
 
 1. Se extraen todas las referencias `{cite:...}` del texto mediante una expresión regular.
 2. Se construye un conjunto `validTurnIds` que contiene:
@@ -136,7 +136,7 @@ Este paso es fundamental porque evita que el agente intente recuperar un turno i
 
 ### 8. Integración con `ReasoningService`: cuándo y cómo se compacta
 
-El `ReasoningService` es el cliente principal de `MemoryService`. La coordinación se realiza en el método `eventDispatcher`, al final del procesamiento de cada turno:
+El `ReasoningService` es el cliente principal de `MemoryCompactionService`. La coordinación se realiza en el método `eventDispatcher`, al final del procesamiento de cada turno:
 
 ```java
 if (this.session.needCompaction()) {
@@ -182,9 +182,9 @@ Esta separación permite que los checkpoints ocupen poco espacio en la base de d
 
 ### 10. Herramientas que aporta el servicio
 
-`MemoryService` no solo consolida la memoria a largo plazo mediante el método `compact()`, sino que también expone al agente un conjunto de herramientas (`AgentTool`) que le permiten **interactuar activamente con su propio historial**. Estas herramientas están disponibles en el catálogo de capacidades del agente y pueden ser invocadas por el LLM durante el razonamiento.
+`MemoryCompactionService` no solo consolida la memoria a largo plazo mediante el método `compact()`, sino que también expone al agente un conjunto de herramientas (`AgentTool`) que le permiten **interactuar activamente con su propio historial**. Estas herramientas están disponibles en el catálogo de capacidades del agente y pueden ser invocadas por el LLM durante el razonamiento.
 
-Las tres herramientas registradas por `MemoryService` son:
+Las tres herramientas registradas por `MemoryCompactionService` son:
 
 #### 10.1. `fetch_citation` (LookupTurnTool)
 
@@ -232,7 +232,7 @@ Las tres herramientas registradas por `MemoryService` son:
 
 ### 11. Limitaciones y desafíos actuales
 
-A pesar de su diseño cuidadoso, `MemoryService` tiene varias limitaciones conocidas que se documentan aquí para transparencia y para guiar futuras mejoras:
+A pesar de su diseño cuidadoso, `MemoryCompactionService` tiene varias limitaciones conocidas que se documentan aquí para transparencia y para guiar futuras mejoras:
 
 - **Compactación bloqueante**: el agente se detiene por completo mientras se genera el checkpoint. Para conversaciones muy largas o con modelos lentos, esto podría suponer una pausa de varios segundos. Una posible mejora sería realizar la compactación en un hilo separado, pero entonces habría que gestionar la concurrencia de la sesión.
 
@@ -248,4 +248,4 @@ A pesar de su diseño cuidadoso, `MemoryService` tiene varias limitaciones conoc
 
 - **El "Viaje" como espiral de contexto**: la directiva de crear una narrativa que integre pasado y presente en una espiral es ambiciosa. En la práctica, muchos checkpoints generados por modelos actuales tienden a ser más bien resúmenes lineales. Alcanzar la calidad narrativa deseada requiere prompts muy cuidadosos y, probablemente, modelos de razonamiento potentes.
 
-A pesar de estas limitaciones, `MemoryService` cumple su cometido fundamental: permite que Noema mantenga conversaciones de cientos o miles de turnos sin saturar la ventana de contexto, preservando la información esencial y ofreciendo trazabilidad hacia los detalles originales. Es un componente central en la arquitectura de memoria híbrida del agente.
+A pesar de estas limitaciones, `MemoryCompactionService` cumple su cometido fundamental: permite que Noema mantenga conversaciones de cientos o miles de turnos sin saturar la ventana de contexto, preservando la información esencial y ofreciendo trazabilidad hacia los detalles originales. Es un componente central en la arquitectura de memoria híbrida del agente.
