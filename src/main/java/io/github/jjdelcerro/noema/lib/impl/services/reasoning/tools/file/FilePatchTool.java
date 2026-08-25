@@ -41,6 +41,11 @@ Pero por ahora, prueba así; los modelos de 2025 suelen ser bastante buenos sigu
   public FilePatchTool(Agent agent) {
     super(agent);
   }
+  
+  @Override
+  public boolean isAvailableByDefault() {
+    return false;
+  }
 
   @Override
   public ToolSpecificationBuilder getSpecification() {

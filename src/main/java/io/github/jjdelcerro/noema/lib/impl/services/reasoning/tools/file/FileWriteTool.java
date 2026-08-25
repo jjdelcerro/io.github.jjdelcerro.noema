@@ -19,6 +19,11 @@ public class FileWriteTool extends AbstractAgentTool {
   public FileWriteTool(Agent agent) {
     super(agent);
   }
+  
+  @Override
+  public boolean isAvailableByDefault() {
+    return false;
+  }
 
   @Override
   public ToolSpecificationBuilder getSpecification() {

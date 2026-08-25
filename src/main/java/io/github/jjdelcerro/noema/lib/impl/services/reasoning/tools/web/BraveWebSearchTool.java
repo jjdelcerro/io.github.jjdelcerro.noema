@@ -31,6 +31,11 @@ public class BraveWebSearchTool extends AbstractAgentTool {
             .connectTimeout(Duration.ofSeconds(10))
             .build();
   }
+  
+  @Override
+  public boolean isAvailableByDefault() {
+    return false;
+  }
 
   @Override
   public ToolSpecificationBuilder getSpecification() {

@@ -39,6 +39,11 @@ public class WebGetTikaTool extends AbstractPaginatedAgentTool {
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
   }
+  
+  @Override
+  public boolean isAvailableByDefault() {
+    return false;
+  }
 
   @Override
   public ToolSpecificationBuilder getSpecification() {

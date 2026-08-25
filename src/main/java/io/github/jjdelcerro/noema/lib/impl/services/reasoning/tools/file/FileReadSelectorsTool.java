@@ -37,6 +37,11 @@ public class FileReadSelectorsTool extends AbstractPaginatedAgentTool {
   public FileReadSelectorsTool(Agent agent) {
     super(agent);
   }
+  
+  @Override
+  public boolean isAvailableByDefault() {
+    return false;
+  }
 
   @Override
   public ToolSpecificationBuilder getSpecification() {

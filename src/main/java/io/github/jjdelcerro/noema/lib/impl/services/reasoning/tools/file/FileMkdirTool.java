@@ -15,6 +15,11 @@ public class FileMkdirTool extends AbstractAgentTool {
   public FileMkdirTool(Agent agent) {
     super(agent);
   }
+  
+  @Override
+  public boolean isAvailableByDefault() {
+    return false;
+  }
 
   @Override
   public ToolSpecificationBuilder getSpecification() {

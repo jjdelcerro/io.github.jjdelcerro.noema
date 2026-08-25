@@ -50,6 +50,11 @@ public class TelegramTool extends AbstractAgentTool {
   public TelegramTool(Agent agent) {
     super(agent);
   }
+  
+  @Override
+  public boolean isAvailableByDefault() {
+    return false;
+  }
 
   @Override
   public ToolSpecificationBuilder getSpecification() {

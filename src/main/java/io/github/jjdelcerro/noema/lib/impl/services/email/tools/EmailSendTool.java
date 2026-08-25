@@ -14,6 +14,11 @@ public class EmailSendTool extends AbstractAgentTool {
   public EmailSendTool(Agent agent) {
     super(agent);
   }
+  
+  @Override
+  public boolean isAvailableByDefault() {
+    return false;
+  }
 
   @Override
   public ToolSpecificationBuilder getSpecification() {

@@ -13,6 +13,11 @@ public class EmailReadTool extends AbstractAgentTool {
   public EmailReadTool(Agent agent) {
     super(agent);
   }
+  
+  @Override
+  public boolean isAvailableByDefault() {
+    return false;
+  }
 
   @Override
   public ToolSpecificationBuilder getSpecification() {

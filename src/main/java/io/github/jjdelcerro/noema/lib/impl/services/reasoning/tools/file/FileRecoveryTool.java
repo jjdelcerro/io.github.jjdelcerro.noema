@@ -28,6 +28,11 @@ public class FileRecoveryTool extends AbstractAgentTool {
   public FileRecoveryTool(Agent agent) {
     super(agent);
   }
+  
+  @Override
+  public boolean isAvailableByDefault() {
+    return false;
+  }
 
   @Override
   public ToolSpecificationBuilder getSpecification() {

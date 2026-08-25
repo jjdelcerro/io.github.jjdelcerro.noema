@@ -30,6 +30,11 @@ public class FileHistoryTool extends AbstractAgentTool {
   public FileHistoryTool(Agent agent) {
     super(agent);
   }
+  
+  @Override
+  public boolean isAvailableByDefault() {
+    return false;
+  }
 
   @Override
   public ToolSpecificationBuilder getSpecification() {

@@ -20,6 +20,11 @@ public class FileSearchAndReplaceTool extends AbstractAgentTool {
   public FileSearchAndReplaceTool(Agent agent) {
     super(agent);
   }
+  
+  @Override
+  public boolean isAvailableByDefault() {
+    return false;
+  }
 
   @Override
   public ToolSpecificationBuilder getSpecification() {

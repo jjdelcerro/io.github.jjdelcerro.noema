@@ -26,6 +26,11 @@ public class WebGetTool extends AbstractAgentTool { // NO USAR, usar WebGetTikaT
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
   }
+  
+  @Override
+  public boolean isAvailableByDefault() {
+    return false;
+  }
 
   @Override
   public ToolSpecificationBuilder getSpecification() {

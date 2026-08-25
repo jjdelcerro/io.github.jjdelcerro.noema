@@ -28,7 +28,7 @@ public class LocationTool extends AbstractAgentTool {
             .connectTimeout(Duration.ofSeconds(10))
             .build();
   }
-
+  
   @Override
   public ToolSpecificationBuilder getSpecification() {
     return ToolSpecificationBuilder.create()

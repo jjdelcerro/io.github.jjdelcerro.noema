@@ -20,6 +20,11 @@ public class McpToolWrapper extends AbstractAgentTool {
         this.toolSpecification = toolSpecification;
         this.mode = mode; // MODE_READ, MODE_WRITE, etc.
     }
+  
+    @Override
+    public boolean isAvailableByDefault() {
+      return false;
+    }
 
     @Override
     public ToolSpecificationBuilder getSpecification() {

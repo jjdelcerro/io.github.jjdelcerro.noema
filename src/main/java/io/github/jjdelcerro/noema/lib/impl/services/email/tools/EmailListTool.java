@@ -12,7 +12,12 @@ public class EmailListTool extends AbstractAgentTool {
   public EmailListTool(Agent agent) {
     super(agent);
   }
-
+  
+  @Override
+  public boolean isAvailableByDefault() {
+    return false;
+  }
+  
   @Override
   public ToolSpecificationBuilder getSpecification() {
     return ToolSpecificationBuilder.create()
