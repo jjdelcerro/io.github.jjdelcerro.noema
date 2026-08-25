@@ -2,9 +2,9 @@ package io.github.jjdelcerro.noema.lib.memory.proyected;
 
 import dev.langchain4j.data.message.ChatMessage;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.impl.memory.proyected.operations.PinnedTurnsOperation;
 import io.github.jjdelcerro.noema.lib.memory.recent.RecentMemory;
 import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
+import io.github.jjdelcerro.noema.lib.memory.proyected.operations.PinnedTurnsOperation.PinnedTurnState;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.function.Predicate;
@@ -38,6 +38,6 @@ public interface ProjectedMemory {
   
   public void save();
   
-  void removePinnedTurn(Predicate<PinnedTurnsOperation.PinnedTurnState> predicate); //FIXME: Ver de traer al api alguna de estas clases en forma de interfaces.
+  public ProjectedMemoryOperation getOperation(String name);
   
 }

@@ -8,12 +8,12 @@ public class PinnedTurnsOperationFactory implements ProjectedMemoryOperationFact
 
     @Override
     public String getName() {
-        return PinnedTurnsOperation.OPERATION_NAME;
+        return PinnedTurnsOperationImpl.OPERATION_NAME;
     }
 
     @Override
     public ProjectedMemoryOperation create(JsonObject state) {
-        PinnedTurnsOperation operation = new PinnedTurnsOperation();
+        PinnedTurnsOperationImpl operation = new PinnedTurnsOperationImpl();
         if (state != null && !state.isEmpty()) {
             operation.restoreState(state);
         }

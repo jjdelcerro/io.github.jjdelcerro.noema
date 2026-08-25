@@ -6,8 +6,9 @@ import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.impl.memory.proyected.operations.PinnedTurnsOperation;
 import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemory;
+import io.github.jjdelcerro.noema.lib.memory.proyected.operations.PinnedTurnsOperation;
+import io.github.jjdelcerro.noema.lib.memory.proyected.operations.PinnedTurnsOperation.PinnedTurnState;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 
 import java.nio.file.Files;
@@ -109,11 +110,11 @@ public class Skill {
     if (projectedMemory == null) {
       return;
     }
-
-    projectedMemory.removePinnedTurn(this::isMatchingPinnedTurn);
+    PinnedTurnsOperation operation = (PinnedTurnsOperation) projectedMemory.getOperation(PinnedTurnsOperation.OPERATION_NAME);
+    operation.removePinnedTurn(this::isMatchingPinnedTurn);
   }
 
-  private boolean isMatchingPinnedTurn(PinnedTurnsOperation.PinnedTurnState state) {
+  private boolean isMatchingPinnedTurn(PinnedTurnState state) {
     ToolExecutionResultMessage result = state.getResultMessage();
     if (result != null && "activate_skill".equals(result.toolName())) {
       AiMessage req = state.getRequestMessage();

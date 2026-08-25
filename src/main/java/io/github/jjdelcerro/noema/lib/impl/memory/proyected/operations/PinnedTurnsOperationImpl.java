@@ -1,5 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.memory.proyected.operations;
 
+import io.github.jjdelcerro.noema.lib.memory.proyected.operations.PinnedTurnsOperation;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -14,7 +15,6 @@ import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.memory.GsonUtils;
 import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemory;
-import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemoryOperation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,28 +27,28 @@ import org.apache.commons.lang3.StringUtils;
  * beginning of the projected context after recent memory compactions, and emits
  * periodic reminders.
  */
-public class PinnedTurnsOperation implements ProjectedMemoryOperation {
+public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
 
-  public static final String OPERATION_NAME = "pinned_turns";
   private static final int PRIORITY = 5; // Executes before TrimmingOperation
   private static final long NOTIFICATION_TURN_INTERVAL = 5L;
 
-  private final List<PinnedTurnState> pinnedTurns;
+  private final List<PinnedTurnStateImpl> pinnedTurns;
   private long lastNotifiedTurn;
   private final Gson gson;
 
-  public static class PinnedTurnState {
+  public static class PinnedTurnStateImpl implements PinnedTurnState {
 
     private final AiMessage requestMessage;
     private final ToolExecutionResultMessage resultMessage;
     private transient AgentTool tool;
 
-    public PinnedTurnState(AgentTool tool, AiMessage requestMessage, ToolExecutionResultMessage resultMessage) {
+    public PinnedTurnStateImpl(AgentTool tool, AiMessage requestMessage, ToolExecutionResultMessage resultMessage) {
       this.tool = tool;
       this.requestMessage = requestMessage;
       this.resultMessage = resultMessage;
     }
 
+    @Override
     public AgentTool getTool() {
       return tool;
     }
@@ -57,16 +57,18 @@ public class PinnedTurnsOperation implements ProjectedMemoryOperation {
       this.tool = tool;
     }
 
+    @Override
     public AiMessage getRequestMessage() {
       return requestMessage;
     }
 
+    @Override
     public ToolExecutionResultMessage getResultMessage() {
       return resultMessage;
     }
   }
 
-  public PinnedTurnsOperation() {
+  public PinnedTurnsOperationImpl() {
     this.pinnedTurns = new ArrayList<>();
     this.lastNotifiedTurn = 0L;
     this.gson = createGson();
@@ -101,6 +103,7 @@ public class PinnedTurnsOperation implements ProjectedMemoryOperation {
    * @param predicate condition to test each pinned turn
    * @return true if any turn was removed
    */
+  @Override
   public boolean removePinnedTurn(Predicate<PinnedTurnState> predicate) {
     if (predicate == null) {
       return false;
@@ -115,7 +118,7 @@ public class PinnedTurnsOperation implements ProjectedMemoryOperation {
     }
 
     // 1. Re-link transient tool references if necessary
-    for (PinnedTurnState state : this.pinnedTurns) {
+    for (PinnedTurnStateImpl state : this.pinnedTurns) {
       if (state.getTool() == null && state.getResultMessage() != null) {
         state.setTool(memory.getTool(state.getResultMessage().toolName()));
       }
@@ -143,7 +146,7 @@ public class PinnedTurnsOperation implements ProjectedMemoryOperation {
           if (!alreadyPinned) {
             AiMessage requestMsg = findPrecedingAiMessage(messages, i, resultMsg.id());
             if (requestMsg != null) {
-              this.pinnedTurns.add(new PinnedTurnState(tool, requestMsg, resultMsg));
+              this.pinnedTurns.add(new PinnedTurnStateImpl(tool, requestMsg, resultMsg));
             }
           }
         }
@@ -178,7 +181,7 @@ public class PinnedTurnsOperation implements ProjectedMemoryOperation {
       insertIndex++;
     }
 
-    for (PinnedTurnState pinnedTurn : this.pinnedTurns) {
+    for (PinnedTurnStateImpl pinnedTurn : this.pinnedTurns) {
       String callId = pinnedTurn.getResultMessage().id();
       boolean isPresentInRecent = false;
 
@@ -207,7 +210,7 @@ public class PinnedTurnsOperation implements ProjectedMemoryOperation {
     }
 
     if ((currentTurn - this.lastNotifiedTurn) >= NOTIFICATION_TURN_INTERVAL) {
-      for (PinnedTurnState state : this.pinnedTurns) {
+      for (PinnedTurnStateImpl state : this.pinnedTurns) {
         AgentTool tool = state.getTool();
         if (tool != null && state.getRequestMessage().hasToolExecutionRequests()) {
           for (ToolExecutionRequest req : state.getRequestMessage().toolExecutionRequests()) {
@@ -230,7 +233,7 @@ public class PinnedTurnsOperation implements ProjectedMemoryOperation {
     state.addProperty("lastNotifiedTurn", this.lastNotifiedTurn);
 
     JsonArray array = new JsonArray();
-    for (PinnedTurnState item : this.pinnedTurns) {
+    for (PinnedTurnStateImpl item : this.pinnedTurns) {
       JsonObject itemObj = new JsonObject();
       itemObj.add("requestMessage", this.gson.toJsonTree(item.getRequestMessage(), ChatMessage.class));
       itemObj.add("resultMessage", this.gson.toJsonTree(item.getResultMessage(), ChatMessage.class));
@@ -259,7 +262,7 @@ public class PinnedTurnsOperation implements ProjectedMemoryOperation {
           AiMessage req = (AiMessage) this.gson.fromJson(itemObj.get("requestMessage"), ChatMessage.class);
           ToolExecutionResultMessage res = (ToolExecutionResultMessage) this.gson.fromJson(itemObj.get("resultMessage"), ChatMessage.class);
           if (req != null && res != null) {
-            this.pinnedTurns.add(new PinnedTurnState(null, req, res));
+            this.pinnedTurns.add(new PinnedTurnStateImpl(null, req, res));
           }
         }
       }

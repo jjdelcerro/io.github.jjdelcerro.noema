@@ -14,7 +14,6 @@ import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.DateUtils;
 import io.github.jjdelcerro.noema.lib.impl.memory.GsonUtils;
-import io.github.jjdelcerro.noema.lib.impl.memory.proyected.operations.PinnedTurnsOperation;
 import io.github.jjdelcerro.noema.lib.memory.recent.RecentMemory;
 import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
 import org.apache.commons.lang3.StringUtils;
@@ -45,7 +44,6 @@ import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemory;
 import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemoryOperation;
 import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemoryOperationFactory;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_HIGH;
-import java.util.function.Predicate;
 
 public class ProjectedMemoryImpl implements ProjectedMemory {
 
@@ -306,18 +304,15 @@ public class ProjectedMemoryImpl implements ProjectedMemory {
     }
   }
 
-  @Override
-  public void removePinnedTurn(Predicate<PinnedTurnsOperation.PinnedTurnState> predicate) {
-    if (predicate == null) {
-      return;
+  public ProjectedMemoryOperation getOperation(String name) {
+    if (name == null) {
+      return null;
     }
     for (ProjectedMemoryOperation op : this.operations) {
-      if (op instanceof PinnedTurnsOperation pinnedOp) {
-        if (pinnedOp.removePinnedTurn(predicate)) {
-          this.save();
-        }
-        break;
+      if( StringUtils.equalsIgnoreCase(name, op.getName())) {
+        return op;
       }
     }
+    return null;
   }
 }
