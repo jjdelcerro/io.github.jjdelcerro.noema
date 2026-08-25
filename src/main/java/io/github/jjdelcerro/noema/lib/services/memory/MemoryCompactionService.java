@@ -1,9 +1,9 @@
 package io.github.jjdelcerro.noema.lib.services.memory;
 
 import io.github.jjdelcerro.noema.lib.AgentService;
-import io.github.jjdelcerro.noema.lib.persistence.Turn;
+import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
 import java.util.List;
-import io.github.jjdelcerro.noema.lib.persistence.CompactedMemory;
+import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
 
 /**
  * 

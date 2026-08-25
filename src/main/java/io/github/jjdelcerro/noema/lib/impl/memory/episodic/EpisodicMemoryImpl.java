@@ -1,9 +1,10 @@
-package io.github.jjdelcerro.noema.lib.impl.persistence;
+package io.github.jjdelcerro.noema.lib.impl.memory.episodic;
 
-import io.github.jjdelcerro.noema.lib.persistence.CompactedMemoryException;
-import io.github.jjdelcerro.noema.lib.persistence.TurnException;
+import io.github.jjdelcerro.noema.lib.impl.memory.compacted.CompactedMemoryImpl;
+import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemoryException;
+import io.github.jjdelcerro.noema.lib.memory.episodic.TurnException;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.persistence.Turn;
+import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
 
 import java.io.FileWriter;
 import java.io.PrintWriter;
@@ -25,8 +26,8 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.jjdelcerro.noema.lib.persistence.EpisodicMemory;
-import io.github.jjdelcerro.noema.lib.persistence.CompactedMemory;
+import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
 
 /**
  * Repositorio central que gestiona la persistencia (H2) y la indexación

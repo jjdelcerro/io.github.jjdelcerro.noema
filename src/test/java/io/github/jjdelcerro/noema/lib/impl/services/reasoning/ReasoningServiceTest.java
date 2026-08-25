@@ -1,5 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning;
 
+import io.github.jjdelcerro.noema.lib.memory.recent.RecentMemory;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
@@ -34,7 +35,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import io.github.jjdelcerro.noema.lib.persistence.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
 
 
 public class ReasoningServiceTest {

@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.lib.impl.persistence;
+package io.github.jjdelcerro.noema.lib.impl.memory.compacted;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -8,7 +8,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.jjdelcerro.noema.lib.persistence.CompactedMemory;
+import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
 
 /**
  * Representa un punto de consolidación de la memoria.
@@ -47,7 +47,7 @@ public class CompactedMemoryImpl implements CompactedMemory {
    * Factoría para rehidratar un CheckPoint desde los metadatos de la Base de
    * Datos. No carga el texto del disco inmediatamente (Lazy Loading).
    */
-  /*friend*/ static CompactedMemoryImpl from(String subchannel, int id, int turnFirst, int turnLast, LocalDateTime timestamp, Path storageFolder) {
+  public static CompactedMemoryImpl from(String subchannel, int id, int turnFirst, int turnLast, LocalDateTime timestamp, Path storageFolder) {
     return new CompactedMemoryImpl(subchannel, id, turnFirst, turnLast, timestamp, storageFolder);
   }
 
@@ -56,7 +56,7 @@ public class CompactedMemoryImpl implements CompactedMemory {
    * contador. - Retorna la instancia para que EpisodicMemory guarde los
    * metadatos en BD.
    */
-  /*friend*/ static CompactedMemoryImpl create(String subchannel, int id, int turnFirst, int turnLast, LocalDateTime timestamp, String text, Path storageFolder) {
+  public static CompactedMemoryImpl create(String subchannel, int id, int turnFirst, int turnLast, LocalDateTime timestamp, String text, Path storageFolder) {
     CompactedMemoryImpl cp = new CompactedMemoryImpl(subchannel, id, turnFirst, turnLast, timestamp, storageFolder);
 
     // Inyectamos el texto en cache
@@ -75,7 +75,7 @@ public class CompactedMemoryImpl implements CompactedMemory {
     return String.format("checkpoint-%d-%d-%d", id, turnFirst, turnLast);
   }
 
-  /*friend*/ void saveTextToDisk() {
+  public void saveTextToDisk() {
     try {
       if (!Files.exists(storageFolder)) {
         Files.createDirectories(storageFolder);
@@ -120,7 +120,7 @@ public class CompactedMemoryImpl implements CompactedMemory {
     return id;
   }
 
-  /*friend*/ void setId(int id) {
+  public void setId(int id) {
     if (this.id >= 0) {
       throw new IllegalStateException();
     }

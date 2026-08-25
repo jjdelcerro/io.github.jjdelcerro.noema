@@ -7,7 +7,7 @@ import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
 import io.github.jjdelcerro.noema.lib.impl.SQLProvider;
-import io.github.jjdelcerro.noema.lib.impl.persistence.Counter;
+import io.github.jjdelcerro.noema.lib.impl.memory.episodic.Counter;
 import io.github.jjdelcerro.noema.lib.impl.services.scheduler.tools.ScheduleAlarmTool;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;

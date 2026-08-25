@@ -1,5 +1,6 @@
-package io.github.jjdelcerro.noema.lib.persistence;
+package io.github.jjdelcerro.noema.lib.memory.episodic;
 
+import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
 import java.time.LocalDateTime;
 import java.util.List;
 

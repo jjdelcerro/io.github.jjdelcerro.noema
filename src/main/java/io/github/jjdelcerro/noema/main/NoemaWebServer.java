@@ -13,7 +13,7 @@ import io.github.jjdelcerro.noema.lib.settings.AgentSettingsGroup;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsItem;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsPaths;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsString;
-import io.github.jjdelcerro.noema.lib.persistence.Turn;
+import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.http.sse.SseClient;

@@ -8,7 +8,7 @@ import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
-import io.github.jjdelcerro.noema.lib.persistence.Turn;
+import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.SensorEventCallback;
@@ -47,8 +47,8 @@ import javax.swing.Timer;
 import javax.swing.UIManager;
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.lang3.StringUtils;
-import io.github.jjdelcerro.noema.lib.persistence.EpisodicMemory;
-import io.github.jjdelcerro.noema.lib.persistence.CompactedMemory;
+import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
 
 public class MainChatPanel extends JPanel {
 

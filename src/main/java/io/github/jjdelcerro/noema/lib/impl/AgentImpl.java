@@ -13,7 +13,7 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentActions;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
-import io.github.jjdelcerro.noema.lib.impl.persistence.EpisodicMemoryImpl;
+import io.github.jjdelcerro.noema.lib.impl.memory.episodic.EpisodicMemoryImpl;
 import java.nio.file.Paths;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.AgentManager;
@@ -47,7 +47,7 @@ import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.jjdelcerro.noema.lib.persistence.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
 
 /**
  *

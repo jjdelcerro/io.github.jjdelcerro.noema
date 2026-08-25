@@ -1,5 +1,7 @@
 package io.github.jjdelcerro.noema.lib;
 
+import dev.langchain4j.agent.tool.ToolExecutionRequest;
+import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 public interface AgentTool {
@@ -37,6 +39,14 @@ public interface AgentTool {
     default boolean isAvailableByDefault() {
       return true;
     }
+    
+    default boolean shouldPin() {
+        return false;
+    }
+
+    default String getPinnedNotificationMessage(ToolExecutionRequest request, ToolExecutionResultMessage result) {
+        return null;
+    }    
     
     // Ejecución de la lógica (recibe JSON args, devuelve String result)
     String execute(String jsonArguments);

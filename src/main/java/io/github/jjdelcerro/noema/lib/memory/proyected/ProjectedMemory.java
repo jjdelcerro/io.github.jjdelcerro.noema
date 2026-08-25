@@ -1,7 +1,9 @@
-package io.github.jjdelcerro.noema.lib.impl.services.reasoning;
+package io.github.jjdelcerro.noema.lib.memory.proyected;
 
 import dev.langchain4j.data.message.ChatMessage;
-import io.github.jjdelcerro.noema.lib.persistence.CompactedMemory;
+import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.memory.recent.RecentMemory;
+import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -26,6 +28,12 @@ public interface ProjectedMemory {
   
   public void setLastInteractionTime(LocalDateTime lastInteractionTime);
   
-  void save();
+  public void setLastInteractionTurn(long turnid);
+  
+  public long getLastInteractionTurn();
+  
+  public AgentTool getTool(String name);
+  
+  public void save();
   
 }

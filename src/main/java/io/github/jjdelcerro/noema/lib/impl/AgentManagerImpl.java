@@ -10,6 +10,10 @@ import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
 import io.github.jjdelcerro.noema.lib.Subagent;
 import io.github.jjdelcerro.noema.lib.SubagentDefinition;
+import io.github.jjdelcerro.noema.lib.impl.memory.proyected.operations.PendingAnnotationOperationFactory;
+import io.github.jjdelcerro.noema.lib.impl.memory.proyected.operations.PinnedTurnsOperationFactory;
+import io.github.jjdelcerro.noema.lib.impl.memory.proyected.operations.TemporalPerceptionOperationFactory;
+import io.github.jjdelcerro.noema.lib.impl.memory.proyected.operations.TrimmingOperationFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.email.EmailServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.mcp.McpServiceFactory;
@@ -19,6 +23,7 @@ import io.github.jjdelcerro.noema.lib.impl.services.scheduler.SchedulerServiceFa
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.telegram.TelegramServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.settings.AgentSettingsImpl;
+import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemoryOperationFactory;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import java.io.IOException;
 
@@ -42,12 +47,19 @@ public class AgentManagerImpl implements AgentManager {
   private final Map<String, SQLProvider> sqlProvider;
   private final List<Supplier<AgentAction>> actions;
   private final Map<Integer, Subagent> activeSubagents;
+  private final Map<String, ProjectedMemoryOperationFactory> projectedMemoryOperationFactories;
 
   public AgentManagerImpl() {
     this.serviceFactories = new LinkedHashMap<>();
+    this.projectedMemoryOperationFactories = new LinkedHashMap<>();
     this.sqlProvider = new HashMap<>();
     this.actions = new ArrayList<>();
     this.activeSubagents = new ConcurrentHashMap<>();
+
+    this.registerProjectedMemoryOperation(new TrimmingOperationFactory());
+    this.registerProjectedMemoryOperation(new PendingAnnotationOperationFactory());
+    this.registerProjectedMemoryOperation(new TemporalPerceptionOperationFactory());
+    this.registerProjectedMemoryOperation(new PinnedTurnsOperationFactory());
 
     this.registerService(new EmbeddingsServiceFactory());
     this.registerService(new SensorsServiceFactory());
@@ -167,7 +179,26 @@ public class AgentManagerImpl implements AgentManager {
 
   @Override
   public SubagentDefinition createSubagentDefinition(Path xmlPath) throws IOException {
-    return SubagentDefinitionImpl.from(xmlPath);    
+    return SubagentDefinitionImpl.from(xmlPath);
   }
-  
+
+  @Override
+  public final void registerProjectedMemoryOperation(ProjectedMemoryOperationFactory factory) {
+    if (factory != null) {
+      this.projectedMemoryOperationFactories.put(factory.getName().toUpperCase(), factory);
+    }
+  }
+
+  @Override
+  public ProjectedMemoryOperationFactory getProjectedMemoryOperationFactory(String name) {
+    if (name == null) {
+      return null;
+    }
+    return this.projectedMemoryOperationFactories.get(name.toUpperCase());
+  }
+
+  @Override
+  public Collection<ProjectedMemoryOperationFactory> getProjectedMemoryOperationFactories() {
+    return this.projectedMemoryOperationFactories.values();
+  }
 }

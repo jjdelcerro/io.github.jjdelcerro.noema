@@ -8,7 +8,7 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.Agent.ModelParameters;
 import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_MEMORY_MODEL;
 import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_MEMORY_PROVIDER;
-import io.github.jjdelcerro.noema.lib.persistence.Turn;
+import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
 
 import java.util.List;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
@@ -30,8 +30,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
-import io.github.jjdelcerro.noema.lib.persistence.EpisodicMemory;
-import io.github.jjdelcerro.noema.lib.persistence.CompactedMemory;
+import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
 import io.github.jjdelcerro.noema.lib.services.memory.MemoryCompactionService;
 
 /**

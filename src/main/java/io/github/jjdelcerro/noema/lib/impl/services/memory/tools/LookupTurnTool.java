@@ -1,7 +1,7 @@
 package io.github.jjdelcerro.noema.lib.impl.services.memory.tools;
 
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.persistence.Turn;
+import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
 
 import java.util.ArrayList;
 import java.util.HashMap;

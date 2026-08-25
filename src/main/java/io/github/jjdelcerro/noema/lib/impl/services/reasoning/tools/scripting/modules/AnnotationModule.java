@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.AbstractScriptingModule;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.ScriptContext;
-import io.github.jjdelcerro.noema.lib.persistence.Turn;
+import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;

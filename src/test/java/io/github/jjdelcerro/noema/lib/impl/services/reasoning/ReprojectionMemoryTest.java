@@ -1,5 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning;
 
+import io.github.jjdelcerro.noema.lib.memory.recent.RecentMemory;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.AgentActions;
@@ -27,7 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import io.github.jjdelcerro.noema.lib.persistence.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
 
 @SuppressWarnings("unused")
 public class ReprojectionMemoryTest extends AbstractScriptedTest {

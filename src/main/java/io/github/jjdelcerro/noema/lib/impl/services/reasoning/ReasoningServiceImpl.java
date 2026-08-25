@@ -1,5 +1,8 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning;
 
+import io.github.jjdelcerro.noema.lib.impl.memory.recent.RecentMemoryImpl;
+import io.github.jjdelcerro.noema.lib.memory.recent.RecentMemory;
+import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemory;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.AiMessage;
@@ -14,7 +17,7 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.LookupTurnTool;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.SearchFullHistoryTool;
-import io.github.jjdelcerro.noema.lib.persistence.Turn;
+import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -73,11 +76,12 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
 import static io.github.jjdelcerro.noema.lib.AgentActions.COMPACT_REASONING_FULL_MEMORY;
 import static io.github.jjdelcerro.noema.lib.AgentActions.COMPACT_REASONING_MEMORY;
+import io.github.jjdelcerro.noema.lib.impl.memory.proyected.ProjectedMemoryImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.ScriptExecuteTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.subagent.LaunchSubagentTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.subagent.ListSubagentsTool;
-import io.github.jjdelcerro.noema.lib.persistence.EpisodicMemory;
-import io.github.jjdelcerro.noema.lib.persistence.CompactedMemory;
+import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
 
 /**
  * Orquestador principal del sistema. Gestiona el bucle de razonamiento, la
@@ -700,6 +704,7 @@ public class ReasoningServiceImpl implements ReasoningService {
       toolExecutionRetries = 0;
       boolean turnFinished = false;
       while (!turnFinished && this.isRunning()) {
+        projectedMemory.setLastInteractionTurn(recentMemory.getLastTurnId());
         Response<AiMessage> response = this.getModel().generate(
                 projectedMemory.getMessages(recentMemory, compactedMemory, this.getBaseSystemPrompt()),
                 this.getToolSpecifications(), 

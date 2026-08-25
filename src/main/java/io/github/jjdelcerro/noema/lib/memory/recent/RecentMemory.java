@@ -1,10 +1,8 @@
-package io.github.jjdelcerro.noema.lib.impl.services.reasoning;
+package io.github.jjdelcerro.noema.lib.memory.recent;
 
 import dev.langchain4j.data.message.ChatMessage;
-import io.github.jjdelcerro.noema.lib.persistence.Turn;
-import java.time.LocalDateTime;
+import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
 import java.util.List;
-import io.github.jjdelcerro.noema.lib.persistence.CompactedMemory;
 
 /**
  *
@@ -56,4 +54,5 @@ public interface RecentMemory {
 
     void save();
 
+    long getLastTurnId();
 }

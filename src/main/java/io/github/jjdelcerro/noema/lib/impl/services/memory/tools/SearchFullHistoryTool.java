@@ -5,7 +5,7 @@ import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.DateUtils;
 import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
-import io.github.jjdelcerro.noema.lib.persistence.Turn;
+import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;

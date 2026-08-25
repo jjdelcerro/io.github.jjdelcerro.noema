@@ -1,7 +1,7 @@
-package io.github.jjdelcerro.noema.lib.impl.persistence;
+package io.github.jjdelcerro.noema.lib.impl.memory.episodic;
 
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.AnnotateObservationTool;
-import io.github.jjdelcerro.noema.lib.persistence.Turn;
+import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
 
 import java.time.LocalDateTime;
 import java.util.Objects;

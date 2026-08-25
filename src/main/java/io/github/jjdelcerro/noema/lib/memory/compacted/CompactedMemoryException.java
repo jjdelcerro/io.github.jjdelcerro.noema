@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.lib.persistence;
+package io.github.jjdelcerro.noema.lib.memory.compacted;
 
 /**
  *

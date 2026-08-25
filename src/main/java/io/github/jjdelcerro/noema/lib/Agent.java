@@ -6,7 +6,7 @@ import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.model.output.Response;
-import io.github.jjdelcerro.noema.lib.persistence.Turn;
+import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.SensorEventCallback;
@@ -14,7 +14,7 @@ import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import java.nio.file.Path;
 import java.util.List;
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import io.github.jjdelcerro.noema.lib.persistence.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
 
 /**
  *

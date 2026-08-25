@@ -1,5 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning;
 
+import io.github.jjdelcerro.noema.lib.memory.recent.RecentMemory;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.AiMessage;

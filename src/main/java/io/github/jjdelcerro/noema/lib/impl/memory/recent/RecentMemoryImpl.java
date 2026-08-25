@@ -1,31 +1,19 @@
-package io.github.jjdelcerro.noema.lib.impl.services.reasoning;
+package io.github.jjdelcerro.noema.lib.impl.memory.recent;
 
+import io.github.jjdelcerro.noema.lib.memory.recent.RecentMemory;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
-import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.data.message.ChatMessageType;
 import dev.langchain4j.data.message.Content;
-import dev.langchain4j.data.message.ContentType;
-import dev.langchain4j.data.message.ImageContent;
-import dev.langchain4j.data.message.SystemMessage;
-import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
-import dev.langchain4j.data.message.UserMessage;
+import io.github.jjdelcerro.noema.lib.impl.memory.GsonUtils.ChatMessageAdapter;
+import io.github.jjdelcerro.noema.lib.impl.memory.GsonUtils.ContentAdapter;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
-import io.github.jjdelcerro.noema.lib.persistence.Turn;
+import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
 import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.MEMORY_COMPACTION_TURNS;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
-import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -81,6 +69,7 @@ public class RecentMemoryImpl implements RecentMemory {
 
   private final Path recentMemoryPath;
   private final Path tempPath;
+  private long lastTurnId;
 
   // ESTADO INTERNO
   private final List<ChatMessage> messages = new ArrayList<>();
@@ -100,6 +89,7 @@ public class RecentMemoryImpl implements RecentMemory {
     this.settings = settings;
     this.recentMemoryPath = dataFolder.resolve("recent_memory-" + subchannel + ".json");
     this.tempPath = dataFolder.resolve("recent_memory-" + subchannel + ".json.tmp");
+    this.lastTurnId = 0;
     this.load();
   }
 
@@ -119,6 +109,7 @@ public class RecentMemoryImpl implements RecentMemory {
 
   @Override
   public void consolideTurn(Turn turn) {
+    this.lastTurnId = turn.getId();
     if (messages.isEmpty()) {
       return;
     }
@@ -139,6 +130,7 @@ public class RecentMemoryImpl implements RecentMemory {
   public void clear() {
     this.messages.clear();
     this.turnOfMessage.clear();
+    this.lastTurnId = 0L;
     this.save();
   }
 
@@ -315,10 +307,12 @@ public class RecentMemoryImpl implements RecentMemory {
 
     List<ChatMessage> messages;
     Map<Integer, ChatMessageInfo> turnOfMessage;
+    long lastTurnId;
 
-    RecentMemoryState(List<ChatMessage> m, Map<Integer, ChatMessageInfo> t) {
+    RecentMemoryState(List<ChatMessage> m, Map<Integer, ChatMessageInfo> t, long lastTurnId) {
       this.messages = m;
       this.turnOfMessage = t;
+      this.lastTurnId = lastTurnId;
     }
 
     @SuppressWarnings("unused")
@@ -340,6 +334,7 @@ public class RecentMemoryImpl implements RecentMemory {
         if (state.turnOfMessage != null) {
           this.turnOfMessage.putAll(state.turnOfMessage);
         }
+        this.lastTurnId = state.lastTurnId;
       }
     } catch (Exception e) {
       LOGGER.warn("Error recuperando sesion", e);
@@ -349,7 +344,7 @@ public class RecentMemoryImpl implements RecentMemory {
   @Override
   public void save() {
     Gson gson = createGson();
-    RecentMemoryState state = new RecentMemoryState(this.messages, this.turnOfMessage);
+    RecentMemoryState state = new RecentMemoryState(this.messages, this.turnOfMessage, this.lastTurnId);
     try {
       try (Writer writer = Files.newBufferedWriter(tempPath, StandardCharsets.UTF_8)) {
         gson.toJson(state, writer);
@@ -396,69 +391,6 @@ public class RecentMemoryImpl implements RecentMemory {
     }
   }
 
-  // =================================================================================
-  // ADAPTADORES GSON
-  // =================================================================================
-  public static class ChatMessageAdapter implements JsonSerializer<ChatMessage>, JsonDeserializer<ChatMessage> {
-
-    @Override
-    public JsonElement serialize(ChatMessage src, Type typeOfSrc, JsonSerializationContext context) {
-      JsonObject wrapper = new JsonObject();
-      wrapper.addProperty("type", src.type().name());
-      wrapper.add("data", context.serialize(src, src.getClass()));
-      return wrapper;
-    }
-
-    @Override
-    public ChatMessage deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-      JsonObject wrapper = json.getAsJsonObject();
-      String typeStr = wrapper.get("type").getAsString();
-      JsonElement data = wrapper.get("data");
-      ChatMessageType type = ChatMessageType.valueOf(typeStr);
-      Class<? extends ChatMessage> clazz = switch (type) {
-        case USER ->
-          UserMessage.class;
-        case AI ->
-          AiMessage.class;
-        case SYSTEM ->
-          SystemMessage.class;
-        case TOOL_EXECUTION_RESULT ->
-          ToolExecutionResultMessage.class;
-        default ->
-          throw new JsonParseException("Unknown message type: " + type);
-      };
-      return context.deserialize(data, clazz);
-    }
-  }
-
-  public static class ContentAdapter implements JsonSerializer<Content>, JsonDeserializer<Content> {
-
-    @Override
-    public JsonElement serialize(Content src, Type typeOfSrc, JsonSerializationContext context) {
-      JsonObject wrapper = new JsonObject();
-      wrapper.addProperty("type", src.type().name());
-      wrapper.add("data", context.serialize(src, src.getClass()));
-      return wrapper;
-    }
-
-    @Override
-    public Content deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-      JsonObject wrapper = json.getAsJsonObject();
-      String typeStr = wrapper.get("type").getAsString();
-      JsonElement data = wrapper.get("data");
-      ContentType type = ContentType.valueOf(typeStr);
-      Class<? extends Content> clazz = switch (type) {
-        case TEXT ->
-          TextContent.class;
-        case IMAGE ->
-          ImageContent.class;
-        default ->
-          throw new JsonParseException("Unknown content type: " + type);
-      };
-      return context.deserialize(data, clazz);
-    }
-  }
-
   @Override
   public List<ChatMessage> getMessages() {
     // Devolvemos una copia para evitar problemas de concurrencia
@@ -470,4 +402,9 @@ public class RecentMemoryImpl implements RecentMemory {
     return this.messages.isEmpty();
   }
 
+  @Override
+  public long getLastTurnId() {
+    return this.lastTurnId;
+  }
+  
 }

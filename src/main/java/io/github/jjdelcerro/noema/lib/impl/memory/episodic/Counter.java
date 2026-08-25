@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.lib.impl.persistence;
+package io.github.jjdelcerro.noema.lib.impl.memory.episodic;
 
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
 import io.github.jjdelcerro.noema.lib.impl.SQLProvider;

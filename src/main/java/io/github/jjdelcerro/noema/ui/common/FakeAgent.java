@@ -18,7 +18,7 @@ import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
 import java.util.List;
 import java.util.function.Supplier;
-import io.github.jjdelcerro.noema.lib.persistence.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
 
 /**
  * Mínima implementación de Agent para permitir la configuración inicial sin

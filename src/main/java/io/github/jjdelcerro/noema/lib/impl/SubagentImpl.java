@@ -21,8 +21,8 @@ import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceIm
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorInformationImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.user.SensorEventUserImpl;
 import io.github.jjdelcerro.noema.lib.impl.settings.AgentSettingsImpl;
-import io.github.jjdelcerro.noema.lib.persistence.EpisodicMemory;
-import io.github.jjdelcerro.noema.lib.persistence.Turn;
+import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;

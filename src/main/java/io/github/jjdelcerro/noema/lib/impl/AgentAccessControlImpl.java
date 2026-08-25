@@ -70,7 +70,7 @@ public class AgentAccessControlImpl implements AgentAccessControl {
     paths.addAll(this.allowedExternalPaths);
     return paths;
   }
-  
+
   @Override
   public void addAllowedPath(Path path) {
     this.allowedExternalPaths.add(path.toAbsolutePath().normalize());
@@ -196,7 +196,7 @@ public class AgentAccessControlImpl implements AgentAccessControl {
 
   @Override
   public boolean isAccessible(URI url) { // FIXME: habria que afinar esto, probablemente usando AgentSettings
-    if( !isAllowedInternetAccess() ) {
+    if (!isAllowedInternetAccess()) {
       return false;
     }
     // habria que ver si es intersante restringir el protocolo.
@@ -205,7 +205,8 @@ public class AgentAccessControlImpl implements AgentAccessControl {
   }
 
   /**
-   * Sincroniza las listas en memoria con lo definido en la configuración y valida incongruencias.
+   * Sincroniza las listas en memoria con lo definido en la configuración y
+   * valida incongruencias.
    */
   private synchronized void loadConfig() {
 
@@ -255,7 +256,8 @@ public class AgentAccessControlImpl implements AgentAccessControl {
   }
 
   /**
-   * Inspecciona las listas cargadas para identificar errores comunes de configuración.
+   * Inspecciona las listas cargadas para identificar errores comunes de
+   * configuración.
    */
   private void validateRules() {
     // 1. Detectar rutas en nom_writable_paths fuera del workspace y no incluidas en allowed_external_paths
@@ -298,7 +300,8 @@ public class AgentAccessControlImpl implements AgentAccessControl {
   }
 
   /**
-   * Notifica una incongruencia de configuración al Logger y a la consola activa si está disponible.
+   * Notifica una incongruencia de configuración al Logger y a la consola activa
+   * si está disponible.
    */
   private void reportIncongruency(String message) {
     LOGGER.warn(message);
@@ -311,10 +314,10 @@ public class AgentAccessControlImpl implements AgentAccessControl {
   }
 
   @Override
-  public boolean isHumanConfirmationRequired() { 
+  public boolean isHumanConfirmationRequired() {
     return this.humanConfirmationRequired;
   }
-  
+
   @Override
   public boolean isAllowedDiskWrite() {
     return allowDiskWrite;

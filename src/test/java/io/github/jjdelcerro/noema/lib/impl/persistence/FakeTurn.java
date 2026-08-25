@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.persistence;
 
-import io.github.jjdelcerro.noema.lib.persistence.Turn;
+import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
 import java.time.LocalDateTime;
 
 public class FakeTurn implements Turn {
