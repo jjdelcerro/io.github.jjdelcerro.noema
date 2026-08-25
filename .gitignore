@@ -28,3 +28,4 @@ replay_pid*
 /.classpath
 /.factorypath
 /.settings/
+src/main/resources/**/var/models/
