@@ -119,10 +119,11 @@ public class MemoryCompactionServiceImpl implements MemoryCompactionService {
     }
     for (Turn turn : newTurns) {
       validTurnIds.add(turn.getId());
-      if ("lookup_turn".equals(turn.getContenttype()) || "tool_execution".equals(turn.getContenttype())) {
-          // Escaneamos el resultado de la herramienta por si trajo citas del pasado
+      if ("lookup_turn".equals(turn.getContenttype()) 
+          || "tool_execution".equals(turn.getContenttype()) 
+          || "tool_execution_summarized".equals(turn.getContenttype())) {
           validTurnIds.addAll(extractCitationIds(turn.getToolResult()));
-      }      
+      }
     }
     
     String userPrompt = buildUserPrompt(previous, newTurns);

@@ -1,5 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.memory.episodic;
 
+import com.google.gson.JsonObject;
 import io.github.jjdelcerro.noema.lib.impl.memory.compacted.CompactedMemoryImpl;
 import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemoryException;
 import io.github.jjdelcerro.noema.lib.memory.episodic.TurnException;
@@ -32,8 +33,9 @@ import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
 /**
  * Repositorio central que gestiona la persistencia (H2) y la indexación
  * vectorial. Actúa como "Source of Truth" para el estado del agente.
- * 
- * TODO: Antes SourceOfTruthImpl, habria que actualizar la documentacion con este cambio 
+ *
+ * TODO: Antes SourceOfTruthImpl, habria que actualizar la documentacion con
+ * este cambio
  */
 @SuppressWarnings("UseSpecificCatch")
 public class EpisodicMemoryImpl implements EpisodicMemory {
@@ -48,7 +50,7 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
   private final Counter turnCounter;
   private final Counter compactedMemoryCounter;
   private final Agent agent;
-  
+
   private EpisodicMemoryImpl(Agent agent) {
     this.agent = agent;
     createTables();
@@ -211,11 +213,12 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
       return originalText;
     }
 
-    // Política de recorte para persistencia
-    return String.format(
-            "{\"status\": \"success\", \"original_size_chars\": %d, \"note\": \"Data truncated in DB. Original data was processed in memory.\"}",
-            originalText.length()
-    );
+    JsonObject json = new JsonObject();
+    json.addProperty("status", "truncated");
+    json.addProperty("original_size_chars", originalText.length());
+    json.addProperty("content", originalText.substring(0, MAX_DB_TEXT_SIZE));
+    json.addProperty("note", "Data truncated in DB. First 2KB preserved for indexing and reference.");
+    return json.toString();
   }
 
   /**
@@ -316,7 +319,7 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
         }
       }
     } catch (Exception ex) {
-       throw new TurnException("Can't add turn", ex);
+      throw new TurnException("Can't add turn", ex);
     }
   }
 
@@ -382,44 +385,43 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
   @Override
   public List<Turn> getTurnsByText(String subchannel, String query, int limit, double minSimilarity, String annotationType) {
     try {
-        EmbeddingsService embedding = (EmbeddingsService) agent.getService(EmbeddingsService.NAME);
-        EmbeddingFilter<Turn> search = embedding.createEmbeddingFilter(query, limit, minSimilarity);
+      EmbeddingsService embedding = (EmbeddingsService) agent.getService(EmbeddingsService.NAME);
+      EmbeddingFilter<Turn> search = embedding.createEmbeddingFilter(query, limit, minSimilarity);
 
-        // Corregido el ID de la SQL y la columna (subchannel en lugar de sunchannel)
-        String sql = SQLProvider.from(getConnection()).get(
-                "EpisodicMemory_getTurnsByText",
-                """
+      // Corregido el ID de la SQL y la columna (subchannel en lugar de sunchannel)
+      String sql = SQLProvider.from(getConnection()).get(
+              "EpisodicMemory_getTurnsByText",
+              """
                 SELECT * FROM episodicmemory 
                 WHERE subchannel = ? 
                   AND (? IS NULL OR annotation_type = ?)
                   AND embedding_blob IS NOT NULL
                 ORDER BY id DESC      
                 """
-        );
+      );
 
-        try (Connection conn = getConnection().get(); 
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+      try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
-          ps.setString(1, subchannel);
-          ps.setString(2, annotationType);
-          ps.setString(3, annotationType);
+        ps.setString(1, subchannel);
+        ps.setString(2, annotationType);
+        ps.setString(3, annotationType);
 
-          try (ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-              byte[] blob = rs.getBytes("embedding_blob");
-              float[] dbVec = search.toFloat(blob);
-              if (dbVec != null) {
-                Turn turn = mapResultSetToTurn(rs, dbVec);
-                search.add(dbVec, turn);
-              }
+        try (ResultSet rs = ps.executeQuery()) {
+          while (rs.next()) {
+            byte[] blob = rs.getBytes("embedding_blob");
+            float[] dbVec = search.toFloat(blob);
+            if (dbVec != null) {
+              Turn turn = mapResultSetToTurn(rs, dbVec);
+              search.add(dbVec, turn);
             }
           }
         }
-        return search.get();
-
-      } catch (Exception ex) {
-        throw new TurnException("Can't retrieve turns", ex);
       }
+      return search.get();
+
+    } catch (Exception ex) {
+      throw new TurnException("Can't retrieve turns", ex);
+    }
   }
 
   private Turn mapResultSetToTurn(ResultSet rs) throws SQLException {

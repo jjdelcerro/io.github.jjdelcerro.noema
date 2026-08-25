@@ -3,6 +3,7 @@ package io.github.jjdelcerro.noema.lib.services.reasoning;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemory;
 import java.util.List;
 
 /**
@@ -43,5 +44,7 @@ public interface ReasoningService extends AgentService {
   boolean isToolActive(String name);
 
   void setToolActive(String name, boolean active);
+  
+  public ProjectedMemory getProjectedMemory(String subchannel);
   
 }

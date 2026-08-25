@@ -60,15 +60,10 @@ import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_REASONING_MODEL
 import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_REASONING_PROVIDER;
 import io.github.jjdelcerro.noema.lib.impl.DateUtils;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.ConsultEnvironTool;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.ListSkillsTool;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.LoadSkillTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.TavilyWebSearchTool;
-import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SYSTEMCLOCK_SENSOR_NAME;
-import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import org.apache.commons.io.FileUtils;
@@ -78,6 +73,11 @@ import static io.github.jjdelcerro.noema.lib.AgentActions.COMPACT_REASONING_FULL
 import static io.github.jjdelcerro.noema.lib.AgentActions.COMPACT_REASONING_MEMORY;
 import io.github.jjdelcerro.noema.lib.impl.memory.proyected.ProjectedMemoryImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.ScriptExecuteTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.skills.ActivateSkillTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.skills.DeactivateSkillTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.skills.ListSkillsTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.skills.ReadSkillResourceTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.skills.RunSkillScriptTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.subagent.LaunchSubagentTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.subagent.ListSubagentsTool;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
@@ -156,7 +156,7 @@ public class ReasoningServiceImpl implements ReasoningService {
     return projectedMemory;
   }
 
-  private ProjectedMemory getProyectedMemory(String subchannel) {
+  public ProjectedMemory getProjectedMemory(String subchannel) {
     ProjectedMemory projectedMemory = this.projectedMemories.get(subchannel);
     if (projectedMemory == null) {
       projectedMemory = this.createProjectedMemory(subchannel);
@@ -193,8 +193,7 @@ public class ReasoningServiceImpl implements ReasoningService {
     String[] resources = new String[]{
       "var/config/prompts/reasoning-system.md",
       "var/identity/core/readme.md",
-      "var/identity/environ/readme.md",
-      "var/skills/readme.md"
+      "var/identity/environ/readme.md"
     };
     for (String resPath : resources) {
       this.agent.installResource(resPath);
@@ -493,14 +492,17 @@ public class ReasoningServiceImpl implements ReasoningService {
   public List<AgentTool> getTools() {
     AgentTool[] tools0 = new AgentTool[]{
       new ConsultEnvironTool(this.agent),
-      new ListSkillsTool(this.agent),
-      new LoadSkillTool(this.agent),
       new TimeTool(this.agent),
       new LaunchSubagentTool(this.agent),
-      new ListSubagentsTool(this.agent),   
+      new ListSubagentsTool(this.agent),
       new ScriptExecuteTool(this.agent),
       new FileGrepTool(this.agent),
       new FileReadTool(this.agent),
+      new ListSkillsTool(this.agent),
+      new ActivateSkillTool(this.agent),
+      new DeactivateSkillTool(this.agent),
+      new ReadSkillResourceTool(this.agent),
+      new RunSkillScriptTool(this.agent),
       
       new FileFindTool(this.agent),
       new FileWriteTool(this.agent),
@@ -551,15 +553,15 @@ public class ReasoningServiceImpl implements ReasoningService {
 
   @Override
   public int estimateMessagesTokenCount(String subchannel) {
-      ProjectedMemory projection = this.getProyectedMemory(subchannel);
-      return this.agent.estimateTokenCount(
-              projection.getMessages(
-                this.getRecentMemory(subchannel),
-                this.getActiveCompactedMemory(subchannel),
-                this.getLastestSystemPrompt()
-              ), 
-              null
-      );
+    ProjectedMemory projection = this.getProjectedMemory(subchannel);
+    return this.agent.estimateTokenCount(
+            projection.getMessages(
+                    this.getRecentMemory(subchannel),
+                    this.getActiveCompactedMemory(subchannel),
+                    this.getLastestSystemPrompt()
+            ),
+            null
+    );
   }
 
   @Override
@@ -678,7 +680,7 @@ public class ReasoningServiceImpl implements ReasoningService {
       String textUser = null;
       RecentMemory recentMemory = this.getRecentMemory(currentSubchannel);
       CompactedMemory compactedMemory = this.getActiveCompactedMemory(currentSubchannel);
-      ProjectedMemory projectedMemory = getProyectedMemory(currentSubchannel);
+      ProjectedMemory projectedMemory = getProjectedMemory(currentSubchannel);
 
       if (event instanceof SensorEventUser) {
         // Caso Usuario: Guardamos el prompt para el turno final 'chat'
@@ -707,9 +709,9 @@ public class ReasoningServiceImpl implements ReasoningService {
         projectedMemory.setLastInteractionTurn(recentMemory.getLastTurnId());
         Response<AiMessage> response = this.getModel().generate(
                 projectedMemory.getMessages(recentMemory, compactedMemory, this.getBaseSystemPrompt()),
-                this.getToolSpecifications(), 
+                this.getToolSpecifications(),
                 abort
-        );        
+        );
         AiMessage aiMessage = response.content();
         recentMemory.add(aiMessage);
 
@@ -718,7 +720,7 @@ public class ReasoningServiceImpl implements ReasoningService {
             String result = executeTool(recentMemory, request);
 
             String contentType;
-            switch(this.getToolType(request.name())) {
+            switch (this.getToolType(request.name())) {
               case AgentTool.TYPE_ANNOTATION:
                 contentType = "annotation";
                 break;

@@ -160,6 +160,11 @@ public class AgentAccessControlImpl implements AgentAccessControl {
         throw new SecurityException("ACCESO DENEGADO: No se permite escribir en la carpeta .git");
       }
 
+      String targetPathString = target.toString().replace("\\", "/");
+      if (targetPathString.contains("/.claude/skills/") || targetPathString.endsWith("/.claude/skills")) {
+          throw new SecurityException("ACCESO DENEGADO: No se permite modificar archivos dentro de .claude/skills/");
+      }      
+      
       for (Path nonWritablePath : this.nomWritablePaths) {
         if (target.startsWith(nonWritablePath)) {
           throw new SecurityException("ACCESO DENEGADO: Ruta no permitida para escritura: " + rawPath);
