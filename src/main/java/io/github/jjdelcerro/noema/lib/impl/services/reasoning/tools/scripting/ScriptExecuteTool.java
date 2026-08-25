@@ -59,10 +59,10 @@ public class ScriptExecuteTool extends AbstractPaginatedAgentTool {
     return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
             .description(StringUtils.replace("""
-Executes a sandboxed Groovy script inside the Noema JVM to process, filter, or transform data programmatically.
+Executes a sandboxed Groovy script inside the agent to process, filter, or transform data programmatically.
 
 **GLOBAL CONTEXT OBJECT (`${CONTEXT_NAME}`):**
-Use the `noema` object to access streaming facades:
+Use the `agent` object to access streaming facades:
 - `${CONTEXT_NAME}.fs.lines("file.txt")` : Returns an Iterable of lines (streaming, low memory).
 - `${CONTEXT_NAME}.fs.forEachLine("file.txt") { line, num -> ... }` : Iterates line by line.
 - `${CONTEXT_NAME}.fs.find("src/**/*.java")` : Lists matching relative file paths.
@@ -72,11 +72,13 @@ Use the `noema` object to access streaming facades:
 - `${CONTEXT_NAME}.llm.extractJson("prompt", chunk)` : Extracts and parses structured JSON.
 - `${CONTEXT_NAME}.web.lines("https://...")` : Streams clean lines of text from web/PDF/DOCX.
 - `${CONTEXT_NAME}.web.search("query")` : Web search returning list of {title, url, content}.
-- `${CONTEXT_NAME}.notes.add(source, note, [resource_id], [type])` : Direct knowledge registration.
+- `${CONTEXT_NAME}.annotation.add(source, note, [resource_id], [type])` : Direct knowledge registration.
 - `${CONTEXT_NAME}.subagents.run(name, params)` : Runs a subagent worker recipe synchronously.
 - `${CONTEXT_NAME}.state.myVar = value` : Preserves variables between scripts in the same session.
 - `println ${CONTEXT_NAME}.help()` : Prints available modules.
-
+                                             
+Use ${CONTEXT_NAME}.<module>.help() to get help of a module.
+                                             
 """ + getShortPaginationInstruction(),"${CONTEXT_NAME}",CONTEXT_NAME))
             .addStringParameter("script", "The Groovy code to execute.");
   }
