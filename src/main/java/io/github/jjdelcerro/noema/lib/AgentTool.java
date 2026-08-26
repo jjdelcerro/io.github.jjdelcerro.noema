@@ -18,7 +18,6 @@ public interface AgentTool {
     
     public enum TrimResultType {
       None,
-      Notify,
       Trim
     }
 

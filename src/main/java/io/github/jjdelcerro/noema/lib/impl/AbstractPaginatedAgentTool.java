@@ -322,7 +322,7 @@ EMPTY: [true|false]
 """;
     }
 
-    private static final String CONTENT_TRIMMED_IN_THE_FOLLOWING_TURNS = "\nCONTENT_TRIMMED: IN THE FOLLOWING TURNS";
+//    private static final String CONTENT_TRIMMED_IN_THE_FOLLOWING_TURNS = "\nCONTENT_TRIMMED: IN THE FOLLOWING TURNS";
     private static final String CONTENT_TRIMMED = "\nCONTENT_TRIMMED: true";
 
     @Override
@@ -339,11 +339,7 @@ EMPTY: [true|false]
         }
         String header = result.substring(0, separatorIndex);
         String body = result.substring(separatorIndex);
-        header = StringUtils.replace(header, CONTENT_TRIMMED_IN_THE_FOLLOWING_TURNS, "");
         switch (trimResultType) {
-            case Notify:
-//        LOGGER.info("TRIM RESULTS OF "+this.getClass().getSimpleName()+ " IN THE FOLLOWING TURNS");
-                return header + CONTENT_TRIMMED_IN_THE_FOLLOWING_TURNS + separator + body;
             case Trim:
 //        LOGGER.info("TRIM RESULTS OF "+this.getClass().getSimpleName());
                 return header + CONTENT_TRIMMED + separator;
