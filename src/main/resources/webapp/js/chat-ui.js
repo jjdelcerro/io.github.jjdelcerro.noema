@@ -22,6 +22,16 @@ let statusText = null;
 let btnExport = null;
 let btnCopyConversation = null;
 
+
+/**
+ * Ajusta la altura del textarea dinámicamente según el contenido.
+ */
+function adjustTextareaHeight() {
+    if (!messageInput) return;
+    messageInput.style.height = 'auto';
+    messageInput.style.height = `${messageInput.scrollHeight}px`;
+}
+
 /**
  * Inicializa las referencias del DOM y configura los listeners del chat.
  * 
@@ -48,13 +58,15 @@ export function initChatUI(initialTerminalId) {
     if (btnCopyConversation) {
         btnCopyConversation.addEventListener('click', copyConversation);
     }
+    messageInput.addEventListener('input', adjustTextareaHeight);
+
     messageInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSend();
         }
     });
-
+    
     if (initialTerminalId) {
         switchTerminal(initialTerminalId);
     }
@@ -355,6 +367,7 @@ async function handleSend() {
     // Muestra optimista inmediata en la UI
     addMessage('user', text);
     messageInput.value = '';
+    adjustTextareaHeight();
 
     try {
         await sendMessage(currentTerminalId, text);
