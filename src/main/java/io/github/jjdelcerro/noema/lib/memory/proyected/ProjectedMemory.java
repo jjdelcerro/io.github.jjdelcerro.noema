@@ -4,10 +4,8 @@ import dev.langchain4j.data.message.ChatMessage;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.memory.recent.RecentMemory;
 import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
-import io.github.jjdelcerro.noema.lib.memory.proyected.operations.PinnedTurnsOperation.PinnedTurnState;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.function.Predicate;
 
 public interface ProjectedMemory {
 
