@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings("UseSpecificCatch")
 public class SearchFullHistoryTool extends AbstractAgentTool {
 
   public static final String NAME = "search_full_history";
@@ -68,7 +69,7 @@ Usalo cuando:
       String safeType = StringUtils.trimToNull(args.type);
 
       List<Turn> turns = this.agent.getEpisodicMemory().getTurnsByText(
-              this.agent.getCurrentSubchannel(),
+              null,
               args.query.trim(),
               safeLimit,
               safeSimilarity,
@@ -80,11 +81,13 @@ Usalo cuando:
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("code", StringUtils.trim(String.valueOf(t.getId())));
         map.put("timestamp", DateUtils.toString(t.getTimestamp()));
+        map.put("role", determineRole(t));
+        map.put("subchannel", t.getSubchannel());
         map.put("contenttype", t.getContenttype());
         if (t.getAnnotationType() != null) {
           map.put("annotation_type", t.getAnnotationType());
         }
-        map.put("content", t.getContentForEmbedding());
+        map.put("text", t.getContentForEmbedding());
         results.add(map);
       }
 
@@ -102,6 +105,13 @@ Usalo cuando:
     }
   }
 
+  private String determineRole(Turn t) {
+    if ("chat".equals(t.getContenttype())) {
+      return t.getTextUser() != null ? "user" : "assistant";
+    }
+    return t.getContenttype(); // tool, lookup, etc.
+  }
+  
   private static class SearchArgs {
 
     String query;

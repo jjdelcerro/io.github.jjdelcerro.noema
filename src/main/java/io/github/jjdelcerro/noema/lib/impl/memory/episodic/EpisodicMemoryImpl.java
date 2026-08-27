@@ -363,12 +363,19 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
       List<Turn> result = new ArrayList<>();
       String sql = SQLProvider.from(getConnection()).get(
               "SourceOfTtuth_getTurnsByIds",
-              "SELECT * FROM episodicmemory WHERE subchannel = ? AND id BETWEEN ? AND ? ORDER BY id ASC"
+              """
+              SELECT * FROM episodicmemory 
+                WHERE 
+                  (? IS NULL OR subchannel = ?)
+                  AND id BETWEEN ? AND ? 
+                ORDER BY id ASC
+              """
       );
       try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setString(1, subchannel);
-        ps.setInt(2, first);
-        ps.setInt(3, last);
+        ps.setString(2, subchannel);
+        ps.setInt(3, first);
+        ps.setInt(4, last);
         try (ResultSet rs = ps.executeQuery()) {
           while (rs.next()) {
             result.add(mapResultSetToTurn(rs));
@@ -393,7 +400,8 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
               "EpisodicMemory_getTurnsByText",
               """
                 SELECT * FROM episodicmemory 
-                WHERE subchannel = ? 
+                WHERE 
+                  (? IS NULL OR subchannel = ?)
                   AND (? IS NULL OR annotation_type = ?)
                   AND embedding_blob IS NOT NULL
                 ORDER BY id DESC      
@@ -403,8 +411,9 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
       try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
         ps.setString(1, subchannel);
-        ps.setString(2, annotationType);
+        ps.setString(2, subchannel);
         ps.setString(3, annotationType);
+        ps.setString(4, annotationType);
 
         try (ResultSet rs = ps.executeQuery()) {
           while (rs.next()) {

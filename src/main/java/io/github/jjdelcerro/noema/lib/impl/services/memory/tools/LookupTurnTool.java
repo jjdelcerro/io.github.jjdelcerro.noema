@@ -4,12 +4,13 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.DateUtils;
 import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
+import java.util.LinkedHashMap;
 import org.apache.commons.lang3.StringUtils;
 
 public class LookupTurnTool extends AbstractAgentTool {
@@ -28,7 +29,7 @@ public class LookupTurnTool extends AbstractAgentTool {
                     StringUtils.replace("""
 Recupera información específica de la memoria a largo plazo usando su ID único. 
 Úsalo cuando:
-1. Veas una referencia como {cite:123} en el Punto de Guardado
+1. Veas una referencia como {cite:123} en el "relato narrativo"
 2. Necesites los detalles exactos de lo que ocurrió en un momento específico
 3. Requieras el contexto cronológico (qué pasó justo antes/después)
 Parámetros:
@@ -64,13 +65,19 @@ invoca {LOOKUPTURN}(code=42) para recuperar los argumentos de esa decisión.
       int first = centerId - safeWindow;
       int last = centerId + safeWindow;
 
-      List<Turn> turns = agent.getEpisodicMemory().getTurnsByIds(this.agent.getCurrentSubchannel(),first, last);
+      List<Turn> turns = agent.getEpisodicMemory().getTurnsByIds(null,first, last);
 
       List<Map<String, Object>> results = new ArrayList<>();
       for (Turn t : turns) {
-        Map<String, Object> map = new HashMap<>();
+        Map<String, Object> map = new LinkedHashMap<>();
         map.put("code", StringUtils.trim(String.valueOf(t.getId())));
+        map.put("timestamp", DateUtils.toString(t.getTimestamp()));
         map.put("role", determineRole(t));
+        map.put("subchannel", t.getSubchannel());
+        map.put("contenttype", t.getContenttype());
+        if (t.getAnnotationType() != null) {
+          map.put("annotation_type", t.getAnnotationType());
+        }
         map.put("text", t.getContentForEmbedding());
         results.add(map);
       }

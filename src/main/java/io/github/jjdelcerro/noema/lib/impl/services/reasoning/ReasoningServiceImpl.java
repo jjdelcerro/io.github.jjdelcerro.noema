@@ -72,6 +72,7 @@ import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
 import static io.github.jjdelcerro.noema.lib.AgentActions.COMPACT_REASONING_FULL_MEMORY;
 import static io.github.jjdelcerro.noema.lib.AgentActions.COMPACT_REASONING_MEMORY;
 import io.github.jjdelcerro.noema.lib.impl.memory.proyected.ProjectedMemoryImpl;
+import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.AnnotateObservationTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.ScriptExecuteTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.skills.ActivateSkillTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.skills.DeactivateSkillTool;
@@ -353,6 +354,7 @@ public class ReasoningServiceImpl implements ReasoningService {
     finalPrompt = StringUtils.replace(finalPrompt, "{LOOKUPTURN}", LookupTurnTool.NAME);
     finalPrompt = StringUtils.replace(finalPrompt, "{SEARCHFULLHISTORY}", SearchFullHistoryTool.NAME);
     finalPrompt = StringUtils.replace(finalPrompt, "{CONSULTENVIRON}", ConsultEnvironTool.NAME);
+    finalPrompt = StringUtils.replace(finalPrompt, "{ANNOTATE_OBSERVATION}", AnnotateObservationTool.TOOL_NAME);
 
     try {
       FileUtils.writeStringToFile(

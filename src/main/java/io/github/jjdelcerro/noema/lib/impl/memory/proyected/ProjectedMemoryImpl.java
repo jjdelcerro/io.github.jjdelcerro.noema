@@ -167,9 +167,9 @@ public class ProjectedMemoryImpl implements ProjectedMemory {
     if (compactedMemory != null && StringUtils.isNotBlank(compactedMemory.getText())) {
       sb.append("\n\n## Contexto consolidado de la conversacion\n");
       sb.append("Resumen actualizado hasta: ").append(DateUtils.toString(compactedMemory.getTimestamp())).append(".\n\n");
-      sb.append("--- INICIO DEL RELATO ---\n");
+      sb.append("--- INICIO DEL RELATO NARRATIVO ---\n");
       sb.append(compactedMemory.getText()).append("\n");
-      sb.append("--- FIN DEL RELATO ---\n");
+      sb.append("--- FIN DEL RELATO NARRATIVO ---\n");
     }
 
     if (sb.length() > 0) {
