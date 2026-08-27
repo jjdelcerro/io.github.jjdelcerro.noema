@@ -1,6 +1,7 @@
 package io.github.jjdelcerro.noema.lib.memory.proyected;
 
 import dev.langchain4j.data.message.ChatMessage;
+import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.memory.recent.RecentMemory;
 import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
@@ -38,4 +39,7 @@ public interface ProjectedMemory {
   
   public ProjectedMemoryOperation getOperation(String name);
   
+  public Agent getAgent();
+  
+  public String getSubchannel();
 }

@@ -481,4 +481,49 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
             textModel, toolCall, toolResult, embedding);
   }
 
+private record SubchannelActivityImpl(String subchannel, Timestamp lastActivity) implements SubchannelActivity {
+    @Override
+    public String getSubchannel() {
+      return subchannel;
+    }
+
+    @Override
+    public Timestamp getLastActivity() {
+      return lastActivity;
+    }
+  }
+
+  @Override
+  public synchronized List<SubchannelActivity> getSubchannelsActivity(Timestamp oldestActivity) {
+    try {
+      List<SubchannelActivity> result = new ArrayList<>();
+      String sql = SQLProvider.from(getConnection()).get(
+              "EpisodicMemory_getSubchannelsActivity",
+              """
+              SELECT subchannel, MAX(timestamp) AS last_activity
+              FROM episodicmemory
+              WHERE (? IS NULL OR timestamp >= ?) AND subchannel IS NOT NULL
+              GROUP BY subchannel
+              ORDER BY last_activity DESC
+              """
+      );
+
+      try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setTimestamp(1, oldestActivity);
+        ps.setTimestamp(2, oldestActivity);
+
+        try (ResultSet rs = ps.executeQuery()) {
+          while (rs.next()) {
+            String subchannel = rs.getString("subchannel");
+            Timestamp lastActivity = rs.getTimestamp("last_activity");
+            result.add(new SubchannelActivityImpl(subchannel, lastActivity));
+          }
+        }
+      }
+      return result;
+    } catch (Exception ex) {
+      throw new TurnException("Can't retrieve subchannels activity", ex);
+    }
+  }
+  
 }

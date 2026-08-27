@@ -11,6 +11,7 @@ import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
 import io.github.jjdelcerro.noema.lib.Subagent;
 import io.github.jjdelcerro.noema.lib.SubagentDefinition;
 import io.github.jjdelcerro.noema.lib.impl.memory.proyected.operations.PendingAnnotationOperationFactory;
+import io.github.jjdelcerro.noema.lib.impl.memory.proyected.operations.PeripheralAwarenessOperationFactory;
 import io.github.jjdelcerro.noema.lib.impl.memory.proyected.operations.PinnedTurnsOperationFactory;
 import io.github.jjdelcerro.noema.lib.impl.memory.proyected.operations.TemporalPerceptionOperationFactory;
 import io.github.jjdelcerro.noema.lib.impl.memory.proyected.operations.TrimmingOperationFactory;
@@ -60,7 +61,8 @@ public class AgentManagerImpl implements AgentManager {
     this.registerProjectedMemoryOperation(new PendingAnnotationOperationFactory());
     this.registerProjectedMemoryOperation(new TemporalPerceptionOperationFactory());
     this.registerProjectedMemoryOperation(new PinnedTurnsOperationFactory());
-
+    this.registerProjectedMemoryOperation(new PeripheralAwarenessOperationFactory()); 
+    
     this.registerService(new EmbeddingsServiceFactory());
     this.registerService(new SensorsServiceFactory());
 

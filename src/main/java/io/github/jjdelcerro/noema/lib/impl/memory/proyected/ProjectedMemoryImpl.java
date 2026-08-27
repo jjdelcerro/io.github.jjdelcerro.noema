@@ -315,4 +315,16 @@ public class ProjectedMemoryImpl implements ProjectedMemory {
     }
     return null;
   }
+
+  @Override
+  public Agent getAgent() {
+    return agent;
+  }
+
+  @Override
+  public String getSubchannel() {
+    return subchannel;
+  }
+  
+  
 }

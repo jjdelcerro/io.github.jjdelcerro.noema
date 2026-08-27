@@ -56,4 +56,9 @@ public class FakeEpisodicMemory implements EpisodicMemory {
   public List<Turn> getTurnsByText(String subchannel, String query, int maxResults, double minSimilarity, String annotationType) {
     return List.of();
   }
+
+  @Override
+  public List<SubchannelActivity> getSubchannelsActivity(java.sql.Timestamp oldestActivity) {
+    return List.of();
+  }
 }

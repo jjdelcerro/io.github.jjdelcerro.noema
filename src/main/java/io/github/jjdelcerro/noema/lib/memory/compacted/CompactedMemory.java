@@ -36,5 +36,7 @@ public interface CompactedMemory {
   LocalDateTime getTimestamp();
 
   String getSubchannel();
+  
+  String getSummary();
 
 }

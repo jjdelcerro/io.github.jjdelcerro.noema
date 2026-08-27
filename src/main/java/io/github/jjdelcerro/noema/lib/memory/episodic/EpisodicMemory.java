@@ -1,6 +1,7 @@
 package io.github.jjdelcerro.noema.lib.memory.episodic;
 
 import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -12,6 +13,13 @@ import java.util.List;
  */
 public interface EpisodicMemory {
 
+  public interface SubchannelActivity {
+    public Timestamp getLastActivity();
+    public String getSubchannel();
+  }
+  
+  List<SubchannelActivity> getSubchannelsActivity(Timestamp oldestActivity);
+  
   CompactedMemory createCompactedMemory(String subchannel, int turnFirst, int turnLast, LocalDateTime timestamp, String text);
 
   CompactedMemory getLatestCompactedMemory(String subchannel);

@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -145,6 +144,11 @@ public class CompactedMemoryImpl implements CompactedMemory {
   @Override
   public String getSubchannel() {
       return subchannel;
+  }
+
+  @Override
+  public String getSummary() { // FIME: falta por implementar
+    return null;
   }
   
 }
