@@ -52,8 +52,16 @@ public class FileReadTool extends AbstractPaginatedAgentTool {
         return formatErrorResponse("Acceso denegado o ruta fuera del sandbox: " + args.path);
       }
 
-      if (!Files.exists(filePath) || !Files.isRegularFile(filePath)) {
-        return formatErrorResponse("El archivo no existe o es un directorio: " + args.path);
+      if (!Files.exists(filePath) ) {
+        return formatErrorResponse("El archivo no existe: " + args.path);
+      }
+
+      if (Files.isDirectory(filePath)) {
+        return formatErrorResponse("La ruta es un directorio: " + args.path);
+      }
+
+      if (!Files.isRegularFile(filePath)) {
+        return formatErrorResponse("El archivo no es un regular-file: " + args.path);
       }
 
       if (isBinaryResource(filePath)) {

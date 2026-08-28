@@ -146,7 +146,7 @@ public class SearchFullHistoryToolTest {
 
     JsonObject firstResult = results.get(0).getAsJsonObject();
     assertEquals(String.valueOf(backupTurn.getId()), firstResult.get("code").getAsString());
-    assertTrue(firstResult.get("content").getAsString().contains("backups"));
+    assertTrue(firstResult.get("text").getAsString().contains("backups"));
   }
 
   @Test
