@@ -10,11 +10,11 @@ import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
 import io.github.jjdelcerro.noema.lib.Subagent;
 import io.github.jjdelcerro.noema.lib.SubagentDefinition;
-import io.github.jjdelcerro.noema.lib.impl.memory.proyected.operations.PendingAnnotationOperationFactory;
-import io.github.jjdelcerro.noema.lib.impl.memory.proyected.operations.PeripheralAwarenessOperationFactory;
-import io.github.jjdelcerro.noema.lib.impl.memory.proyected.operations.PinnedTurnsOperationFactory;
-import io.github.jjdelcerro.noema.lib.impl.memory.proyected.operations.TemporalPerceptionOperationFactory;
-import io.github.jjdelcerro.noema.lib.impl.memory.proyected.operations.TrimmingOperationFactory;
+import io.github.jjdelcerro.noema.lib.impl.memory.projected.operations.PendingAnnotationOperationFactory;
+import io.github.jjdelcerro.noema.lib.impl.memory.projected.operations.PeripheralAwarenessOperationFactory;
+import io.github.jjdelcerro.noema.lib.impl.memory.projected.operations.PinnedTurnsOperationFactory;
+import io.github.jjdelcerro.noema.lib.impl.memory.projected.operations.TemporalPerceptionOperationFactory;
+import io.github.jjdelcerro.noema.lib.impl.memory.projected.operations.TrimmingOperationFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.email.EmailServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.mcp.McpServiceFactory;
@@ -24,7 +24,7 @@ import io.github.jjdelcerro.noema.lib.impl.services.scheduler.SchedulerServiceFa
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.telegram.TelegramServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.settings.AgentSettingsImpl;
-import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemoryOperationFactory;
+import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemoryOperationFactory;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import java.io.IOException;
 

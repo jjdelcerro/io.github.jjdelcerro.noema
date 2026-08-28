@@ -1,9 +1,9 @@
-package io.github.jjdelcerro.noema.lib.memory.proyected.operations;
+package io.github.jjdelcerro.noema.lib.memory.projected.operations;
 
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemoryOperation;
+import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemoryOperation;
 import java.util.List;
 import java.util.function.Predicate;
 

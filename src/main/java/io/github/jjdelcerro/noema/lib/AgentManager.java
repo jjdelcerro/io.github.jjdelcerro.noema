@@ -2,7 +2,7 @@ package io.github.jjdelcerro.noema.lib;
 
 import io.github.jjdelcerro.noema.lib.AgentActions.AgentAction;
 import io.github.jjdelcerro.noema.lib.impl.SQLProvider;
-import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemoryOperationFactory;
+import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemoryOperationFactory;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import java.io.IOException;
 import java.nio.file.Path;

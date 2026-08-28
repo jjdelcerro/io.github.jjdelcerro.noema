@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.lib.memory.proyected;
+package io.github.jjdelcerro.noema.lib.memory.projected;
 
 import com.google.gson.JsonObject;
 

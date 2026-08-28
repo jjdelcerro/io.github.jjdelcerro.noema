@@ -2,7 +2,7 @@ package io.github.jjdelcerro.noema.lib.impl.services.reasoning;
 
 import io.github.jjdelcerro.noema.lib.impl.memory.recent.RecentMemoryImpl;
 import io.github.jjdelcerro.noema.lib.memory.recent.RecentMemory;
-import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemory;
+import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemory;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.AiMessage;
@@ -71,7 +71,7 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
 import static io.github.jjdelcerro.noema.lib.AgentActions.COMPACT_REASONING_FULL_MEMORY;
 import static io.github.jjdelcerro.noema.lib.AgentActions.COMPACT_REASONING_MEMORY;
-import io.github.jjdelcerro.noema.lib.impl.memory.proyected.ProjectedMemoryImpl;
+import io.github.jjdelcerro.noema.lib.impl.memory.projected.ProjectedMemoryImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.AnnotateObservationTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.ScriptExecuteTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.skills.ActivateSkillTool;

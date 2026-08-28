@@ -1,9 +1,9 @@
-package io.github.jjdelcerro.noema.lib.impl.memory.proyected.operations;
+package io.github.jjdelcerro.noema.lib.impl.memory.projected.operations;
 
 
 import com.google.gson.JsonObject;
-import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemoryOperation;
-import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemoryOperationFactory;
+import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemoryOperation;
+import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemoryOperationFactory;
 
 public class TemporalPerceptionOperationFactory implements ProjectedMemoryOperationFactory {
 

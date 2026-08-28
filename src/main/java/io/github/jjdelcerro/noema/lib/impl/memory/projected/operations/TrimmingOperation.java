@@ -1,12 +1,12 @@
-package io.github.jjdelcerro.noema.lib.impl.memory.proyected.operations;
+package io.github.jjdelcerro.noema.lib.impl.memory.projected.operations;
 
 import com.google.gson.JsonObject;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.AgentTool.TrimResultType;
-import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemory;
-import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemoryOperation;
+import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemory;
+import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemoryOperation;
 import java.util.List;
 
 public class TrimmingOperation implements ProjectedMemoryOperation {

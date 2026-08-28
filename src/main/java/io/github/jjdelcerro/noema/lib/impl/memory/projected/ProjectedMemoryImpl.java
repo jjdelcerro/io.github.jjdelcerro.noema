@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.lib.impl.memory.proyected;
+package io.github.jjdelcerro.noema.lib.impl.memory.projected;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -40,9 +40,9 @@ import java.util.UUID;
 import java.util.function.Function;
 
 import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SYSTEMNOTIFICATION_SENSOR_NAME;
-import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemory;
-import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemoryOperation;
-import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemoryOperationFactory;
+import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemory;
+import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemoryOperation;
+import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemoryOperationFactory;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_HIGH;
 
 public class ProjectedMemoryImpl implements ProjectedMemory {

@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.lib.memory.proyected;
+package io.github.jjdelcerro.noema.lib.memory.projected;
 
 import dev.langchain4j.data.message.ChatMessage;
 import io.github.jjdelcerro.noema.lib.Agent;

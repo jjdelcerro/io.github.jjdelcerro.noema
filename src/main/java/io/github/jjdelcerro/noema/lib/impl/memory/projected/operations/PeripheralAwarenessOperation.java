@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.lib.impl.memory.proyected.operations;
+package io.github.jjdelcerro.noema.lib.impl.memory.projected.operations;
 
 import com.google.gson.JsonObject;
 import dev.langchain4j.data.message.ChatMessage;
@@ -7,8 +7,8 @@ import io.github.jjdelcerro.noema.lib.impl.DateUtils;
 import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory.SubchannelActivity;
-import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemory;
-import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemoryOperation;
+import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemory;
+import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemoryOperation;
 import org.apache.commons.lang3.StringUtils;
 
 import java.sql.Timestamp;

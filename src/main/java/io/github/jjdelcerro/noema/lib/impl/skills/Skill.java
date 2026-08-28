@@ -6,9 +6,9 @@ import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.memory.proyected.ProjectedMemory;
-import io.github.jjdelcerro.noema.lib.memory.proyected.operations.PinnedTurnsOperation;
-import io.github.jjdelcerro.noema.lib.memory.proyected.operations.PinnedTurnsOperation.PinnedTurnState;
+import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemory;
+import io.github.jjdelcerro.noema.lib.memory.projected.operations.PinnedTurnsOperation;
+import io.github.jjdelcerro.noema.lib.memory.projected.operations.PinnedTurnsOperation.PinnedTurnState;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 
 import java.nio.file.Files;
