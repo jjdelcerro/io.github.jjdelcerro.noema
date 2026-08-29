@@ -214,3 +214,21 @@ export async function postConfigMultivalue(queryArray) {
 function encodePath(path) {
     return path.split('/').map(segment => encodeURIComponent(segment)).join('/');
 }
+
+/**
+ * Consulta la lista de directorios en una ruta del servidor.
+ * 
+ * @param {string} [path] - Ruta absoluta opcional a consultar.
+ * @returns {Promise<{currentPath: string, parentPath: string|null, canGoUp: boolean, directories: Array<{name: string, path: string}>}>}
+ */
+export async function fetchDirectories(path) {
+    const url = new URL(`${API_BASE}/api/fs/directories`);
+    if (path) {
+        url.searchParams.set('path', path);
+    }
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+        throw new Error(`Error explorando directorios (${response.status})`);
+    }
+    return await response.json();
+}

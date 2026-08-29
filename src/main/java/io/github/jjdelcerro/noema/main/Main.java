@@ -24,12 +24,16 @@ public class Main {
                 mode = MODE_CONSOLE;
                 break;
             }
-            if ("--gui".equalsIgnoreCase(arg) || "--swing".equalsIgnoreCase(arg)) {
+            if ("-g".equalsIgnoreCase(arg) || "--gui".equalsIgnoreCase(arg) || "--swing".equalsIgnoreCase(arg)) {
                 mode = MODE_SWING;
                 break;
             }
-            if ("--web".equalsIgnoreCase(arg)) {
+            if ("-w".equalsIgnoreCase(arg) || "-s".equalsIgnoreCase(arg) || "--web".equalsIgnoreCase(arg) || "--serve".equalsIgnoreCase(arg)) {
                 mode = MODE_WEB;
+                break;
+            }
+            if ("-t".equalsIgnoreCase(arg) || "--tui".equalsIgnoreCase(arg) ) {
+                mode = MODE_TUI;
                 break;
             }
         }
@@ -41,7 +45,9 @@ public class Main {
           case MODE_SWING:
             MainGUI.main(args);
             break;
-          case MODE_WEB: // De momento no hay un modo que solo inicia el servidor web.
+          case MODE_WEB:
+            MainWeb.main(args);
+            break;
           case MODE_TUI:
           default:
             MainLanterna.main(args);
