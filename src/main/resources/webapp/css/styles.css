@@ -1302,3 +1302,36 @@ body:has(.config-panel:not(.hidden))::before {
     border-bottom: 1px solid var(--line);
   }
 }
+
+/* Contenedor de lista de checkboxes con scroll */
+.config-checkedlist-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(184, 160, 255, 0.35) rgba(0, 0, 0, 0.2);
+}
+
+.config-checkedlist-box::-webkit-scrollbar {
+  width: 6px;
+}
+
+.config-checkedlist-box::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.config-checkedlist-box::-webkit-scrollbar-thumb {
+  background: rgba(184, 160, 255, 0.35);
+  border-radius: 4px;
+}
+
+.config-checkedlist-box::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}

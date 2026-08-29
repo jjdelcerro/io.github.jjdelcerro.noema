@@ -12,7 +12,7 @@ fetchConfigUI,
         setConfigChecked,
         postConfigMultivalue,
         fetchDirectories
-} from './api.js';
+        } from './api.js';
 import { showToast } from './toast.js';
 
 let configPanel = null;
@@ -365,66 +365,136 @@ function createCheckboxControl(container, node) {
 }
 
 async function createCheckedListControl(container, node) {
-  const domainItems = await fetchConfigDomain(node.childs);
-  const listContainer = document.createElement('div');
-  listContainer.className = 'config-paths-list';
+    const domainItems = await fetchConfigDomain(node.childs);
+    const wrapper = document.createElement('div');
+    wrapper.className = 'config-paths-wrapper';
 
-  const queries = [];
-  domainItems.forEach(item => {
-    const statePath = `${node.variableName}/${item.key}`;
-    queries.push({path: statePath, defaultValue: false});
-    if (node.childEnabled) {
-      queries.push({
-        path: `${statePath}/__enabled`,
-        defaultValue: true,
-        enabledExpression: node.childEnabled,
-        context: {child: item.value}
-      });
+    // 1. Contenedor con scroll para los checkboxes
+    const listBox = document.createElement('div');
+    listBox.className = 'config-checkedlist-box';
+
+    // 2. Recuperar el array completo de estados guardados desde el backend (estilo Swing/Lanterna)
+    let savedData = [];
+    try {
+        const rawVal = await fetchConfigValue(node.variableName);
+        if (Array.isArray(rawVal)) {
+            savedData = rawVal;
+        }
+    } catch (e) {
+        console.error(`Error cargando lista de ${node.variableName}:`, e);
     }
-  });
 
-  let states = {};
-  try {
-    states = await postConfigMultivalue(queries);
-  } catch (e) {
-    console.error('No se pudo consultar el estado de la lista', e);
-  }
+    // 3. Evaluar reglas de habilitación/deshabilitación (childEnabled) si existen
+    let enabledStates = {};
+    if (node.childEnabled) {
+        const enabledQueries = [];
+        domainItems.forEach(item => {
+            const technicalName = item.value;
+            enabledQueries.push({
+                path: `${node.variableName}/${technicalName}/__enabled`,
+                defaultValue: true,
+                enabledExpression: node.childEnabled,
+                context: { child: technicalName }
+            });
+        });
 
-  domainItems.forEach(item => {
-    const statePath = `${node.variableName}/${item.key}`;
-    const enabledPath = `${statePath}/__enabled`;
-    const row = document.createElement('div');
-    row.className = 'config-field-checkbox';
+        try {
+            enabledStates = await postConfigMultivalue(enabledQueries);
+        } catch (e) {
+            console.error('Error evaluando reglas de habilitación de checks:', e);
+        }
+    }
 
-    const chk = document.createElement('input');
-    chk.type = 'checkbox';
-    chk.checked = parseBoolean(states[statePath], false);
-    chk.disabled = node.childEnabled ? !parseBoolean(states[enabledPath], true) : false;
-    if (chk.disabled)
-      chk.title = 'Deshabilitado por la configuración de acceso';
+    const checkInputs = [];
 
-    const itemLabel = document.createElement('label');
-    itemLabel.textContent = item.label ?? item.key;
-    if (chk.disabled)
-      itemLabel.title = chk.title;
+    // 4. Construir cada fila de checkbox
+    domainItems.forEach(item => {
+        const technicalName = item.value; // Identificador técnico real (ej: "file_grep", "file_patch")
+        const enabledKey = `${node.variableName}/${technicalName}/__enabled`;
 
-    chk.addEventListener('change', async () => {
-      const checked = chk.checked;
-      try {
-        await setConfigChecked(node.variableName, item.key, checked);
-      } catch (error) {
-        console.error(error);
-        chk.checked = !checked;
-        showToast(`No se pudo actualizar ${item.label ?? item.key}`, 'error');
-      }
+        // Buscar en el array guardado. Si el elemento no existe aún en la configuración, por defecto es true (igual que Swing/Lanterna)
+        let isChecked = true;
+        if (Array.isArray(savedData) && savedData.length > 0) {
+            const match = savedData.find(s => s && s.value === technicalName);
+            if (match !== undefined && match.checked !== undefined) {
+                isChecked = Boolean(match.checked);
+            }
+        }
+
+        const row = document.createElement('div');
+        row.className = 'config-field-checkbox';
+
+        const chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.checked = isChecked;
+
+        // Comprobar si está deshabilitado por las políticas de acceso
+        const isControlEnabled = node.childEnabled ? parseBoolean(enabledStates[enabledKey], true) : true;
+        chk.disabled = !isControlEnabled;
+        if (chk.disabled) {
+            chk.title = 'Deshabilitado por la configuración de control de acceso';
+        }
+
+        const itemLabel = document.createElement('label');
+        itemLabel.textContent = item.label ?? item.key;
+        if (chk.disabled) {
+            itemLabel.title = chk.title;
+        }
+
+        chk.addEventListener('change', async () => {
+            const checked = chk.checked;
+            try {
+                await setConfigChecked(node.variableName, technicalName, checked);
+            } catch (error) {
+                console.error(error);
+                chk.checked = !checked;
+                showToast(`No se pudo actualizar ${item.label ?? item.key}`, 'error');
+            }
+        });
+
+        row.appendChild(chk);
+        row.appendChild(itemLabel);
+        listBox.appendChild(row);
+
+        checkInputs.push({ input: chk, technicalName });
     });
 
-    row.appendChild(chk);
-    row.appendChild(itemLabel);
-    listContainer.appendChild(row);
-  });
+    // 5. Botonera inferior: Marcar todas / Desmarcar todas
+    const actionsBar = document.createElement('div');
+    actionsBar.className = 'config-paths-actions';
 
-  container.appendChild(listContainer);
+    const btnSelectAll = document.createElement('button');
+    btnSelectAll.type = 'button';
+    btnSelectAll.className = 'config-paths-btn secondary-button';
+    btnSelectAll.textContent = 'Marcar todas';
+
+    const btnDeselectAll = document.createElement('button');
+    btnDeselectAll.type = 'button';
+    btnDeselectAll.className = 'config-paths-btn secondary-button';
+    btnDeselectAll.textContent = 'Desmarcar todas';
+
+    async function setAllStates(targetState) {
+        for (const item of checkInputs) {
+            if (!item.input.disabled && item.input.checked !== targetState) {
+                item.input.checked = targetState;
+                try {
+                    await setConfigChecked(node.variableName, item.technicalName, targetState);
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+        }
+    }
+
+    btnSelectAll.addEventListener('click', () => setAllStates(true));
+    btnDeselectAll.addEventListener('click', () => setAllStates(false));
+
+    actionsBar.appendChild(btnSelectAll);
+    actionsBar.appendChild(btnDeselectAll);
+
+    wrapper.appendChild(listBox);
+    wrapper.appendChild(actionsBar);
+    container.appendChild(wrapper);
 }
 
 function parseBoolean(value, defaultValue) {
