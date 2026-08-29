@@ -82,6 +82,13 @@ public class NoemaWebServer {
     // 3. Exploración de Sistema de Archivos
     this.app.get("/api/fs/directories", this::handleGetDirectories);
 
+    // 4. Ejecución de Acciones del Agente
+    this.app.post("/api/actions/{actionName}", this::handlePostAction);
+
+    // 5. Gestión de Contenido de Ficheros (var:/ y rutas absolutas)
+    this.app.get("/api/files/content", this::handleGetFileContent);
+    this.app.post("/api/files/content", this::handlePostFileContent);
+
     this.app.start(this.port);
     LOGGER.info("Servidor web de Noema iniciado correctamente en http://localhost:{}", this.port);
   }
@@ -366,6 +373,7 @@ public class NoemaWebServer {
     }
   }
 
+  // --- 3. Exploración de Sistema de Archivos ---
   private void handleGetDirectories(Context ctx) throws Exception {
     String pathParam = ctx.queryParam("path");
     Path target;
@@ -423,6 +431,112 @@ public class NoemaWebServer {
     result.put("directories", directories);
 
     ctx.json(result);
+  }
+
+  // --- 4. Ejecución de Acciones del Agente ---
+  private void handlePostAction(Context ctx) throws Exception {
+    String actionName = ctx.pathParam("actionName");
+    if (actionName == null || actionName.isBlank()) {
+      ctx.status(400).json(Map.of("status", "error", "message", "Nombre de acción no especificado"));
+      return;
+    }
+
+    try {
+      boolean success = this.agent.getActions().call(actionName.trim(), this.agent.getSettings());
+      if (success) {
+        ctx.json(Map.of("status", "success", "action", actionName));
+      } else {
+        ctx.status(500).json(Map.of(
+                "status", "error",
+                "message", "La acción '" + actionName + "' devolvió un estado no exitoso o no se encontró"
+        ));
+      }
+    } catch (Exception e) {
+      LOGGER.error("Error ejecutando acción '{}' desde la API web", actionName, e);
+      ctx.status(500).json(Map.of("status", "error", "message", e.getMessage() != null ? e.getMessage() : "Error interno"));
+    }
+  }
+
+  // --- 5. Gestión de Contenido de Ficheros (var:/ y absolutas) ---
+  private void handleGetFileContent(Context ctx) throws Exception {
+    String fileParam = ctx.queryParam("file");
+    if (fileParam == null || fileParam.isBlank()) {
+      ctx.status(400).json(Map.of("error", "Parámetro 'file' obligatorio"));
+      return;
+    }
+
+    Path target = resolveFilePath(fileParam);
+    if (target == null || !Files.exists(target)) {
+      ctx.status(404).json(Map.of("error", "Fichero no encontrado: " + fileParam));
+      return;
+    }
+
+    if (Files.isDirectory(target)) {
+      ctx.status(400).json(Map.of("error", "La ruta especificada es un directorio, no un fichero: " + fileParam));
+      return;
+    }
+
+    try {
+      String content = Files.readString(target, StandardCharsets.UTF_8);
+      Map<String, String> response = new LinkedHashMap<>();
+      response.put("file", fileParam);
+      response.put("content", content);
+      ctx.json(response);
+    } catch (Exception e) {
+      LOGGER.error("Error leyendo contenido del fichero: {}", target, e);
+      ctx.status(500).json(Map.of("error", "Error al leer el fichero: " + e.getMessage()));
+    }
+  }
+
+  private void handlePostFileContent(Context ctx) throws Exception {
+    FileContentRequest body = ctx.bodyAsClass(FileContentRequest.class);
+    if (body == null || body.file == null || body.file.isBlank()) {
+      ctx.status(400).json(Map.of("error", "El campo 'file' es obligatorio"));
+      return;
+    }
+
+    Path target = resolveFilePath(body.file);
+    if (target == null) {
+      ctx.status(400).json(Map.of("error", "Ruta de fichero inválida: " + body.file));
+      return;
+    }
+
+    try {
+      if (target.getParent() != null) {
+        Files.createDirectories(target.getParent());
+      }
+      String contentToWrite = body.content != null ? body.content : "";
+      Files.writeString(target, contentToWrite, StandardCharsets.UTF_8);
+
+      ctx.json(Map.of("status", "success", "file", body.file));
+    } catch (Exception e) {
+      LOGGER.error("Error escribiendo fichero: {}", target, e);
+      ctx.status(500).json(Map.of("error", "Error al guardar el fichero: " + e.getMessage()));
+    }
+  }
+
+  private Path resolveFilePath(String rawFile) {
+    if (rawFile == null || rawFile.isBlank()) {
+      return null;
+    }
+    String trimmed = rawFile.trim();
+    if (trimmed.startsWith("var:/")) {
+      String sub = trimmed.substring("var:/".length());
+      while (sub.startsWith("/")) {
+        sub = sub.substring(1);
+      }
+      if (this.agent.getPaths() != null) {
+        // getAgentPath comprueba primero en el workspace local (.noema-agent)
+        // y si no existe, busca en la configuración global (~/.config/noema-agent)
+        Path resolved = this.agent.getPaths().getAgentPath(sub);
+        if (resolved != null) {
+          return resolved.normalize().toAbsolutePath();
+        }
+      }
+      return Path.of(sub).normalize().toAbsolutePath();
+    } else {
+      return Path.of(trimmed).normalize().toAbsolutePath();
+    }
   }
 
   // =========================================================================
@@ -500,6 +614,12 @@ public class NoemaWebServer {
   public static class ChatMessageRequest {
 
     public String message;
+  }
+
+  public static class FileContentRequest {
+
+    public String file;
+    public String content;
   }
 
   public static class FlatMessage {

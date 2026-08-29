@@ -1,4 +1,3 @@
-
 /**
  * Módulo de gestión del panel de configuración dinámico.
  */
@@ -11,7 +10,10 @@ fetchConfigUI,
         setConfigList,
         setConfigChecked,
         postConfigMultivalue,
-        fetchDirectories
+        fetchDirectories,
+        callBackendAction,
+        fetchFileContent,
+        saveFileContent
         } from './api.js';
 import { showToast } from './toast.js';
 
@@ -21,9 +23,64 @@ let configContent = null;
 let uiDescriptor = null;
 let activeNodeElement = null;
 
+// =============================================================================
+// REGISTRO GLOBAL DE ACCIONES DE FRONTEND (WEB)
+// =============================================================================
+
+const webActionHandlers = new Map();
+
 /**
- * Inicializa las referencias del DOM y vincula los eventos del panel.
+ * Registra un manejador para una acción visual de frontend.
+ * 
+ * @param {string} actionName - Identificador de la acción (ej: 'OPEN_MODELS_EDITOR').
+ * @param {Function} handler - Función asíncrona a ejecutar al pulsar el botón.
  */
+export function registerWebAction(actionName, handler) {
+  if (actionName && typeof handler === 'function') {
+    webActionHandlers.set(actionName, handler);
+  }
+}
+
+// 1. Abrir Consola Web H2 en nueva pestaña
+registerWebAction('OPEN_H2WEBCONSOLE', async () => {
+  try {
+    const portVal = await fetchConfigValue('debug/h2_webport');
+    const port = (portVal && typeof portVal === 'object' && portVal.value)
+            ? portVal.value
+            : (portVal || 8082);
+    window.open(`http://${window.location.hostname}:${port}`, '_blank');
+  } catch (e) {
+    window.open(`http://${window.location.hostname}:8082`, '_blank');
+  }
+});
+
+// 2. Editores de archivos de configuración (.properties)
+registerWebAction('OPEN_MODELS_EDITOR', () => {
+  openTextEditorDialog('var:/var/config/models.properties', 'Editar Modelos LLM');
+});
+
+registerWebAction('OPEN_PROVIDERS_URL_EDITOR', () => {
+  openTextEditorDialog('var:/var/config/providers_urls.properties', 'Editar URLs de Proveedores');
+});
+
+registerWebAction('OPEN_PROVIDERS_APIKEY_EDITOR', () => {
+  openTextEditorDialog('var:/var/config/apikeys.properties', 'Editar API Keys');
+});
+
+function isActionSupported(node) {
+  if (!node || node.type !== 'action')
+    return false;
+  if (webActionHandlers.has(node.actionName))
+    return true;
+  if (node.scope === 'backend')
+    return true;
+  return false;
+}
+
+// =============================================================================
+// INICIALIZACIÓN Y CONTROL DEL PANEL
+// =============================================================================
+
 export function initConfigUI() {
   configPanel = document.getElementById('config-panel');
   configTree = document.getElementById('config-tree');
@@ -44,9 +101,6 @@ export function initConfigUI() {
   }
 }
 
-/**
- * Muestra u oculta el panel de configuración.
- */
 export function toggleConfigPanel() {
   if (!configPanel)
     return;
@@ -58,9 +112,6 @@ export function toggleConfigPanel() {
   }
 }
 
-/**
- * Abre el panel, descarga descriptor UI si es necesario y renderiza el árbol.
- */
 export async function openConfigPanel() {
   if (!configPanel)
     return;
@@ -78,18 +129,16 @@ export async function openConfigPanel() {
   }
 }
 
-/**
- * Cierra el panel de configuración.
- */
 export function closeConfigPanel() {
   if (configPanel) {
     configPanel.classList.add('hidden');
   }
 }
 
-/**
- * Renderiza el árbol de navegación a partir de la estructura del descriptor.
- */
+// =============================================================================
+// ÁRBOL DE NAVEGACIÓN
+// =============================================================================
+
 function renderTree(descriptor) {
   if (!configTree || !descriptor)
     return;
@@ -109,23 +158,29 @@ function renderTree(descriptor) {
   configTree.appendChild(rootUl);
 }
 
-/**
- * Crea recursivamente un elemento de nodo del árbol.
- */
 function createTreeNode(node, depth = 0) {
   const li = document.createElement('li');
-
-  if (node.type === 'action') {
-    li.textContent = node.label;
-    li.classList.add('action-disabled');
-    li.title = 'No soportado en la interfaz web';
-    li.setAttribute('aria-disabled', 'true');
-    return li;
-  }
 
   const label = document.createElement('span');
   label.className = 'tree-label';
   label.textContent = node.label;
+
+  if (node.type === 'action') {
+    const supported = isActionSupported(node);
+    li.classList.add('leaf');
+    if (!supported) {
+      li.classList.add('action-disabled');
+      li.title = 'No disponible en la interfaz web';
+      li.setAttribute('aria-disabled', 'true');
+    }
+    li.appendChild(label);
+    label.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setActiveNode(li);
+      renderNodeContent(node);
+    });
+    return li;
+  }
 
   if (node.type === 'menu' && Array.isArray(node.childs)) {
     li.classList.add('branch');
@@ -188,9 +243,10 @@ function setActiveNode(element) {
   activeNodeElement = element;
 }
 
-/**
- * Renderiza el panel de contenido según el nodo seleccionado.
- */
+// =============================================================================
+// CONTENIDO DEL PANEL DERECHO
+// =============================================================================
+
 async function renderNodeContent(node) {
   if (!configContent)
     return;
@@ -214,9 +270,6 @@ function collectFields(node, fields) {
   }
 }
 
-/**
- * Fabrica y retorna el elemento HTML para un parámetro individual.
- */
 async function renderField(fieldNode) {
   const container = document.createElement('div');
   container.className = 'config-field';
@@ -244,19 +297,21 @@ async function renderField(fieldNode) {
         await createPathsControl(container, fieldNode);
         break;
       case 'action':
-        createUnsupportedActionControl(container, fieldNode);
+        createActionControl(container, fieldNode);
         break;
       default:
         return null;
     }
   } catch (error) {
-    console.error(`Error renderizando campo ${fieldNode.variableName}:`, error);
+    console.error(`Error renderizando campo ${fieldNode.variableName || fieldNode.actionName}:`, error);
   }
 
   return container;
 }
 
-/* --- Generadores de Controles por Tipo --- */
+// =============================================================================
+// GENERADORES DE CONTROLES
+// =============================================================================
 
 async function createInputStringControl(container, node) {
   const input = document.createElement('input');
@@ -365,136 +420,129 @@ function createCheckboxControl(container, node) {
 }
 
 async function createCheckedListControl(container, node) {
-    const domainItems = await fetchConfigDomain(node.childs);
-    const wrapper = document.createElement('div');
-    wrapper.className = 'config-paths-wrapper';
+  const domainItems = await fetchConfigDomain(node.childs);
+  const wrapper = document.createElement('div');
+  wrapper.className = 'config-paths-wrapper';
 
-    // 1. Contenedor con scroll para los checkboxes
-    const listBox = document.createElement('div');
-    listBox.className = 'config-checkedlist-box';
+  const listBox = document.createElement('div');
+  listBox.className = 'config-checkedlist-box';
 
-    // 2. Recuperar el array completo de estados guardados desde el backend (estilo Swing/Lanterna)
-    let savedData = [];
-    try {
-        const rawVal = await fetchConfigValue(node.variableName);
-        if (Array.isArray(rawVal)) {
-            savedData = rawVal;
-        }
-    } catch (e) {
-        console.error(`Error cargando lista de ${node.variableName}:`, e);
+  let savedData = [];
+  try {
+    const rawVal = await fetchConfigValue(node.variableName);
+    if (Array.isArray(rawVal)) {
+      savedData = rawVal;
     }
+  } catch (e) {
+    console.error(`Error cargando lista de ${node.variableName}:`, e);
+  }
 
-    // 3. Evaluar reglas de habilitación/deshabilitación (childEnabled) si existen
-    let enabledStates = {};
-    if (node.childEnabled) {
-        const enabledQueries = [];
-        domainItems.forEach(item => {
-            const technicalName = item.value;
-            enabledQueries.push({
-                path: `${node.variableName}/${technicalName}/__enabled`,
-                defaultValue: true,
-                enabledExpression: node.childEnabled,
-                context: { child: technicalName }
-            });
-        });
-
-        try {
-            enabledStates = await postConfigMultivalue(enabledQueries);
-        } catch (e) {
-            console.error('Error evaluando reglas de habilitación de checks:', e);
-        }
-    }
-
-    const checkInputs = [];
-
-    // 4. Construir cada fila de checkbox
+  let enabledStates = {};
+  if (node.childEnabled) {
+    const enabledQueries = [];
     domainItems.forEach(item => {
-        const technicalName = item.value; // Identificador técnico real (ej: "file_grep", "file_patch")
-        const enabledKey = `${node.variableName}/${technicalName}/__enabled`;
-
-        // Buscar en el array guardado. Si el elemento no existe aún en la configuración, por defecto es true (igual que Swing/Lanterna)
-        let isChecked = true;
-        if (Array.isArray(savedData) && savedData.length > 0) {
-            const match = savedData.find(s => s && s.value === technicalName);
-            if (match !== undefined && match.checked !== undefined) {
-                isChecked = Boolean(match.checked);
-            }
-        }
-
-        const row = document.createElement('div');
-        row.className = 'config-field-checkbox';
-
-        const chk = document.createElement('input');
-        chk.type = 'checkbox';
-        chk.checked = isChecked;
-
-        // Comprobar si está deshabilitado por las políticas de acceso
-        const isControlEnabled = node.childEnabled ? parseBoolean(enabledStates[enabledKey], true) : true;
-        chk.disabled = !isControlEnabled;
-        if (chk.disabled) {
-            chk.title = 'Deshabilitado por la configuración de control de acceso';
-        }
-
-        const itemLabel = document.createElement('label');
-        itemLabel.textContent = item.label ?? item.key;
-        if (chk.disabled) {
-            itemLabel.title = chk.title;
-        }
-
-        chk.addEventListener('change', async () => {
-            const checked = chk.checked;
-            try {
-                await setConfigChecked(node.variableName, technicalName, checked);
-            } catch (error) {
-                console.error(error);
-                chk.checked = !checked;
-                showToast(`No se pudo actualizar ${item.label ?? item.key}`, 'error');
-            }
-        });
-
-        row.appendChild(chk);
-        row.appendChild(itemLabel);
-        listBox.appendChild(row);
-
-        checkInputs.push({ input: chk, technicalName });
+      const technicalName = item.value;
+      enabledQueries.push({
+        path: `${node.variableName}/${technicalName}/__enabled`,
+        defaultValue: true,
+        enabledExpression: node.childEnabled,
+        context: {child: technicalName}
+      });
     });
 
-    // 5. Botonera inferior: Marcar todas / Desmarcar todas
-    const actionsBar = document.createElement('div');
-    actionsBar.className = 'config-paths-actions';
+    try {
+      enabledStates = await postConfigMultivalue(enabledQueries);
+    } catch (e) {
+      console.error('Error evaluando reglas de habilitación de checks:', e);
+    }
+  }
 
-    const btnSelectAll = document.createElement('button');
-    btnSelectAll.type = 'button';
-    btnSelectAll.className = 'config-paths-btn secondary-button';
-    btnSelectAll.textContent = 'Marcar todas';
+  const checkInputs = [];
 
-    const btnDeselectAll = document.createElement('button');
-    btnDeselectAll.type = 'button';
-    btnDeselectAll.className = 'config-paths-btn secondary-button';
-    btnDeselectAll.textContent = 'Desmarcar todas';
+  domainItems.forEach(item => {
+    const technicalName = item.value;
+    const enabledKey = `${node.variableName}/${technicalName}/__enabled`;
 
-    async function setAllStates(targetState) {
-        for (const item of checkInputs) {
-            if (!item.input.disabled && item.input.checked !== targetState) {
-                item.input.checked = targetState;
-                try {
-                    await setConfigChecked(node.variableName, item.technicalName, targetState);
-                } catch (e) {
-                    console.error(e);
-                }
-            }
-        }
+    let isChecked = true;
+    if (Array.isArray(savedData) && savedData.length > 0) {
+      const match = savedData.find(s => s && s.value === technicalName);
+      if (match !== undefined && match.checked !== undefined) {
+        isChecked = Boolean(match.checked);
+      }
     }
 
-    btnSelectAll.addEventListener('click', () => setAllStates(true));
-    btnDeselectAll.addEventListener('click', () => setAllStates(false));
+    const row = document.createElement('div');
+    row.className = 'config-field-checkbox';
 
-    actionsBar.appendChild(btnSelectAll);
-    actionsBar.appendChild(btnDeselectAll);
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.checked = isChecked;
 
-    wrapper.appendChild(listBox);
-    wrapper.appendChild(actionsBar);
-    container.appendChild(wrapper);
+    const isControlEnabled = node.childEnabled ? parseBoolean(enabledStates[enabledKey], true) : true;
+    chk.disabled = !isControlEnabled;
+    if (chk.disabled) {
+      chk.title = 'Deshabilitado por la configuración de control de acceso';
+    }
+
+    const itemLabel = document.createElement('label');
+    itemLabel.textContent = item.label ?? item.key;
+    if (chk.disabled) {
+      itemLabel.title = chk.title;
+    }
+
+    chk.addEventListener('change', async () => {
+      const checked = chk.checked;
+      try {
+        await setConfigChecked(node.variableName, technicalName, checked);
+      } catch (error) {
+        console.error(error);
+        chk.checked = !checked;
+        showToast(`No se pudo actualizar ${item.label ?? item.key}`, 'error');
+      }
+    });
+
+    row.appendChild(chk);
+    row.appendChild(itemLabel);
+    listBox.appendChild(row);
+
+    checkInputs.push({input: chk, technicalName});
+  });
+
+  const actionsBar = document.createElement('div');
+  actionsBar.className = 'config-paths-actions';
+
+  const btnSelectAll = document.createElement('button');
+  btnSelectAll.type = 'button';
+  btnSelectAll.className = 'config-paths-btn secondary-button';
+  btnSelectAll.textContent = 'Marcar todas';
+
+  const btnDeselectAll = document.createElement('button');
+  btnDeselectAll.type = 'button';
+  btnDeselectAll.className = 'config-paths-btn secondary-button';
+  btnDeselectAll.textContent = 'Desmarcar todas';
+
+  async function setAllStates(targetState) {
+    for (const item of checkInputs) {
+      if (!item.input.disabled && item.input.checked !== targetState) {
+        item.input.checked = targetState;
+        try {
+          await setConfigChecked(node.variableName, item.technicalName, targetState);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+  }
+
+  btnSelectAll.addEventListener('click', () => setAllStates(true));
+  btnDeselectAll.addEventListener('click', () => setAllStates(false));
+
+  actionsBar.appendChild(btnSelectAll);
+  actionsBar.appendChild(btnDeselectAll);
+
+  wrapper.appendChild(listBox);
+  wrapper.appendChild(actionsBar);
+  container.appendChild(wrapper);
 }
 
 function parseBoolean(value, defaultValue) {
@@ -509,14 +557,62 @@ function parseBoolean(value, defaultValue) {
   return value == null ? defaultValue : Boolean(value);
 }
 
-function createUnsupportedActionControl(container, node) {
+// =============================================================================
+// CONTROL DE ACCIONES (FRONTEND, BACKEND Y UNSUPPORTED)
+// =============================================================================
+
+function createActionControl(container, node) {
   const button = document.createElement('button');
   button.type = 'button';
-  button.disabled = true;
-  button.title = 'No soportado en la interfaz web';
-  button.textContent = 'No soportado en la interfaz web';
+
+  const actionName = node.actionName;
+  const isFrontend = webActionHandlers.has(actionName);
+  const isBackend = node.scope === 'backend';
+
+  if (isFrontend) {
+    button.className = 'primary-button';
+    button.textContent = node.label || `Ejecutar ${actionName}`;
+    button.addEventListener('click', async () => {
+      try {
+        const handler = webActionHandlers.get(actionName);
+        await handler();
+      } catch (err) {
+        console.error(`Error ejecutando acción web '${actionName}':`, err);
+        showToast(`Error al ejecutar '${node.label}': ${err.message}`, 'error');
+      }
+    });
+  } else if (isBackend) {
+    button.className = 'primary-button';
+    button.textContent = node.label || `Ejecutar ${actionName}`;
+    button.addEventListener('click', async () => {
+      button.disabled = true;
+      const originalText = button.textContent;
+      button.textContent = 'Ejecutando...';
+
+      try {
+        await callBackendAction(actionName);
+        showToast(`Acción '${node.label}' ejecutada con éxito`, 'success');
+      } catch (err) {
+        console.error(`Error ejecutando acción de servidor '${actionName}':`, err);
+        showToast(`Error al ejecutar '${node.label}': ${err.message}`, 'error');
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    });
+  } else {
+    button.className = 'config-paths-btn secondary-button';
+    button.disabled = true;
+    button.title = 'Acción no disponible en el cliente web';
+    button.textContent = `${node.label} (No disponible en web)`;
+  }
+
   container.appendChild(button);
 }
+
+// =============================================================================
+// LISTA DE RUTAS (PATHS)
+// =============================================================================
 
 async function createPathsControl(container, node) {
   const listWrapper = document.createElement('div');
@@ -525,7 +621,6 @@ async function createPathsControl(container, node) {
   let pathsArray = [];
   let selectedIndex = -1;
 
-  // 1. Cargar las rutas actuales desde el backend
   try {
     const val = await fetchConfigValue(node.variableName);
     if (Array.isArray(val)) {
@@ -535,11 +630,9 @@ async function createPathsControl(container, node) {
     console.error('Error cargando lista de rutas:', e);
   }
 
-  // 2. Cuadro de lista con scroll (estilo JList)
   const listBox = document.createElement('div');
   listBox.className = 'config-paths-list-box';
 
-  // 3. Botonera inferior
   const actionsBar = document.createElement('div');
   actionsBar.className = 'config-paths-actions';
 
@@ -557,7 +650,6 @@ async function createPathsControl(container, node) {
   actionsBar.appendChild(btnAdd);
   actionsBar.appendChild(btnRemove);
 
-  // 4. Renderizado reactivo de las filas de la lista
   function renderList() {
     listBox.innerHTML = '';
     btnRemove.disabled = (selectedIndex < 0 || selectedIndex >= pathsArray.length);
@@ -578,7 +670,6 @@ async function createPathsControl(container, node) {
       }
       itemEl.textContent = pathStr;
 
-      // Selección / Deselección con clic
       itemEl.addEventListener('click', () => {
         selectedIndex = (selectedIndex === index) ? -1 : index;
         renderList();
@@ -588,7 +679,6 @@ async function createPathsControl(container, node) {
     });
   }
 
-  // 5. Acción: Añadir abriendo el diálogo explorador de carpetas
   btnAdd.addEventListener('click', async () => {
     try {
       const selectedPath = await openDirectoryPickerDialog();
@@ -608,7 +698,7 @@ async function createPathsControl(container, node) {
       showToast('No se pudo abrir el explorador de carpetas', 'error');
     }
   });
-  // 6. Acción: Eliminar el seleccionado
+
   btnRemove.addEventListener('click', async () => {
     if (selectedIndex >= 0 && selectedIndex < pathsArray.length) {
       pathsArray.splice(selectedIndex, 1);
@@ -618,7 +708,6 @@ async function createPathsControl(container, node) {
     }
   });
 
-  // 7. Sincronización con el servidor
   async function syncPaths() {
     try {
       await setConfigList(node.variableName, pathsArray);
@@ -634,13 +723,11 @@ async function createPathsControl(container, node) {
   container.appendChild(listWrapper);
 }
 
-/**
- * Abre un diálogo modal para explorar el sistema de archivos del servidor y seleccionar una carpeta.
- * 
- * @param {string} [startPath] - Ruta inicial opcional.
- * @returns {Promise<string|null>} Devuelve la ruta absoluta seleccionada o null si se cancela.
- */
-function openDirectoryPickerDialog(startPath = '') {
+// =============================================================================
+// MODAL: EXPLORADOR DE DIRECTORIOS
+// =============================================================================
+
+export function openDirectoryPickerDialog(startPath = '') {
   return new Promise((resolve) => {
     let currentPath = startPath;
     let parentPath = null;
@@ -648,14 +735,12 @@ function openDirectoryPickerDialog(startPath = '') {
     let selectedSubdirPath = null;
     let directories = [];
 
-    // 1. Estructura DOM del Modal
     const backdrop = document.createElement('div');
     backdrop.className = 'dir-modal-backdrop';
 
     const dialog = document.createElement('div');
     dialog.className = 'dir-modal-dialog';
 
-    // Cabecera
     const header = document.createElement('div');
     header.className = 'dir-modal-header';
     header.innerHTML = `
@@ -663,7 +748,6 @@ function openDirectoryPickerDialog(startPath = '') {
             <button type="button" class="config-close-button" title="Cerrar">✕</button>
         `;
 
-    // Barra de navegación (Ruta actual + Subir nivel)
     const navBar = document.createElement('div');
     navBar.className = 'dir-modal-nav';
 
@@ -678,11 +762,9 @@ function openDirectoryPickerDialog(startPath = '') {
     navBar.appendChild(btnUp);
     navBar.appendChild(pathDisplay);
 
-    // Lista de carpetas
     const listBox = document.createElement('div');
     listBox.className = 'dir-modal-list';
 
-    // Botonera inferior
     const footer = document.createElement('div');
     footer.className = 'dir-modal-footer';
 
@@ -706,7 +788,6 @@ function openDirectoryPickerDialog(startPath = '') {
     backdrop.appendChild(dialog);
     document.body.appendChild(backdrop);
 
-    // 2. Función para cargar y renderizar una ruta
     async function loadPath(targetPath) {
       listBox.innerHTML = '<div class="dir-modal-empty">Cargando carpetas...</div>';
       selectedSubdirPath = null;
@@ -752,13 +833,11 @@ function openDirectoryPickerDialog(startPath = '') {
                     <span class="folder-name">${dir.name}</span>
                 `;
 
-        // Clic simple: selecciona la subcarpeta
         item.addEventListener('click', () => {
           selectedSubdirPath = (selectedSubdirPath === dir.path) ? null : dir.path;
           renderDirectoryItems();
         });
 
-        // Doble clic: entra en la subcarpeta
         item.addEventListener('dblclick', () => {
           loadPath(dir.path);
         });
@@ -767,7 +846,6 @@ function openDirectoryPickerDialog(startPath = '') {
       });
     }
 
-    // 3. Event Listeners
     btnUp.addEventListener('click', () => {
       if (canGoUp && parentPath) {
         loadPath(parentPath);
@@ -792,14 +870,143 @@ function openDirectoryPickerDialog(startPath = '') {
     header.querySelector('.config-close-button').addEventListener('click', () => closeDialog(null));
     btnCancel.addEventListener('click', () => closeDialog(null));
 
-    // Selecciona la subcarpeta marcada, o la ruta actual del explorador si ninguna está seleccionada
     btnSelect.addEventListener('click', () => {
       const finalPath = selectedSubdirPath || currentPath;
       closeDialog(finalPath);
     });
 
-    // Iniciar carga en la ruta por defecto
     loadPath(startPath);
   });
 }
 
+// =============================================================================
+// MODAL: EDITOR DE TEXTO WEB
+// =============================================================================
+
+export function openTextEditorDialog(filePath, customTitle = '') {
+  return new Promise(async (resolve) => {
+    const displayTitle = customTitle || `Editor - ${filePath.replace(/^var:\//, '')}`;
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'dir-modal-backdrop';
+
+    const dialog = document.createElement('div');
+    dialog.className = 'editor-modal-dialog';
+
+    const header = document.createElement('div');
+    header.className = 'editor-modal-header';
+    header.innerHTML = `
+            <div>
+                <h3>${displayTitle}</h3>
+                <span class="editor-modal-filepath" title="${filePath}">${filePath}</span>
+            </div>
+            <button type="button" class="config-close-button" title="Cerrar">✕</button>
+        `;
+
+    const body = document.createElement('div');
+    body.className = 'editor-modal-body';
+
+    const textarea = document.createElement('textarea');
+    textarea.className = 'editor-modal-textarea';
+    textarea.spellcheck = false;
+    textarea.placeholder = 'Cargando contenido del archivo...';
+    textarea.disabled = true;
+
+    body.appendChild(textarea);
+
+    const footer = document.createElement('div');
+    footer.className = 'editor-modal-footer';
+
+    const statusLabel = document.createElement('span');
+    statusLabel.className = 'editor-modal-status';
+
+    const btnCancel = document.createElement('button');
+    btnCancel.type = 'button';
+    btnCancel.className = 'config-paths-btn secondary-button';
+    btnCancel.textContent = 'Cancelar';
+
+    const btnSave = document.createElement('button');
+    btnSave.type = 'button';
+    btnSave.className = 'config-paths-btn primary-button';
+    btnSave.textContent = 'Guardar';
+    btnSave.disabled = true;
+
+    footer.appendChild(statusLabel);
+    footer.appendChild(btnCancel);
+    footer.appendChild(btnSave);
+
+    dialog.appendChild(header);
+    dialog.appendChild(body);
+    dialog.appendChild(footer);
+    backdrop.appendChild(dialog);
+    document.body.appendChild(backdrop);
+
+    textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        textarea.value = textarea.value.substring(0, start) + '    ' + textarea.value.substring(end);
+        textarea.selectionStart = textarea.selectionEnd = start + 4;
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+    });
+
+    try {
+      const data = await fetchFileContent(filePath);
+      textarea.value = data.content ?? '';
+      textarea.disabled = false;
+      btnSave.disabled = false;
+      textarea.focus();
+      statusLabel.textContent = `Líneas: ${textarea.value.split('\n').length}`;
+    } catch (err) {
+      console.error('Error cargando archivo:', err);
+      textarea.value = '';
+      textarea.placeholder = `Error al abrir el archivo: ${err.message}`;
+      statusLabel.textContent = 'Error de lectura';
+      showToast(`No se pudo abrir ${filePath}: ${err.message}`, 'error');
+    }
+
+    async function handleSave() {
+      if (btnSave.disabled)
+        return;
+
+      btnSave.disabled = true;
+      btnSave.textContent = 'Guardando...';
+      statusLabel.textContent = 'Guardando cambios...';
+
+      try {
+        await saveFileContent(filePath, textarea.value);
+        showToast('Archivo guardado correctamente', 'success');
+        closeDialog(true);
+      } catch (err) {
+        console.error('Error guardando archivo:', err);
+        showToast(`Error al guardar: ${err.message}`, 'error');
+        btnSave.disabled = false;
+        btnSave.textContent = 'Guardar';
+        statusLabel.textContent = 'Error al guardar';
+      }
+    }
+
+    function closeDialog(saved) {
+      document.removeEventListener('keydown', handleGlobalKeyDown);
+      if (backdrop.parentNode) {
+        backdrop.parentNode.removeChild(backdrop);
+      }
+      resolve(saved);
+    }
+
+    function handleGlobalKeyDown(e) {
+      if (e.key === 'Escape') {
+        closeDialog(false);
+      }
+    }
+    document.addEventListener('keydown', handleGlobalKeyDown);
+
+    header.querySelector('.config-close-button').addEventListener('click', () => closeDialog(false));
+    btnCancel.addEventListener('click', () => closeDialog(false));
+    btnSave.addEventListener('click', handleSave);
+  });
+}

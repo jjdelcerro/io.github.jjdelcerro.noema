@@ -225,17 +225,20 @@
         {
           "type": "action",
           "label": "Editar modelos",
-          "actionName": "OPEN_MODELS_EDITOR"
+          "actionName": "OPEN_MODELS_EDITOR",
+          "scope": "frontend"
         },
         {
           "type": "action",
           "label": "Editar proveedores",
-          "actionName": "OPEN_PROVIDERS_URL_EDITOR"
+          "actionName": "OPEN_PROVIDERS_URL_EDITOR",
+          "scope": "frontend"
         },
         {
           "type": "action",
           "label": "Editar API Keys",
-          "actionName": "OPEN_PROVIDERS_APIKEY_EDITOR"
+          "actionName": "OPEN_PROVIDERS_APIKEY_EDITOR",
+          "scope": "frontend"
         }
       ]
     },
@@ -251,22 +254,26 @@
         {
           "type": "action",
           "label": "Mostrar consola H2",
-          "actionName": "OPEN_H2WEBCONSOLE"
+          "actionName": "OPEN_H2WEBCONSOLE",
+          "scope": "frontend"
         },
         {
           "type": "action",
           "label": "Forzar compactacion del 50% del historial",
-          "actionName": "COMPACT_REASONING_SESSION"
+          "actionName": "COMPACT_REASONING_SESSION",
+          "scope": "backend"
         },
         {
           "type": "action",
           "label": "Forzar compactacion del 100% del historial",
-          "actionName": "COMPACT_REASONING_FULL_SESSION"
+          "actionName": "COMPACT_REASONING_FULL_SESSION",
+          "scope": "backend"
         },
         {
           "type": "action",
           "label": "Muestra el dialogo para debug",
-          "actionName": "DEBUG_DIALOG"
+          "actionName": "DEBUG_DIALOG",
+          "scope": "frontend"
         }
       ]
     },
