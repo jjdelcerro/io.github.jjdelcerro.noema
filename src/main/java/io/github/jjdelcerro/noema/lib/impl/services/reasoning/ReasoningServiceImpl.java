@@ -718,6 +718,11 @@ public class ReasoningServiceImpl implements ReasoningService {
         recentMemory.add(aiMessage);
 
         if (aiMessage.hasToolExecutionRequests()) {
+          String intermediateText = aiMessage.text();
+          if (StringUtils.isNotBlank(intermediateText)) {
+            this.console(currentSubchannel).printModelResponse(intermediateText);
+//            finalLlmResponse.append(intermediateText).append("\n\n"); 
+          }          
           for (ToolExecutionRequest request : aiMessage.toolExecutionRequests()) {
             String result = executeTool(recentMemory, request);
 
