@@ -22,7 +22,7 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.h2.tools.Server;
-import io.github.jjdelcerro.noema.lib.services.memory.MemoryCompactionService;
+import io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService;
 
 /**
  *
@@ -49,7 +49,7 @@ public class BootUtils {
       // Iniciar el servidor web de H2 (Consola)
       FileUtils.writeStringToFile(
               paths.getConfigFolder().resolve(".h2.server.properties").normalize().toAbsolutePath().toFile(),
-              "1=Memory database, turns and checkpoints|org.h2.Driver|jdbc\\:h2\\:" + memoryFile.getAbsolutePath() + "|sa\n"
+              "1=Memory database, turns and ConsolidateMemory|org.h2.Driver|jdbc\\:h2\\:" + memoryFile.getAbsolutePath() + "|sa\n"
               + "0=Services database, scheduler...|org.h2.Driver|jdbc\\:h2\\:" + servicesFile.getAbsolutePath() + "|sa\n"
               + "webAllowOthers=true\n"
               + "webPort=8082\n"
@@ -132,7 +132,7 @@ public class BootUtils {
     AgentManager agentManager = AgentLocator.getAgentManager();
 
     AgentServiceFactory[] services = {
-      agentManager.getServiceFactory(MemoryCompactionService.ID),
+      agentManager.getServiceFactory(MemoryConsolidationService.ID),
       agentManager.getServiceFactory(ReasoningService.ID)
     };
     for (AgentServiceFactory service : services) {

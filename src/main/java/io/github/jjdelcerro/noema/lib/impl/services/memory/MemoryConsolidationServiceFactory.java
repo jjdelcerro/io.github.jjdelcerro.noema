@@ -3,9 +3,9 @@ package io.github.jjdelcerro.noema.lib.impl.services.memory;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
-import static io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryCompactionServiceImpl.MEMORY_MODEL_ID;
-import static io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryCompactionServiceImpl.MEMORY_PROVIDER_API_KEY;
-import static io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryCompactionServiceImpl.MEMORY_PROVIDER_URL;
+import static io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryConsolidationServiceImpl.MEMORY_MODEL_ID;
+import static io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryConsolidationServiceImpl.MEMORY_PROVIDER_API_KEY;
+import static io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryConsolidationServiceImpl.MEMORY_PROVIDER_URL;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import org.apache.commons.lang3.StringUtils;
 
@@ -14,16 +14,16 @@ import org.apache.commons.lang3.StringUtils;
  * TODO: Antes MemoryServiceFactory, habria que actualizar la documentacion con este cambio 
  * @author jjdelcerro
  */
-public class MemoryCompactionServiceFactory implements AgentServiceFactory {
+public class MemoryConsolidationServiceFactory implements AgentServiceFactory {
 
   @Override
   public String getName() {
-    return MemoryCompactionServiceImpl.NAME;
+    return MemoryConsolidationServiceImpl.NAME;
   }
 
   @Override
   public AgentService createService(Agent agent) {
-    return new MemoryCompactionServiceImpl(this, agent);
+    return new MemoryConsolidationServiceImpl(this, agent);
   }
 
   @Override

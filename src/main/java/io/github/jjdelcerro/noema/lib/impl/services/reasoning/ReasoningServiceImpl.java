@@ -45,7 +45,7 @@ import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.Location
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.TimeTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.WeatherTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.WebGetTikaTool;
-import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryCompactionServiceImpl;
+import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryConsolidationServiceImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
 import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorEventUser;
@@ -82,7 +82,8 @@ import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.skills.RunSk
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.subagent.LaunchSubagentTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.subagent.ListSubagentsTool;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
-import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
+import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
+import io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService;
 
 /**
  * Orquestador principal del sistema. Gestiona el bucle de razonamiento, la
@@ -114,7 +115,7 @@ public class ReasoningServiceImpl implements ReasoningService {
   private Agent.ChatModel model;
   private boolean running;
 
-  private Map<String, CompactedMemory> activesCompactedMemories;
+  private Map<String, ConsolidateMemory> activeConsolidateMemories;
 
   // Registro de herramientas
   private final Map<String, AvailableAgentTool> availableTools = new LinkedHashMap<>();
@@ -125,7 +126,7 @@ public class ReasoningServiceImpl implements ReasoningService {
     this.episodicMemory = agent.getEpisodicMemory();
     this.recentMemories = new HashMap<>();
     this.projectedMemories = new HashMap<>();
-    this.activesCompactedMemories = new HashMap<>();
+    this.activeConsolidateMemories = new HashMap<>();
     this.running = false;
     this.currentSubchannel = DEFAULT_SUBCHANNEL;
   }
@@ -166,22 +167,22 @@ public class ReasoningServiceImpl implements ReasoningService {
     return projectedMemory;
   }
 
-  public CompactedMemory getActiveCompactedMemory(String subchannel) {
-    CompactedMemory compactedMemory = this.activesCompactedMemories.get(subchannel);
-    if (compactedMemory == null) {
+  public ConsolidateMemory getActiveConsolidateMemory(String subchannel) {
+    ConsolidateMemory consolidateMemory = this.activeConsolidateMemories.get(subchannel);
+    if (consolidateMemory == null) {
       try {
-        compactedMemory = episodicMemory.getLatestCompactedMemory(subchannel);
+        consolidateMemory = episodicMemory.getLatestConsolidateMemory(subchannel);
       } catch (Exception e) {
-        LOGGER.warn("No se ha podido recuperar el ultimo CompactedMemory", e);
+        LOGGER.warn("No se ha podido recuperar el ultimo ConsolidateMemory", e);
       }
-      this.activesCompactedMemories.put(subchannel, compactedMemory);
+      this.activeConsolidateMemories.put(subchannel, consolidateMemory);
     }
-    return compactedMemory;
+    return consolidateMemory;
   }
 
-  private CompactedMemory setActiveCompactedMemory(String subchannel, CompactedMemory compactedMemory) {
-    this.activesCompactedMemories.put(subchannel, compactedMemory);
-    return compactedMemory;
+  private ConsolidateMemory setActiveConsolidateMemory(String subchannel, ConsolidateMemory consolidateMemory) {
+    this.activeConsolidateMemories.put(subchannel, consolidateMemory);
+    return consolidateMemory;
   }
 
   @Override
@@ -220,10 +221,10 @@ public class ReasoningServiceImpl implements ReasoningService {
         for (RecentMemory recentMemory : recentMemories.values()) {
           try {
             RecentMemoryImpl.RecentMemoryMark mark1 = recentMemory.getOldestMark();
-            RecentMemoryImpl.RecentMemoryMark mark2 = recentMemory.getCompactMark();
-            performCompaction(recentMemory, mark1, mark2);
+            RecentMemoryImpl.RecentMemoryMark mark2 = recentMemory.getConsolidateMark();
+            performConsolidation(recentMemory, mark1, mark2);
           } catch (Exception ex) {
-            LOGGER.warn("Can't compact conversation", ex);
+            LOGGER.warn("Can't consolide conversation", ex);
             return false;
           }
         }
@@ -237,9 +238,9 @@ public class ReasoningServiceImpl implements ReasoningService {
           try {
             RecentMemoryImpl.RecentMemoryMark mark1 = recentMemory.getOldestMark();
             RecentMemoryImpl.RecentMemoryMark mark2 = recentMemory.getNewestMark();
-            performCompaction(recentMemory, mark1, mark2);
+            performConsolidation(recentMemory, mark1, mark2);
           } catch (Exception ex) {
-            LOGGER.warn("Can't compact conversation", ex);
+            LOGGER.warn("Can't consolide conversation", ex);
             return false;
           }
         }
@@ -422,47 +423,45 @@ public class ReasoningServiceImpl implements ReasoningService {
     return tool.tool.getType();
   }
 
-  private void performCompaction(RecentMemory recentMemory) throws SQLException {
+  private void performConsolidation(RecentMemory recentMemory) throws SQLException {
     RecentMemoryImpl.RecentMemoryMark mark1 = recentMemory.getOldestMark();
-    RecentMemoryImpl.RecentMemoryMark mark2 = recentMemory.getCompactMark();
-    this.performCompaction(recentMemory, mark1, mark2);
+    RecentMemoryImpl.RecentMemoryMark mark2 = recentMemory.getConsolidateMark();
+    this.performConsolidation(recentMemory, mark1, mark2);
   }
 
-  private void performCompaction(RecentMemory recentMemory, RecentMemory.RecentMemoryMark mark1, RecentMemory.RecentMemoryMark mark2) throws SQLException {
+  private void performConsolidation(RecentMemory recentMemory, RecentMemory.RecentMemoryMark mark1, RecentMemory.RecentMemoryMark mark2) throws SQLException {
     String subchannel = recentMemory.getSubchannel();
-    this.console(subchannel).printSystemLog("Iniciando proceso de compactación de memoria...");
+    this.console(subchannel).printSystemLog("Iniciando proceso de consolidación de memoria...");
 
     if (mark1 == null || mark2 == null) {
-      String msg = "No hay suficientes datos consolidados para compactar.";
+      String msg = "No hay suficientes turnos consolidados para consolidar la memoria reciente.";
       LOGGER.warn(msg);
       this.console(subchannel).printSystemLog(msg);
       return;
     }
 
     // Recuperar turnos de la DB usando el rango de IDs de las marcas
-    List<Turn> compactTurns = this.episodicMemory.getTurnsByIds(subchannel, mark1.getTurnId(), mark2.getTurnId());
+    List<Turn> consolideTurns = this.episodicMemory.getTurnsByIds(subchannel, mark1.getTurnId(), mark2.getTurnId());
 
-    if (compactTurns.isEmpty()) {
-      String msg = String.format("No se han podido recuperar los turnos a compactar (turns[%s:%s]).", mark1.getTurnId(), mark2.getTurnId());
+    if (consolideTurns.isEmpty()) {
+      String msg = String.format("No se han podido recuperar los turnos a consolidar (turns[%s:%s]).", mark1.getTurnId(), mark2.getTurnId());
       LOGGER.warn(msg);
       this.console(subchannel).printSystemLog(msg);
       return;
     }
 
-    // MemoryCompactionService crea el CompactedMemory
-    MemoryCompactionServiceImpl memoryCompactionService = (MemoryCompactionServiceImpl) this.agent.getService(MemoryCompactionServiceImpl.NAME);
-    CompactedMemory newCompactedMemory = memoryCompactionService.compact(subchannel, this.getActiveCompactedMemory(subchannel), compactTurns);
+    MemoryConsolidationService memoryConsolidationService = (MemoryConsolidationService) this.agent.getService(MemoryConsolidationService.NAME);
+    ConsolidateMemory newConsolidateMemory = memoryConsolidationService.consolide(subchannel, this.getActiveConsolidateMemory(subchannel), consolideTurns);
 
-    // episodicMemory persiste
-    episodicMemory.add(newCompactedMemory);
+    episodicMemory.add(newConsolidateMemory);
 
-    // Limpieza de la RecentMemory (Borrar mensajes ya compactados)
+    // Limpieza de la RecentMemory (Borrar mensajes ya consolidados)
     recentMemory.remove(mark1, mark2);
 
     // Actualizar punteros del Agente
-    this.setActiveCompactedMemory(subchannel, newCompactedMemory);
+    this.setActiveConsolidateMemory(subchannel, newConsolidateMemory);
 
-    this.console(subchannel).printSystemLog("Memoria compactada con éxito. Nuevo CompactedMemory ID: " + newCompactedMemory.getId());
+    this.console(subchannel).printSystemLog("Memoria consolidada con éxito. Nuevo ConsolidateMemory ID: " + newConsolidateMemory.getId());
   }
 
   @Override
@@ -556,10 +555,8 @@ public class ReasoningServiceImpl implements ReasoningService {
   @Override
   public int estimateMessagesTokenCount(String subchannel) {
     ProjectedMemory projection = this.getProjectedMemory(subchannel);
-    return this.agent.estimateTokenCount(
-            projection.getMessages(
-                    this.getRecentMemory(subchannel),
-                    this.getActiveCompactedMemory(subchannel),
+    return this.agent.estimateTokenCount(projection.getMessages(this.getRecentMemory(subchannel),
+                    this.getActiveConsolidateMemory(subchannel),
                     this.getLastestSystemPrompt()
             ),
             null
@@ -681,7 +678,7 @@ public class ReasoningServiceImpl implements ReasoningService {
       String channel = event.getChannel();
       String textUser = null;
       RecentMemory recentMemory = this.getRecentMemory(currentSubchannel);
-      CompactedMemory compactedMemory = this.getActiveCompactedMemory(currentSubchannel);
+      ConsolidateMemory consolidateMemory = this.getActiveConsolidateMemory(currentSubchannel);
       ProjectedMemory projectedMemory = getProjectedMemory(currentSubchannel);
 
       if (event instanceof SensorEventUser) {
@@ -710,7 +707,7 @@ public class ReasoningServiceImpl implements ReasoningService {
       while (!turnFinished && this.isRunning()) {
         projectedMemory.setLastInteractionTurn(recentMemory.getLastTurnId());
         Response<AiMessage> response = this.getModel().generate(
-                projectedMemory.getMessages(recentMemory, compactedMemory, this.getBaseSystemPrompt()),
+                projectedMemory.getMessages(recentMemory, consolidateMemory, this.getBaseSystemPrompt()),
                 this.getToolSpecifications(),
                 abort
         );
@@ -783,8 +780,8 @@ public class ReasoningServiceImpl implements ReasoningService {
             toolExecutionRetries = 0;
           }
         }
-        if (recentMemory.needCompaction()) {
-          performCompaction(recentMemory);
+        if (recentMemory.needConsolidation()) {
+          performConsolidation(recentMemory);
         }
       }
       if (textUser != null) {
@@ -793,8 +790,8 @@ public class ReasoningServiceImpl implements ReasoningService {
       recentMemory.save();
       projectedMemory.save();
 
-      if (recentMemory.needCompaction()) {
-        performCompaction(recentMemory);
+      if (recentMemory.needConsolidation()) {
+        performConsolidation(recentMemory);
       }
     } finally {
       try {

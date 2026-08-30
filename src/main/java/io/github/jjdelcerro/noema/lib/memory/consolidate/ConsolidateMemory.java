@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.lib.memory.compacted;
+package io.github.jjdelcerro.noema.lib.memory.consolidate;
 
 import java.time.LocalDateTime;
 
@@ -9,15 +9,14 @@ import java.time.LocalDateTime;
  *
  * @author jjdelcerro
  */
-public interface CompactedMemory {
+public interface ConsolidateMemory {
 
   int getTurnFirst();
 
   int getTurnLast();
 
   /**
-   * Genera el código único del CheckPoint.Formato:
-   * checkpoint-{id}-{first}-{last}
+   * Genera el código único del ConsolidateMemory.
    *
    * @return
    */

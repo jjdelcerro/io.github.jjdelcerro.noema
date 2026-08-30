@@ -18,7 +18,7 @@ import io.github.jjdelcerro.noema.lib.impl.memory.projected.operations.TrimmingO
 import io.github.jjdelcerro.noema.lib.impl.services.email.EmailServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.mcp.McpServiceFactory;
-import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryCompactionServiceFactory;
+import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryConsolidationServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.scheduler.SchedulerServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceFactory;
@@ -66,7 +66,7 @@ public class AgentManagerImpl implements AgentManager {
     this.registerService(new EmbeddingsServiceFactory());
     this.registerService(new SensorsServiceFactory());
 
-    this.registerService(new MemoryCompactionServiceFactory());
+    this.registerService(new MemoryConsolidationServiceFactory());
     this.registerService(new McpServiceFactory());
 
     this.registerService(new SchedulerServiceFactory());

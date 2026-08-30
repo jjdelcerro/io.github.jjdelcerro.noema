@@ -10,7 +10,6 @@ import io.github.jjdelcerro.noema.lib.impl.memory.GsonUtils.ChatMessageAdapter;
 import io.github.jjdelcerro.noema.lib.impl.memory.GsonUtils.ContentAdapter;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
-import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.MEMORY_COMPACTION_TURNS;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -21,6 +20,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.MEMORY_CONSOLIDATION_TURNS;
 
 /**
  * Agregado que gobierna el estado de la sesion activa de conversacion. Gestiona
@@ -33,7 +33,7 @@ public class RecentMemoryImpl implements RecentMemory {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RecentMemoryImpl.class);
 
-  private static final int DEFAULT_COMPACTION_THRESHOLD = 40;
+  private static final int DEFAULT_CONSOLIDATION_THRESHOLD = 40;
   private final String subchannel;
 
   private static class ChatMessageInfo {
@@ -48,7 +48,7 @@ public class RecentMemoryImpl implements RecentMemory {
       this.turnId = turnId;
     }
 
-    // necesario en needCompaction()
+    // necesario en needConsolidation()
     @Override
     public boolean equals(Object o) {
       if (this == o) {
@@ -141,7 +141,7 @@ public class RecentMemoryImpl implements RecentMemory {
    * @return true si el numero de turnos unicos consolidados supera el umbral.
    */
   @Override
-  public boolean needCompaction() {
+  public boolean needConsolidation() {
     if (turnOfMessage.isEmpty()) {
       return false;
     }
@@ -156,7 +156,7 @@ public class RecentMemoryImpl implements RecentMemory {
 
     // Contamos cuantos IDs de turnos unicos tenemos en la sesion
     Set<ChatMessageInfo> uniqueTurns = new HashSet<>(turnOfMessage.values());
-    return uniqueTurns.size() >= getCompactionThreshold();
+    return uniqueTurns.size() >= getConsolidationThreshold();
   }
 
   @Override
@@ -165,11 +165,11 @@ public class RecentMemoryImpl implements RecentMemory {
     return uniqueTurns.size();
   }
 
-  private int getCompactionThreshold() {
-    int x = (int) this.settings.getPropertyAsLong(MEMORY_COMPACTION_TURNS, -1);
+  private int getConsolidationThreshold() {
+    int x = (int) this.settings.getPropertyAsLong(MEMORY_CONSOLIDATION_TURNS, -1);
     if (x < 0) {
-      this.settings.setProperty(MEMORY_COMPACTION_TURNS, String.valueOf(DEFAULT_COMPACTION_THRESHOLD));
-      x = DEFAULT_COMPACTION_THRESHOLD;
+      this.settings.setProperty(MEMORY_CONSOLIDATION_TURNS, String.valueOf(DEFAULT_CONSOLIDATION_THRESHOLD));
+      x = DEFAULT_CONSOLIDATION_THRESHOLD;
     }
     return x;
   }
@@ -201,7 +201,7 @@ public class RecentMemoryImpl implements RecentMemory {
   }
 
   @Override
-  public RecentMemoryMark getCompactMark() {
+  public RecentMemoryMark getConsolidateMark() {
     if (turnOfMessage.isEmpty()) {
       return null;
     }

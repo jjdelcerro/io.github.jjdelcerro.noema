@@ -78,7 +78,7 @@ public class ReasoningServiceTest {
             public RecentMemory createRecentMemory(String subchannel) {
                 return new FakeRecentMemory(subchannel) {
                     @Override
-                    public boolean needCompaction() {
+                    public boolean needConsolidation() {
                         return false;
                     }
                 };

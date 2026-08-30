@@ -15,8 +15,8 @@ public interface ReasoningService extends AgentService {
   String REASONING_MODEL_ID = "reasoning/provider/model_id";
   String REASONING_PROVIDER_API_KEY = "reasoning/provider/api_key";
   String REASONING_PROVIDER_URL = "reasoning/provider/url";
-  String MEMORY_COMPACTION_TURNS = "reasoning/compaction_turns";
-  String MEMORY_COMPACTION_TOKENS = "reasoning/compaction_tokens";
+  String MEMORY_CONSOLIDATION_TURNS = "reasoning/consolidation_turns";
+  String MEMORY_CONSOLIDATION_TOKENS = "reasoning/consolidation_tokens";
   String ACTIVE_TOOLS = "reasoning/active_tools";
   
   

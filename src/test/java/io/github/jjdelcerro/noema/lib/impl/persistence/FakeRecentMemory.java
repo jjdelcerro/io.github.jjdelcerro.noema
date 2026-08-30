@@ -6,7 +6,7 @@ import io.github.jjdelcerro.noema.lib.memory.recent.RecentMemory;
 
 public class FakeRecentMemory extends RecentMemoryImpl implements RecentMemory {
 
-    private Boolean forcedNeedCompaction = null;
+    private Boolean forcedNeedConsolidation = null;
 
     public FakeRecentMemory(String subchannel) {
         // Le pasamos una ruta dummy. Al no existir el archivo en disco, 
@@ -25,15 +25,15 @@ public class FakeRecentMemory extends RecentMemoryImpl implements RecentMemory {
     /**
      * Permite forzar o simular la condición de compactación en los tests de forma controlada.
      */
-    public void setNeedCompaction(boolean needCompaction) {
-        this.forcedNeedCompaction = needCompaction;
+    public void setNeedConsolidation(boolean needConsolidation) {
+        this.forcedNeedConsolidation = needConsolidation;
     }
 
     @Override
-    public boolean needCompaction() {
-        if (forcedNeedCompaction != null) {
-            return forcedNeedCompaction;
+    public boolean needConsolidation() {
+        if (forcedNeedConsolidation != null) {
+            return forcedNeedConsolidation;
         }
-        return super.needCompaction();
+        return super.needConsolidation();
     }
 }

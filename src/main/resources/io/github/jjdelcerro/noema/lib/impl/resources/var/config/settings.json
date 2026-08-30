@@ -1,5 +1,5 @@
 {
-  "memory_compaction": {
+  "memory_consolidation": {
     "provider": {
       "api_key": null,
       "model_id": "{ \"model\": \"deepseek-v4-pro\", \"context\": 1280000, \"thinking\": { \"type\": \"enabled\" }, \"reasoning_effort\": \"high\" }",
@@ -7,14 +7,15 @@
     }
   },
   "debug": {
-    "h2_webport": "8082"
+    "h2_webport": "8082",
+    "address": "127.0.0.1"
   },
   "server": {
     "port": "8080",
     "address": "127.0.0.1"
   },
   "reasoning": {
-    "compaction_turns": "40",
+    "consolidation_turns": "40",
     "provider": {
       "api_key": null,
       "model_id": "{ \"model\": \"deepseek-v4-flash\", \"context\": 1000000, \"thinking\": { \"type\": \"enabled\" }, \"reasoning_effort\": \"high\" }",

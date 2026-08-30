@@ -49,14 +49,14 @@ Teniendo en cuenta todo esto prepara un informe que incluya como minimo:
     3.  **Servicios Cognitivos** (puedes incluir aqui mencion a la parte de persistencia como algo comun a estos dos servicios).
         *   ReasoningService (Orquestación del pensamiento y subchannels).
         *   MemoryCompactionService
-        *   EpisodicMemory, CompactedMemory, RecentMemory, ProyectedMemory
+        *   EpisodicMemory, ConsolidateMemory, RecentMemory, ProjectedMemory. 
 
 
     4.  **Servicios de Periferia** (asegurate que en esta seccion se incluyan todos los servicios que no esten en el apartado de servicios Cognitivos).
         *   SensorsService.
         *   SchedulerService.
+        *   Scripting (¿RLM?).
         *   Email / Telegram.
-        *   DocumentsService.
 
     Acompaña a cada uno de los servicios de un parrafo de descripcion.
     
@@ -73,17 +73,17 @@ Opcionalmente puede incluir:
 Organiza las herramientas por bloques funcionales. Ten en cuenta que estas pueden estar implementadas en cualquier parte del codigo, siendo su unica distincion en que son clases que implementan el interface AgentTool. No asumas que solo existen las que se encuentren usadas/nombradas en ficheros de configuracion.
 
 Incluye una descripcion detallada de los principales mecanismos:
-* Gestion de memoria 
+* Gestion de memoria. Asegurate de hacer mencion al pipeline de operaciones de la memoria proyectada y su naturaleza "registrable".
 * Gestion de la identidad del agente
 * Gestion de habilidades (skills)
 * Gestion de eventos
-* Indexacion de documentos. juego de herramientas, y mecanismo que emplea para el indexado de los documentos.
 * Gestion de la seguridad:
   * restriccion de acceso al sistema de ficheros
   * confirmacion por el usuario de operaciones de escritura
   * uso de CI automatico previo a modificaciones de archivos
-* Flujos en el conversation manager.
+* Flujos en el reasoning service.
 * Subagentes
+* Skills
 
 Incluye previo a la seccion de vision general informacion sobre:
 * Versión Analizada
@@ -96,16 +96,29 @@ Los siguientes documentos y proyectos están disponibles y deben enlazarse en ma
 Lista de referencias:
 
 * RCS o JavaRCS: https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs
-* "Las herramientas (AgentTools) y su sistema de paginación": docs/agenttools.md
-* "Servicio de Embeddings (`EmbeddingsService`)": docs/embeddings-service.md
-* "Servicio de compactacion de memoria (`MemoryCompactionService`)": docs/memory-service.md
-* "Servicio de Planificación (`SchedulerService`)": docs/scheduler-service.md
-* "Especificación técnica de la implementación de SensorsService": docs/sensors-service.md
-* "Comunicación Core-UI (Capa de Presentación)": docs/comunicacion-core-ui.md
-* "Gestión de Rutas (AgentPaths)": docs/gestion-de-rutas.md
-* "Inicialización e inyección de dependencias": docs/inicializacion-e-inyeccion-de-dependencias.md
-* "Especificación técnica de la implementación de ReasoningService": docs/reasoning-service.md
-* "Seguridad y Control de Acceso (`AgentAccessControl`)": docs/seguridad-y-control-de-acceso.md
+* "Arranque y ciclo de vida": https://jjdelcerro.github.io/noema/docs/01-fundamentos-y-ciclo-de-vida/02-agent-paths.html
+* "Jerarquía de archivos, AgentPaths": https://jjdelcerro.github.io/noema/docs/01-fundamentos-y-ciclo-de-vida/02-agent-paths.html
+* "Configuración jerárquica con AgentSettings": https://jjdelcerro.github.io/noema/docs/01-fundamentos-y-ciclo-de-vida/03-agent-settings.html
+* "Seguridad y control de acceso, AgentAccessControl": https://jjdelcerro.github.io/noema/docs/01-fundamentos-y-ciclo-de-vida/04-seguridad-y-control-de-acceso.html
+* "Visión general del modelo de memoria": https://jjdelcerro.github.io/noema/docs/02-el-sistema-de-memoria/010-vision-general-de-modelo-de-memoria.html
+* "Memoria episódica, EpisodicMemory": https://jjdelcerro.github.io/noema/docs/02-el-sistema-de-memoria/020-memoria-episodica.html
+* "Memoria consolidada, ConsolidateMemory": https://jjdelcerro.github.io/noema/docs/02-el-sistema-de-memoria/030-memoria-consolidada.html
+* "Memoria reciente, RecentMemory": https://jjdelcerro.github.io/noema/docs/02-el-sistema-de-memoria/040-memoria-reciente.html
+* "Memoria proyectada, ProjectedMemory": https://jjdelcerro.github.io/noema/docs/02-el-sistema-de-memoria/050-memoria-proyectada.html
+* "ReasoningService": https://jjdelcerro.github.io/noema/docs/03-catalogo-de-servicios/01-reasoning.html
+* "MemoryConsolidationService": https://jjdelcerro.github.io/noema/docs/03-catalogo-de-servicios/02-memory-c
+onsolidation.html
+* "SensorsService": https://jjdelcerro.github.io/noema/docs/03-catalogo-de-servicios/03-sensors.html
+* "EmbeddingsService": https://jjdelcerro.github.io/noema/docs/03-catalogo-de-servicios/05-embeddings.html
+* "SchedulerService": https://jjdelcerro.github.io/noema/docs/03-catalogo-de-servicios/04-scheduler.html
+* "Herramientas base y paginación": https://jjdelcerro.github.io/noema/docs/04-subsistemas-de-ejecucion-y-capacidades/01-herramientas-base-y-paginacion.html
+* "Subagentes": https://jjdelcerro.github.io/noema/docs/04-subsistemas-de-ejecucion-y-capacidades/02-subagentes.html
+* "Habilidades procedimentales, skills": https://jjdelcerro.github.io/noema/docs/04-subsistemas-de-ejecucion-y-capacidades/03-skills.md
+* "Scripting": https://jjdelcerro.github.io/noema/docs/04-subsistemas-de-ejecucion-y-capacidades/04-scripting.html
+* "AgentConsole y la comunicacion Core-UI": https://jjdelcerro.github.io/noema/docs/05-capa-de-presentacion-e-interfaces/00-contrato-agentconsole-y-comunicacion.md
+* "Interface swing (GUI)": https://jjdelcerro.github.io/noema/docs/05-capa-de-presentacion-e-interfaces/01-swing.html
+* "Interface Lanterna (TUI)": https://jjdelcerro.github.io/noema/docs/05-capa-de-presentacion-e-interfaces/02-tui.html
+* "Interface web": https://jjdelcerro.github.io/noema/docs/05-capa-de-presentacion-e-interfaces/03-web.html
 
 Cuando incluyas un enlace de la lista anterior, utiliza como **texto visible del enlace únicamente el nombre del concepto o servicio** que hayas introducido (por ejemplo, `ReasoningService`, `MemoryCompactionService`, `AgentAccessControl`, `SchedulerService`). No utilices como texto del enlace títulos largos de documentos ni frases como "Especificación técnica de la implementación de...". Evita introducir el enlace con expresiones como "Documentado en", "Detallado en", "Gobernado por", "Canalizada a través de". En lugar de eso, coloca el enlace directamente como sujeto de la frase o del elemento de lista. 
 

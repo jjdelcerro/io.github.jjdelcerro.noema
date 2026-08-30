@@ -48,7 +48,7 @@ import javax.swing.UIManager;
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.lang3.StringUtils;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
-import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
+import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
 
 public class MainChatPanel extends JPanel {
 
@@ -373,16 +373,16 @@ public class MainChatPanel extends JPanel {
             EpisodicMemory sot = agent.getEpisodicMemory();
 
             // Cargar el punto de guardado (resumen/relato activo) si existe
-            CompactedMemory activeCheckPoint = sot.getLatestCompactedMemory(subchannel);
+            ConsolidateMemory activeConsolidateMemory = sot.getLatestConsolidateMemory(subchannel);
 
             // Cargar la lista de turnos sin consolidar
             List<Turn> turns = sot.getUnconsolidatedTurns(subchannel);
 
             // 2. Renderizar los elementos de forma secuencial en el hilo de Swing (EDT)
 
-            // a) Si hay un CheckPoint anterior, mostramos el relato/resumen consolidado
-            if (activeCheckPoint != null && StringUtils.isNotBlank(activeCheckPoint.getText())) {
-                consoleController.printSystemLog(activeCheckPoint.getText(), AgentConsole.Format.Markdown);
+            // a) Si hay un ConsolidateMemory anterior, mostramos el relato/resumen consolidado
+            if (activeConsolidateMemory != null && StringUtils.isNotBlank(activeConsolidateMemory.getText())) {
+                consoleController.printSystemLog(activeConsolidateMemory.getText(), AgentConsole.Format.Markdown);
             }
 
             // b) Recorremos los turnos no consolidados y dibujamos sus componentes

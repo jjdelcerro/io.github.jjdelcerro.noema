@@ -1,9 +1,9 @@
 package io.github.jjdelcerro.noema.lib.memory.episodic;
 
-import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
+import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
 
 /**
  *
@@ -20,9 +20,9 @@ public interface EpisodicMemory {
   
   List<SubchannelActivity> getSubchannelsActivity(Timestamp oldestActivity);
   
-  CompactedMemory createCompactedMemory(String subchannel, int turnFirst, int turnLast, LocalDateTime timestamp, String text);
+  ConsolidateMemory createConsolidateMemory(String subchannel, int turnFirst, int turnLast, LocalDateTime timestamp, String text);
 
-  CompactedMemory getLatestCompactedMemory(String subchannel);
+  ConsolidateMemory getLatestConsolidateMemory(String subchannel);
 
   Turn createTurn(LocalDateTime timestamp, String contenttype, String subchannel, String textUser, String textModelThinking, String textModel, String toolCall, String toolResult, float[] embedding);
 
@@ -34,14 +34,14 @@ public interface EpisodicMemory {
   void add(Turn turn);
 
   /**
-   * Persiste los metadatos de un CheckPoint en la base de datos.
-   * @param checkpoint
+   * Persiste los metadatos de un ConsolidateMemory en la base de datos.
+   * @param consolidateMemory
    */
-  void add(CompactedMemory checkpoint);
+  void add(ConsolidateMemory consolidateMemory);
 
   /**
    * Recupera todos los turnos que aún no han sido consolidados en un
-   * CheckPoint.
+   * ConsolidateMemory.
    *
    * @param subchannel
    * @return
@@ -54,6 +54,6 @@ public interface EpisodicMemory {
 
   List<Turn> getTurnsByText(String subchannel, String query, int maxResults, double minSimilarity, String annotationType);
 
-  CompactedMemory getCompactedMemoryById(int id);
+  ConsolidateMemory getConsolidateMemoryById(int id);
 
 }

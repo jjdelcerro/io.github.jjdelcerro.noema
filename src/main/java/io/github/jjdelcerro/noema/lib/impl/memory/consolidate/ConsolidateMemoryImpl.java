@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.lib.impl.memory.compacted;
+package io.github.jjdelcerro.noema.lib.impl.memory.consolidate;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -7,7 +7,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
+import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
 
 /**
  * Representa un punto de consolidación de la memoria.
@@ -18,9 +18,9 @@ import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
  * 
  * TODO: Antes CheckPointImpl, habria que actualizar la documentacion con este cambio 
  */
-public class CompactedMemoryImpl implements CompactedMemory {
+public class ConsolidateMemoryImpl implements ConsolidateMemory {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(CompactedMemoryImpl.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ConsolidateMemoryImpl.class);
 
   private int id;
   private final int turnFirst;
@@ -33,7 +33,7 @@ public class CompactedMemoryImpl implements CompactedMemory {
     private final String subchannel;
 
   // Constructor privado
-  private CompactedMemoryImpl(String subchannel, int id, int turnFirst, int turnLast, LocalDateTime timestamp, Path storageFolder) {
+  private ConsolidateMemoryImpl(String subchannel, int id, int turnFirst, int turnLast, LocalDateTime timestamp, Path storageFolder) {
     this.id = id;
     this.turnFirst = turnFirst;
     this.turnLast = turnLast;
@@ -43,20 +43,20 @@ public class CompactedMemoryImpl implements CompactedMemory {
   }
 
   /**
-   * Factoría para rehidratar un CheckPoint desde los metadatos de la Base de
+   * Factoría para rehidratar un ConsolidateMemory desde los metadatos de la Base de
    * Datos. No carga el texto del disco inmediatamente (Lazy Loading).
    */
-  public static CompactedMemoryImpl from(String subchannel, int id, int turnFirst, int turnLast, LocalDateTime timestamp, Path storageFolder) {
-    return new CompactedMemoryImpl(subchannel, id, turnFirst, turnLast, timestamp, storageFolder);
+  public static ConsolidateMemoryImpl from(String subchannel, int id, int turnFirst, int turnLast, LocalDateTime timestamp, Path storageFolder) {
+    return new ConsolidateMemoryImpl(subchannel, id, turnFirst, turnLast, timestamp, storageFolder);
   }
 
   /**
-   * Factoría para crear un NUEVO CheckPoint. - Obtiene el siguiente ID del
-   * contador. - Retorna la instancia para que EpisodicMemory guarde los
-   * metadatos en BD.
+   * Factoría para crear una nueva consolidacion de memoria.
+   * - Obtiene el siguiente ID del contador. 
+   * - Retorna la instancia para que EpisodicMemory guarde los metadatos en BD.
    */
-  public static CompactedMemoryImpl create(String subchannel, int id, int turnFirst, int turnLast, LocalDateTime timestamp, String text, Path storageFolder) {
-    CompactedMemoryImpl cp = new CompactedMemoryImpl(subchannel, id, turnFirst, turnLast, timestamp, storageFolder);
+  public static ConsolidateMemoryImpl create(String subchannel, int id, int turnFirst, int turnLast, LocalDateTime timestamp, String text, Path storageFolder) {
+    ConsolidateMemoryImpl cp = new ConsolidateMemoryImpl(subchannel, id, turnFirst, turnLast, timestamp, storageFolder);
 
     // Inyectamos el texto en cache
     cp.cachedText = text;
@@ -64,14 +64,14 @@ public class CompactedMemoryImpl implements CompactedMemory {
   }
 
   /**
-   * Genera el código único del CheckPoint.Formato:
-   * checkpoint-{id}-{first}-{last}
+   * Genera el código único del ConsolidateMemory. Formato:
+   * consolidatememory-{id}-{first}-{last}
    *
    * @return
    */
   @Override
   public String getCode() {
-    return String.format("checkpoint-%d-%d-%d", id, turnFirst, turnLast);
+    return String.format("consolidatememory-%d-%d-%d", id, turnFirst, turnLast);
   }
 
   public void saveTextToDisk() {
@@ -81,7 +81,7 @@ public class CompactedMemoryImpl implements CompactedMemory {
       }
       Files.writeString(getStoragePath(storageFolder), cachedText, StandardCharsets.UTF_8);
     } catch (IOException e) {
-      throw new RuntimeException("No se pudo persistir el CheckPoint en disco: " + getCode(), e);
+      throw new RuntimeException("No se pudo persistir el ConsolidateMemory en disco: " + getCode(), e);
     }
   }
 
@@ -102,15 +102,15 @@ public class CompactedMemoryImpl implements CompactedMemory {
 
     Path path = getStoragePath(this.storageFolder);
     if (!Files.exists(path)) {
-      LOGGER.warn("No se ha podido localizar el checkpoint en '" + path.getFileName().toString() + "'.");
-      return "Error: El archivo de memoria " + path.getFileName().toString() + " no existe.";
+      LOGGER.warn("No se ha podido localizar el ConsolidateMemory en '" + path.getFileName().toString() + "'.");
+      return "Error: El archivo de ConsolidateMemory " + path.getFileName().toString() + " no existe.";
     }
 
     try {
       cachedText = Files.readString(path, StandardCharsets.UTF_8);
       return cachedText;
     } catch (IOException e) {
-      throw new RuntimeException("Error crítico leyendo CheckPoint del disco: " + getCode(), e);
+      throw new RuntimeException("Error crítico leyendo ConsolidateMemory del disco: " + getCode(), e);
     }
   }
 

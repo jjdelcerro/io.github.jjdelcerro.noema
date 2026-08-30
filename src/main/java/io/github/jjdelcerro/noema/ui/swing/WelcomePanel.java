@@ -6,9 +6,9 @@ import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
-import static io.github.jjdelcerro.noema.lib.services.memory.MemoryCompactionService.MEMORY_MODEL_ID;
-import static io.github.jjdelcerro.noema.lib.services.memory.MemoryCompactionService.MEMORY_PROVIDER_API_KEY;
-import static io.github.jjdelcerro.noema.lib.services.memory.MemoryCompactionService.MEMORY_PROVIDER_URL;
+import static io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService.MEMORY_MODEL_ID;
+import static io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService.MEMORY_PROVIDER_API_KEY;
+import static io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService.MEMORY_PROVIDER_URL;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.main.BootUtils;
@@ -33,7 +33,7 @@ import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService
 import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_PROVIDER_API_KEY;
 import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_MODEL_ID;
 import java.nio.file.Files;
-import io.github.jjdelcerro.noema.lib.services.memory.MemoryCompactionService;
+import io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService;
 
 /**
  * Panel de bienvenida para la selección de workspace y validación de
@@ -125,7 +125,7 @@ Asegúrese de ejecutar el agente en un entorno controlado o con backups actualiz
 
     // Validamos servicios
     AgentServiceFactory convFactory = manager.getServiceFactory(ReasoningService.ID);
-    AgentServiceFactory memFactory = manager.getServiceFactory(MemoryCompactionService.ID);
+    AgentServiceFactory memFactory = manager.getServiceFactory(MemoryConsolidationService.ID);
 
     boolean convOk = convFactory != null && convFactory.canStart(settings);
     boolean memOk = memFactory != null && memFactory.canStart(settings);

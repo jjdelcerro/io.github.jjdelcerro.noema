@@ -24,7 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 /**
  * Operation that manages turn pinning for tools declaring
  * {@link AgentTool#shouldPin()}. Retains pinned request-response pairs at the
- * beginning of the projected context after recent memory compactions, and emits
+ * beginning of the projected context after recent consolidation memory, and emits
  * periodic reminders.
  */
 public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
@@ -127,7 +127,7 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
     // 2. Capture newly executed tools requiring pinning
     captureNewPinnedTurns(memory, projectedMessages);
 
-    // 3. Re-inject pinned turns that have been purged by compaction
+    // 3. Re-inject pinned turns that have been purged by consolidation
     reinjectCompactedPinnedTurns(projectedMessages);
 
     // 4. Emit periodic reminder notifications every 5 turns

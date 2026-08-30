@@ -30,7 +30,7 @@ public interface RecentMemory {
     
     public boolean isEmpty();
 
-    RecentMemoryMark getCompactMark();
+    RecentMemoryMark getConsolidateMark();
 
     List<ChatMessage> getMessages();
 
@@ -41,14 +41,15 @@ public interface RecentMemory {
     String getSubchannel();
 
     int getTurnsCount();
-
+    
     /**
-     * Indica si la sesion ha acumulado suficientes turnos para requerir
-     * compactacion.
+     * Evalúa si es necesario consolidar el conocimiento acumulado en una nueva ConsolidateMemory.
+     * Se dispara preventivamente por volumen de turnos para actuar antes de que comience 
+     * la degradación de la atención del LLM, preservando la fidelidad del razonamiento.
      *
      * @return true si el numero de turnos unicos consolidados supera el umbral.
-     */
-    boolean needCompaction();
+     */    
+    boolean needConsolidation();
 
     void remove(RecentMemoryMark mark1, RecentMemoryMark mark2);
 

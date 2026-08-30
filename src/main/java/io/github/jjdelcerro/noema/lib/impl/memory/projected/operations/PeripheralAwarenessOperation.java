@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 import dev.langchain4j.data.message.ChatMessage;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.impl.DateUtils;
-import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory.SubchannelActivity;
 import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemory;
@@ -14,6 +13,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
+import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
 
 public class PeripheralAwarenessOperation implements ProjectedMemoryOperation {
 
@@ -93,7 +93,7 @@ public class PeripheralAwarenessOperation implements ProjectedMemoryOperation {
       boolean isHot = lastTime != null && lastTime.isAfter(hotBoundary);
 
       if (isHot) {
-        CompactedMemory cp = episodicMemory.getLatestCompactedMemory(channel);
+        ConsolidateMemory cp = episodicMemory.getLatestConsolidateMemory(channel);
         String summary = (cp != null) ? cp.getSummary() : null;
 
         if (StringUtils.isNotBlank(summary)) {

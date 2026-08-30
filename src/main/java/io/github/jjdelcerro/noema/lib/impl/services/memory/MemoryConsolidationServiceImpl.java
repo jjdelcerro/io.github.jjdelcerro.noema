@@ -31,8 +31,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
-import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
-import io.github.jjdelcerro.noema.lib.services.memory.MemoryCompactionService;
+import io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService;
+import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
 
 /**
  * Componente cognitivo encargado de la consolidación de la memoria. Ejecuta el
@@ -40,9 +40,9 @@ import io.github.jjdelcerro.noema.lib.services.memory.MemoryCompactionService;
  * 
  * TODO: Antes MemoryServiceImpl, habria que actualizar la documentacion con este cambio 
  */
-public class MemoryCompactionServiceImpl implements MemoryCompactionService {
+public class MemoryConsolidationServiceImpl implements MemoryConsolidationService {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(MemoryCompactionServiceImpl.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MemoryConsolidationServiceImpl.class);
 
   private final Agent agent;
   private final EpisodicMemory episodicMemory;
@@ -52,7 +52,7 @@ public class MemoryCompactionServiceImpl implements MemoryCompactionService {
   private boolean running;
   private final AgentServiceFactory factory;
 
-  public MemoryCompactionServiceImpl(AgentServiceFactory factory, Agent agent) {
+  public MemoryConsolidationServiceImpl(AgentServiceFactory factory, Agent agent) {
     this.factory = factory;
     this.agent = agent;
     this.episodicMemory = agent.getEpisodicMemory();
@@ -67,7 +67,7 @@ public class MemoryCompactionServiceImpl implements MemoryCompactionService {
   @Override
   public void start() {
     String[] resources = new String[]{
-      "var/config/prompts/memory-compaction.md"
+      "var/config/prompts/memory-consolidation.md"
     };
     for (String resPath : resources) {
       this.agent.installResource(resPath);
@@ -75,43 +75,43 @@ public class MemoryCompactionServiceImpl implements MemoryCompactionService {
     this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_MEMORY_PROVIDER) {
       @Override
       public boolean perform(AgentSettings settings) {
-        model = agent.createChatModel(MemoryCompactionService.ID);
+        model = agent.createChatModel(MemoryConsolidationService.ID);
         return true;
       }
     });
     this.agent.getActions().addAction(new AbstractAgentAction(this.agent, CHANGE_MEMORY_MODEL) {
       @Override
       public boolean perform(AgentSettings settings) {
-        model = agent.createChatModel(MemoryCompactionService.ID);
+        model = agent.createChatModel(MemoryConsolidationService.ID);
         return true;
       }
     });
-    this.model = this.agent.createChatModel(MemoryCompactionService.ID);
+    this.model = this.agent.createChatModel(MemoryConsolidationService.ID);
     loadSystemPrompt();
     this.running = true;
 
-    this.console.printSystemLog("Memory compaction service " + getModelName());
+    this.console.printSystemLog("Memory consolidation service " + getModelName());
   }
 
   private void loadSystemPrompt() {
-    this.systemPrompt = agent.getResourceAsString("var/config/prompts/memory-compaction.md");
+    this.systemPrompt = agent.getResourceAsString("var/config/prompts/memory-consolidation.md");
     if (this.systemPrompt.isEmpty()) {
-      throw new RuntimeException("No se pudo cargar el prompt del MemoryCompactionService");
+      throw new RuntimeException("No se pudo cargar el prompt del MemoryConsolidationService");
     }
   }
 
   /**
    * Ejecuta el proceso de compactación.
    *
-   * @param previous El CheckPoint anterior (puede ser null si es la primera
+   * @param previous El ConsolidateMemory anterior (puede ser null si es la primera
    * vez).
    * @param newTurns La lista de turnos recientes a consolidar.
-   * @return Un nuevo CheckPoint TRANSITORIO (ID -1) con el texto generado.
+   * @return Un nuevo ConsolidateMemory TRANSITORIO (ID -1) con el texto generado.
    */
   @Override
-  public CompactedMemory compact(String subchannel, CompactedMemory previous, List<Turn> newTurns) {
+  public ConsolidateMemory consolide(String subchannel, ConsolidateMemory previous, List<Turn> newTurns) {
     if (newTurns == null || newTurns.isEmpty()) {
-      throw new IllegalArgumentException("No hay turnos para compactar.");
+      throw new IllegalArgumentException("No hay turnos para consolidar.");
     }
     Set<Integer> validTurnIds = new HashSet<>();
     if( previous != null ) {
@@ -128,8 +128,8 @@ public class MemoryCompactionServiceImpl implements MemoryCompactionService {
     
     String userPrompt = buildUserPrompt(previous, newTurns);
 
-    LOGGER.info("Iniciando compactación de " + newTurns.size() + " turnos.");
-    this.console.printSystemLog("Iniciando compactación de " + newTurns.size() + " turnos...");
+    LOGGER.info("Iniciando consolidación de " + newTurns.size() + " turnos.");
+    this.console.printSystemLog("Iniciando consolidación de " + newTurns.size() + " turnos...");
     AiMessage response = model.generate(
             SystemMessage.from(this.systemPrompt),
             UserMessage.from(userPrompt)
@@ -148,16 +148,12 @@ public class MemoryCompactionServiceImpl implements MemoryCompactionService {
     int firstId = newTurns.getFirst().getId();
     int lastId = newTurns.getLast().getId();
 
-    // TODO: Si venimos de un CP anterior, el rango empieza donde empezaba aquel (historia acumulada)
-    // Opcional: Si queremos que el CP represente TODA la historia, firstId debería ser el del CP previo.
-    // Si queremos que represente el bloque consolidado, se mantiene el actual.
-    // Según tu arquitectura de "El Viaje" acumulativo, el 'first' debería ser el inicio de los tiempos.
     if (previous != null) {
       firstId = previous.getTurnFirst();
     }
 
-    CompactedMemory cp = this.episodicMemory.createCompactedMemory(subchannel, firstId, lastId, LocalDateTime.now(), generatedText);
-    LOGGER.info("Compactacion finalizada.");
+    ConsolidateMemory cp = this.episodicMemory.createConsolidateMemory(subchannel, firstId, lastId, LocalDateTime.now(), generatedText);
+    LOGGER.info("Consolidación finalizada.");
     return cp;
   }
 
@@ -192,7 +188,7 @@ public class MemoryCompactionServiceImpl implements MemoryCompactionService {
     return foundIds;
   }
 
-  private String buildUserPrompt(CompactedMemory previous, List<Turn> newTurns) {
+  private String buildUserPrompt(ConsolidateMemory previous, List<Turn> newTurns) {
     StringBuilder sb = new StringBuilder();
 
     // --- CONTEXTO PREVIO (Si existe) ---
@@ -235,7 +231,7 @@ public class MemoryCompactionServiceImpl implements MemoryCompactionService {
   public ModelParameters getModelParameters(String name) {
     AgentSettings settings = this.agent.getSettings();
     switch (name) {
-      case MemoryCompactionService.ID:
+      case MemoryConsolidationService.ID:
         return new ModelParametersImpl(
                 settings.getPropertyAsString(MEMORY_PROVIDER_URL),
                 settings.getPropertyAsString(MEMORY_PROVIDER_API_KEY),

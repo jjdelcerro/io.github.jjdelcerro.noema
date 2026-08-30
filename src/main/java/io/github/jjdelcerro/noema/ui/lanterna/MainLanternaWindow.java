@@ -39,7 +39,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import org.apache.commons.lang3.StringUtils;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
-import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
+import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
 
 @SuppressWarnings("UseSpecificCatch")
 public class MainLanternaWindow extends BasicWindow {
@@ -441,11 +441,11 @@ public class MainLanternaWindow extends BasicWindow {
         String subchannel = agent.getCurrentSubchannel();
         try {
             EpisodicMemory sot = agent.getEpisodicMemory();
-            CompactedMemory activeCheckPoint = sot.getLatestCompactedMemory(subchannel);
+            ConsolidateMemory activeConsolidateMemory = sot.getLatestConsolidateMemory(subchannel);
             List<Turn> turns = sot.getUnconsolidatedTurns(subchannel);
 
-            if (activeCheckPoint != null && StringUtils.isNotBlank(activeCheckPoint.getText())) {
-                console.printSystemLog(activeCheckPoint.getText(), AgentConsole.Format.Markdown);
+            if (activeConsolidateMemory != null && StringUtils.isNotBlank(activeConsolidateMemory.getText())) {
+                console.printSystemLog(activeConsolidateMemory.getText(), AgentConsole.Format.Markdown);
             }
 
             for (Turn turn : turns) {

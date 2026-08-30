@@ -38,7 +38,14 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
+import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
+import io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService;
+import static io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService.MEMORY_MODEL_ID;
+import static io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService.MEMORY_PROVIDER_API_KEY;
+import static io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService.MEMORY_PROVIDER_URL;
+import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_MODEL_ID;
+import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_PROVIDER_API_KEY;
+import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_PROVIDER_URL;
 
 @Tag("e2e")
 public class NeedleInHaystackE2ETest {
@@ -64,12 +71,13 @@ public class NeedleInHaystackE2ETest {
             testProps.load(r);
         }
 
+        // FIXME: usar las constantes de los inerfaces de los servicios.
         boolean hasCredentials = StringUtils.isNotBlank(testProps.getProperty("reasoning.provider.url"))
                 && StringUtils.isNotBlank(testProps.getProperty("reasoning.provider.api_key"))
                 && StringUtils.isNotBlank(testProps.getProperty("reasoning.provider.model_id"))
-                && StringUtils.isNotBlank(testProps.getProperty("compaction_memory.provider.url"))
-                && StringUtils.isNotBlank(testProps.getProperty("compaction_memory.provider.api_key"))
-                && StringUtils.isNotBlank(testProps.getProperty("compaction_memory.provider.model_id"));
+                && StringUtils.isNotBlank(testProps.getProperty("memory_consolidation.provider.url"))
+                && StringUtils.isNotBlank(testProps.getProperty("memory_consolidation.provider.api_key"))
+                && StringUtils.isNotBlank(testProps.getProperty("memory_consolidation.provider.model_id"));
 
         if (!hasCredentials) {
             System.out.println(">>> [E2E SKIPPED] Credenciales incompletas en: " + propsPath);
@@ -103,13 +111,13 @@ public class NeedleInHaystackE2ETest {
         settings.load();
 
         // Inyectamos credenciales y modelos reales
-        settings.setProperty("reasoning/provider/url", testProps.getProperty("reasoning.provider.url"));
-        settings.setProperty("reasoning/provider/api_key", testProps.getProperty("reasoning.provider.api_key"));
-        settings.setProperty("reasoning/provider/model_id", testProps.getProperty("reasoning.provider.model_id"));
+        settings.setProperty(REASONING_PROVIDER_URL, testProps.getProperty(REASONING_PROVIDER_URL.replace('/', '.')));
+        settings.setProperty(REASONING_PROVIDER_API_KEY, testProps.getProperty(REASONING_PROVIDER_API_KEY.replace('/', '.')));
+        settings.setProperty(REASONING_MODEL_ID, testProps.getProperty(REASONING_MODEL_ID.replace('/', '.')));
 
-        settings.setProperty("memory_compaction/provider/url", testProps.getProperty("memory_compaction.provider.url"));
-        settings.setProperty("memory_compaction/provider/api_key", testProps.getProperty("memory_compaction.provider.api_key"));
-        settings.setProperty("memory_compaction/provider/model_id", testProps.getProperty("memory_compaction.provider.model_id"));
+        settings.setProperty(MEMORY_PROVIDER_URL, testProps.getProperty(MEMORY_PROVIDER_URL.replace('/', '.')));
+        settings.setProperty(MEMORY_PROVIDER_API_KEY, testProps.getProperty(MEMORY_PROVIDER_API_KEY.replace('/', '.')));
+        settings.setProperty(MEMORY_MODEL_ID, testProps.getProperty(MEMORY_MODEL_ID.replace('/', '.')));
 
         // Politicas de ejecucion desatendida
         settings.setProperty("access_control/humanConfirmationRequired", "false");
@@ -193,10 +201,10 @@ public class NeedleInHaystackE2ETest {
         String res3 = sendUserMessageAndWait(prompt3);
         assertNotNull(res3);
 
-        // Verificamos que se ha generado al menos un CheckPoint en la base de datos
-        CompactedMemory checkpoint = agent.getEpisodicMemory().getLatestCompactedMemory(Agent.DEFAULT_SUBCHANNEL);
-        assertNotNull(checkpoint, "La memoria deberia haberse compactado generando al menos un CheckPoint.");
-        System.out.println(">>> [E2E INFO] CheckPoint generado: " + checkpoint.getCode());
+        // Verificamos que se ha generado al menos un ConsolidateMemory en la base de datos
+        ConsolidateMemory consolidateMemory = agent.getEpisodicMemory().getLatestConsolidateMemory(Agent.DEFAULT_SUBCHANNEL);
+        assertNotNull(consolidateMemory, "La memoria deberia haberse compactado generando al menos un ConsolidateMemory.");
+        System.out.println(">>> [E2E INFO] ConsolidateMemory generado: " + consolidateMemory.getCode());
 
         // --- ACTO 4: Interrogatorio final sobre las tres agujas ---
 

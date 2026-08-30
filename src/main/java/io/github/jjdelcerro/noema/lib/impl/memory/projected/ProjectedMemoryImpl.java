@@ -15,7 +15,6 @@ import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.DateUtils;
 import io.github.jjdelcerro.noema.lib.impl.memory.GsonUtils;
 import io.github.jjdelcerro.noema.lib.memory.recent.RecentMemory;
-import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +43,7 @@ import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemory;
 import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemoryOperation;
 import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemoryOperationFactory;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_HIGH;
+import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
 
 public class ProjectedMemoryImpl implements ProjectedMemory {
 
@@ -121,13 +121,13 @@ public class ProjectedMemoryImpl implements ProjectedMemory {
   @Override
   public List<ChatMessage> getMessages(
           RecentMemory recentMemory,
-          CompactedMemory compactedMemory,
+          ConsolidateMemory consolidateMemory,
           String systemPrompt
   ) {
     List<ChatMessage> projectedMessages = new ArrayList<>();
 
     // 1. Capa base: Prompt de sistema + Memoria Compactada (Relato)
-    assembleSystemContext(projectedMessages, systemPrompt, compactedMemory);
+    assembleSystemContext(projectedMessages, systemPrompt, consolidateMemory);
 
     // 2. Capa conversacional: Copia de trabajo de los mensajes recientes
     if (recentMemory != null) {
@@ -158,17 +158,17 @@ public class ProjectedMemoryImpl implements ProjectedMemory {
     return Collections.unmodifiableList(projectedMessages);
   }
 
-  private void assembleSystemContext(List<ChatMessage> projectedMessages, String baseSystemPrompt, CompactedMemory compactedMemory) {
+  private void assembleSystemContext(List<ChatMessage> projectedMessages, String baseSystemPrompt, ConsolidateMemory consolidateMemory) {
     StringBuilder sb = new StringBuilder();
     if (StringUtils.isNotBlank(baseSystemPrompt)) {
       sb.append(baseSystemPrompt);
     }
 
-    if (compactedMemory != null && StringUtils.isNotBlank(compactedMemory.getText())) {
+    if (consolidateMemory != null && StringUtils.isNotBlank(consolidateMemory.getText())) {
       sb.append("\n\n## Contexto consolidado de la conversacion\n");
-      sb.append("Resumen actualizado hasta: ").append(DateUtils.toString(compactedMemory.getTimestamp())).append(".\n\n");
+      sb.append("Resumen actualizado hasta: ").append(DateUtils.toString(consolidateMemory.getTimestamp())).append(".\n\n");
       sb.append("--- INICIO DEL RELATO NARRATIVO ---\n");
-      sb.append(compactedMemory.getText()).append("\n");
+      sb.append(consolidateMemory.getText()).append("\n");
       sb.append("--- FIN DEL RELATO NARRATIVO ---\n");
     }
 

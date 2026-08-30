@@ -4,9 +4,9 @@ import dev.langchain4j.data.message.ChatMessage;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.memory.recent.RecentMemory;
-import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
 import java.time.LocalDateTime;
 import java.util.List;
+import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
 
 public interface ProjectedMemory {
 
@@ -15,13 +15,13 @@ public interface ProjectedMemory {
    * LLM.
    *
    * @param recentMemory
-   * @param compactedMemory
+   * @param consolidateMemory
    * @param systemPrompt
    * @return
    */
   public List<ChatMessage> getMessages(
           RecentMemory recentMemory,
-          CompactedMemory compactedMemory,
+          ConsolidateMemory consolidateMemory,
           String systemPrompt
   );
 

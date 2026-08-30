@@ -184,7 +184,6 @@ public class AgentSettingsImpl extends AgentSettingsGroupImpl implements AgentSe
       "var/config/available_tools.properties",
       "var/config/settings.json",
       "var/config/settingsui.json",
-      "var/skills/readme.md",
       "var/identity/core/readme.md",
       "var/identity/environ/readme.md"
     };

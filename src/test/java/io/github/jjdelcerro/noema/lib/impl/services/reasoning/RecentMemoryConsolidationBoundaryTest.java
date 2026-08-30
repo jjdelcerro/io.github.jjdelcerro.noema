@@ -22,14 +22,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class RecentMemoryCompactionBoundaryTest {
+public class RecentMemoryConsolidationBoundaryTest {
 
     private FakeRecentMemory recentMemory;
 
     @BeforeEach
     public void setUp() {
         recentMemory = new FakeRecentMemory(Agent.DEFAULT_SUBCHANNEL);
-        recentMemory.setNeedCompaction(false);
+        recentMemory.setNeedConsolidation(false);
     }
 
     // =========================================================================
@@ -83,7 +83,7 @@ public class RecentMemoryCompactionBoundaryTest {
 
         // mid = 20 / 2 = 10 (UserMessage del turno 6).
         // getCompactMark() debe avanzar hasta el indice 11 (AiMessage del turno 6).
-        RecentMemory.RecentMemoryMark compactMark = recentMemory.getCompactMark();
+        RecentMemory.RecentMemoryMark compactMark = recentMemory.getConsolidateMark();
         assertNotNull(compactMark);
         assertEquals(6, compactMark.getTurnId());
         assertTrue(compactMark.getMessage() instanceof AiMessage);
@@ -110,7 +110,7 @@ public class RecentMemoryCompactionBoundaryTest {
 
         // mid = 18 / 2 = 9 (AiMessage del turno 5).
         // Debe cerrar exactamente en el indice 9 (turno 5 completo).
-        RecentMemory.RecentMemoryMark compactMark = recentMemory.getCompactMark();
+        RecentMemory.RecentMemoryMark compactMark = recentMemory.getConsolidateMark();
         assertNotNull(compactMark);
         assertEquals(5, compactMark.getTurnId());
 
@@ -145,7 +145,7 @@ public class RecentMemoryCompactionBoundaryTest {
         // mid = 20 / 2 = 10 (UserMessage del turno 6).
         // En el bug anterior, si mid caia en 8 (ResultA - Turn 4), cortaba dejando ResultB (indice 9) huerfano.
         // Con la correccion, getCompactMark() DEBE avanzar obligatoriamente hasta consumir ResultB si corta el bloque.
-        RecentMemory.RecentMemoryMark compactMark = recentMemory.getCompactMark();
+        RecentMemory.RecentMemoryMark compactMark = recentMemory.getConsolidateMark();
         assertNotNull(compactMark);
 
         recentMemory.remove(recentMemory.getOldestMark(), compactMark);
@@ -171,7 +171,7 @@ public class RecentMemoryCompactionBoundaryTest {
 
         // mid = 80 / 2 = 40 (UserMessage del turno 21).
         // Debe avanzar al indice 41 (AiMessage del turno 21).
-        RecentMemory.RecentMemoryMark compactMark = recentMemory.getCompactMark();
+        RecentMemory.RecentMemoryMark compactMark = recentMemory.getConsolidateMark();
         assertNotNull(compactMark);
         assertEquals(21, compactMark.getTurnId());
 

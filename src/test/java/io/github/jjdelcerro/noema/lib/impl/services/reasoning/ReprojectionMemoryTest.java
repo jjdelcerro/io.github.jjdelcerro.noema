@@ -55,7 +55,7 @@ public class ReprojectionMemoryTest extends AbstractScriptedTest {
     scriptedModel = new ScriptedChatModel();
 
     recentMemory = new FakeRecentMemory(Agent.DEFAULT_SUBCHANNEL);
-    recentMemory.setNeedCompaction(false);
+    recentMemory.setNeedConsolidation(false);
 
     ReasoningServiceFactory factory = new ReasoningServiceFactory();
     reasoningService = new ReasoningServiceImpl(factory, agent) {

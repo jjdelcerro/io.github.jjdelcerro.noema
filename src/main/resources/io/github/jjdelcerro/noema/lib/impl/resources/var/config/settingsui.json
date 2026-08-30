@@ -45,13 +45,13 @@
         },
         {
           "type": "inputstring",
-          "label": "Turnos para compactar historial",
-          "variableName": "reasoning/compaction_turns"
+          "label": "Turnos para consolidar conocimiento",
+          "variableName": "reasoning/consolidation_turns"
         },
         {
           "type": "inputstring",
-          "label": "Tokens para compactar historial",
-          "variableName": "reasoning/compaction_tokens"
+          "label": "Límite de tokens para consolidación",
+          "variableName": "reasoning/consolidation_tokens"
         },
         {
           "type": "checkedlist",
@@ -71,20 +71,20 @@
     },
     {
       "type": "menu",
-      "label": "Servicio de compactacion de memoria",
+      "label": "Servicio de consolidación de memoria",
       "childs": [
         {
           "type": "combo",
           "childs": "LLM_PROVIDERS_URL",
           "label": "URL del proveedor (memoria)",
-          "variableName": "memory/provider/url",
+          "variableName": "memory_consolidation/provider/url",
           "required": true,
           "actionName": "CHANGE_MEMORY_PROVIDER"
         },
         {
           "type": "combo",
           "label": "API Key (memoria)",
-          "variableName": "memory/provider/api_key",
+          "variableName": "memory_consolidation/provider/api_key",
           "actionName": "CHANGE_MEMORY_PROVIDER",
           "required": true,
           "childs": "APIKEYS"
@@ -92,7 +92,7 @@
         {
           "type": "selectoption",
           "label": "Seleccionar Modelo (memoria)",
-          "variableName": "memory/provider/model_id",
+          "variableName": "memory_consolidation/provider/model_id",
           "actionName": "CHANGE_MEMORY_MODEL",
           "required": true,
           "childs": "LLM_MODELS"

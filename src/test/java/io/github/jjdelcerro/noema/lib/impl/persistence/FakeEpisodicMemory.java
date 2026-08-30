@@ -5,7 +5,7 @@ import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
 import java.time.LocalDateTime;
 import java.util.List;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
-import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
+import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
 
 public class FakeEpisodicMemory implements EpisodicMemory {
 
@@ -14,11 +14,11 @@ public class FakeEpisodicMemory implements EpisodicMemory {
   }
 
   @Override
-  public void add(CompactedMemory checkpoint) {
+  public void add(ConsolidateMemory consolidateMemory) {
   }
 
   @Override
-  public CompactedMemory getLatestCompactedMemory(String subchannel) {
+  public ConsolidateMemory getLatestConsolidateMemory(String subchannel) {
     return null;
   }
 
@@ -38,12 +38,12 @@ public class FakeEpisodicMemory implements EpisodicMemory {
   }
 
   @Override
-  public CompactedMemory getCompactedMemoryById(int id) {
+  public ConsolidateMemory getConsolidateMemoryById(int id) {
     return null;
   }
 
   @Override
-  public CompactedMemory createCompactedMemory(String subchannel, int turnFirst, int turnLast, LocalDateTime timestamp, String text) {
+  public ConsolidateMemory createConsolidateMemory(String subchannel, int turnFirst, int turnLast, LocalDateTime timestamp, String text) {
     return null;
   }
 

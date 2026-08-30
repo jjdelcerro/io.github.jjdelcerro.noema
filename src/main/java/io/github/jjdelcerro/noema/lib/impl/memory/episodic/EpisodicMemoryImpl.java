@@ -1,8 +1,8 @@
 package io.github.jjdelcerro.noema.lib.impl.memory.episodic;
 
 import com.google.gson.JsonObject;
-import io.github.jjdelcerro.noema.lib.impl.memory.compacted.CompactedMemoryImpl;
-import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemoryException;
+import io.github.jjdelcerro.noema.lib.impl.memory.consolidate.ConsolidateMemoryImpl;
+import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemoryException;
 import io.github.jjdelcerro.noema.lib.memory.episodic.TurnException;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
@@ -28,7 +28,7 @@ import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
-import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
+import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
 
 /**
  * Repositorio central que gestiona la persistencia (H2) y la indexación
@@ -44,18 +44,18 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
 
   private static final int MAX_DB_TEXT_SIZE = 2048; // 2KB
 
-  private static final String COMPACTEDMEMORY_FOLDER = "compactedmemory";
+  private static final String CONSOLIDATEMEMORY_FOLDER = "consolidatememory";
   private static final String CSVLOG_FILE = "turns.csv";
 
   private final Counter turnCounter;
-  private final Counter compactedMemoryCounter;
+  private final Counter consolidateMemoryCounter;
   private final Agent agent;
 
   private EpisodicMemoryImpl(Agent agent) {
     this.agent = agent;
     createTables();
     this.turnCounter = Counter.from(this.getConnection(), "episodicmemory");
-    this.compactedMemoryCounter = Counter.from(this.getConnection(), "compactedmemory");
+    this.consolidateMemoryCounter = Counter.from(this.getConnection(), "consolidatememory");
   }
 
   public static EpisodicMemory from(Agent agent) {
@@ -66,8 +66,8 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
     return this.turnCounter;
   }
 
-  private Counter getCompactedMemoryCounter() {
-    return this.compactedMemoryCounter;
+  private Counter getConsolidateMemoryCounter() {
+    return this.consolidateMemoryCounter;
   }
 
   private ConnectionSupplier getConnection() {
@@ -86,7 +86,7 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
 
     try (Connection conn = this.getConnection().get(); Statement stmt = conn.createStatement()) {
       // Tabla de episodicmemory con soporte BLOB para vectores
-      stmt.execute(SQLProvider.from(getConnection()).get("SourceOfTtuth_createTables_turnos", """
+      stmt.execute(SQLProvider.from(getConnection()).get("EpisodicMemory_createTables_turnos", """
             CREATE TABLE IF NOT EXISTS episodicmemory (
                 id INT PRIMARY KEY,
                 timestamp TIMESTAMP,
@@ -102,9 +102,9 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
             )                                                                                              
             """));
 
-      // Tabla de CompactedMemory (solo metadatos)
-      stmt.execute(SQLProvider.from(getConnection()).get("SourceOfTtuth_createTables_checkpoints", """
-                CREATE TABLE IF NOT EXISTS compactedmemory (
+      // Tabla de ConsolidateMemory (solo metadatos)
+      stmt.execute(SQLProvider.from(getConnection()).get("EpisodicMemory_createTables_ConsolidateMemories", """
+                CREATE TABLE IF NOT EXISTS consolidatememory (
                     id INT PRIMARY KEY,
                     cm_first INT,
                     cm_last INT,
@@ -113,7 +113,7 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
                 )
             """));
     } catch (SQLException ex) {
-      throw new RuntimeException("Can't create tables episodicmemory/compactedmemory", ex);
+      throw new RuntimeException("Can't create tables episodicmemory/consolidatememory", ex);
     }
   }
 
@@ -222,40 +222,40 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
   }
 
   /**
-   * Persiste los metadatos de un CompactedMemory en la base de datos.
+   * Persiste los metadatos de un ConsolidateMemory en la base de datos.
    * <p>
    * Nota: El contenido textual (archivo .md) ya debe haber sido gestionado por
-   * la clase CompactedMemory antes de llamar a este método.
+   * la clase ConsolidateMemory antes de llamar a este método.
    * <p>
    * Lógica de ID: - Si cp.getId() < 0: Se genera un nuevo ID usando el contador
-   * interno. @param compactedMemory
+   * interno. @param ConsolidateMemory
    */
   @Override
-  public synchronized void add(CompactedMemory compactedMemory) {
+  public synchronized void add(ConsolidateMemory consolidateMemory) {
     try {
       // 1. Gestión del ID
-      int compactedMemoryId = compactedMemory.getId();
-      if (compactedMemoryId < 0) {
-        compactedMemoryId = this.getCompactedMemoryCounter().get();
-        ((CompactedMemoryImpl) compactedMemory).setId(compactedMemoryId);
+      int consolidateMemoryId = consolidateMemory.getId();
+      if (consolidateMemoryId < 0) {
+        consolidateMemoryId = this.getConsolidateMemoryCounter().get();
+        ((ConsolidateMemoryImpl) consolidateMemory).setId(consolidateMemoryId);
       }
 
       // 2. Persistencia de metadatos
       String sql = SQLProvider.from(getConnection()).get(
-              "SourceOfTtuth_add_checkpoint",
-              "INSERT INTO compactedmemory (id, cm_first, cm_last, timestamp, subchannel) VALUES (?, ?, ?, ?, ?)"
+              "EpisodicMemory_add_ConsolidateMemory",
+              "INSERT INTO consolidatememory (id, cm_first, cm_last, timestamp, subchannel) VALUES (?, ?, ?, ?, ?)"
       );
       try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
-        ps.setInt(1, compactedMemoryId);
-        ps.setInt(2, compactedMemory.getTurnFirst());
-        ps.setInt(3, compactedMemory.getTurnLast());
-        ps.setTimestamp(4, Timestamp.valueOf(compactedMemory.getTimestamp()));
-        ps.setString(5, compactedMemory.getSubchannel());
+        ps.setInt(1, consolidateMemoryId);
+        ps.setInt(2, consolidateMemory.getTurnFirst());
+        ps.setInt(3, consolidateMemory.getTurnLast());
+        ps.setTimestamp(4, Timestamp.valueOf(consolidateMemory.getTimestamp()));
+        ps.setString(5, consolidateMemory.getSubchannel());
         ps.executeUpdate();
       }
-      ((CompactedMemoryImpl) compactedMemory).saveTextToDisk();
+      ((ConsolidateMemoryImpl) consolidateMemory).saveTextToDisk();
     } catch (Exception ex) {
-      throw new CompactedMemoryException("Can't add turn", ex);
+      throw new ConsolidateMemoryException("Can't add turn", ex);
     }
   }
 
@@ -263,7 +263,7 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
   public synchronized Turn getTurnById(int id) {
     try {
       String sql = SQLProvider.from(getConnection()).get(
-              "SourceOfTtuth_getTurnById",
+              "EpisodicMemory_getTurnById",
               "SELECT * FROM episodicmemory WHERE id = ?"
       );
       try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -281,17 +281,17 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
   }
 
   @Override
-  public synchronized CompactedMemory getCompactedMemoryById(int id) {
+  public synchronized ConsolidateMemory getConsolidateMemoryById(int id) {
     try {
       String sql = SQLProvider.from(getConnection()).get(
-              "SourceOfTtuth_getCheckPointById",
-              "SELECT * FROM compactedmemory WHERE id = ?"
+              "EpisodicMemory_getConsolidateMemoryById",
+              "SELECT * FROM consolidatememory WHERE id = ?"
       );
       try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setInt(1, id);
         try (ResultSet rs = ps.executeQuery()) {
           if (rs.next()) {
-            return mapResultSetToCompactedMemory(rs);
+            return mapResultSetToConsolidateMemory(rs);
           }
         }
       }
@@ -303,17 +303,17 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
   }
 
   @Override
-  public synchronized CompactedMemory getLatestCompactedMemory(String subchannel) {
+  public synchronized ConsolidateMemory getLatestConsolidateMemory(String subchannel) {
     try {
       String sql = SQLProvider.from(getConnection()).get(
-              "SourceOfTtuth_getLatestCheckPoint",
-              "SELECT * FROM compactedmemory WHERE subchannel = ? ORDER BY id DESC LIMIT 1"
+              "EpisodicMemory_getLatestConsolidateMemory",
+              "SELECT * FROM consolidatememory WHERE subchannel = ? ORDER BY id DESC LIMIT 1"
       );
       try (Connection conn = getConnection().get(); PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setString(1, subchannel);
         try (ResultSet rs = ps.executeQuery()) {
           if (rs.next()) {
-            return mapResultSetToCompactedMemory(rs);
+            return mapResultSetToConsolidateMemory(rs);
           }
           return null;
         }
@@ -325,7 +325,7 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
 
   /**
    * Recupera todos los turnos que aún no han sido consolidados en un
-   * CompactedMemory. Estrategia: Obtener el último CP y pedir turnos con ID >
+   * ConsolidateMemory. Estrategia: Obtener el último CP y pedir turnos con ID >
    * CP.last_turn_id.
    *
    * @return
@@ -333,12 +333,12 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
   @Override
   public synchronized List<Turn> getUnconsolidatedTurns(String subchannel) {
     try {
-      CompactedMemory lastCp = getLatestCompactedMemory(subchannel);
+      ConsolidateMemory lastCp = getLatestConsolidateMemory(subchannel);
       int thresholdId = (lastCp != null) ? lastCp.getTurnLast() : 0;
 
       List<Turn> result = new ArrayList<>();
       String sql = SQLProvider.from(getConnection()).get(
-              "SourceOfTtuth_getUnconsolidatedTurns",
+              "EpisodicMemory_getUnconsolidatedTurns",
               "SELECT * FROM episodicmemory WHERE id > ? AND subchannel = ? ORDER BY id ASC"
       );
 
@@ -362,7 +362,7 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
     try {
       List<Turn> result = new ArrayList<>();
       String sql = SQLProvider.from(getConnection()).get(
-              "SourceOfTtuth_getTurnsByIds",
+              "EpisodicMemory_getTurnsByIds",
               """
               SELECT * FROM episodicmemory 
                 WHERE 
@@ -456,20 +456,20 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
     );
   }
 
-  private CompactedMemory mapResultSetToCompactedMemory(ResultSet rs) throws SQLException {
-    return CompactedMemoryImpl.from(
+  private ConsolidateMemory mapResultSetToConsolidateMemory(ResultSet rs) throws SQLException {
+    return ConsolidateMemoryImpl.from(
             rs.getString("subchannel"),
             rs.getInt("id"),
             rs.getInt("cm_first"),
             rs.getInt("cm_last"),
             rs.getTimestamp("timestamp").toLocalDateTime(),
-            this.getDataFolder().resolve(COMPACTEDMEMORY_FOLDER)
+            this.getDataFolder().resolve(CONSOLIDATEMEMORY_FOLDER)
     );
   }
 
   @Override
-  public synchronized CompactedMemory createCompactedMemory(String subchannel, int turnFirst, int turnLast, LocalDateTime timestamp, String text) {
-    CompactedMemory cp = CompactedMemoryImpl.create(subchannel, -1, turnFirst, turnLast, timestamp, text, getDataFolder().resolve(COMPACTEDMEMORY_FOLDER));
+  public synchronized ConsolidateMemory createConsolidateMemory(String subchannel, int turnFirst, int turnLast, LocalDateTime timestamp, String text) {
+    ConsolidateMemory cp = ConsolidateMemoryImpl.create(subchannel, -1, turnFirst, turnLast, timestamp, text, getDataFolder().resolve(CONSOLIDATEMEMORY_FOLDER));
     return cp;
   }
 
