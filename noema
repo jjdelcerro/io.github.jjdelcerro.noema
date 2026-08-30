@@ -1,0 +1,16 @@
+#!/bin/bash
+#set -x
+workspace=$PWD
+progdir=$(dirname $0)
+progdir=$(realpath -Ls $progdir)
+if [ -d "$progdir/target" ] ; then
+	jar=$(echo $progdir/target/io.github.jjdelcerro.noema.main-*.jar)
+else
+	jar=$(echo $progdir/io.github.jjdelcerro.noema.main-*.jar)
+fi
+if [ "$1" == "--debug" ] ; then
+	suspend=y
+else
+	suspend=n
+fi
+exec java "-agentlib:jdwp=transport=dt_socket,address=8765,server=y,suspend=${suspend}" --add-modules jdk.incubator.vector --enable-native-access=ALL-UNNAMED -jar "${jar}" $@

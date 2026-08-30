@@ -43,7 +43,7 @@ public class BootUtils {
       System.setProperty("noema.log.path", paths.getLogFolder().toString());
       Configurator.reconfigure();
 
-      File memoryFile = paths.getDataFolder().resolve("memory").normalize().toAbsolutePath().toFile();
+      File memoryFile = paths.getDataFolder().resolve("episodic_memory").normalize().toAbsolutePath().toFile();
       File servicesFile = paths.getDataFolder().resolve("service").normalize().toAbsolutePath().toFile();
 
       // Iniciar el servidor web de H2 (Consola)
@@ -121,9 +121,6 @@ public class BootUtils {
               settings,
               console
       );
-
-      int webPort = settings.getPropertyAsInt("debug/web_port", 8080);
-      NoemaWebServer.startServer(agent, webPort);
 
       return agent;
     } catch (Exception ex) {

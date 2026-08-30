@@ -78,9 +78,9 @@ public class SchedulerServiceImpl implements SchedulerService {
             SENSOR_DESCRIPTION
     );
     try (
-            Connection conn = this.agent.getServicesDatabase().get()) {
+            Connection conn = this.getConnection().get()) {
       this.createTables(conn);
-      this.counter = Counter.from(this.agent.getServicesDatabase(), "SCHEDULER");
+      this.counter = Counter.from(this.getConnection(), "SCHEDULER");
       rescheduleNextAlarm();
       this.running = true;
     } catch (Exception ex) {
@@ -114,7 +114,7 @@ public class SchedulerServiceImpl implements SchedulerService {
             "INSERT INTO SCHEDULER (id, timestamp, alarm_time, reason) VALUES (?, ?, ?, ?)"
     );
     try (
-            Connection conn = this.agent.getServicesDatabase().get(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            Connection conn = this.getConnection().get(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
       pstmt.setString(1, alarmId);
       pstmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
       pstmt.setTimestamp(3, Timestamp.valueOf(when));
@@ -160,7 +160,7 @@ public class SchedulerServiceImpl implements SchedulerService {
             "DELETE FROM SCHEDULER WHERE id = ?"
     );
     try (
-            Connection conn = this.agent.getServicesDatabase().get(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            Connection conn = this.getConnection().get(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
       pstmt.setString(1, id);
       pstmt.executeUpdate();
     } catch (Exception ex) {
@@ -178,7 +178,7 @@ public class SchedulerServiceImpl implements SchedulerService {
             "SELECT id, reason, alarm_time FROM SCHEDULER WHERE alarm_time > ? ORDER BY alarm_time ASC LIMIT 1"
     );
     try (
-            Connection conn = this.agent.getServicesDatabase().get(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            Connection conn = this.getConnection().get(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
       pstmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()));
       try (ResultSet rs = pstmt.executeQuery()) {
         if (rs.next()) {
@@ -206,7 +206,10 @@ public class SchedulerServiceImpl implements SchedulerService {
 
   @Override
   public boolean canStart() {
-    return this.factory.canStart(agent.getSettings());
+    if( !this.factory.canStart(agent.getSettings()) ) {
+      return false;
+    }
+    return this.agent.getServicesDatabase() != null ;
   }
 
   @Override

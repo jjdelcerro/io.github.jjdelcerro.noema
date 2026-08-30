@@ -12,12 +12,12 @@ import io.github.jjdelcerro.noema.lib.memory.compacted.CompactedMemory;
  */
 public interface MemoryCompactionService extends AgentService {
 
-  String MEMORY_MODEL_ID = "memory/provider/model_id";
-  String MEMORY_PROVIDER_API_KEY = "memory/provider/api_key";
-  String MEMORY_PROVIDER_URL = "memory/provider/url";
+  String MEMORY_MODEL_ID = "memory_compaction/provider/model_id";
+  String MEMORY_PROVIDER_API_KEY = "memory_compaction/provider/api_key";
+  String MEMORY_PROVIDER_URL = "memory_compaction/provider/url";
 
-  String NAME = "Memory";
-  String ID = "MEMORY";
+  String NAME = "MemoryCompaction";
+  String ID = "MEMORYCOMPACTION";
 
   /**
    * Ejecuta el proceso de compactación.

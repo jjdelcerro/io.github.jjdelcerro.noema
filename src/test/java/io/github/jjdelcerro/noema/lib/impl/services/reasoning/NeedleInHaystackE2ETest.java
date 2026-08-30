@@ -67,9 +67,9 @@ public class NeedleInHaystackE2ETest {
         boolean hasCredentials = StringUtils.isNotBlank(testProps.getProperty("reasoning.provider.url"))
                 && StringUtils.isNotBlank(testProps.getProperty("reasoning.provider.api_key"))
                 && StringUtils.isNotBlank(testProps.getProperty("reasoning.provider.model_id"))
-                && StringUtils.isNotBlank(testProps.getProperty("memory.provider.url"))
-                && StringUtils.isNotBlank(testProps.getProperty("memory.provider.api_key"))
-                && StringUtils.isNotBlank(testProps.getProperty("memory.provider.model_id"));
+                && StringUtils.isNotBlank(testProps.getProperty("compaction_memory.provider.url"))
+                && StringUtils.isNotBlank(testProps.getProperty("compaction_memory.provider.api_key"))
+                && StringUtils.isNotBlank(testProps.getProperty("compaction_memory.provider.model_id"));
 
         if (!hasCredentials) {
             System.out.println(">>> [E2E SKIPPED] Credenciales incompletas en: " + propsPath);
@@ -107,9 +107,9 @@ public class NeedleInHaystackE2ETest {
         settings.setProperty("reasoning/provider/api_key", testProps.getProperty("reasoning.provider.api_key"));
         settings.setProperty("reasoning/provider/model_id", testProps.getProperty("reasoning.provider.model_id"));
 
-        settings.setProperty("memory/provider/url", testProps.getProperty("memory.provider.url"));
-        settings.setProperty("memory/provider/api_key", testProps.getProperty("memory.provider.api_key"));
-        settings.setProperty("memory/provider/model_id", testProps.getProperty("memory.provider.model_id"));
+        settings.setProperty("memory_compaction/provider/url", testProps.getProperty("memory_compaction.provider.url"));
+        settings.setProperty("memory_compaction/provider/api_key", testProps.getProperty("memory_compaction.provider.api_key"));
+        settings.setProperty("memory_compaction/provider/model_id", testProps.getProperty("memory_compaction.provider.model_id"));
 
         // Politicas de ejecucion desatendida
         settings.setProperty("access_control/humanConfirmationRequired", "false");

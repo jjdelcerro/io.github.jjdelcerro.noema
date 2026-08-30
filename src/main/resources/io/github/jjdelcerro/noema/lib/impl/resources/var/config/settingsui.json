@@ -71,7 +71,7 @@
     },
     {
       "type": "menu",
-      "label": "Servicio de memoria",
+      "label": "Servicio de compactacion de memoria",
       "childs": [
         {
           "type": "combo",
@@ -101,7 +101,25 @@
     },
     {
       "type": "menu",
-      "label": "Telegram",
+      "label": "Servicio de busqueda web",
+      "childs": [
+          {
+            "type": "combo",
+            "label": "Web search, Brave API Key",
+            "variableName": "websearch/brave_api_key",
+            "childs": "APIKEYS"
+          },
+          {
+            "type": "combo",
+            "label": "Web search, Tavily API Key",
+            "variableName": "websearch/tavily_api_key",
+            "childs": "APIKEYS"
+          }
+        ]
+    },
+    {
+      "type": "menu",
+      "label": "Servicio de Telegram",
       "childs": [
         {
           "type": "inputstring",
@@ -117,7 +135,7 @@
     },
     {
       "type": "menu",
-      "label": "Correo electronico",
+      "label": "Servicio de correo electronico",
       "childs": [
         {
           "type": "inputstring",
@@ -148,53 +166,95 @@
     },
     {
       "type": "menu",
-      "label": "Ingesta de documentos",
+      "label": "Control de acceso",
       "childs": [
         {
           "type": "menu",
-          "label": "Modelo de Razonamiento (Estructura)",
+          "label": "Permisos",
           "childs": [
             {
               "type": "combo",
-              "childs": "LLM_PROVIDERS_URL",
-              "label": "URL del proveedor (documentos razonamiento)",
-              "variableName": "document/reasoning/provider/url"
+              "label": "Pedir confirmación al usuario para operaciones de escritura/ejecucion/acceso a internet",
+              "variableName": "access_control/humanConfirmationRequired",
+              "actionName": "RELOAD_ACCESS_CONTROL",
+              "childs": [
+                {"type": "value", "label": "Sí", "value": "true"},
+                {"type": "value", "label": "No", "value": "false"}
+              ]
             },
             {
               "type": "combo",
-              "label": "API Key (documentos razonamiento)",
-              "variableName": "document/reasoning/provider/api_key",
-              "childs": "APIKEYS"
+              "label": "Permitir escritura en disco",
+              "variableName": "access_control/allow_disk_write",
+              "actionName": "RELOAD_ACCESS_CONTROL",
+              "childs": [
+                {"type": "value", "label": "Sí", "value": "true"},
+                {"type": "value", "label": "No", "value": "false"}
+              ]
             },
             {
-              "type": "selectoption",
-              "label": "Seleccionar Modelo (documentos razonamiento)",
-              "variableName": "document/reasoning/provider/model_id",
-              "childs": "LLM_MODELS"
+              "type": "combo",
+              "label": "Permitir acceso a internet",
+              "variableName": "access_control/allow_internet_access",
+              "actionName": "RELOAD_ACCESS_CONTROL",
+              "childs": [
+                {"type": "value", "label": "Sí", "value": "true"},
+                {"type": "value", "label": "No", "value": "false"}
+              ]
+            },
+            {
+              "type": "combo",
+              "label": "Permitir ejecución de comandos (Shell)",
+              "variableName": "access_control/allow_shell_execution",
+              "actionName": "RELOAD_ACCESS_CONTROL",
+              "childs": [
+                {"type": "value", "label": "Sí", "value": "true"},
+                {"type": "value", "label": "No", "value": "false"}
+              ]
+            },
+            {
+              "type": "combo",
+              "label": "Habilitar firejail si esta disponible",
+              "variableName": "access_control/enable_firejail",
+              "actionName": "RELOAD_ACCESS_CONTROL",
+              "childs": [
+                {"type": "value", "label": "Sí", "value": "true"},
+                {"type": "value", "label": "No", "value": "false"}
+              ]
+            },
+            {
+              "type": "combo",
+              "label": "Habilitar backup automático (RCS)",
+              "variableName": "access_control/enable_rcs_backup",
+              "actionName": "RELOAD_ACCESS_CONTROL",
+              "childs": [
+                {"type": "value", "label": "Sí", "value": "true"},
+                {"type": "value", "label": "No", "value": "false"}
+              ]
             }
           ]
         },
         {
           "type": "menu",
-          "label": "Modelo Básico (Resumen y Categorización)",
+          "label": "Rutas",
           "childs": [
             {
-              "type": "combo",
-              "childs": "LLM_PROVIDERS_URL",
-              "label": "URL del proveedor (documentos basico)",
-              "variableName": "document/basic/provider/url"
+              "type": "paths",
+              "label": "Rutas Externas Permitidas (Whitelist)",
+              "variableName": "access_control/allowed_external_paths",
+              "actionName": "RELOAD_ACCESS_CONTROL"
             },
             {
-              "type": "combo",
-              "label": "API Key (documentos basico)",
-              "variableName": "document/basic/provider/api_key",
-              "childs": "APIKEYS"
+              "type": "paths",
+              "label": "Rutas de Solo Lectura (No Escribibles)",
+              "variableName": "access_control/nom_writable_paths",
+              "actionName": "RELOAD_ACCESS_CONTROL"
             },
             {
-              "type": "selectoption",
-              "label": "Seleccionar Modelo (documentos basico)",
-              "variableName": "document/basic/provider/model_id",
-              "childs": "LLM_MODELS"
+              "type": "paths",
+              "label": "Rutas Prohibidas (No Leíbles)",
+              "variableName": "access_control/nom_readable_paths",
+              "actionName": "RELOAD_ACCESS_CONTROL"
             }
           ]
         }
@@ -202,22 +262,20 @@
     },
     {
       "type": "menu",
-      "label": "Web serach",
+      "label": "Server",
       "childs": [
-          {
-            "type": "combo",
-            "label": "Web search, Brave API Key",
-            "variableName": "websearch/brave_api_key",
-            "childs": "APIKEYS"
-          },
-          {
-            "type": "combo",
-            "label": "Web search, Tavily API Key",
-            "variableName": "websearch/tavily_api_key",
-            "childs": "APIKEYS"
-          }
-        ]
-    },
+        {
+          "type": "inputstring",
+          "label": "Puerto del servicio",
+          "variableName": "server/port"
+        },
+        {
+          "type": "inputstring",
+          "label": "Direccion de escucha",
+          "variableName": "server/address"
+        }
+      ]
+    },        
     {
       "type": "menu",
       "label": "Editar dominios",
@@ -274,90 +332,6 @@
           "label": "Muestra el dialogo para debug",
           "actionName": "DEBUG_DIALOG",
           "scope": "frontend"
-        }
-      ]
-    },
-    {
-      "type": "menu",
-      "label": "Control de acceso",
-      "childs": [
-        {
-          "type": "combo",
-          "label": "Pedir confirmación al usuario para operaciones de escritura/ejecucion/acceso a internet",
-          "variableName": "access_control/humanConfirmationRequired",
-          "actionName": "RELOAD_ACCESS_CONTROL",
-          "childs": [
-            {"type": "value", "label": "Sí", "value": "true"},
-            {"type": "value", "label": "No", "value": "false"}
-          ]
-        },
-        {
-          "type": "combo",
-          "label": "Permitir escritura en disco",
-          "variableName": "access_control/allow_disk_write",
-          "actionName": "RELOAD_ACCESS_CONTROL",
-          "childs": [
-            {"type": "value", "label": "Sí", "value": "true"},
-            {"type": "value", "label": "No", "value": "false"}
-          ]
-        },
-        {
-          "type": "combo",
-          "label": "Permitir acceso a internet",
-          "variableName": "access_control/allow_internet_access",
-          "actionName": "RELOAD_ACCESS_CONTROL",
-          "childs": [
-            {"type": "value", "label": "Sí", "value": "true"},
-            {"type": "value", "label": "No", "value": "false"}
-          ]
-        },
-        {
-          "type": "combo",
-          "label": "Permitir ejecución de comandos (Shell)",
-          "variableName": "access_control/allow_shell_execution",
-          "actionName": "RELOAD_ACCESS_CONTROL",
-          "childs": [
-            {"type": "value", "label": "Sí", "value": "true"},
-            {"type": "value", "label": "No", "value": "false"}
-          ]
-        },
-        {
-          "type": "combo",
-          "label": "Habilitar firejail si esta disponible",
-          "variableName": "access_control/enable_firejail",
-          "actionName": "RELOAD_ACCESS_CONTROL",
-          "childs": [
-            {"type": "value", "label": "Sí", "value": "true"},
-            {"type": "value", "label": "No", "value": "false"}
-          ]
-        },
-        {
-          "type": "combo",
-          "label": "Habilitar backup automático (RCS)",
-          "variableName": "access_control/enable_rcs_backup",
-          "actionName": "RELOAD_ACCESS_CONTROL",
-          "childs": [
-            {"type": "value", "label": "Sí", "value": "true"},
-            {"type": "value", "label": "No", "value": "false"}
-          ]
-        },
-        {
-          "type": "paths",
-          "label": "Rutas Externas Permitidas (Whitelist)",
-          "variableName": "access_control/allowed_external_paths",
-          "actionName": "RELOAD_ACCESS_CONTROL"
-        },
-        {
-          "type": "paths",
-          "label": "Rutas de Solo Lectura (No Escribibles)",
-          "variableName": "access_control/nom_writable_paths",
-          "actionName": "RELOAD_ACCESS_CONTROL"
-        },
-        {
-          "type": "paths",
-          "label": "Rutas Prohibidas (No Leíbles)",
-          "variableName": "access_control/nom_readable_paths",
-          "actionName": "RELOAD_ACCESS_CONTROL"
         }
       ]
     }

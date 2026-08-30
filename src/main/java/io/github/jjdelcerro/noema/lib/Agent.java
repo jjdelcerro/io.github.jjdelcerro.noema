@@ -126,7 +126,7 @@ public interface Agent {
 
   public ConnectionSupplier getServicesDatabase();
 
-  public ConnectionSupplier getMemoryDatabase();
+  public ConnectionSupplier getEpisodicMemoryDatabase();
 
   public AgentService getService(String name);
 

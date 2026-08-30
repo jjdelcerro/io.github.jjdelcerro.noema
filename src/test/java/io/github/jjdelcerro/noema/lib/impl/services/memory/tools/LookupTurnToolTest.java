@@ -47,7 +47,7 @@ public class LookupTurnToolTest {
     paths.setupHierarchy();
     AgentSettings settings = new AgentSettingsImpl(paths);
 
-    File memoryFile = tempDir.resolve("memory_lookup_test.db").toFile();
+    File memoryFile = tempDir.resolve("episodic_memory.db").toFile();
     ConnectionSupplier memoryDb = new ConnectionSupplier() {
       @Override
       public Connection get() {

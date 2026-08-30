@@ -38,12 +38,14 @@ public class NoemaWebServer {
 
   private final Agent agent;
   private final int port;
+  private final String address;
   private final Map<String, SseAgentConsole> activeConsoles;
   private Javalin app;
 
-  public NoemaWebServer(Agent agent, int port) {
+  public NoemaWebServer(Agent agent, String address, int port) {
     this.agent = agent;
     this.port = port;
+    this.address = address;
     this.activeConsoles = new ConcurrentHashMap<>();
   }
 
@@ -89,8 +91,8 @@ public class NoemaWebServer {
     this.app.get("/api/files/content", this::handleGetFileContent);
     this.app.post("/api/files/content", this::handlePostFileContent);
 
-    this.app.start(this.port);
-    LOGGER.info("Servidor web de Noema iniciado correctamente en http://localhost:{}", this.port);
+    this.app.start(this.address, this.port);
+    LOGGER.info("Servidor web de Noema iniciado correctamente en http://{}:{}", this.address, this.port);
   }
 
   /**
@@ -108,8 +110,8 @@ public class NoemaWebServer {
   /**
    * Método estático de conveniencia para arranque rápido.
    */
-  public static NoemaWebServer startServer(Agent agent, int port) {
-    NoemaWebServer server = new NoemaWebServer(agent, port);
+  public static NoemaWebServer startServer(Agent agent, String address, int port) {
+    NoemaWebServer server = new NoemaWebServer(agent, address, port);
     server.start();
     return server;
   }

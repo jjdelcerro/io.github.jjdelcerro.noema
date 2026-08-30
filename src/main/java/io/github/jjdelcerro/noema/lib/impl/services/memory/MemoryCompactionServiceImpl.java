@@ -67,7 +67,7 @@ public class MemoryCompactionServiceImpl implements MemoryCompactionService {
   @Override
   public void start() {
     String[] resources = new String[]{
-      "var/config/prompts/memory-compact.md"
+      "var/config/prompts/memory-compaction.md"
     };
     for (String resPath : resources) {
       this.agent.installResource(resPath);
@@ -90,13 +90,13 @@ public class MemoryCompactionServiceImpl implements MemoryCompactionService {
     loadSystemPrompt();
     this.running = true;
 
-    this.console.printSystemLog("Memory service " + getModelName());
+    this.console.printSystemLog("Memory compaction service " + getModelName());
   }
 
   private void loadSystemPrompt() {
-    this.systemPrompt = agent.getResourceAsString("var/config/prompts/memory-compact.md");
+    this.systemPrompt = agent.getResourceAsString("var/config/prompts/memory-compaction.md");
     if (this.systemPrompt.isEmpty()) {
-      throw new RuntimeException("No se pudo cargar el prompt del MemoryManager");
+      throw new RuntimeException("No se pudo cargar el prompt del MemoryCompactionService");
     }
   }
 
@@ -248,7 +248,10 @@ public class MemoryCompactionServiceImpl implements MemoryCompactionService {
 
   @Override
   public boolean canStart() {
-    return this.factory.canStart(agent.getSettings());
+    if( !this.factory.canStart(agent.getSettings()) ) {
+      return false;
+    }
+    return this.agent.getEpisodicMemoryDatabase() != null ;
   }
 
   @Override

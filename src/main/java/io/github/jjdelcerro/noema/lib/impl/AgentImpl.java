@@ -178,10 +178,7 @@ public class AgentImpl implements Agent {
           for (AgentTool tool : tools) {
             reasoning.addTool(tool);
           }
-          getConsole(DEFAULT_SUBCHANNEL).printSystemLog(service.getName() + " tools installed");
         }
-      } else {
-        getConsole(DEFAULT_SUBCHANNEL).printSystemLog(service.getName() + " tools NOT installed");
       }
     }
 
@@ -273,7 +270,7 @@ public class AgentImpl implements Agent {
   }
 
   @Override
-  public ConnectionSupplier getMemoryDatabase() {
+  public ConnectionSupplier getEpisodicMemoryDatabase() {
     return this.memoryDatabase;
   }
 
@@ -403,8 +400,11 @@ public class AgentImpl implements Agent {
 
   private void startAllServices() {
     for (AgentService service : this.services.values()) {
-      if (!service.isRunning()) {
+      if (!service.isRunning() && service.canStart()) {
         service.start();
+        getConsole(DEFAULT_SUBCHANNEL).printSystemLog("Service '"+service.getName() + "' ok");
+      } else {
+        getConsole(DEFAULT_SUBCHANNEL).printSystemLog("Service '"+service.getName() + "' can't start");
       }
     }
   }

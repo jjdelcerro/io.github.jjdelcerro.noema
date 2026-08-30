@@ -270,11 +270,11 @@ public class SubagentImpl implements Subagent {
     }
 
     // Memory prompt: custom from XML or fallback
-    Path memoryPromptPath = promptsDir.resolve("memory-compact.md");
+    Path memoryPromptPath = promptsDir.resolve("compaction-memory.md");
     if (definition.hasMemoryPrompt()) {
       Files.writeString(memoryPromptPath, definition.getMemoryPrompt(), StandardCharsets.UTF_8);
     } else {
-      AgentUtils.installResource(subPaths, "var/config/prompts/memory-compact.md");
+      AgentUtils.installResource(subPaths, "var/config/prompts/compaction-memory.md");
     }
   }
 
@@ -572,8 +572,8 @@ public class SubagentImpl implements Subagent {
   }
 
   @Override
-  public ConnectionSupplier getMemoryDatabase() {
-    return this.subAgent != null ? this.subAgent.getMemoryDatabase() : null;
+  public ConnectionSupplier getEpisodicMemoryDatabase() {
+    return this.subAgent != null ? this.subAgent.getEpisodicMemoryDatabase() : null;
   }
 
   @Override

@@ -71,7 +71,7 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
   }
 
   private ConnectionSupplier getConnection() {
-    return this.agent.getMemoryDatabase();
+    return this.agent.getEpisodicMemoryDatabase();
   }
 
   private Path getDataFolder() {

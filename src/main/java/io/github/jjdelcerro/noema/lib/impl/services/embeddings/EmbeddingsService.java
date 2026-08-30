@@ -95,7 +95,7 @@ public class EmbeddingsService implements AgentService {
 
     @Override
     public void start() {
-        agent.getCurrentConsole().printSystemLog("Cargando motor de embeddings local...");
+//        agent.getCurrentConsole().printSystemLog("Loading local embeddings...");
         
         String[] resources = new String[]{
           "var/models/embeddings/paraphrase-multilingual-MiniLM-L12-v2/model_quantized.onnx",

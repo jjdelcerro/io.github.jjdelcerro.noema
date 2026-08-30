@@ -1,81 +1,103 @@
 {
-  "reasoning": {
+  "memory_compaction": {
     "provider": {
-      "url": "https://llm.chutes.ai/v1",
-      "model_id": "{ \"model\": \"zai-org/GLM-4.7-FP8\", \"context\": 202000}",
-      "api_key": null
-    },
-    "compaction_turns": 40,
-    "compaction_tokens": 60000,
-    "active_tools": {
-      "web_search": false,
-      "email_list_inbox": false,
-      "email_read": false,
-      "email_send": false,
-      "telegram_send": false,
-      "file_write": false,
-      "file_mkdir": false,
-      "file_patch": false,
-      "file_search_and_replace": false,
-      "shell_execute": false
-    },
-    "identity": {
-            "core": {
-                
-            }
-    }
-  },
-  "memory": {
-    "provider": {
-      "url": "https://api.deepseek.com/v1",
-      "model_id": "{ \"model\": \"deepseek-reasoner\", \"context\": 128000 }",
-      "api_key": null
+      "api_key": null,
+      "model_id": "{ \"model\": \"deepseek-v4-pro\", \"context\": 1280000, \"thinking\": { \"type\": \"enabled\" }, \"reasoning_effort\": \"high\" }",
+      "url": "https://api.deepseek.com/v1"
     }
   },
   "debug": {
     "h2_webport": "8082"
   },
-  "email": {
-    "imap_host": null,
-    "smtp_host": null,
-    "user": null,
-    "password": null,
-    "authorized_sender": null
+  "server": {
+    "port": "8080",
+    "address": "127.0.0.1"
   },
-  "telegram": {
-    "chat_id": null,
-    "api_key": null
+  "reasoning": {
+    "compaction_turns": "40",
+    "provider": {
+      "api_key": null,
+      "model_id": "{ \"model\": \"deepseek-v4-flash\", \"context\": 1000000, \"thinking\": { \"type\": \"enabled\" }, \"reasoning_effort\": \"high\" }",
+      "url": "https://api.deepseek.com/v1"
+    },
+    "identity": {
+      "core": {}
+    },
+    "active_tools": [
+      {
+        "checked": false,
+        "value": "email_send"
+      },
+      {
+        "checked": false,
+        "value": "telegram_send"
+      },
+      {
+        "checked": false,
+        "value": "email_read"
+      },
+      {
+        "checked": false,
+        "value": "email_list_inbox"
+      },
+      {
+        "checked": false,
+        "value": "file_recovery"
+      },
+      {
+        "checked": false,
+        "value": "get_weather"
+      },
+      {
+        "checked": false,
+        "value": "get_current_location"
+      },
+      {
+        "checked": false,
+        "value": "activate_skill"
+      },
+      {
+        "checked": false,
+        "value": "deactivate_skill"
+      },
+      {
+        "checked": false,
+        "value": "run_skill_script"
+      },
+      {
+        "checked": false,
+        "value": "read_skill_resource"
+      },
+      {
+        "checked": false,
+        "value": "list_skills"
+      },
+      {
+        "checked": false,
+        "value": "launch_subagent"
+      },
+      {
+        "checked": false,
+        "value": "execute_script"
+      }
+    ],
+    "compaction_tokens": "60000"
   },
+  "access_control": {
+    "enable_rcs_backup": "true",
+    "enable_firejail": "false",
+    "humanConfirmationRequired": "true",
+    "allow_internet_access": "false",
+    "allow_disk_write": "false",
+    "nom_readable_paths": null,
+    "allow_shell_execution": "false",
+    "nom_writable_paths": null,
+    "allowed_external_paths": null
+  },
+  "telegram": {},
+  "email": {},
   "websearch": {
     "brave_api_key": null,
     "tavily_api_key": null
-  },
-  "document": {
-    "reasoning": {
-      "provider": {
-        "url": "https://llm.chutes.ai/v1",
-        "model_id": "tngtech/DeepSeek-TNG-R1T2-Chimera",
-        "api_key": null
-      }
-    },
-    "basic": {
-      "provider": {
-        "url": "https://llm.chutes.ai/v1",
-        "model_id": "zai-org/GLM-4.7-FP8",
-        "api_key": null
-      }
-    }
-  },  
-  "access_control": {
-    "humanConfirmationRequired": true,
-    "allow_disk_write": false,
-    "allow_shell_execution": false,
-    "allow_internet_access": false,    
-    "enable_rcs_backup": true,    
-    "enable_firejail": false,    
-    "allowed_external_paths": [
-    ],
-    "nom_writable_paths": null,
-    "nom_readable_paths": null
   }
 }

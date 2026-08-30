@@ -25,7 +25,7 @@ import java.util.*;
 public class McpServiceImpl implements AgentService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(McpServiceImpl.class);
-  public static final String NAME = "MCP";
+  public static final String NAME = "ModelContextProtocol";
 
   private final AgentServiceFactory factory;
   private final Agent agent;

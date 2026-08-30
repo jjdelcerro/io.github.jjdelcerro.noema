@@ -117,7 +117,7 @@ public class FakeAgent implements Agent {
   }
 
   @Override
-  public ConnectionSupplier getMemoryDatabase() {
+  public ConnectionSupplier getEpisodicMemoryDatabase() {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 

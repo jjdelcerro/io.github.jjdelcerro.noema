@@ -28,7 +28,7 @@ public class AgentActionsImpl implements AgentActions {
       return;
     }
     this.actions.put(action.getName(), action);
-    LOGGER.info("add action '"+action.getName()+"'.");
+//    LOGGER.info("add action '"+action.getName()+"'.");
   }
 
   @Override

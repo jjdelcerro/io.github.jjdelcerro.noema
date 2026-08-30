@@ -68,8 +68,13 @@ public class MainWeb {
       agent = BootUtils.init(settings);
       agent.start();
 
-      int webPort = settings.getPropertyAsInt("debug/web_port", 8080);
+      int port = settings.getPropertyAsInt("server/port", 8080);
+      String address = settings.getPropertyAsString("server/address", "127.0.0.1");
+      
       int h2Port = settings.getPropertyAsInt("debug/h2_webport", 8082);
+      String h2Address = settings.getPropertyAsString("debug/h2_webaddress", "127.0.0.1");
+
+      NoemaWebServer.startServer(agent, address, port);
 
       // 6. Banner informativo de arranque
       System.out.println();
@@ -77,14 +82,13 @@ public class MainWeb {
       System.out.printf("  %s v%s - Modo Servidor Web Activo%n", manager.getName(), manager.getVersion());
       System.out.println("================================================================================");
       System.out.println("  Espacio de trabajo : " + paths.getWorkspaceFolder());
-      System.out.printf("  Interfaz Web       : http://localhost:%d%n", webPort);
-      System.out.printf("  Consola H2         : http://localhost:%d%n", h2Port);
+      System.out.printf("  Interfaz Web       : http://%s:%d%n", address, port);
+      System.out.printf("  Consola H2         : http://%s:%d%n", h2Address, h2Port);
       System.out.println("--------------------------------------------------------------------------------");
       System.out.println("  Presione Ctrl+C para detener el servidor.");
       System.out.println("================================================================================");
       System.out.println();
 
-      // 7. Bloquear el hilo principal manteniendo el proceso activo
       final Agent runningAgent = agent;
       Runtime.getRuntime().addShutdownHook(new Thread(() -> {
         System.out.println("\n[" + logTime() + "] Deteniendo servidor Noema...");
@@ -94,6 +98,7 @@ public class MainWeb {
         }
       }));
 
+      // 7. Bloquear el hilo principal manteniendo el proceso activo
       // Esperar indefinidamente hasta señal de interrupción
       Thread.currentThread().join();
 
