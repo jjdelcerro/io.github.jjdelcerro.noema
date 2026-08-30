@@ -48,8 +48,7 @@ Teniendo en cuenta todo esto prepara un informe que incluya como minimo:
 
     3.  **Servicios Cognitivos** (puedes incluir aqui mencion a la parte de persistencia como algo comun a estos dos servicios).
         *   ReasoningService (Orquestación del pensamiento y subchannels).
-        *   MemoryCompactionService
-        *   EpisodicMemory, ConsolidateMemory, RecentMemory, ProjectedMemory. 
+        *   MemoryConsolidationService
 
 
     4.  **Servicios de Periferia** (asegurate que en esta seccion se incluyan todos los servicios que no esten en el apartado de servicios Cognitivos).
@@ -73,7 +72,7 @@ Opcionalmente puede incluir:
 Organiza las herramientas por bloques funcionales. Ten en cuenta que estas pueden estar implementadas en cualquier parte del codigo, siendo su unica distincion en que son clases que implementan el interface AgentTool. No asumas que solo existen las que se encuentren usadas/nombradas en ficheros de configuracion.
 
 Incluye una descripcion detallada de los principales mecanismos:
-* Gestion de memoria. Asegurate de hacer mencion al pipeline de operaciones de la memoria proyectada y su naturaleza "registrable".
+* Gestion de memoria. Como esta estratificada y por que. Asegurate de hacer mencion al pipeline de operaciones de la memoria proyectada y su naturaleza "registrable".
 * Gestion de la identidad del agente
 * Gestion de habilidades (skills)
 * Gestion de eventos
@@ -120,7 +119,7 @@ onsolidation.html
 * "Interface Lanterna (TUI)": https://jjdelcerro.github.io/noema/docs/05-capa-de-presentacion-e-interfaces/02-tui.html
 * "Interface web": https://jjdelcerro.github.io/noema/docs/05-capa-de-presentacion-e-interfaces/03-web.html
 
-Cuando incluyas un enlace de la lista anterior, utiliza como **texto visible del enlace únicamente el nombre del concepto o servicio** que hayas introducido (por ejemplo, `ReasoningService`, `MemoryCompactionService`, `AgentAccessControl`, `SchedulerService`). No utilices como texto del enlace títulos largos de documentos ni frases como "Especificación técnica de la implementación de...". Evita introducir el enlace con expresiones como "Documentado en", "Detallado en", "Gobernado por", "Canalizada a través de". En lugar de eso, coloca el enlace directamente como sujeto de la frase o del elemento de lista. 
+Cuando incluyas un enlace de la lista anterior, utiliza como **texto visible del enlace únicamente el nombre del concepto o servicio** que hayas introducido (por ejemplo, `ReasoningService`, `MemoryConsolidationService`, `AgentAccessControl`, `SchedulerService`). No utilices como texto del enlace títulos largos de documentos ni frases como "Especificación técnica de la implementación de...". Evita introducir el enlace con expresiones como "Documentado en", "Detallado en", "Gobernado por", "Canalizada a través de". En lugar de eso, coloca el enlace directamente como sujeto de la frase o del elemento de lista. 
 
 Antes de finalizar, revisa que no has dejado sin enlazar ninguna mención a conceptos o servicios que aparecen en la lista de documentación. Si un documento no es mencionado en absoluto, no lo incluyas forzadamente.
 
