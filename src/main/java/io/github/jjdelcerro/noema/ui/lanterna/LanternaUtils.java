@@ -16,8 +16,9 @@ public class LanternaUtils {
   public static final TextColor COLOR_CHATHISTORY_BG = TextColor.Factory.fromString("#0D0F13"); 
 
   // --- ROLES DE CONVERSACION ---
-  public static final TextColor COLOR_ROLE_USER = TextColor.Factory.fromString("#B8A0FF"); 
+  public static final TextColor COLOR_ROLE_USER = TextColor.Factory.fromString("#B8A0FF");
   public static final TextColor COLOR_ROLE_MODEL = TextColor.Factory.fromString("#E9EAF0");
+  public static final TextColor COLOR_ROLE_THINKING = TextColor.Factory.fromString("#A9AAB0");
   public static final TextColor COLOR_ROLE_LOG = TextColor.Factory.fromString("#9296A5"); 
   public static final TextColor COLOR_ROLE_ERR = TextColor.Factory.fromString("#DA6575");
 

@@ -64,7 +64,7 @@ public class AgentLanternaConsoleImpl implements AgentConsole {
 
     @Override
     public void printModelReasoning(String message) {
-        window.appendSystemLog("[RAZONAMIENTO] " + message);
+        window.appendModelThinking(message);
         refreshUi();
     }
 

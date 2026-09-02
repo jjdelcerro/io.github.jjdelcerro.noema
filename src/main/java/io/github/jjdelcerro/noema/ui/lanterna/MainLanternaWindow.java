@@ -452,6 +452,9 @@ public class MainLanternaWindow extends BasicWindow {
                 if (StringUtils.isNotBlank(turn.getTextUser())) {
                     console.printUserMessage(turn.getTextUser());
                 }
+                if (StringUtils.isNotBlank(turn.getTextModelThinking())) {
+                    console.printModelReasoning(turn.getTextModelThinking());
+                }
                 if (StringUtils.isNotBlank(turn.getToolCall())) {
                     console.printSystemLog(turn.getToolCall());
                 }
@@ -538,6 +541,10 @@ public class MainLanternaWindow extends BasicWindow {
 
     public void appendModelResponse(String text) {
         getHistoryChatBox().appendModelResponse(text);
+    }
+
+    public void appendModelThinking(String text) {
+        getHistoryChatBox().appendModelThinking(text);
     }
 
     public void appendSystemLog(String text) {

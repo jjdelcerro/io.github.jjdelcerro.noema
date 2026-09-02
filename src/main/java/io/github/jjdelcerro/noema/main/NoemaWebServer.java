@@ -27,6 +27,7 @@ import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Servidor Web embebido para Noema. Organizado mediante referencias a métodos
@@ -147,16 +148,19 @@ public class NoemaWebServer {
     for (Turn turn : turns) {
       long ts = Timestamp.valueOf(turn.getTimestamp()).getTime();
 
-      if (turn.getTextUser() != null && !turn.getTextUser().trim().isEmpty()) {
+      if (StringUtils.isNotBlank(turn.getTextUser()) ) {
         flatHistory.add(new FlatMessage("user-message", turn.getTextUser(), ts));
       }
+      if (StringUtils.isNotBlank(turn.getTextModelThinking())) {
+        flatHistory.add(new FlatMessage("thinking", turn.getTextModelThinking(), ts));
+      }      
       if (turn.getToolCall() != null && !turn.getToolCall().trim().isEmpty()) {
         flatHistory.add(new FlatMessage("log", turn.getToolCall(), ts));
       }
       if ("error".equals(turn.getContenttype()) && turn.getToolResult() != null) {
         flatHistory.add(new FlatMessage("error", turn.getToolResult(), ts));
       }
-      if (turn.getTextModel() != null && !turn.getTextModel().trim().isEmpty()) {
+      if (StringUtils.isNotBlank(turn.getTextModel())) {
         flatHistory.add(new FlatMessage("response", turn.getTextModel(), ts));
       }
     }
@@ -705,7 +709,7 @@ public class NoemaWebServer {
 
     @Override
     public void printModelReasoning(String message) {
-      broadcast("reasoning", message);
+      broadcast("thinking", message);
     }
   }
 }

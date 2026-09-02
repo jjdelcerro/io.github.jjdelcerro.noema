@@ -392,6 +392,10 @@ public class MainChatPanel extends JPanel {
                     consoleController.printUserMessage(turn.getTextUser());
                 }
 
+                if (StringUtils.isNotBlank(turn.getTextModelThinking())) {
+                    consoleController.printModelReasoning(turn.getTextModelThinking());
+                }
+
                 // Logs de llamadas a herramientas (si las hubo)
                 if (StringUtils.isNotBlank(turn.getToolCall())) {
                     consoleController.printSystemLog(turn.getToolCall());

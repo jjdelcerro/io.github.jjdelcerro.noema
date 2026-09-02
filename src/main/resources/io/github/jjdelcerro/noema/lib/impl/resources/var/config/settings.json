@@ -2,7 +2,7 @@
   "memory_consolidation": {
     "provider": {
       "api_key": null,
-      "model_id": "{ \"model\": \"deepseek-v4-pro\", \"context\": 1280000, \"thinking\": { \"type\": \"enabled\" }, \"reasoning_effort\": \"high\" }",
+      "model_id": "{ \"model\": \"deepseek-v4-pro\", \"context\": 1280000, \"reasoning_effort\": \"high\" }",
       "url": "https://api.deepseek.com/v1"
     }
   },
@@ -18,7 +18,7 @@
     "consolidation_turns": "40",
     "provider": {
       "api_key": null,
-      "model_id": "{ \"model\": \"deepseek-v4-flash\", \"context\": 1000000, \"thinking\": { \"type\": \"enabled\" }, \"reasoning_effort\": \"high\" }",
+      "model_id": "{ \"model\": \"deepseek-v4-flash\", \"context\": 1000000, \"reasoning_effort\": \"high\" }",
       "url": "https://api.deepseek.com/v1"
     },
     "identity": {

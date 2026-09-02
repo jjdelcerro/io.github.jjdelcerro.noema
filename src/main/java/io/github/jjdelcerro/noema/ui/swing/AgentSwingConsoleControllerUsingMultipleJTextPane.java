@@ -24,7 +24,7 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
   private JBubbleTextPanel currentPanel;
 
   public enum MessageType {
-    SYSTEM, SYSTEM_MARKDOWN, ERROR, USER, MODEL
+    SYSTEM, SYSTEM_MARKDOWN, ERROR, USER, MODEL, THINKING
   }
 
   private static class JBubbleTextPanel extends JPanel {
@@ -79,6 +79,8 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
           return "Usuario";
         case MODEL:
           return "Modelo";
+        case THINKING:
+          return "Pensando";
         case SYSTEM:
         default:
           return "Sistema";
@@ -130,6 +132,13 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
     }
   }
 
+  private static class JThinkingPanel extends JBubbleMarkdownPanel {
+
+    public JThinkingPanel() {
+      super(MessageType.THINKING, new Color(80, 170, 110), new JMarkdownPanel());
+    }
+  }
+
   private static class JErrorPanel extends JBubbleTextPanel {
 
     public JErrorPanel() {
@@ -172,6 +181,8 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
         return new JErrorPanel();
       case MODEL:
         return new JModelPanel();
+      case THINKING:
+        return new JThinkingPanel();
       case USER:
         return new JUserPanel();
       case SYSTEM_MARKDOWN:
@@ -227,7 +238,7 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
 
   @Override
   public void printModelReasoning(String m) {
-      addMessage(MessageType.MODEL, m);
+      addMessage(MessageType.THINKING, m);
   }
   
   @Override
@@ -261,6 +272,7 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
             break;
           case USER:
           case MODEL:
+          case THINKING:
           default:
             contents.append(textPanel.getRawText());
             break;

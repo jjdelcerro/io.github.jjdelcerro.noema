@@ -735,12 +735,16 @@ public class ReasoningServiceImpl implements ReasoningService {
               default:
                 contentType = "tool_execution";
             }
+            String aiThinking = StringUtils.defaultIfBlank(aiMessage.thinking(),null);
+            if( aiThinking!=null ) {
+              this.console(currentSubchannel).printModelReasoning(aiThinking);
+            }
             Turn toolTurn = this.episodicMemory.createTurn(
                     LocalDateTime.now(),
                     contentType,
                     currentSubchannel,
                     null,
-                    null,
+                    aiThinking,
                     null,
                     request.toString(),
                     result,
@@ -752,15 +756,21 @@ public class ReasoningServiceImpl implements ReasoningService {
           }
           toolExecutionRetries = 0;
         } else {
-          String aiText = aiMessage.text();
+          String aiText = StringUtils.defaultIfBlank(aiMessage.text(),null);
+          String aiThinking = StringUtils.defaultIfBlank(aiMessage.thinking(),null);
           finalLlmResponse.append(aiText); // No esta claro que sea necesario mantener el finalLlmResponse
-          this.console(currentSubchannel).printModelResponse(aiText);
+          if( aiThinking!=null ) {
+            this.console(currentSubchannel).printModelReasoning(aiThinking);
+          }
+          if( aiText != null) {
+            this.console(currentSubchannel).printModelResponse(aiText);
+          }
           Turn responseTurn = this.episodicMemory.createTurn(
                   LocalDateTime.now(),
                   "chat",
                   currentSubchannel,
                   textUser, // Original (si fue UserEvent) o null (si fue Sensor)
-                  null,
+                  aiThinking,
                   aiText, // Respuesta final del modelo
                   null,
                   null,

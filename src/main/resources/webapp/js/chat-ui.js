@@ -120,6 +120,7 @@ export async function switchTerminal(newTerminalId) {
     activeSseControl = connectSSE(currentTerminalId, {
         onConnectionOpen: () => setConnectionStatus('connected'),
         onConnectionError: () => setConnectionStatus('connecting'),
+        onThinking: (data) => addMessage('thinking', data.content), 
         onResponse: (data) => addMessage('response', data.content),
         onLog: (data) => addMessage('log', data.content),
         onError: (data) => addMessage('error', data.content)
@@ -147,16 +148,15 @@ export function clearChat() {
 }
 
 /**
- * Inyecta un mensaje en el área de chat aplicando la lógica de agrupación y formato.
+ * Inyecta un mensaje en el área de chat aplicando la lógica de agrupación, formato y colapso.
  * 
- * @param {string} type - 'user', 'response', 'log' o 'error'.
+ * @param {string} type - 'user', 'response', 'thinking', 'log' o 'error'.
  * @param {string} content - Contenido del mensaje.
  */
 export function addMessage(type, content) {
     if (!chatArea || !content) return;
 
     const isNearBottom = chatArea.scrollHeight - chatArea.scrollTop - chatArea.clientHeight < 80;
-
     const rawContent = String(content);
 
     // Agrupación consecutiva si es del mismo tipo. Cada bloque conserva el
@@ -179,7 +179,8 @@ export function addMessage(type, content) {
         const actions = document.createElement('div');
         actions.className = 'message-actions';
 
-        if (type === 'log' || type === 'error') {
+        // Botón para colapsar/expandir (colapsado por defecto en logs, errores y razonamiento)
+        if (type === 'log' || type === 'error' || type === 'thinking') {
             block.classList.add('collapsed');
             const collapseButton = document.createElement('button');
             collapseButton.className = 'collapse-message-button';
@@ -192,6 +193,7 @@ export function addMessage(type, content) {
             actions.appendChild(collapseButton);
         }
 
+        // Botón de copiar como Markdown
         const copyButton = document.createElement('button');
         copyButton.className = 'copy-message-button';
         copyButton.type = 'button';
@@ -201,10 +203,17 @@ export function addMessage(type, content) {
         copyButton.addEventListener('click', () => copyBlockAsMarkdown(block, copyButton));
         actions.appendChild(copyButton);
 
-        if (type === 'log' || type === 'error') {
+        // Etiqueta descriptiva en la barra de acciones
+        if (type === 'log' || type === 'error' || type === 'thinking') {
             const blockLabel = document.createElement('span');
             blockLabel.className = 'message-block-label';
-            blockLabel.textContent = type === 'log' ? 'Mensajes del sistema' : 'Incidencias';
+            if (type === 'thinking') {
+                blockLabel.textContent = 'Razonamiento';
+            } else if (type === 'log') {
+                blockLabel.textContent = 'Mensajes del sistema';
+            } else {
+                blockLabel.textContent = 'Incidencias';
+            }
             actions.appendChild(blockLabel);
         }
 
@@ -227,6 +236,7 @@ export function addMessage(type, content) {
 function mapHistoryType(backendType) {
     switch (backendType) {
         case 'user-message': return 'user';
+        case 'thinking': return 'thinking'; 
         case 'response': return 'response';
         case 'log': return 'log';
         case 'error': return 'error';
@@ -284,6 +294,7 @@ async function copyBlockAsMarkdown(block, button) {
 
 function blockHeading(block) {
     if (block.classList.contains('user')) return 'Usuario';
+    if (block.classList.contains('thinking')) return 'Razonamiento';
     if (block.classList.contains('response')) return 'Modelo';
     if (block.classList.contains('error')) return 'Error';
     return 'Sistema';
@@ -344,7 +355,7 @@ async function copyConversation() {
 }
 
 function formatContent(type, content) {
-    if (type === 'response') {
+    if (type === 'response' || type === 'thinking') {
         if (window.marked && window.DOMPurify) {
             const parsed = window.marked.parse(content);
             return window.DOMPurify.sanitize(parsed);

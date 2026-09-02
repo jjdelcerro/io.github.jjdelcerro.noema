@@ -81,6 +81,8 @@ public class ChatModelImpl implements Agent.ChatModel {
                   .apiKey(this.parameters.providerApiKey())
                   .modelName(this.parameters.modelId())
                   .timeout(Duration.ofSeconds(180))
+                  .returnThinking(true)
+                  .sendThinking(true)
                   .logRequests(false)
                   .logResponses(false)
                   .build();
@@ -126,6 +128,8 @@ public class ChatModelImpl implements Agent.ChatModel {
                   .apiKey(this.parameters.providerApiKey())
                   .modelName(this.parameters.modelId())
                   .timeout(Duration.ofSeconds(180))
+                  .returnThinking(true)
+                  .sendThinking(true)
                   .logRequests(false)
                   .logResponses(false)
                   .build();

@@ -61,6 +61,10 @@ public class HistoryChatBox extends TextBox {
         addHistoryLine("[RES] " + text);
     }
 
+    public void appendModelThinking(String text) {
+        addHistoryLine("[THI] " + text);
+    }
+
     public void appendSystemLog(String text) {
         addHistoryLine("[SIS] " + text);
     }
@@ -94,7 +98,9 @@ public class HistoryChatBox extends TextBox {
                 if (line.startsWith("[USR] ")) {
                     sb.append("### 👤 Usuario\n").append(line.substring(6)).append("\n\n");
                 } else if (line.startsWith("[RES] ")) {
-                    sb.append("### 🤖 Noema\n").append(line.substring(6)).append("\n\n");
+                    sb.append("### 🤖 Model\n").append(line.substring(6)).append("\n\n");
+                } else if (line.startsWith("[THI] ")) {
+                    sb.append("### 🤖 Model thinking\n").append(line.substring(6)).append("\n\n");
                 } else if (line.startsWith("[SIS] ")) {
                     sb.append("> **[SIS]** ").append(line.substring(6)).append("\n\n");
                 } else if (line.startsWith("[ERR] ")) {

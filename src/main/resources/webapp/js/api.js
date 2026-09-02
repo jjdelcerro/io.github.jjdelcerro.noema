@@ -66,6 +66,12 @@ export function connectSSE(terminalId, handlers = {}) {
       handlers.onConnectionError(error);
     }
   };
+  
+  eventSource.addEventListener('thinking', (event) => {
+    if (handlers.onThinking) {
+      handlers.onThinking(parseEventData(event.data));
+    }
+  });  
 
   eventSource.addEventListener('response', (event) => {
     if (handlers.onResponse) {

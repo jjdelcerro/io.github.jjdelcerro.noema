@@ -207,6 +207,11 @@ public class ColoredHistoryRenderer extends DefaultTextBoxRenderer {
                 inCodeBlock = false;
                 baseColor = LanternaUtils.COLOR_ROLE_MODEL;
                 body = rawParagraph.substring(6);
+                
+            } else if (rawParagraph.startsWith("[THI] ")) {
+                inCodeBlock = false;
+                baseColor = LanternaUtils.COLOR_ROLE_THINKING;
+                body = rawParagraph.substring(6);
             }
 
             if (body.startsWith("```") || body.startsWith("~~~")) {

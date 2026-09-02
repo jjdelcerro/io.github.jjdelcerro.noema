@@ -442,18 +442,21 @@ button {
 }
 
 .message-block.log.collapsed .message-item,
-.message-block.error.collapsed .message-item {
+.message-block.error.collapsed .message-item,
+.message-block.thinking.collapsed .message-item {
   display: none;
 }
 
 .message-block.log.collapsed,
-.message-block.error.collapsed {
+.message-block.error.collapsed,
+.message-block.thinking.collapsed {
   padding-top: 7px;
   padding-bottom: 7px;
 }
 
 .message-block.log.collapsed .message-actions,
-.message-block.error.collapsed .message-actions {
+.message-block.error.collapsed .message-actions,
+.message-block.thinking.collapsed .message-actions{
   margin-top: 0;
   padding-top: 0;
   border-top: 0;
@@ -463,6 +466,52 @@ button {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid var(--line);
+}
+
+/* Bloque específico para el Razonamiento (Thinking) */
+.message-block.thinking {
+  max-width: 100%;
+  margin: 16px 0 8px 0;
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 3px solid rgba(184, 160, 255, 0.35); /* Barra sutil de acento */
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--muted);                  /* Tono más suave/atenuado que el texto final */
+  font-size: 12.5px;                    /* Letra más pequeña (la base es 14px) */
+  line-height: 1.6;
+}
+
+/* Encabezados y énfasis dentro del bloque de pensamiento */
+.message-block.thinking h1,
+.message-block.thinking h2,
+.message-block.thinking h3,
+.message-block.thinking h4 {
+  font-size: 13px;
+  color: var(--ink);
+  margin: 8px 0 4px;
+}
+
+.message-block.thinking p {
+  margin: 4px 0;
+}
+
+/* Ajuste de bloques de código dentro del razonamiento */
+.message-block.thinking pre {
+  margin: 8px 0;
+  padding: 10px;
+  font-size: 11.5px;
+}
+
+.message-block.thinking code {
+  font-size: 11px;
+}
+
+/* Barra de acciones (botón de copiar) del bloque de pensamiento */
+.message-block.thinking .message-actions {
+  margin-top: 8px;
+  padding-top: 5px;
+  border-top-color: rgba(255, 255, 255, 0.04);
 }
 
 @keyframes appear {
