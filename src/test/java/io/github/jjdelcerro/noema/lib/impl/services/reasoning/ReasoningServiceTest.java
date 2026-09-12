@@ -63,7 +63,7 @@ public class ReasoningServiceTest {
         String respuestaEsperada = "¡Hola! ¿En qué puedo ayudarte?";
         Agent.ChatModel testModel = new FakeChatModel() {
             @Override
-            public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> tools, MutableBoolean abort) {
+            public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications, MutableBoolean abort, Agent.ModelStreamCallback streamCallback) throws Throwable {
                 return Response.from(AiMessage.from(respuestaEsperada), null, FinishReason.STOP);
             }
         };

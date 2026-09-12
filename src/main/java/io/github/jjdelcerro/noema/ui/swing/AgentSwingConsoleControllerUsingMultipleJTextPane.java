@@ -7,6 +7,9 @@ import java.awt.Component;
 import java.awt.Container;
 import java.awt.Insets;
 import java.awt.Window;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.function.Consumer;
 import javax.swing.BorderFactory;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -15,16 +18,76 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.JViewport;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import javax.swing.border.Border;
+import org.apache.commons.lang3.StringUtils;
+import org.checkerframework.checker.units.qual.s;
 
 public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentConsole {
 
   private final JPanel chatContainer;
   private MessageType lastType = null;
-  private JBubbleTextPanel currentPanel;
+  private JBubbleTextPanel currentPanel;  
+  private BufferedOutput bufferedResponse = new BufferedOutput(
+          (String t) -> { addMessage(MessageType.MODEL, t); },
+          500
+  );
+  private BufferedOutput bufferedReasoning = new BufferedOutput(
+          (String t) -> { addMessage(MessageType.THINKING, t); },
+          500
+  );
+  private boolean streaminUsed;
 
   public enum MessageType {
     SYSTEM, SYSTEM_MARKDOWN, ERROR, USER, MODEL, THINKING
+  }
+  
+  private static class BufferedOutput implements ActionListener {
+    private final Consumer<String> output;
+    private final StringBuffer buffer;
+    private final Timer timer;
+    private boolean active; 
+    public BufferedOutput(Consumer<String> output, int delayms) {
+      this.output = output;
+      this.buffer = new StringBuffer();
+      this.timer = new Timer(delayms, this);
+      this.timer.setRepeats(false);
+      this.active = false;
+    }
+    
+    public synchronized void add(String s) {
+      boolean startTimer = this.buffer.length()==0;
+      this.active = true;
+      this.buffer.append(s);
+      if( startTimer ) {
+        timer.start();
+      }
+    }
+
+    @Override
+    public synchronized void actionPerformed(ActionEvent e) {
+      String s = this.buffer.toString();
+      if( StringUtils.isNotBlank(s) ) {
+        this.output.accept(s);
+      }
+      this.buffer.setLength(0);
+    }
+    
+    public synchronized boolean isActive() {
+      return this.active;
+    }
+    
+    public synchronized void endblock() {
+      if( this.buffer.length()>0 ) {
+        this.timer.stop();
+        String s = this.buffer.toString();
+        if( StringUtils.isNotBlank(s) ) {
+          this.output.accept(s);
+        }
+        this.buffer.setLength(0);
+      }
+      this.active = false;
+    }
   }
 
   private static class JBubbleTextPanel extends JPanel {
@@ -61,7 +124,7 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
 
     public void appendText(String text) {
       String oldText = this.contents.getText();
-      String newText = oldText + "\n" + text;
+      String newText = oldText + text;
       this.contents.setText(newText);
       this.contents.setPreferredSize(null);
 //      this.contents.validate();      
@@ -98,6 +161,7 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
       super(type, lineColor, contents);
     }
 
+    @Override
     public void appendText(String text) {
       JMarkdownPanel markdownPanel = (JMarkdownPanel) this.contents;
       String oldMd = markdownPanel.getMarkdownText();
@@ -106,6 +170,7 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
       this.contents.setPreferredSize(null);
     }
 
+    @Override
     public String getRawText() {
       return ((JMarkdownPanel) this.contents).getMarkdownText();
     }
@@ -158,6 +223,9 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
   }
 
   private synchronized void addMessage(MessageType type, String text) {
+    if( StringUtils.isBlank(text) ) {
+      return;
+    }
     SwingUtilities.invokeLater(() -> {
       if (!(type == lastType && currentPanel != null)) {
         this.currentPanel = createBubblePanel(type);
@@ -233,12 +301,50 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
 
   @Override
   public void printModelResponse(String m) {
-    addMessage(MessageType.MODEL, m);
+    if( this.streamingUsed() ) {
+      bufferedResponse.endblock();
+    } else {
+      addMessage(MessageType.MODEL, m);
+    }
   }
 
   @Override
   public void printModelReasoning(String m) {
+    if( this.streamingUsed() ) {
+      bufferedReasoning.endblock();
+    } else {
       addMessage(MessageType.THINKING, m);
+    }
+  }
+  
+  @Override
+  public void StreamReasoning(String s) {
+    this.bufferedReasoning.add(s);
+  }
+
+  @Override
+  public void StreamResponse(String s) {
+    this.bufferedResponse.add(s);
+  }
+
+  @Override
+  public void streamingFinished() {
+    if( this.streamingUsed() ) {
+      this.bufferedReasoning.add("\n");
+      this.bufferedReasoning.endblock();
+      this.bufferedResponse.add("\n");
+      this.bufferedResponse.endblock();
+    }
+  }
+  
+  @Override
+  public boolean streamingUsed() {
+    return this.streaminUsed;
+  }
+  
+  @Override
+  public void setStreamingUsed(boolean used) {
+    this.streaminUsed = used;
   }
   
   @Override

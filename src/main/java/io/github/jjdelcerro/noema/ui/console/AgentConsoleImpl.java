@@ -83,5 +83,25 @@ public class AgentConsoleImpl implements AgentConsole {
     terminal.flush();
     }
 
+  @Override
+  public void StreamReasoning(String s) {
+  }
+
+  @Override
+  public void StreamResponse(String s) {
+  }
+
+  @Override
+  public void streamingFinished() {
+  }
+
+  @Override
+  public boolean streamingUsed() {
+    return false;
+  }
+
+  @Override
+  public void setStreamingUsed(boolean used) {
+  }
   
 }

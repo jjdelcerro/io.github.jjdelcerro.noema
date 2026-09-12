@@ -13,7 +13,7 @@ import java.util.List;
 public class FakeChatModel implements Agent.ChatModel {
 
     @Override
-    public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications, MutableBoolean abort) throws Throwable {
+    public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications, MutableBoolean abort, Agent.ModelStreamCallback streamCallback) throws Throwable {
         return Response.from(AiMessage.from("Respuesta por defecto de FakeChatModel"), null, FinishReason.STOP);
     }
 

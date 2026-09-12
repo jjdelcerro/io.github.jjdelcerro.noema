@@ -27,7 +27,13 @@ import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import org.apache.commons.lang3.StringUtils;
+import static org.jline.utils.Colors.s;
 
 /**
  * Servidor Web embebido para Noema. Organizado mediante referencias a métodos
@@ -148,12 +154,12 @@ public class NoemaWebServer {
     for (Turn turn : turns) {
       long ts = Timestamp.valueOf(turn.getTimestamp()).getTime();
 
-      if (StringUtils.isNotBlank(turn.getTextUser()) ) {
+      if (StringUtils.isNotBlank(turn.getTextUser())) {
         flatHistory.add(new FlatMessage("user-message", turn.getTextUser(), ts));
       }
       if (StringUtils.isNotBlank(turn.getTextModelThinking())) {
         flatHistory.add(new FlatMessage("thinking", turn.getTextModelThinking(), ts));
-      }      
+      }
       if (turn.getToolCall() != null && !turn.getToolCall().trim().isEmpty()) {
         flatHistory.add(new FlatMessage("log", turn.getToolCall(), ts));
       }
@@ -645,6 +651,98 @@ public class NoemaWebServer {
 
     private final String subchannel;
     private final List<SseClient> clients = new CopyOnWriteArrayList<>();
+    private BufferedOutput bufferedResponse = new BufferedOutput(
+            (String t) -> {
+              broadcast("response", t);;
+            },
+            500
+    );
+    private BufferedOutput bufferedReasoning = new BufferedOutput(
+            (String t) -> {
+              broadcast("thinking", t);;
+            },
+            500
+    );
+    private boolean streamingUsed;
+
+    @Override
+    public boolean streamingUsed() {
+      return this.streamingUsed;
+    }
+
+    @Override
+    public void setStreamingUsed(boolean used) {
+      this.streamingUsed = used;
+    }
+
+    private class BufferedOutput {
+
+      private final Consumer<String> output;
+      private final StringBuffer buffer;
+      private boolean active;
+      private final int delayms;
+      private final ScheduledExecutorService scheduler; 
+      private ScheduledFuture<?> task;
+
+      public BufferedOutput(Consumer<String> output, int delayms) {
+        this.output = output;
+        this.buffer = new StringBuffer();
+        this.delayms = delayms;
+        this.scheduler = Executors.newSingleThreadScheduledExecutor(
+            Thread.ofPlatform()
+                  .daemon(true)
+                  .name("noema-buffer-stream-"+subchannel)
+                  .factory()
+        );        
+        this.task = null;
+        this.active = false;
+      }
+
+      public synchronized void add(String s) {
+        boolean startTimer = this.buffer.length() == 0;
+        this.active = true;
+        this.buffer.append(s);
+        if (startTimer && this.task == null ) {
+          this.task = this.scheduler.schedule(this::flush, delayms, TimeUnit.MILLISECONDS);
+        }
+      }
+
+      private synchronized void flush() {
+          String s = buffer.toString();
+          if( StringUtils.isNotBlank(s) ) {
+            try {
+              output.accept(s);
+            } catch(Exception ex) {
+              // Do nothing
+            }
+          }
+          buffer.setLength(0);
+          this.task = null;
+      }
+      
+      public synchronized boolean isActive() {
+        return this.active;
+      }
+
+      public synchronized void endblock() {
+        if( this.task!=null ) {
+          this.task.cancel(false);
+        }
+        if (this.buffer.length() > 0) {          
+          String s = buffer.toString();
+          if( StringUtils.isNotBlank(s) ) {
+            try {
+              output.accept(s);
+            } catch(Exception ex) {
+              // Do nothing
+            }
+          }
+          buffer.setLength(0);
+        }
+        this.active = false;
+      }
+
+    }
 
     public SseAgentConsole(String subchannel) {
       this.subchannel = subchannel;
@@ -704,12 +802,39 @@ public class NoemaWebServer {
 
     @Override
     public void printModelResponse(String message) {
-      broadcast("response", message);
+      if (this.streamingUsed() ) {
+        bufferedResponse.endblock();
+      } else {
+        broadcast("response", message);
+      }
     }
 
     @Override
     public void printModelReasoning(String message) {
-      broadcast("thinking", message);
+      if (this.streamingUsed() ) {
+        bufferedReasoning.endblock();
+      } else {
+        broadcast("thinking", message);
+      }
     }
+
+    @Override
+    public void streamingFinished() {
+      if( this.streamingUsed() ) {
+        this.bufferedReasoning.endblock();
+        this.bufferedResponse.endblock();
+      }
+    }
+
+    @Override
+    public void StreamReasoning(String s) {
+      this.bufferedReasoning.add(s);
+    }
+
+    @Override
+    public void StreamResponse(String s) {
+      this.bufferedResponse.add(s);
+    }
+
   }
 }

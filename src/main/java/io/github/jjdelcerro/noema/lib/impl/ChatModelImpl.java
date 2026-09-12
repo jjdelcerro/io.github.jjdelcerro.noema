@@ -20,6 +20,7 @@ import dev.langchain4j.model.openai.OpenAiChatRequestParameters;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import dev.langchain4j.model.output.Response;
 import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.Agent.ModelStreamCallback;
 import static io.github.jjdelcerro.noema.lib.Agent.ModelType.LLAMA_EMBEDDED;
 import static io.github.jjdelcerro.noema.lib.Agent.ModelType.OPENAI;
 import java.lang.management.ManagementFactory;
@@ -313,7 +314,9 @@ public class ChatModelImpl implements Agent.ChatModel {
 
     public Response<AiMessage> generate(List<ChatMessage> messages,
             List<ToolSpecification> toolSpecifications,
-            MutableBoolean abort) throws Throwable {
+            MutableBoolean abort,
+            ModelStreamCallback streamCallback
+        ) throws Throwable {
         try {
             ChatRequest request = createChatRequest(messages, toolSpecifications);
             CompletableFuture<ChatResponse> future = new CompletableFuture<>();
@@ -335,6 +338,10 @@ public class ChatModelImpl implements Agent.ChatModel {
 
                 @Override
                 public void onPartialResponse(String partialResponse) {
+                    if( streamCallback!=null ) {
+                      streamCallback.StreamResponse(partialResponse);
+                      streamCallback.setStreamingUsed(true);
+                    }
                     lastEventTime.set(System.currentTimeMillis());
                     if (abort.isTrue()) {
                         future.completeExceptionally(new InterruptedModelGenerateException());
@@ -343,6 +350,10 @@ public class ChatModelImpl implements Agent.ChatModel {
 
                 @Override
                 public void onPartialThinking(PartialThinking partialThinking) {
+                    if( streamCallback!=null ) {
+                      streamCallback.StreamReasoning(partialThinking.text());
+                      streamCallback.setStreamingUsed(true);
+                    }
                     lastEventTime.set(System.currentTimeMillis());
                     if (abort.isTrue()) {
                         future.completeExceptionally(new InterruptedModelGenerateException());
@@ -366,6 +377,9 @@ public class ChatModelImpl implements Agent.ChatModel {
                 }
             };
 
+            if( streamCallback!=null ) {
+              streamCallback.setStreamingUsed(false);
+            }
             this.getStreamingModel().chat(request, handler);
 
             while (abort.isFalse() && !future.isDone()) {

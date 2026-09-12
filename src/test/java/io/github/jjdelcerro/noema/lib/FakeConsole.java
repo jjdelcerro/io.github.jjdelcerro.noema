@@ -1,7 +1,5 @@
 package io.github.jjdelcerro.noema.lib;
 
-import io.github.jjdelcerro.noema.lib.AgentConsole;
-
 public class FakeConsole implements AgentConsole {
 
     @Override public boolean confirm(String message) { return true; } // Por defecto auto-aprueba
@@ -11,4 +9,9 @@ public class FakeConsole implements AgentConsole {
     @Override public void printUserMessage(String message) { System.out.println("USER > " + message); }
     @Override public void printModelResponse(String message) { System.out.println("MODEL > " + message); }
     @Override public void printModelReasoning(String message) { System.out.println("REASONING > " + message); }
+    @Override public void StreamReasoning(String s) { }
+    @Override public void StreamResponse(String s) { }
+    @Override public void streamingFinished() { }
+    @Override public boolean streamingUsed() { return false; }
+    @Override public void setStreamingUsed(boolean used) {  }
 }

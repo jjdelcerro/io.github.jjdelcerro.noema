@@ -5,6 +5,7 @@ import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.transport.McpTransport;
 import dev.langchain4j.mcp.client.transport.http.HttpMcpTransport;
+import dev.langchain4j.mcp.client.transport.http.StreamableHttpMcpTransport;
 import dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentService;
@@ -100,8 +101,10 @@ public class McpServiceImpl implements AgentService {
           return;
         }
 
-        transport = new HttpMcpTransport.Builder()
-                .sseUrl(url)
+        transport = StreamableHttpMcpTransport.builder()
+                .url(url)
+                .logRequests(false)
+                .logResponses(false)
                 .build();
       } else {
         LOGGER.warn("Tipo de transporte MCP no soportado '{}' en servidor '{}'.", type, name);

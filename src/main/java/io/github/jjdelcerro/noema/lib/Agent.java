@@ -6,7 +6,6 @@ import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.model.output.Response;
-import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.SensorEventCallback;
@@ -44,12 +43,20 @@ public interface Agent {
     public Object getExtraValue(String name);
   }
   
+  public interface ModelStreamCallback {
+    public void StreamReasoning(String s);
+    public void StreamResponse(String s);
+    public void streamingFinished();
+    public boolean streamingUsed();
+    public void setStreamingUsed(boolean used);
+  }
+  
   public interface ChatModel {
     public int getContextSize();
     public Response<AiMessage> generate(ChatMessage systemPrompt, ChatMessage message);
     public Response<AiMessage> generate(List<ChatMessage> messages);
     public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications);
-    public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications, MutableBoolean abort) throws Throwable;
+    public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications, MutableBoolean abort, ModelStreamCallback streamCallback) throws Throwable;
     public Agent.ModelParameters getParameters();
     public ModelType getModelType();
   }

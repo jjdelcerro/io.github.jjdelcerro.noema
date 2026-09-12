@@ -744,5 +744,27 @@ public class SubagentImpl implements Subagent {
         this.writer.close();
       }
     }
+    
+    @Override
+    public void StreamReasoning(String s) {
+    }
+
+    @Override
+    public void StreamResponse(String s) {
+    }
+
+    @Override
+    public void streamingFinished() {
+    }
+
+    @Override
+    public boolean streamingUsed() {
+      return false;
+    }
+
+    @Override
+    public void setStreamingUsed(boolean used) {
+    }
+    
   }
 }

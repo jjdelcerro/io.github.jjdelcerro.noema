@@ -205,6 +205,28 @@ public class FakeAgent implements Agent {
     @Override
     public void printModelReasoning(String message) {
     }
+    
+    @Override
+    public void StreamReasoning(String s) {
+    }
+
+    @Override
+    public void StreamResponse(String s) {
+    }
+
+    @Override
+    public void streamingFinished() {
+    }
+
+    @Override
+    public boolean streamingUsed() {
+      return false;
+    }
+
+    @Override
+    public void setStreamingUsed(boolean used) {
+      throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
 
   }
 

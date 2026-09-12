@@ -189,5 +189,27 @@ public class MainWeb {
     public void printModelReasoning(String message) {
       System.out.println("[" + logTime() + "] [THINKING] " + message);
     }
+    
+    @Override
+    public void StreamReasoning(String s) {
+    }
+
+    @Override
+    public void StreamResponse(String s) {
+    }
+
+    @Override
+    public void streamingFinished() {
+    }
+
+    @Override
+    public boolean streamingUsed() {
+      return false;
+    }
+
+    @Override
+    public void setStreamingUsed(boolean used) {
+    }
+    
   }
 }

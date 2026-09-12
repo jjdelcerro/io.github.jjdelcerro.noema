@@ -4,7 +4,7 @@ package io.github.jjdelcerro.noema.lib;
  *
  * @author jjdelcerro
  */
-public interface AgentConsole {
+public interface AgentConsole extends Agent.ModelStreamCallback {
 
     public enum Format {
       RawText,

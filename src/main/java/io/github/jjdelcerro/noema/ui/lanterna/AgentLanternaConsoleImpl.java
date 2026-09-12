@@ -68,9 +68,30 @@ public class AgentLanternaConsoleImpl implements AgentConsole {
         refreshUi();
     }
 
+    @Override
+    public void StreamReasoning(String s) {
+    }
+
+    @Override
+    public void StreamResponse(String s) {
+    }
+    
     private void refreshUi() {
         try {
             gui.updateScreen();
         } catch (IOException ignored) {}
     }
+
+  @Override
+  public void streamingFinished() {
+  }
+
+  @Override
+  public boolean streamingUsed() {
+    return false;
+  }
+
+  @Override
+  public void setStreamingUsed(boolean used) {
+  }
 }

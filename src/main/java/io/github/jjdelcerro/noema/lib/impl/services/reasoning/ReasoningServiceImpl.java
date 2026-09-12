@@ -673,10 +673,12 @@ public class ReasoningServiceImpl implements ReasoningService {
     StringBuilder finalLlmResponse = new StringBuilder();
     int toolExecutionRetries;
     MutableBoolean abort = new MutableBoolean(false);
+    AgentConsole console = this.console(currentSubchannel);
     try {
       this.currentSubchannel = event.getSubchannel();
       String channel = event.getChannel();
       String textUser = null;
+      console = this.console(currentSubchannel);
       RecentMemory recentMemory = this.getRecentMemory(currentSubchannel);
       ConsolidateMemory consolidateMemory = this.getActiveConsolidateMemory(currentSubchannel);
       ProjectedMemory projectedMemory = getProjectedMemory(currentSubchannel);
@@ -709,15 +711,17 @@ public class ReasoningServiceImpl implements ReasoningService {
         Response<AiMessage> response = this.getModel().generate(
                 projectedMemory.getMessages(recentMemory, consolidateMemory, this.getBaseSystemPrompt()),
                 this.getToolSpecifications(),
-                abort
+                abort,
+                console
         );
+        console.streamingFinished();
         AiMessage aiMessage = response.content();
         recentMemory.add(aiMessage);
 
         if (aiMessage.hasToolExecutionRequests()) {
           String intermediateText = aiMessage.text();
           if (StringUtils.isNotBlank(intermediateText)) {
-            this.console(currentSubchannel).printModelResponse(intermediateText);
+            console.printModelResponse(intermediateText);
 //            finalLlmResponse.append(intermediateText).append("\n\n"); 
           }          
           for (ToolExecutionRequest request : aiMessage.toolExecutionRequests()) {
@@ -737,7 +741,7 @@ public class ReasoningServiceImpl implements ReasoningService {
             }
             String aiThinking = StringUtils.defaultIfBlank(aiMessage.thinking(),null);
             if( aiThinking!=null ) {
-              this.console(currentSubchannel).printModelReasoning(aiThinking);
+              console.printModelReasoning(aiThinking);
             }
             Turn toolTurn = this.episodicMemory.createTurn(
                     LocalDateTime.now(),
@@ -760,10 +764,10 @@ public class ReasoningServiceImpl implements ReasoningService {
           String aiThinking = StringUtils.defaultIfBlank(aiMessage.thinking(),null);
           finalLlmResponse.append(aiText); // No esta claro que sea necesario mantener el finalLlmResponse
           if( aiThinking!=null ) {
-            this.console(currentSubchannel).printModelReasoning(aiThinking);
+            console.printModelReasoning(aiThinking);
           }
           if( aiText != null) {
-            this.console(currentSubchannel).printModelResponse(aiText);
+            console.printModelResponse(aiText);
           }
           Turn responseTurn = this.episodicMemory.createTurn(
                   LocalDateTime.now(),
@@ -800,9 +804,9 @@ public class ReasoningServiceImpl implements ReasoningService {
       recentMemory.save();
       projectedMemory.save();
 
-      if (recentMemory.needConsolidation()) {
-        performConsolidation(recentMemory);
-      }
+//      if (recentMemory.needConsolidation()) {
+//        performConsolidation(recentMemory);
+//      }
     } finally {
       try {
         if (event != null && event.getCallback() != null) {
@@ -810,7 +814,7 @@ public class ReasoningServiceImpl implements ReasoningService {
         }
       } catch (Exception e) {
         LOGGER.error("Error ejecutando onComplete", e);
-        this.console(currentSubchannel).printSystemError("Dispatcher error onComplete: " + e.getMessage());
+        console.printSystemError("Dispatcher error onComplete: " + e.getMessage());
       }
     }
   }

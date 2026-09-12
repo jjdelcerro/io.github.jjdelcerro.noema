@@ -69,7 +69,7 @@ public abstract class AbstractScriptedTest {
     }
 
     @Override
-    public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications, MutableBoolean abort) {
+    public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications, MutableBoolean abort, Agent.ModelStreamCallback streamCallback) throws Throwable {
       this.capturedContexts.add(new ArrayList<>(messages));
 
       if (this.programmedResponses.isEmpty()) {
