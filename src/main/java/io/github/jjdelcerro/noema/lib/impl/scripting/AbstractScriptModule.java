@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting;
+package io.github.jjdelcerro.noema.lib.impl.scripting;
 
 import io.github.jjdelcerro.noema.lib.Agent;
 import java.io.BufferedReader;
@@ -14,15 +14,16 @@ import org.slf4j.LoggerFactory;
  *
  * @author jjdelcerro
  */
-public abstract class AbstractScriptingModule implements ScriptingModule {
-  protected  static final Logger LOGGER = LoggerFactory.getLogger(AbstractScriptingModule.class);
-  
+public abstract class AbstractScriptModule implements ScriptModule {
+
+  protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractScriptModule.class);
+
   final String name;
   final String description;
   protected final Agent agent;
   protected final ScriptContext context;
 
-  protected AbstractScriptingModule(ScriptContext context, Agent agent, String name, String description) {
+  protected AbstractScriptModule(ScriptContext context, Agent agent, String name, String description) {
     this.context = context;
     this.agent = Objects.requireNonNull(agent, "Agent cannot be null");
     this.name = name;
@@ -41,9 +42,9 @@ public abstract class AbstractScriptingModule implements ScriptingModule {
 
   @Override
   public String help() {
-    return "";
+    return "[agent." + getName() + "] " + getDescription();
   }
-  
+
   public static class AutoClosingLineIterator implements Iterator<String> {
 
     private final BufferedReader reader;
@@ -90,5 +91,5 @@ public abstract class AbstractScriptingModule implements ScriptingModule {
       advance();
       return current;
     }
-  }  
+  }
 }

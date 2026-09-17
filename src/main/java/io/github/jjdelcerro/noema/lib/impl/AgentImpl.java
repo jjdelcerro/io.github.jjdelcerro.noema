@@ -151,6 +151,7 @@ public class AgentImpl implements Agent {
   
   @Override
   public synchronized void start() {
+    SLMUtils.start(this);
     AgentManager manager = AgentLocator.getAgentManager();
     for (AgentServiceFactory serviceFactory : manager.getServiceFactories()) {
       AgentService sharedService = this.sharedServices.get(serviceFactory.getName());

@@ -64,7 +64,7 @@
             <configuration>
               <executable>bash</executable>
               <arguments>
-                <argument>${project.basedir}/src/main/resources/io/github/jjdelcerro/noema/lib/impl/resources/var/models/embeddings/paraphrase-multilingual-MiniLM-L12-v2/download.sh</argument>
+                <argument>${project.basedir}/src/main/resources/io/github/jjdelcerro/noema/lib/impl/resources/var/models/download.sh</argument>
               </arguments>
             </configuration>
           </execution>
@@ -178,13 +178,12 @@
       <version>4.0.24</version>
     </dependency>        
         
-    <!-- Lo suyo parece que sea usar directamente el runtime de onnx, esto es solo para una prueba -->
     <dependency>
       <groupId>io.github.inference4j</groupId>
-      <artifactId>inference4j-core</artifactId>
-      <version>0.10.0</version>
-    </dependency>
-        
+      <artifactId>onnxruntime-genai</artifactId>
+      <version>0.15.2</version>
+    </dependency>       
+
     <!-- Motor de logs: Log4j 2 a traves de SLF4J -->
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>

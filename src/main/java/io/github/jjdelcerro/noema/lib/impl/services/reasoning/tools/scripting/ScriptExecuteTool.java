@@ -1,5 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting;
 
+import io.github.jjdelcerro.noema.lib.impl.scripting.ScriptContext;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import groovy.lang.Binding;
@@ -9,7 +10,9 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractPaginatedAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
-import static io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.ScriptContext.CONTEXT_NAME;
+import static io.github.jjdelcerro.noema.lib.impl.scripting.ScriptContext.CONTEXT_NAME;
+import io.github.jjdelcerro.noema.lib.impl.scripting.ScriptEngine;
+import java.io.BufferedWriter;
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.customizers.ASTTransformationCustomizer;
@@ -20,7 +23,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,49 +45,51 @@ public class ScriptExecuteTool extends AbstractPaginatedAgentTool {
   private static final Logger LOGGER = LoggerFactory.getLogger(ScriptExecuteTool.class);
   public static final String TOOL_NAME = "execute_script";
 
-  private static final long EXECUTION_TIMEOUT_SECONDS = 30L;
   private static final int MAX_INLINE_OUTPUT_CHARS = 2048;
 
-  private final CompilerConfiguration compilerConfig;
-  private final Map<String, Map<String, Object>> subchannelStates;
   private final Gson outputGson;
 
   public ScriptExecuteTool(Agent agent) {
     super(agent);
-    this.subchannelStates = new ConcurrentHashMap<>();
     this.outputGson = new GsonBuilder().setPrettyPrinting().create();
-    this.compilerConfig = createCompilerConfiguration();
   }
 
-  @Override
+@Override
   public ToolSpecificationBuilder getSpecification() {
     return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
             .description(StringUtils.replace("""
-Executes a sandboxed Groovy script inside the agent to process, filter, or transform data programmatically.
+Ejecuta scripts Groovy/Java en la JVM para procesar, filtrar, transformar o agregar datos localmente.
+Herramienta OBLIGATORIA para cálculos, medias, sumas, tareas por lotes, agregaciones o análisis masivo sobre colecciones de archivos sin saturar la conversación.
 
-**GLOBAL CONTEXT OBJECT (`${CONTEXT_NAME}`):**
-Use the `agent` object to access streaming facades:
-- `${CONTEXT_NAME}.fs.lines("file.txt")` : Returns an Iterable of lines (streaming, low memory).
-- `${CONTEXT_NAME}.fs.forEachLine("file.txt") { line, num -> ... }` : Iterates line by line.
-- `${CONTEXT_NAME}.fs.find("src/**/*.java")` : Lists matching relative file paths.
-- `${CONTEXT_NAME}.fs.grep("regex", "path")` : Searches regex returning matches with file and line.
-- `${CONTEXT_NAME}.fs.write("path", content)` : Writes text/lines with automatic RCS backup.
-- `${CONTEXT_NAME}.llm.query("prompt", chunk)` : Stateless sub-query to evaluate data chunks.
-- `${CONTEXT_NAME}.llm.extractJson("prompt", chunk)` : Extracts and parses structured JSON.
-- `${CONTEXT_NAME}.web.lines("https://...")` : Streams clean lines of text from web/PDF/DOCX.
-- `${CONTEXT_NAME}.web.search("query")` : Web search returning list of {title, url, content}.
-- `${CONTEXT_NAME}.annotation.add(source, note, [resource_id], [type])` : Direct knowledge registration.
-- `${CONTEXT_NAME}.subagents.run(name, params)` : Runs a subagent worker recipe synchronously.
-- `${CONTEXT_NAME}.state.myVar = value` : Preserves variables between scripts in the same session.
-- `println ${CONTEXT_NAME}.help()` : Prints available modules.
-                                             
-Use ${CONTEXT_NAME}.<module>.help() to get help of a module.
-                                             
-""" + getShortPaginationInstruction(),"${CONTEXT_NAME}",CONTEXT_NAME))
+REGLAS DE EJECUCIÓN Y SEGURIDAD:
+• Código estrictamente Groovy/Java para la JVM (no Python). Usa 'def', closures { item -> ... } y colecciones estándar.
+• Sandbox activo: clases de E/S directa como 'java.io.File', 'System' o 'ProcessBuilder' están bloqueadas. Toda interacción con el entorno debe realizarse exclusivamente a través del objeto '${CONTEXT_NAME}'.
+
+DESCUBRIMIENTO Y AYUDA (Bajo demanda):
+• println ${CONTEXT_NAME}.help() : Lista el catálogo de módulos disponibles (fs, llm, web, annotation, state, subagents).
+• println ${CONTEXT_NAME}.<modulo>.help() : Muestra las firmas completas, parámetros y objetos devueltos de un módulo (ej: println ${CONTEXT_NAME}.fs.help()).
+Si requieres operaciones no listadas abajo o tienes dudas sobre una firma, ejecuta help() antes de inventar métodos.
+
+MUESTRA DE MÉTODOS PRINCIPALES (Catálogo parcial; consulta help() para funciones avanzadas):
+- ${CONTEXT_NAME}.fs.lines("ruta") : Iterable<String> (streaming bajo en memoria; procesa transparentemente texto, PDF, DOCX vía Tika)
+- ${CONTEXT_NAME}.fs.find("glob") : Iterable<String> con rutas relativas coincidentes (ej: "**/*.java")
+- ${CONTEXT_NAME}.fs.grep(regex, "ruta") : Iterable con coincidencias [.file, .line, .content]
+- ${CONTEXT_NAME}.fs.fuzzygrep(query, "ruta", [glob]) : Búsqueda semántica Top-K con [.file, .startLine, .endLine, .content]
+- ${CONTEXT_NAME}.fs.write("ruta", content) : Escribe texto o líneas con auto-mkdir y copia de seguridad en JavaRCS
+- ${CONTEXT_NAME}.llm.query(prompt, texto) : Consulta semántica (DISYUNTOR: máx. 25/script; prohibido en bucles masivos sin pre-filtrar)
+- ${CONTEXT_NAME}.llm.sml_query(prompt) : Consulta al modelo local ONNX Qwen3.5 en memoria (rápido, sin coste API ni red)
+- ${CONTEXT_NAME}.llm.extractJson(prompt, texto) : Extrae datos estructurados como Map o List de Groovy
+- ${CONTEXT_NAME}.web.lines("url") : Streaming de líneas de texto limpio extraído de URLs o PDFs web
+- ${CONTEXT_NAME}.web.search("query") : Búsqueda web (retorna Map con [.title, .url, .content])
+- ${CONTEXT_NAME}.annotation.add(origen, nota, [resId], [tipo]) : Guarda conocimiento o directivas directamente en memoria episódica
+- ${CONTEXT_NAME}.state.miVariable = valor : Almacena variables volátiles entre scripts de la misma sesión
+- ${CONTEXT_NAME}.subagents.run("receta", params) : Ejecuta un trabajador especializado de forma síncrona en su propio sandbox
+
+""" + getShortPaginationInstruction(), "${CONTEXT_NAME}", CONTEXT_NAME))
             .addStringParameter("script", "The Groovy code to execute.");
-  }
-
+  }  
+  
   @Override
   public int getMode() {
     return AgentTool.MODE_SCRIPTING;
@@ -96,7 +103,6 @@ Use ${CONTEXT_NAME}.<module>.help() to get help of a module.
   @Override
   public String execute(String jsonArguments) {  // TODO: Habria que lanzar la ejecucion en un hilo aparte y enviar una notificacion al terminar, de forma similar a como hace subagent.
     String subchannel = this.agent.getCurrentSubchannel();
-    Map<String, Object> sessionState = getSessionState(subchannel);
 
     Args args;
     try {
@@ -109,22 +115,20 @@ Use ${CONTEXT_NAME}.<module>.help() to get help of a module.
       return formatErrorResponse("Parameter 'script' is required and cannot be empty.");
     }
 
-    // Try-with-resources guarantees deterministic cleanup of open file iterators
-    try (ScriptContext context = new ScriptContext(this.agent, subchannel, sessionState)) {
-      Binding binding = new Binding();
-      binding.setVariable(CONTEXT_NAME, context);
-      binding.setVariable("context", context); // Convenient alias
-
-      GroovyShell shell = new GroovyShell(binding, this.compilerConfig);
-      Object rawResult = shell.evaluate(args.script);
-
-      String formattedOutput = formatResult(rawResult);
-
-      if (shouldPaginate(formattedOutput)) {
-        return saveAndPaginateOutput(formattedOutput);
+    try (ScriptEngine engine = ScriptEngine.of(agent)) {
+      ScriptEngine.ScriptResult result = engine.evaluate(args.script);
+      if( result.result()!=null ) {
+        BufferedWriter writer = Files.newBufferedWriter(
+                result.stdout(),
+                StandardCharsets.UTF_8, 
+                StandardOpenOption.APPEND
+        );
+        writer.append(formatResult(result.result()));
+        writer.flush();
+        writer.close();
       }
-
-      return formatDirectResponse(formattedOutput);
+      String resultResource = this.getIdFromPath(result.stdout());
+      return servePaginatedResource(resultResource);
 
     } catch (SecurityException se) {
       LOGGER.warn("Security violation during script execution: {}", se.getMessage());
@@ -137,10 +141,6 @@ Use ${CONTEXT_NAME}.<module>.help() to get help of a module.
       String message = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
       return formatErrorResponse("Script Execution Error: " + message);
     }
-  }
-
-  private Map<String, Object> getSessionState(String subchannel) {
-    return this.subchannelStates.computeIfAbsent(subchannel, k -> new ConcurrentHashMap<>());
   }
 
   private boolean shouldPaginate(String output) {
@@ -181,7 +181,7 @@ Use ${CONTEXT_NAME}.<module>.help() to get help of a module.
   }
 
   private String formatResult(Object result) { // FIXME: hacer que devuelba un iterable<String>, que si es un Iterable lo devuelva, y para cualquier otro caso Collections.singletonList(XXX)
-    if (result == null) { 
+    if (result == null) {
       return "";
     }
     if (result instanceof String str) {
@@ -201,38 +201,6 @@ Use ${CONTEXT_NAME}.<module>.help() to get help of a module.
       return outputGson.toJson(result);
     }
     return Objects.toString(result, "");
-  }
-
-  /**
-   * Prepares the strict sandbox configuration and execution timeouts.
-   */
-  private CompilerConfiguration createCompilerConfiguration() {
-    CompilerConfiguration config = new CompilerConfiguration();
-
-    // 1. AST Security Customizer
-    SecureASTCustomizer secureCustomizer = new SecureASTCustomizer();
-    secureCustomizer.setClosuresAllowed(true);
-    secureCustomizer.setMethodDefinitionAllowed(true);
-
-    // Blacklist dangerous system and reflection classes
-    secureCustomizer.setDisallowedImports(List.of(
-            "java.lang.System",
-            "java.lang.Runtime",
-            "java.lang.ProcessBuilder",
-            "java.lang.reflect.*"
-    ));
-
-    secureCustomizer.setDisallowedStarImports(List.of(
-            "java.lang.reflect",
-            "java.lang.invoke"
-    ));
-
-    // 2. Timed Interrupt Customizer (5s timeout to prevent infinite loops)
-    Map<String, Object> timeoutParams = Collections.singletonMap("value", EXECUTION_TIMEOUT_SECONDS);
-    ASTTransformationCustomizer timedInterrupt = new ASTTransformationCustomizer(timeoutParams, TimedInterrupt.class);
-
-    config.addCompilationCustomizers(secureCustomizer, timedInterrupt);
-    return config;
   }
 
   private static class Args {

@@ -1,10 +1,10 @@
-package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.modules;
+package io.github.jjdelcerro.noema.lib.impl.scripting.modules;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.AbstractScriptingModule;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.ScriptContext;
+import io.github.jjdelcerro.noema.lib.impl.scripting.AbstractScriptModule;
+import io.github.jjdelcerro.noema.lib.impl.scripting.ScriptContext;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -30,8 +30,8 @@ import org.apache.tika.metadata.Metadata;
  *
  * @author jjdelcerro
  */
-public class WebModule extends AbstractScriptingModule {
-  
+public class WebModule extends AbstractScriptModule {
+
   final HttpClient httpClient;
   final Tika tika;
 
@@ -39,6 +39,17 @@ public class WebModule extends AbstractScriptingModule {
     super(context, agent, "web", "modulo de acceso a funciones web");
     this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).followRedirects(HttpClient.Redirect.NORMAL).build();
     this.tika = new Tika();
+  }
+
+  @Override
+  public String help() {
+    return """
+[agent.web API]
+• lines(url): Iterable<String> (lazy stream, HTML/PDF extraído limpio vía Tika)
+  -> agent.web.lines('https://example.org/doc.pdf').take(20).each { println it }
+• search(query): Iterable<Map[title, url, content]> (búsqueda Tavily)
+  -> agent.web.search('langchain4j').each { println "${it.title}: ${it.url}" }
+""";
   }
 
   /**
@@ -102,5 +113,5 @@ public class WebModule extends AbstractScriptingModule {
       return Collections.emptyList();
     }
   }
-  
+
 }

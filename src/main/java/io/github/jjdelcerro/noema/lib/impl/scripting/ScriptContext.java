@@ -1,11 +1,11 @@
-package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting;
+package io.github.jjdelcerro.noema.lib.impl.scripting;
 
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.modules.FsModule;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.modules.SessionStateModule;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.modules.AnnotationModule;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.modules.LlmModule;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.modules.WebModule;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.modules.SubagentsModule;
+import io.github.jjdelcerro.noema.lib.impl.scripting.modules.FsModule;
+import io.github.jjdelcerro.noema.lib.impl.scripting.modules.SessionStateModule;
+import io.github.jjdelcerro.noema.lib.impl.scripting.modules.AnnotationModule;
+import io.github.jjdelcerro.noema.lib.impl.scripting.modules.LlmModule;
+import io.github.jjdelcerro.noema.lib.impl.scripting.modules.WebModule;
+import io.github.jjdelcerro.noema.lib.impl.scripting.modules.SubagentsModule;
 import groovy.lang.GroovyObjectSupport;
 import groovy.lang.MissingPropertyException;
 import io.github.jjdelcerro.noema.lib.Agent;
@@ -30,19 +30,20 @@ import java.util.concurrent.ConcurrentHashMap;
  * el acceso a herramientas o modulos, tanto en ejecucion como a la hora de
  * exponer los que ofrecen a traves del metodo help.
  */
-public class ScriptContext extends GroovyObjectSupport implements AutoCloseable, ScriptingModule {
+public class ScriptContext extends GroovyObjectSupport implements AutoCloseable, ScriptModule {
 
   public static final String CONTEXT_NAME = "agent";
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ScriptContext.class);
+  private static Map<String, Map<String, Object>> subchannelStates;
 
   private final Agent agent;
   private final String subchannel;
-  private final Map<String, ScriptingModule> modules;
+  private final Map<String, ScriptModule> modules;
   private final List<AutoCloseable> openResources = new ArrayList<>();
 
   @SuppressWarnings("OverridableMethodCallInConstructor")
-  public ScriptContext(Agent agent, String subchannel, Map<String, Object> sessionState) {
+  protected ScriptContext(Agent agent, String subchannel, Map<String, Object> sessionState) {
     this.agent = Objects.requireNonNull(agent, "Agent cannot be null");
     this.subchannel = subchannel != null ? subchannel : Agent.DEFAULT_SUBCHANNEL;
     this.modules = new ConcurrentHashMap<>();
@@ -57,6 +58,23 @@ public class ScriptContext extends GroovyObjectSupport implements AutoCloseable,
     // registerModule(new MCPModule(this, this.agent)); // TODO: implementar el puenete con MCP.
   }
 
+  public static Map<String, Object> getSessionState(String subchannel) {
+    if (subchannelStates == null) {
+      subchannelStates = new ConcurrentHashMap<>();
+    }
+    return subchannelStates.computeIfAbsent(subchannel, k -> new ConcurrentHashMap<>());
+  }
+
+  public static ScriptContext of(Agent agent) {
+    return of(agent, agent.getCurrentSubchannel());
+  }
+
+  public static ScriptContext of(Agent agent, String subchannel) {
+    Map<String, Object> sessionState = getSessionState(subchannel);
+    ScriptContext context = new ScriptContext(agent, subchannel, sessionState);
+    return context;
+  }
+
   public String getName() {
     return CONTEXT_NAME;
   }
@@ -65,34 +83,34 @@ public class ScriptContext extends GroovyObjectSupport implements AutoCloseable,
     return "";
   }
 
+  @Override
   public String help() {
-    StringBuilder sb = new StringBuilder("Available modules:\n");
-    for (ScriptingModule module : modules.values()) {
-      sb.append(" - ")
-              .append(this.getName())
-              .append(".")
+    StringBuilder sb = new StringBuilder("[agent API]\n");
+    for (ScriptModule module : modules.values()) {
+      sb.append("• agent.")
               .append(module.getName())
-              .append(" - ")
+              .append(" : ")
               .append(module.getDescription())
               .append("\n");
     }
+    sb.append("Ayuda detallada: println agent.<modulo>.help()");
     return sb.toString();
   }
 
   /**
    * Registers a facade dynamically under a specific property name.
    */
-  public void registerModule(ScriptingModule module) {
+  public void registerModule(ScriptModule module) {
     if (module != null && StringUtils.isNotBlank(module.getName())) {
       this.modules.put(module.getName(), module);
     }
   }
 
-  public ScriptingModule getModule(String name) {
+  public ScriptModule getModule(String name) {
     return this.modules.get(name);
   }
 
-  public Map<String, ScriptingModule> getRegisteredModules() {
+  public Map<String, ScriptModule> getRegisteredModules() {
     return Collections.unmodifiableMap(this.modules);
   }
 

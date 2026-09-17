@@ -3,6 +3,7 @@ package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractPaginatedAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tika.Tika;
 
@@ -11,7 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static io.github.jjdelcerro.noema.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
-import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
 
 public class FileReadTool extends AbstractPaginatedAgentTool {
 
@@ -25,11 +25,18 @@ public class FileReadTool extends AbstractPaginatedAgentTool {
 
   @Override
   public ToolSpecificationBuilder getSpecification() {
+    int defaultLimit = getDefaultMaxLines();
     return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
-            .description("Devuelve el contenido de un archivo de texto del proyecto (código fuente, documentación, archivos de configuración, etc.).\n\n"
+            .description("Devuelve el contenido de un archivo de texto del proyecto (código fuente, "
+                    + "documentación, archivos de configuración, etc.).\n"
+                    + "Permite lectura completa o acotada a un rango de líneas mediante 'offset' y 'limit'.\n\n"
+                    + "PROHIBIDO usar esta herramienta para cálculos acumulativos, agregaciones, medias o "
+                    + "procesamiento masivo."
                     + getShortPaginationInstruction())
-            .addStringParameter("path", "Ruta del archivo (relativa o absoluta).");
+            .addStringParameter("path", false, "Ruta del archivo (relativa o absoluta).")
+            .addIntegerParameter("offset", true, "Línea inicial (0-based) desde donde empezar a leer. Opcional, por defecto 0.")
+            .addIntegerParameter("limit", true, "Número máximo de líneas a leer. Opcional, por defecto " + defaultLimit + ".");
   }
 
   @Override
@@ -43,7 +50,7 @@ public class FileReadTool extends AbstractPaginatedAgentTool {
     try {
       ReadArgs args = gson.fromJson(jsonArguments, ReadArgs.class);
 
-      if (StringUtils.isBlank(args.path)) {
+      if (args == null || StringUtils.isBlank(args.path)) {
         return formatErrorResponse("El parámetro 'path' es obligatorio.");
       }
 
@@ -52,7 +59,7 @@ public class FileReadTool extends AbstractPaginatedAgentTool {
         return formatErrorResponse("Acceso denegado o ruta fuera del sandbox: " + args.path);
       }
 
-      if (!Files.exists(filePath) ) {
+      if (!Files.exists(filePath)) {
         return formatErrorResponse("El archivo no existe: " + args.path);
       }
 
@@ -78,7 +85,10 @@ public class FileReadTool extends AbstractPaginatedAgentTool {
         return formatErrorResponse("Error generando resource_id para el archivo: " + filePath);
       }
 
-      return servePaginatedResource(resourceId);
+      int offset = (args.offset != null && args.offset > 0) ? args.offset : 0;
+      int limit = (args.limit != null && args.limit > 0) ? args.limit : getDefaultMaxLines();
+
+      return servePaginatedResource(resourceId, offset, limit);
 
     } catch (Exception e) {
       LOGGER.warn("Error leyendo archivo, args=" + StringUtils.replace(jsonArguments, "\n", " "), e);
@@ -114,5 +124,7 @@ public class FileReadTool extends AbstractPaginatedAgentTool {
   private static class ReadArgs {
 
     String path;
+    Integer offset;
+    Integer limit;
   }
 }

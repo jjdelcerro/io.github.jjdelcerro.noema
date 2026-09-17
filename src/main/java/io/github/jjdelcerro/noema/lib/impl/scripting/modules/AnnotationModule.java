@@ -1,9 +1,9 @@
-package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.modules;
+package io.github.jjdelcerro.noema.lib.impl.scripting.modules;
 
 import com.google.gson.Gson;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.AbstractScriptingModule;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.ScriptContext;
+import io.github.jjdelcerro.noema.lib.impl.scripting.AbstractScriptModule;
+import io.github.jjdelcerro.noema.lib.impl.scripting.ScriptContext;
 import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -14,13 +14,26 @@ import org.apache.commons.lang3.StringUtils;
  *
  * @author jjdelcerro
  */
-public class AnnotationModule extends AbstractScriptingModule {
-  
+public class AnnotationModule extends AbstractScriptModule {
+
   final String subchannel;
 
   public AnnotationModule(ScriptContext context, Agent agent, String subchannel) {
     super(context, agent, "annotation", "Modulo de acceso a las anotaciones del agente");
     this.subchannel = subchannel != null ? subchannel : Agent.DEFAULT_SUBCHANNEL;
+  }
+
+  @Override
+  public String help() {
+    return """
+[agent.annotation API] (persistencia directa en memoria episódica sin ensuciar contexto)
+• add(source, note, [resourceId=null, type=null]): void
+  - source: origen del dato (archivo, URL, script)
+  - note: síntesis, insight o regla a recordar
+  - resourceId: opcional (ej: 'user://ruta') para silenciar avisos de recursos no anotados
+  - type: categoría de índice opcional (ej: 'arquitectura', 'bug')
+  -> agent.annotation.add('pom.xml', 'Usa LangChain4j 1.16.3', 'user://pom.xml', 'arquitectura')
+""";
   }
 
   public void add(String source, String note) {
@@ -33,6 +46,7 @@ public class AnnotationModule extends AbstractScriptingModule {
 
   /**
    * Persists an annotation turn directly into EpisodicMemory.
+   *
    * @param source
    * @param note
    * @param resourceId
@@ -56,5 +70,5 @@ public class AnnotationModule extends AbstractScriptingModule {
     agent.getEpisodicMemory().add(turn);
     LOGGER.info("Knowledge note registered from script: [{}] {}", source, StringUtils.abbreviate(note, 60));
   }
-  
+
 }

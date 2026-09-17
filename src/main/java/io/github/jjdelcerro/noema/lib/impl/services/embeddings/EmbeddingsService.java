@@ -98,8 +98,8 @@ public class EmbeddingsService implements AgentService {
 //        agent.getCurrentConsole().printSystemLog("Loading local embeddings...");
         
         String[] resources = new String[]{
-          "var/models/embeddings/paraphrase-multilingual-MiniLM-L12-v2/model_quantized.onnx",
-          "var/models/embeddings/paraphrase-multilingual-MiniLM-L12-v2/tokenizer.json"
+          "var/models/paraphrase-multilingual-MiniLM-L12-v2/model_quantized.onnx",
+          "var/models/paraphrase-multilingual-MiniLM-L12-v2/tokenizer.json"
         };
         for (String resPath : resources) {
           this.agent.installResource(resPath);

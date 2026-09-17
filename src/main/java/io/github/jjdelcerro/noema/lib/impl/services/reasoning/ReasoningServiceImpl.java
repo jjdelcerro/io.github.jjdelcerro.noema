@@ -356,6 +356,7 @@ public class ReasoningServiceImpl implements ReasoningService {
     finalPrompt = StringUtils.replace(finalPrompt, "{SEARCHFULLHISTORY}", SearchFullHistoryTool.NAME);
     finalPrompt = StringUtils.replace(finalPrompt, "{CONSULTENVIRON}", ConsultEnvironTool.NAME);
     finalPrompt = StringUtils.replace(finalPrompt, "{ANNOTATE_OBSERVATION}", AnnotateObservationTool.TOOL_NAME);
+    finalPrompt = StringUtils.replace(finalPrompt, "{EXECUTE_SCRIPT}", ScriptExecuteTool.TOOL_NAME);
 
     try {
       FileUtils.writeStringToFile(

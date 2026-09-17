@@ -1,8 +1,8 @@
-package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.modules;
+package io.github.jjdelcerro.noema.lib.impl.scripting.modules;
 
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.AbstractScriptingModule;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.ScriptContext;
+import io.github.jjdelcerro.noema.lib.impl.scripting.AbstractScriptModule;
+import io.github.jjdelcerro.noema.lib.impl.scripting.ScriptContext;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -10,13 +10,23 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author jjdelcerro
  */
-public class SessionStateModule extends AbstractScriptingModule {
-  
+public class SessionStateModule extends AbstractScriptModule {
+
   final Map<String, Object> sessionState;
 
   public SessionStateModule(ScriptContext context, Agent agent, Map<String, Object> sessionState) {
     super(context, agent, "state", "Modulo encargado de mantener el estado de la sesion");
     this.sessionState = sessionState != null ? sessionState : new ConcurrentHashMap<>();
+  }
+
+  @Override
+  public String help() {
+    return """
+[agent.state API] (almacén volátil en memoria entre scripts dentro del mismo subcanal)
+• Propiedad dinámica: agent.state.clave = valor | def val = agent.state.clave
+• set(name, value): void
+• get(name): Object
+""";
   }
 
   public void set(String name, Object value) {
@@ -35,5 +45,5 @@ public class SessionStateModule extends AbstractScriptingModule {
   public Object propertyMissing(String name) {
     return get(name);
   }
-  
+
 }
