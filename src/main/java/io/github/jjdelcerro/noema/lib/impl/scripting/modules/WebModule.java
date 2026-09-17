@@ -32,6 +32,8 @@ import org.apache.tika.metadata.Metadata;
  */
 public class WebModule extends AbstractScriptModule {
 
+  private static final int DEFAULT_TIMEOUT_IN_SECS = 30;
+  
   final HttpClient httpClient;
   final Tika tika;
 
@@ -49,19 +51,29 @@ public class WebModule extends AbstractScriptModule {
   -> agent.web.lines('https://example.org/doc.pdf').take(20).each { println it }
 • search(query): Iterable<Map[title, url, content]> (búsqueda Tavily)
   -> agent.web.search('langchain4j').each { println "${it.title}: ${it.url}" }
-""";
+"""; // FIXME: añadir los metodos con el timeout
+  }
+
+  public Iterable<String> lines(String url) {
+    return this.lines(url, DEFAULT_TIMEOUT_IN_SECS);
   }
 
   /**
    * Downloads and streams lines of text extracted from a URL via Tika.
    */
-  public Iterable<String> lines(String url) {
+  public Iterable<String> lines(String url, int timeoutsecs) {
+
     URI uri = URI.create(url);
     if (!agent.getAccessControl().isAccessible(uri)) {
       throw new SecurityException("Access Denied to URL: " + url);
     }
     try {
-      HttpRequest request = HttpRequest.newBuilder().uri(uri).header("User-Agent", "Noema-Bot/1.0").GET().build();
+      HttpRequest request = HttpRequest.newBuilder()
+              .uri(uri)
+              .header("User-Agent", "Noema-Bot/1.0")
+              .timeout(Duration.ofSeconds(timeoutsecs))
+              .GET()
+              .build();
       HttpResponse<byte[]> response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
       if (response.statusCode() != 200) {
         throw new IOException("HTTP Error " + response.statusCode());
@@ -77,11 +89,15 @@ public class WebModule extends AbstractScriptModule {
     }
   }
 
+  public Iterable<Map<String, String>> search(String query) {
+    return this.search(query, DEFAULT_TIMEOUT_IN_SECS);
+  }
+
   /**
    * Performs web search and returns an Iterable of result maps (title, url,
    * content).
    */
-  public Iterable<Map<String, String>> search(String query) {
+  public Iterable<Map<String, String>> search(String query, int timeoutsecs) {
     String apiKey = agent.getSettings().getPropertyAsString("websearch/tavily_api_key");
     if (StringUtils.isBlank(apiKey)) {
       throw new IllegalStateException("Tavily API Key is not configured.");
@@ -90,7 +106,13 @@ public class WebModule extends AbstractScriptModule {
       JsonObject body = new JsonObject();
       body.addProperty("query", query);
       body.addProperty("search_depth", "basic");
-      HttpRequest request = HttpRequest.newBuilder().uri(URI.create("https://api.tavily.com/search")).header("Content-Type", "application/json").header("Authorization", "Bearer " + apiKey).POST(HttpRequest.BodyPublishers.ofString(body.toString())).build();
+      HttpRequest request = HttpRequest.newBuilder()
+              .uri(URI.create("https://api.tavily.com/search")) // FIXME: use settings
+              .timeout(Duration.ofSeconds(timeoutsecs))
+              .header("Content-Type", "application/json")
+              .header("Authorization", "Bearer " + apiKey)
+              .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
+              .build();
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
       if (response.statusCode() != 200) {
         return Collections.emptyList();
