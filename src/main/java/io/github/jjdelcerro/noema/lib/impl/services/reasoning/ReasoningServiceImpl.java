@@ -73,6 +73,8 @@ import static io.github.jjdelcerro.noema.lib.AgentActions.COMPACT_REASONING_FULL
 import static io.github.jjdelcerro.noema.lib.AgentActions.COMPACT_REASONING_MEMORY;
 import io.github.jjdelcerro.noema.lib.impl.memory.projected.ProjectedMemoryImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.AnnotateObservationTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.devel.LoadProjectMapTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.devel.UnloadProjectMapTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.ScriptExecuteTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.skills.ActivateSkillTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.skills.DeactivateSkillTool;
@@ -499,6 +501,9 @@ public class ReasoningServiceImpl
       new DeactivateSkillTool(this.agent),
       new ReadSkillResourceTool(this.agent),
       new RunSkillScriptTool(this.agent),
+      
+      new LoadProjectMapTool(this.agent),
+      new UnloadProjectMapTool(this.agent),
       
       new FileFindTool(this.agent),
       new FileWriteTool(this.agent),
