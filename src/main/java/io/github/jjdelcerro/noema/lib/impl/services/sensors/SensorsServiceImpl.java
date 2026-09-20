@@ -29,6 +29,7 @@ import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorStatistics;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
@@ -49,7 +50,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("UseSpecificCatch")
-public class SensorsServiceImpl implements SensorsService {
+public class SensorsServiceImpl 
+        extends AbstractAgentService
+        implements SensorsService 
+  {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SensorsServiceImpl.class);
 
@@ -66,9 +70,6 @@ public class SensorsServiceImpl implements SensorsService {
   private final Map<String, ConsumableSensorEvent> stateMap;
   private SensorData currentSensor;
   private final Map<SensorNature, BiFunction<SensorInformation, SensorStatistics, SensorData>> sensorDataFactory;
-  private boolean running;
-  private final SensorsServiceFactory factory;
-  private final Agent agent;
 
   // Mapa temporal para guardar estadísticas cargadas del disco hasta que se registre el sensor real
   private final Map<String, SensorStatistics> rehydratedStats;
@@ -77,11 +78,9 @@ public class SensorsServiceImpl implements SensorsService {
   private final Object sensorLock = new Object();
 
   public SensorsServiceImpl(SensorsServiceFactory factory, Agent agent) {
-    this.factory = factory;
-    this.agent = agent;
+    super(factory, agent);
     this.rehydratedStats = new HashMap<>();
     this.knownSensors = new HashMap<>();
-    this.running = false;
     this.registeredSensors = new HashMap<>();
     this.deliveryQueue = new LinkedBlockingQueue<>();
     this.stateMap = new HashMap<>();
@@ -326,11 +325,6 @@ public class SensorsServiceImpl implements SensorsService {
   }
 
   @Override
-  public String getName() {
-    return NAME;
-  }
-
-  @Override
   public void start() {
     Path persistencePath = agent.getPaths().getDataFolder().resolve("sensors.json");
 
@@ -394,16 +388,6 @@ public class SensorsServiceImpl implements SensorsService {
   }
 
   @Override
-  public boolean isRunning() {
-    return this.running;
-  }
-
-  @Override
-  public Agent.ModelParameters getModelParameters(String name) {
-    return null;
-  }
-
-  @Override
   public List<AgentTool> getTools() {
     AgentTool[] tools = new AgentTool[]{
       new PoolEventTool(this.agent),
@@ -412,11 +396,6 @@ public class SensorsServiceImpl implements SensorsService {
       new SensorStatusTool(this.agent)
     };
     return Arrays.asList(tools);
-  }
-
-  @Override
-  public AgentServiceFactory getFactory() {
-    return this.factory;
   }
 
   @Override

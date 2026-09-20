@@ -63,6 +63,7 @@ import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService
 import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_PROVIDER_URL;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_HIGH;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
+import java.util.Collection;
 
 /**
  * Disposable worker subagent implementation. Encapsulates an isolated workspace
@@ -581,6 +582,11 @@ public class SubagentImpl implements Subagent {
     return this.subAgent != null ? this.subAgent.getService(name) : null;
   }
 
+  @Override
+  public Collection<AgentService> getServices() {
+    return this.subAgent.getServices();
+  }
+  
   @Override
   public String getResourceAsString(String resname) {
     return this.subAgent != null ? this.subAgent.getResourceAsString(resname) : "";

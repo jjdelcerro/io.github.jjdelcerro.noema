@@ -39,9 +39,9 @@ public final class FileFuzzySearchUtils {
   public static final double DEFAULT_MIN_SIMILARITY = 0.25;
 
   // Parámetros de la ventana deslizante
-  private static final int CHUNK_LINES = 35;
-  private static final int OVERLAP_LINES = 10;
-  private static final int STEP_LINES = CHUNK_LINES - OVERLAP_LINES; // 25 líneas de avance
+  public static final int CHUNK_LINES = 35;
+  public static final int OVERLAP_LINES = 10;
+  public static final int STEP_LINES = CHUNK_LINES - OVERLAP_LINES; // 25 líneas de avance
 
   private static final int MAX_FILES_TO_SCAN = 100;
   private static final String[] SKIP_DIRS = {"target", ".git", ".idea", "node_modules"};

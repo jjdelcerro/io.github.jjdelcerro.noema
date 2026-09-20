@@ -19,6 +19,8 @@ import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
 import java.util.List;
 import java.util.function.Supplier;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  * Mínima implementación de Agent para permitir la configuración inicial sin
@@ -173,6 +175,11 @@ public class FakeAgent implements Agent {
   @Override
   public void addSharedService(AgentService service) {
 
+  }
+
+  @Override
+  public Collection<AgentService> getServices() {
+    return Collections.EMPTY_LIST;
   }
 
   private static class FakeConsole implements AgentConsole {

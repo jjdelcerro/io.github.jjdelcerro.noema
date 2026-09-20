@@ -4,11 +4,9 @@ import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.transport.McpTransport;
-import dev.langchain4j.mcp.client.transport.http.HttpMcpTransport;
 import dev.langchain4j.mcp.client.transport.http.StreamableHttpMcpTransport;
 import dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsGroup;
@@ -16,6 +14,7 @@ import io.github.jjdelcerro.noema.lib.settings.AgentSettingsItem;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsList;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsPaths;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsString;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,20 +22,16 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.util.*;
 
-public class McpServiceImpl implements AgentService {
+public class McpServiceImpl extends AbstractAgentService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(McpServiceImpl.class);
   public static final String NAME = "ModelContextProtocol";
 
-  private final AgentServiceFactory factory;
-  private final Agent agent;
   private final List<McpClient> activeClients = new ArrayList<>();
   private final List<AgentTool> tools = new ArrayList<>();
-  private boolean running = false;
 
   public McpServiceImpl(AgentServiceFactory factory, Agent agent) {
-    this.factory = factory;
-    this.agent = agent;
+    super(factory, agent);
   }
 
   @Override
@@ -185,32 +180,8 @@ public class McpServiceImpl implements AgentService {
   }
 
   @Override
-  public List<AgentTool> getTools() {
-    return tools;
-  }
-
-  @Override
-  public String getName() {
-    return NAME;
-  }
-
-  @Override
-  public boolean isRunning() {
-    return running;
-  }
-
-  @Override
   public boolean canStart() {
     return factory.canStart(agent.getSettings());
   }
 
-  @Override
-  public AgentServiceFactory getFactory() {
-    return factory;
-  }
-
-  @Override
-  public Agent.ModelParameters getModelParameters(String name) {
-    return null;
-  }
 }

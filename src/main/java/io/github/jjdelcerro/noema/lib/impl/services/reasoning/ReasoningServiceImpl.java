@@ -84,12 +84,16 @@ import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.subagent.Lis
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
 import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
 import io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 
 /**
  * Orquestador principal del sistema. Gestiona el bucle de razonamiento, la
  * ejecucion de herramientas y la interaccion con el LLM.
  */
-public class ReasoningServiceImpl implements ReasoningService {
+public class ReasoningServiceImpl 
+        extends AbstractAgentService
+        implements ReasoningService
+  {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ReasoningServiceImpl.class);
 
@@ -107,13 +111,10 @@ public class ReasoningServiceImpl implements ReasoningService {
     }
   }
 
-  private final AgentServiceFactory factory;
-  private final Agent agent;
   private final EpisodicMemory episodicMemory;
   private final Map<String, RecentMemory> recentMemories;
   private final Map<String, ProjectedMemory> projectedMemories;
   private Agent.ChatModel model;
-  private boolean running;
 
   private Map<String, ConsolidateMemory> activeConsolidateMemories;
 
@@ -121,13 +122,11 @@ public class ReasoningServiceImpl implements ReasoningService {
   private final Map<String, AvailableAgentTool> availableTools = new LinkedHashMap<>();
 
   public ReasoningServiceImpl(AgentServiceFactory factory, Agent agent) {
-    this.factory = factory;
-    this.agent = agent;
+    super(factory, agent);
     this.episodicMemory = agent.getEpisodicMemory();
     this.recentMemories = new HashMap<>();
     this.projectedMemories = new HashMap<>();
     this.activeConsolidateMemories = new HashMap<>();
-    this.running = false;
     this.currentSubchannel = DEFAULT_SUBCHANNEL;
   }
 
@@ -183,11 +182,6 @@ public class ReasoningServiceImpl implements ReasoningService {
   private ConsolidateMemory setActiveConsolidateMemory(String subchannel, ConsolidateMemory consolidateMemory) {
     this.activeConsolidateMemories.put(subchannel, consolidateMemory);
     return consolidateMemory;
-  }
-
-  @Override
-  public AgentServiceFactory getFactory() {
-    return factory;
   }
 
   @Override
@@ -533,16 +527,6 @@ public class ReasoningServiceImpl implements ReasoningService {
   }
 
   @Override
-  public String getName() {
-    return NAME;
-  }
-
-  @Override
-  public boolean isRunning() {
-    return this.running;
-  }
-
-  @Override
   public int estimateSystemPromptTokenCount(String subchannel) {
     List<ChatMessage> messages = Collections.singletonList(UserMessage.from(this.getLastestSystemPrompt()));
     return this.agent.estimateTokenCount(messages, null);
@@ -636,11 +620,6 @@ public class ReasoningServiceImpl implements ReasoningService {
     }
     // Nota: Las herramientas que están en 'availableTools' pero NO en 'persistedList' 
     // mantienen el valor 'active' que recibieron al ser añadidas (isAvailableByDefault).
-  }
-
-  @Override
-  public void stop() {
-    this.running = false;
   }
 
   /**

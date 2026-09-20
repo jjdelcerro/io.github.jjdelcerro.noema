@@ -48,6 +48,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  *
@@ -421,6 +423,10 @@ public class AgentImpl implements Agent {
   public AgentService getService(String name) {
     AgentService service = this.services.get(name);
     return service;
+  }
+
+  public Collection<AgentService> getServices() {
+    return Collections.unmodifiableCollection(this.services.values());
   }
 
   public String getCurrentSubchannel() {

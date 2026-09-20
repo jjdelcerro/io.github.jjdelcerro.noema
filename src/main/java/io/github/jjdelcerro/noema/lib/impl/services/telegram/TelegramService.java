@@ -12,6 +12,7 @@ import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.services.telegram.tools.TelegramTool;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
@@ -22,7 +23,10 @@ import org.slf4j.LoggerFactory;
  *
  * @author jjdelcerro
  */
-public class TelegramService implements AgentService {
+public class TelegramService 
+        extends AbstractAgentService
+        implements AgentService 
+  {
   
   private static final Logger LOGGER = LoggerFactory.getLogger(TelegramService.class);
  
@@ -35,26 +39,12 @@ public class TelegramService implements AgentService {
   public static final String TELEGRAM_CHAT_ID = "telegram/chat_id";
   public static final String TELEGRAM_API_KEY = "telegram/api_key";
 
-  private final Agent agent;
   private String apiKeyTelegram;
   private long authorizedChatId;
   private TelegramBot bot;
-  private boolean running;
-  private final AgentServiceFactory factory;
 
   public TelegramService(AgentServiceFactory factory, Agent agent) {
-    this.factory = factory;
-    this.agent = agent;
-  }
-
-  @Override
-  public AgentServiceFactory getFactory() {
-    return factory;
-  }
-  
-  @Override
-  public String getName() {
-    return NAME;
+    super(factory, agent);
   }
 
   public String getApiKeyTelegram() {
@@ -104,16 +94,6 @@ public class TelegramService implements AgentService {
     });
     this.running = true;
     this.agent.getCurrentConsole().printSystemLog("Servicio de telegram iniciado.");
-  }
-
-  @Override
-  public boolean isRunning() {
-    return this.running;
-  }
-
-  @Override
-  public ModelParameters getModelParameters(String name) {
-    return null;
   }
 
   @Override

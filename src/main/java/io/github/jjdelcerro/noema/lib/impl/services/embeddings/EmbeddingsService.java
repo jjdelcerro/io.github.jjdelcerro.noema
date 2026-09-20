@@ -9,6 +9,7 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.file.Path;
@@ -20,7 +21,7 @@ import org.apache.commons.lang3.StringUtils;
  *
  * @author jjdelcerro
  */
-public class EmbeddingsService implements AgentService {
+public class EmbeddingsService extends AbstractAgentService {
 
     public static class H2VectorUtils {
 
@@ -70,27 +71,11 @@ public class EmbeddingsService implements AgentService {
 
     public static final String NAME = "Embeddings";
 
-    private final AgentServiceFactory factory;
-    private final Agent agent;
-    private boolean running;
-    
     private EmbeddingModel[] embeddingModels;
     private EmbeddingModel embeddingModel;
 
     public EmbeddingsService(AgentServiceFactory factory, Agent agent) {
-        this.factory = factory;
-        this.agent = agent;
-        this.running = false;
-    }
-
-    @Override
-    public String getName() {
-        return NAME;
-    }
-
-    @Override
-    public AgentServiceFactory getFactory() {
-        return this.factory;
+      super(factory, agent);
     }
 
     @Override
@@ -119,26 +104,6 @@ public class EmbeddingsService implements AgentService {
         this.embeddingModel = embeddingModels[0];
         this.embeddingModel.getModel(); // Fuerza que se carge el modelo de embedding.
         this.running = true;
-    }
-
-    @Override
-    public boolean canStart() {
-        return true;
-    }
-
-    @Override
-    public boolean isRunning() {
-        return this.running;
-    }
-
-    @Override
-    public Agent.ModelParameters getModelParameters(String name) {
-        return null;
-    }
-
-    @Override
-    public List<AgentTool> getTools() {
-        return null;
     }
 
     public synchronized float[] embed(String text) {
@@ -214,11 +179,6 @@ public class EmbeddingsService implements AgentService {
     public EmbeddingFilter createEmbeddingFilter(String query, int limit, double similarity) {
         EmbeddingFilterImpl filter = new EmbeddingFilterImpl(this, query, limit, similarity);
         return filter;
-    }
-
-    @Override
-    public void stop() {
-        this.running = false;
     }
 
     @SuppressWarnings("UseSpecificCatch")

@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.util.List;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
+import java.util.Collection;
 
 /**
  *
@@ -137,6 +138,8 @@ public interface Agent {
 
   public AgentService getService(String name);
 
+  public Collection<AgentService> getServices();
+  
   public void start();
   
   public void stop();

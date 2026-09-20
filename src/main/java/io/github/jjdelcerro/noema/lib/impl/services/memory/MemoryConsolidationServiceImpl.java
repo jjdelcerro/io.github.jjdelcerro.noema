@@ -33,6 +33,7 @@ import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
 import io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService;
 import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 
 /**
  * Componente cognitivo encargado de la consolidación de la memoria. Ejecuta el
@@ -40,28 +41,22 @@ import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
  * 
  * TODO: Antes MemoryServiceImpl, habria que actualizar la documentacion con este cambio 
  */
-public class MemoryConsolidationServiceImpl implements MemoryConsolidationService {
+public class MemoryConsolidationServiceImpl 
+        extends AbstractAgentService 
+        implements MemoryConsolidationService
+  {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MemoryConsolidationServiceImpl.class);
 
-  private final Agent agent;
   private final EpisodicMemory episodicMemory;
   private AgentConsole console;
   private Agent.ChatModel model;
   private String systemPrompt;
-  private boolean running;
-  private final AgentServiceFactory factory;
 
   public MemoryConsolidationServiceImpl(AgentServiceFactory factory, Agent agent) {
-    this.factory = factory;
-    this.agent = agent;
+    super(factory, agent);
     this.episodicMemory = agent.getEpisodicMemory();
     this.console = agent.getConsole(DEFAULT_SUBCHANNEL);
-  }
-
-  @Override
-  public AgentServiceFactory getFactory() {
-    return factory;
   }
 
   @Override
@@ -258,21 +253,6 @@ public class MemoryConsolidationServiceImpl implements MemoryConsolidationServic
       new AnnotateObservationTool(this.agent)
     };
     return Arrays.asList(tools);
-  }
-
-  @Override
-  public String getName() {
-    return NAME;
-  }
-
-  @Override
-  public boolean isRunning() {
-    return this.running;
-  }
-
-  @Override
-  public void stop() {
-    this.running = false;
   }
 
   public Agent.ChatModel getModel() {

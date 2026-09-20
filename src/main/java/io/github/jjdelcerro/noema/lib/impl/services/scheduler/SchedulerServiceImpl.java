@@ -11,6 +11,7 @@ import io.github.jjdelcerro.noema.lib.impl.memory.episodic.Counter;
 import io.github.jjdelcerro.noema.lib.impl.services.scheduler.tools.ScheduleAlarmTool;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -34,7 +35,10 @@ import org.slf4j.LoggerFactory;
  *
  * @author jjdelcerro
  */
-public class SchedulerServiceImpl implements SchedulerService {
+public class SchedulerServiceImpl 
+        extends AbstractAgentService
+        implements SchedulerService 
+  {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SchedulerServiceImpl.class);
 
@@ -42,27 +46,17 @@ public class SchedulerServiceImpl implements SchedulerService {
   private static final String SENSOR_LABEL = "Scheduler";
   private static final String SENSOR_DESCRIPTION = "Scheduler"; // FIXME: poner una descripcion decente para el LLM.
 
-  private final Agent agent;
   private final Gson gson = new Gson();
   private ScheduledExecutorService scheduler;
   private Counter counter;
   private ScheduledFuture<?> currentScheduledTask;
-  private boolean running;
-  private final AgentServiceFactory factory;
 
   public SchedulerServiceImpl(AgentServiceFactory factory, Agent agent) {
-    this.factory = factory;
-    this.agent = agent;
-    this.running = false;
+    super(factory, agent);
   }
 
   private ConnectionSupplier getConnection() {
     return this.agent.getServicesDatabase();
-  }
-
-  @Override
-  public AgentServiceFactory getFactory() {
-    return factory;
   }
 
   @Override
@@ -195,16 +189,6 @@ public class SchedulerServiceImpl implements SchedulerService {
   }
 
   @Override
-  public String getName() {
-    return SchedulerService.NAME;
-  }
-
-  @Override
-  public boolean isRunning() {
-    return this.running;
-  }
-
-  @Override
   public boolean canStart() {
     if( !this.factory.canStart(agent.getSettings()) ) {
       return false;
@@ -213,21 +197,11 @@ public class SchedulerServiceImpl implements SchedulerService {
   }
 
   @Override
-  public Agent.ModelParameters getModelParameters(String name) {
-    return null;
-  }
-
-  @Override
   public List<AgentTool> getTools() {
     AgentTool[] tools = new AgentTool[]{
       new ScheduleAlarmTool(this.agent)
     };
     return Arrays.asList(tools);
-  }
-
-  @Override
-  public void stop() {
-    this.running = false;
   }
 
 }

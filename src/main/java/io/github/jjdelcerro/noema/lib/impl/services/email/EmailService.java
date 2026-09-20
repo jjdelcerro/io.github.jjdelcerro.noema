@@ -11,6 +11,7 @@ import io.github.jjdelcerro.noema.lib.impl.services.email.tools.EmailReadTool;
 import io.github.jjdelcerro.noema.lib.impl.services.email.tools.EmailSendTool;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
 import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 import jakarta.mail.*;
 import jakarta.mail.internet.*;
 import org.apache.tika.Tika;
@@ -52,7 +53,7 @@ import org.slf4j.LoggerFactory;
  * @author jjdelcerro
  */
 @SuppressWarnings("UseSpecificCatch")
-public class EmailService implements AgentService {
+public class EmailService extends AbstractAgentService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(EmailService.class);
 
@@ -70,34 +71,9 @@ public class EmailService implements AgentService {
 
   private final Tika tika = new Tika();
   private final Gson gson = new Gson();
-  private boolean running;
-  private final Agent agent;
-  private final AgentServiceFactory factory;
 
   public EmailService(AgentServiceFactory factory, Agent agent) {
-    this.factory = factory;
-    this.agent = agent;
-    this.running = false;
-  }
-
-  @Override
-  public AgentServiceFactory getFactory() {
-    return factory;
-  }
-
-  @Override
-  public String getName() {
-    return NAME;
-  }
-
-  @Override
-  public boolean isRunning() {
-    return this.running;
-  }
-
-  @Override
-  public Agent.ModelParameters getModelParameters(String name) {
-    return null;
+    super(factory, agent);
   }
 
   @Override

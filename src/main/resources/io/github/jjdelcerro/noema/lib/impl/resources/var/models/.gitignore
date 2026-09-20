@@ -1,0 +1,12 @@
+# 1. Ignorar todo por defecto
+*
+
+# 2. Permitir que Git entre a explorar los subdirectorios
+!*/
+
+# 3. Excluir de la regla a cualquier download.sh (en la raíz o en subcarpetas)
+!download.sh
+
+# 4. Mantener este propio archivo .gitignore rastreado
+!.gitignore
+
