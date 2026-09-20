@@ -504,7 +504,8 @@ TAREA: Genera el mapa del proyecto.
 Proyecto: {PROJECT_PATH}
 Documento de salida: {PROJECT_PATH}/project-map.md
 
-Sigue la estrategia por pasadas descrita en tu system prompt. Empieza por la PASADA 0. Guarda en disco al terminar cada pasada.
+Sigue la estrategia por pasadas descrita en tu system prompt. 
+Guarda en disco al terminar cada pasada.
     ]]></prompt_ini>
 
     <prompt_fin><![CDATA[
