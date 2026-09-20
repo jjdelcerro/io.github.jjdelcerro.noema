@@ -6,10 +6,12 @@ import io.github.jjdelcerro.noema.lib.AgentActions;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
+import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -103,35 +105,83 @@ public class AgentAccessControlImpl implements AgentAccessControl {
     }
   }
 
+  
+  /**
+   * Resuelve la ruta canonica real del archivo o directorio respetando enlaces simbolicos.
+   * Si el archivo o alguno de sus directorios intermedios no existe fisicamente en disco,
+   * asciende por el arbol hasta encontrar el primer ancestro real existente, resuelve su
+   * toRealPath() y reconstruye los segmentos restantes sin asumir la existencia del padre.
+   */
+  private Path toRealPath(Path path) throws IOException {
+    Path normalized = path.normalize();
+
+    // 1. Si la ruta existe fisicamente, resolucion canonica directa
+    if (Files.exists(normalized)) {
+      return normalized.toRealPath();
+    }
+
+    // 2. Si no existe, buscamos el ancestro existente mas cercano
+    Path existingAncestor = normalized.getParent();
+    while (existingAncestor != null && !Files.exists(existingAncestor)) {
+      existingAncestor = existingAncestor.getParent();
+    }
+
+    // 3. Si no encontramos ningun ancestro existente (caso limite de ruta relativa pura), fallback a absoluto
+    if (existingAncestor == null) {
+      return normalized.toAbsolutePath();
+    }
+
+    // 4. Resolvemos los symlinks del ancestro real y reensamblamos las ramas pendientes
+    Path realAncestor = existingAncestor.toRealPath();
+    Path remaining = existingAncestor.relativize(normalized);
+    return realAncestor.resolve(remaining).normalize();
+  }
+
+  /**
+   * Comprueba si existe una regla en 'allowedExternalPaths' que coincida con 'target'
+   * y que tenga una especificidad (profundidad de segmentos) estrictamente mayor
+   * que el prefijo denegado, habilitando un "agujero" de acceso.
+   */
+  private boolean isHoleAllowed(Path target, Path deniedPrefix) {
+    int deniedDepth = deniedPrefix.getNameCount();
+    for (Path allowed : this.allowedExternalPaths) {
+      if (target.startsWith(allowed) && allowed.getNameCount() > deniedDepth) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   @Override
   public Path resolvePath(String rawPath, AccessMode mode) {
     if (rawPath == null || rawPath.isBlank()) {
-      throw new IllegalArgumentException("El path no puede estar vacío");
+      throw new IllegalArgumentException("El path no puede estar vacio");
     }
 
-    // 1. Resolver ruta
+    // 1. Resolver ruta contra root si es relativa y obtener su ruta real canonica
     Path target;
     try {
-      // Si es absoluta, la usamos tal cual, si es relativa, la resolvemos contra root
       Path inputPath = Paths.get(rawPath);
-      target = inputPath.isAbsolute() ? inputPath : rootPath.resolve(inputPath);
-      target = target.normalize().toRealPath();
+      Path resolved = inputPath.isAbsolute() ? inputPath : rootPath.resolve(inputPath);
+      target = toRealPath(resolved);
     } catch (Exception e) {
-      throw new IllegalArgumentException("Path inválido: " + rawPath);
+      throw new IllegalArgumentException("Path invalido: " + rawPath);
     }
 
+    // 2. Validar restricciones de lectura con soporte de agujeros mas especificos
     for (Path nonReadablePath : this.nomReadablePaths) {
       if (target.startsWith(nonReadablePath)) {
-        throw new SecurityException("ACCESO DENEGADO: Ruta no permitida: " + rawPath);
+        if (!isHoleAllowed(target, nonReadablePath)) {
+          throw new SecurityException("ACCESO DENEGADO: Ruta no permitida: " + rawPath);
+        }
       }
     }
 
-    // Comprobamos si la ruta final empieza por el rootPath
+    // 3. Comprobar si la ruta esta dentro del sandbox (rootPath o allowedExternalPaths)
     boolean isUnderRoot = target.startsWith(rootPath);
     boolean isWhitelisted = false;
 
     if (!isUnderRoot) {
-      // Chequeo de lista blanca externa
       for (Path allowed : allowedExternalPaths) {
         if (target.startsWith(allowed)) {
           isWhitelisted = true;
@@ -144,30 +194,32 @@ public class AgentAccessControlImpl implements AgentAccessControl {
       throw new SecurityException("ACCESO DENEGADO: La ruta intenta salir del sandbox: " + rawPath);
     }
 
-    // 3. Lógica específica de Escritura (Opcional)
+    // 4. Logica especifica para modo de escritura
     if (mode == AccessMode.PATH_ACCESS_WRITE) {
-
-      // Nunca se permitirse el acceso en escritura a los archivos ",jv".
-      // Son la copia de respaldo de la informacion cuando hay modificacion de archivos
-      // por parte del LLM, asi que no se puede tocar, solo leer.
       String target_s = target.toString();
+
+      // Invariante inmutable: copias de backup RCS
       if (target_s.endsWith(",jv")) {
         throw new SecurityException("ACCESO DENEGADO: No se permite escribir en archivos ',jv'");
       }
 
-      // Aquí podrías añadir reglas extra, ej: no escribir en .git, no sobrescribir pom.xml, etc.
+      // Invariante inmutable: repositorio Git
       if (target_s.contains("/.git/")) {
         throw new SecurityException("ACCESO DENEGADO: No se permite escribir en la carpeta .git");
       }
 
-      String targetPathString = target.toString().replace("\\", "/");
+      // Invariante inmutable: directivas operativas de skills
+      String targetPathString = target_s.replace("\\", "/");
       if (targetPathString.contains("/.claude/skills/") || targetPathString.endsWith("/.claude/skills")) {
-          throw new SecurityException("ACCESO DENEGADO: No se permite modificar archivos dentro de .claude/skills/");
-      }      
-      
+        throw new SecurityException("ACCESO DENEGADO: No se permite modificar archivos dentro de .claude/skills/");
+      }
+
+      // Validar restricciones de no-escritura con soporte de agujeros mas especificos
       for (Path nonWritablePath : this.nomWritablePaths) {
         if (target.startsWith(nonWritablePath)) {
-          throw new SecurityException("ACCESO DENEGADO: Ruta no permitida para escritura: " + rawPath);
+          if (!isHoleAllowed(target, nonWritablePath)) {
+            throw new SecurityException("ACCESO DENEGADO: Ruta no permitida para escritura: " + rawPath);
+          }
         }
       }
     }
@@ -261,8 +313,7 @@ public class AgentAccessControlImpl implements AgentAccessControl {
   }
 
   /**
-   * Inspecciona las listas cargadas para identificar errores comunes de
-   * configuración.
+   * Inspecciona las listas cargadas para identificar errores comunes de configuracion.
    */
   private void validateRules() {
     // 1. Detectar rutas en nom_writable_paths fuera del workspace y no incluidas en allowed_external_paths
@@ -271,21 +322,27 @@ public class AgentAccessControlImpl implements AgentAccessControl {
     // 2. Detectar rutas en nom_readable_paths fuera del workspace y no incluidas en allowed_external_paths
     checkIsolatedRestrictedPaths(nomReadablePaths, "nom_readable_paths");
 
-    // 3. Detectar rutas redundantes en allowed_external_paths
+    // 3. Detectar rutas redundantes en allowed_external_paths:
+    // Solo es redundante si esta dentro del workspace Y NO abre un agujero sobre una restriccion
     for (Path allowed : allowedExternalPaths) {
       if (allowed.startsWith(rootPath)) {
-        reportIncongruency("La ruta '" + allowed + "' en 'allowed_external_paths' está dentro del workspace, por lo que es redundante.");
+        boolean isHoleInRestriction = nomWritablePaths.stream().anyMatch(allowed::startsWith)
+                || nomReadablePaths.stream().anyMatch(allowed::startsWith);
+
+        if (!isHoleInRestriction) {
+          reportIncongruency("La ruta '" + allowed + "' en 'allowed_external_paths' esta dentro del workspace, por lo que es redundante.");
+        }
       }
     }
 
-    // 4. Detectar solapamientos entre lectura prohibida y solo-lectura
+    // 4. Detectar solapamientos directos entre lectura prohibida y solo-lectura
     for (Path forbidden : nomReadablePaths) {
       if (nomWritablePaths.contains(forbidden)) {
-        reportIncongruency("La ruta '" + forbidden + "' está en 'nom_readable_paths' y 'nom_writable_paths'. Prevalecerá el bloqueo total de lectura.");
+        reportIncongruency("La ruta '" + forbidden + "' esta en 'nom_readable_paths' y 'nom_writable_paths'. Prevalecera el bloqueo total de lectura.");
       }
     }
   }
-
+  
   private void checkIsolatedRestrictedPaths(List<Path> restrictedList, String listName) {
     for (Path p : restrictedList) {
       boolean isUnderRoot = p.startsWith(rootPath);
