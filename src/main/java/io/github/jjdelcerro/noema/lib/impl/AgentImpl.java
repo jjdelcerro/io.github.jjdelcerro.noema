@@ -152,39 +152,48 @@ public class AgentImpl implements Agent {
   }  
   
   @Override
-  public synchronized void start() {
+  public synchronized void setupServices() {
     SLMUtils.start(this);
-    AgentManager manager = AgentLocator.getAgentManager();
-    for (AgentServiceFactory serviceFactory : manager.getServiceFactories()) {
-      AgentService sharedService = this.sharedServices.get(serviceFactory.getName());
-      if( sharedService!=null ) {
-        this.services.put(serviceFactory.getName(), sharedService);
-      } else {
-        this.services.put(serviceFactory.getName(), serviceFactory.createService(this));
+    if( this.services==null || this.services.isEmpty() ) {
+      AgentManager manager = AgentLocator.getAgentManager();
+      for (AgentServiceFactory serviceFactory : manager.getServiceFactories()) {
+        AgentService sharedService = this.sharedServices.get(serviceFactory.getName());
+        if( sharedService!=null ) {
+          this.services.put(serviceFactory.getName(), sharedService);
+        } else {
+          this.services.put(serviceFactory.getName(), serviceFactory.createService(this));
+        }
       }
     }
+  }
+  
+  @Override
+  public synchronized void start() {
+    this.setupServices();
     SensorsService sensors = (SensorsService) this.getService(SensorsService.NAME);
-    SensorInformation sensor = sensors.createSensorInformation(
-            USER_SENSOR_NAME,
-            USER_SENSOR_LABEL,
-            SensorNature.USER,
-            USER_SENSOR_DESCRIPTION,
-            false
-    );
-    sensors.registerSensor(sensor);
-
+    if( sensors.isEnabled() ) {
+      SensorInformation sensor = sensors.createSensorInformation(
+              USER_SENSOR_NAME,
+              USER_SENSOR_LABEL,
+              SensorNature.USER,
+              USER_SENSOR_DESCRIPTION,
+              false
+      );
+      sensors.registerSensor(sensor);
+    }
     ReasoningService reasoning = (ReasoningService) this.getService(ReasoningService.NAME);
-    for (AgentService service : this.services.values()) {
-      if (service.canStart()) {
-        List<AgentTool> tools = service.getTools();
-        if (tools != null) {
-          for (AgentTool tool : tools) {
-            reasoning.addTool(tool);
+    if( reasoning.isEnabled() ) {
+      for (AgentService service : this.services.values()) {
+        if (service.canStart()) {
+          List<AgentTool> tools = service.getTools();
+          if (tools != null) {
+            for (AgentTool tool : tools) {
+              reasoning.addTool(tool);
+            }
           }
         }
       }
     }
-
     this.startAllServices();
 
     this.running = true;
@@ -403,11 +412,13 @@ public class AgentImpl implements Agent {
 
   private void startAllServices() {
     for (AgentService service : this.services.values()) {
-      if (!service.isRunning() && service.canStart()) {
-        service.start();
-        getConsole(DEFAULT_SUBCHANNEL).printSystemLog("Service '"+service.getName() + "' ok");
-      } else {
-        getConsole(DEFAULT_SUBCHANNEL).printSystemLog("Service '"+service.getName() + "' can't start");
+      if ( service.isEnabled() ) {
+        if ( !service.isRunning() && service.canStart()) {
+          service.start();
+          getConsole(DEFAULT_SUBCHANNEL).printSystemLog("Service '"+service.getName() + "' ok");
+        } else {
+          getConsole(DEFAULT_SUBCHANNEL).printSystemLog("Service '"+service.getName() + "' can't start");
+        }
       }
     }
   }

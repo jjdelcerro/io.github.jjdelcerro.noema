@@ -1,5 +1,6 @@
 package io.github.jjdelcerro.noema.lib;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -41,6 +42,35 @@ public interface SubagentDefinition {
   }
 
   /**
+   * Supported access control operations for declarative subagent inputs.
+   */
+  enum SubagentAccessControlOperation {
+    NOP,
+    EXTENDS_PARENT,
+    ADD_ALLOWED_PATH,
+    ADD_NONWRITABLE_PATH,
+    ADD_NONREADABLE_PATH;
+
+    public static SubagentAccessControlOperation fromString(String val) {
+      if (val == null) {
+        return NOP;
+      }
+      return switch (val.trim().toLowerCase()) {
+        case "EXTENDS_PARENT", "extendsParent" ->
+          EXTENDS_PARENT;
+        case "ADD_ALLOWED_PATH", "addAllowedPath" ->
+          ADD_ALLOWED_PATH;
+        case "ADD_NONWRITABLE_PATH", "addNonWritablePath" ->
+          ADD_NONWRITABLE_PATH;
+        case "ADD_NONREADABLE_PATH", "addNonReadablePath" ->
+          ADD_NONREADABLE_PATH;
+        default ->
+          NOP;
+      };
+    }
+  }
+
+  /**
    * Immutable representation of a parameter definition expected by the
    * subagent.
    */
@@ -52,6 +82,17 @@ public interface SubagentDefinition {
       }
       type = (type != null) ? type : SubagentParamType.STRING;
       description = (description != null) ? description.trim() : "";
+    }
+  }
+
+  /**
+   * Immutable representation of a AccessControl operation defined for the
+   * subagent.
+   */
+  record SubagentAccessControl(SubagentAccessControlOperation operation, String path) {
+
+    public SubagentAccessControl {
+      operation = (operation != null) ? operation : SubagentAccessControlOperation.NOP;
     }
   }
 
@@ -72,7 +113,11 @@ public interface SubagentDefinition {
    * @return 
    */
   List<SubagentParam> getParams();
+  
+  List<SubagentAccessControl> getAccessControl();
 
+  String resolvePlaceholders(String template, Map<String, ?> parameters);
+  
   /**
    * Returns the declared parameter matching the given name, or null if not
    * found.

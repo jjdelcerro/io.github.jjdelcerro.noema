@@ -140,6 +140,8 @@ public interface Agent {
 
   public Collection<AgentService> getServices();
   
+  public void setupServices();
+  
   public void start();
   
   public void stop();

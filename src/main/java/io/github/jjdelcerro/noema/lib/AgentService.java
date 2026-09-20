@@ -20,6 +20,10 @@ public interface AgentService {
   public boolean canStart();
 
   public boolean isRunning();
+
+  public void setEnabled(boolean enabled);
+  
+  public boolean isEnabled();
   
   public ModelParameters getModelParameters(String name);
   

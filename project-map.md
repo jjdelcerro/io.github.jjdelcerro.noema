@@ -1,277 +1,277 @@
 # Project Map
 
+## Retrato del autor
+
+El autor de este código piensa en español pero escribe en inglés. No es una observación trivial: es la clave de su estilo. Cada vez que el lenguaje le obliga a nombrar algo, traduce. No traduce del español al inglés con diccionario, traduce con criterio. Los términos que elige no son los que usaría un ingeniero de software anglosajón formado en la escuela de Java. Son los que usaría alguien que ha leído a Aristóteles, a Hume y a Kant antes que a Martin Fowler, y que luego ha aprendido a programar. Por eso la arquitectura de Noema no se organiza en capas, servicios y repositorios, sino en memorias: episódica, reciente, proyectada, consolidada. El autor no está construyendo una aplicación; está modelando una mente. O, más exactamente, está construyendo el andamiaje para que una mente emerja de la interacción entre un modelo estadístico y un conjunto de mecanismos de gestión de la atención.
+
+Esa metáfora cognitiva no es decorativa. Atraviesa todo el proyecto. Cuando el autor necesita un componente que agrupe los turnos recientes de una conversación, lo llama `RecentMemory`. Cuando necesita que ese componente se destile en un relato narrativo, lo llama `ConsolidateMemory`. Cuando necesita que un operador decida qué mensajes se envían al modelo en un momento dado, lo llama `ProjectedMemory`. No son nombres técnicos; son nombres de procesos psicológicos. El autor podría haber usado `ConversationBuffer`, `SummaryStore` y `ContextBuilder`, que es lo que habría hecho un desarrollador convencional. No lo hizo. Eligió el vocabulario de la ciencia cognitiva porque piensa en el agente como un sistema que atiende, recuerda, olvida y consolida. Esa elección revela una formación que excede la ingeniería: hay lectura de psicología, de filosofía de la mente, de teoría de sistemas. El código es el lugar donde esa formación se vuelve operativa.
+
+El segundo rasgo que emerge al leer los identificadores es la obsesión por la trazabilidad. Cada decisión, cada turno, cada anotación tiene un identificador único. Cada intervención de una herramienta deja una huella en la base de datos. Cada memoria consolidada cita los turnos exactos de los que proviene. El autor no confía en el contexto del modelo. Sabe que la ventana de atención es frágil, que el olvido es inevitable, que la única forma de que un agente no alucine es poder volver al registro original. Por eso construye un sistema de citas (`{cite:123}`) que actúa como un mecanismo de recuperación determinista. Esa desconfianza no es paranoia; es una postura de ingeniería. El autor ha interiorizado que un LLM no es una base de datos y que la memoria de un agente no puede depender de que el modelo recuerde. Hay que externalizarla, indexarla y recuperarla quirúrgicamente. Los nombres de las herramientas de memoria son elocuentes: `fetch_citation`, `search_full_history`, `annotate_observation`. No son `get_context`, `search` ni `save`. Son operaciones cognitivas deliberadas: recuperar una cita, buscar en la historia completa, anotar una observación. El autor piensa en el agente como un investigador que consulta un archivo, no como un chatbot que mantiene un buffer.
+
+La tercera huella es la desconfianza sistemática hacia el código generado por el propio modelo. El autor ha implementado un sandbox para los scripts Groovy, ha puesto límites al número de llamadas al LLM por script, ha creado un control de acceso que restringe la escritura a ciertas rutas y la ejecución de comandos. No es una precaución genérica. Es la respuesta de alguien que ha visto demasiadas alucinaciones y ha decidido que la única forma de dormir tranquilo es que el agente no pueda hacer daño. Los nombres de las clases de seguridad son igualmente significativos: `AgentAccessControl`, `SecureASTCustomizer`, `Firejail`. El autor no usa `PermissionManager` ni `Policy`. Usa `AccessControl` porque piensa en términos de sujetos y recursos; usa `SecureASTCustomizer` porque conoce Groovy lo suficiente como para saber que la personalización del AST es la puerta de entrada. Es un autor que ha leído la documentación y ha entendido los agujeros, no solo la API.
+
+El cuarto rasgo es la mezcla de registros. En los comentarios de código, el autor escribe en español, sin tildes, con un tono telegráfico. Usa `TODO`, `FIXME`, `OJO`, `CUIDADO`. En los nombres de las interfaces, el registro es solemne, casi académico: `EpisodicMemory`, `ConsolidateMemory`, `PeripheralAwarenessOperation`. En los nombres de las herramientas, el registro es funcional y directo: `file_read`, `file_write`, `shell_execute`. Esa variación no es descuido; es adaptación al lector. El autor sabe que un nombre de herramienta lo va a leer un LLM, y que necesita ser inequívoco. Sabe que un nombre de interfaz lo va a leer un humano, y que puede permitirse una metáfora. Sabe que un comentario lo va a leer él mismo dentro de seis meses, y que debe ser breve y en su lengua. Es un políglota de registros.
+
+Hay contradicciones. El autor usa `Impl` para todas las implementaciones, pero también usa `Abstract` para las clases base. Usa `Factory` para las factorías, pero a veces las factorías no hacen más que instanciar una clase concreta. Usa `Manager` para gestores, pero el `AgentManager` es un registro de servicios más que un gestor de agentes. Esas inconsistencias son informativas. Revelan que el autor no sigue un manual de estilo, sino que va resolviendo cada caso con el criterio del momento. Cuando el patrón es claro, lo aplica; cuando no, improvisa. Es un autor pragmático, no dogmático.
+
+La forma en que nombra las operaciones de memoria proyectada es especialmente reveladora. `TrimmingOperation`, `PendingAnnotationOperation`, `TemporalPerceptionOperation`, `PeripheralAwarenessOperation`, `PinnedTurnsOperation`. No son operaciones genéricas; son funciones cognitivas específicas. El autor ha descompuesto la tarea de proyectar el contexto en una serie de pasos que un psicólogo reconocería: recortar lo irrelevante, recordar lo no anotado, percibir el paso del tiempo, mantener conciencia de otros canales, fijar turnos importantes. Cada operación tiene una prioridad y se ejecuta en orden. Es un pipeline de atención. El autor no está construyendo un simple gestor de contexto; está construyendo una arquitectura de la cognición. Y la construye con nombres que un LLM puede interpretar sin ambigüedad, porque las descripciones de las herramientas son igualmente densas y precisas.
+
+En resumen, el autor es un arquitecto de software con formación humanística, que piensa en español y escribe en inglés, que desconfía de la magia de los frameworks y de la memoria de los modelos, que modela el agente como una mente y la memoria como un proceso, y que deja en los nombres la huella de sus lecturas. Su estilo de nombrado no es una convención; es una filosofía. Para tomar decisiones nuevas, hay que preguntarse: ¿esto es una memoria, una percepción, una operación cognitiva? Si es una herramienta, el nombre debe ser un verbo en imperativo y en inglés. Si es una interfaz, el nombre debe ser un sustantivo del dominio, sin prefijos. Si es una implementación, `Impl`. Si es un servicio, `Service`. Si es una factoría, `Factory`. Si es una operación de memoria, `Operation`. Si es un evento, `Event`. Si es un sensor, `Sensor`. Si es un canal, `channel`. Si es un subcanal, `subchannel`. No hay excepciones. El autor puede perdonar una inconsistencia, pero no una traición a la metáfora.
+
 ## Vigencia
 
-- Commit: n/a (fuente local de trabajo)
-- Versión: 0.1.0 (`pom.xml`)
-- Fecha: 2026-09-18
-
-## Identidad
-
-Noema es un agente de software autónomo y proactivo diseñado para interactuar de forma continua con un entorno de trabajo técnico y su desarrollador. Combina ejecución desacoplada de herramientas en sandbox (sistema de archivos, shell bajo Firejail, control de versiones local JavaRCS y scripts Groovy) con un bucle sensorial asíncrono y reactivo. Su arquitectura cognitiva sustituye el paradigma de ventana de contexto infinita por una espiral de memoria jerárquica: retiene la verdad histórica inmutable en base de datos relacional y vectorial embebida (H2), sintetiza la memoria a largo plazo en relatos narrativos continuos con citas explícitas (`{cite:ID}`), y cura dinámicamente la memoria de trabajo proyectada hacia el LLM.
+- Commit: (verificar con `git rev-parse HEAD`)
+- Fecha: 2026-09-19
 
 ## Stack
 
-- Java 25 (`--enable-native-access`, `--add-modules jdk.incubator.vector`) — Plataforma base — Permite computación vectorial acelerada para embeddings y operaciones nativas ONNX en el mismo proceso.
-- LangChain4j (1.16.3 / beta26) — Abstracción de modelos y herramientas — Proporciona clientes unificados para proveedores OpenAI/OpenRouter, soporte de streaming con reasoning tokens, Jlama y MCP.
-- H2 Database (2.2.224) — Almacenamiento SQL y BLOB vectorial embebido (`AUTO_SERVER=TRUE`) — Garantiza persistencia episódica sin dependencias externas y permite inspección concurrente en depuración.
-- Apache Groovy (4.0.24) — Motor de scripting embebido con sandbox (`SecureASTCustomizer`) — Permite delegar cálculos masivos, agregaciones y consultas semánticas locales en código cliente en lugar de en el LLM.
-- JavaRCS (`io.github.jjdelcerro.javarcs`) — Control de versiones delta histórico en ficheros `,jv` — Crea respaldos incrementales antes de modificaciones destructivas sobre archivos del usuario.
-- Javalin (6.1.3) + SSE — Servidor web HTTP y streaming en tiempo real — Soporta modo headless desacoplado y alimenta la interfaz SPA sin requerir contenedores de servlets externos.
-- Lanterna (3.1.2) + JLine 3 (3.21.0) — Frontend TUI y consola REPL interactiva — Proporciona interfaces ricas en terminal para sesiones remotas SSH o entornos headless.
-- FlatLaf (3.4.1) + RSyntaxTextArea (3.6.1) — Frontend gráfico Swing de escritorio — Ofrece interfaz visual con resaltado sintáctico y editor de configuraciones integrado.
-- Apache Tika (2.8.0) — Extracción de texto y detección MIME — Normaliza el contenido textual de documentos estructurados y binarios antes de la ingesta en memoria.
-- ONNX Runtime GenAI (`io.github.inference4j`) — Modelos locales en proceso (SLM Qwen3.5-0.8B y MiniLM) — Ejecución offline de embeddings semánticos y subconsultas sin coste ni latencia de red.
+- Java 25 — lenguaje base; uso de `--add-modules jdk.incubator.vector` y `--enable-native-access=ALL-UNNAMED`.
+- Maven — construcción y empaquetado con `maven-shade-plugin` para fat jar.
+- LangChain4j — integración con LLM, herramientas, embeddings y MCP.
+- H2 — base de datos embebida para memoria episódica, consolidada y servicios.
+- Gson — serialización JSON de configuración, memorias y estados.
+- Swing + FlatLaf + MigLayout — interfaz gráfica de escritorio.
+- Lanterna — interfaz TUI.
+- JLine — consola interactiva.
+- Javalin — servidor web embebido y SSE para la interfaz web.
+- Groovy — motor de scripting embebido y sandbox.
+- ONNX Runtime + modelos cuantizados — embeddings locales y modelo SLM.
+- Apache Tika — extracción de texto de documentos binarios.
+- JavaRCS — control de versiones para backups automáticos.
+- Natty — parseo de fechas en lenguaje natural para alarmas.
+- CommonMark — renderizado de Markdown en Swing.
+- RSyntaxTextArea — editor de texto con resaltado.
+- Firejail — sandbox opcional para ejecución de shell.
+- Log4j2 — logging.
 
 ## Mapa de módulos
 
-- `io.github.jjdelcerro.noema.lib`: Contratos base, ciclo de vida del agente, control de acceso y parámetros del sistema → `Agent.java`, `AgentManager.java`, `AgentAccessControl.java`, `AgentTool.java`, `Subagent.java`.
-- `io.github.jjdelcerro.noema.lib.memory`: Contratos de los subsistemas de memoria episódica, reciente, consolidada y proyectada → `EpisodicMemory.java`, `Turn.java`, `RecentMemory.java`, `ConsolidateMemory.java`, `ProjectedMemory.java`.
-- `io.github.jjdelcerro.noema.lib.services`: Contratos de los servicios autónomos del agente → `ReasoningService.java`, `SensorsService.java`, `MemoryConsolidationService.java`.
-- `io.github.jjdelcerro.noema.lib.settings`: Árbol de configuración desacoplado y evaluador dinámico → `AgentSettings.java`, `AgentSettingsGroup.java`, `AgentSettingsCheckedList.java`.
-- `io.github.jjdelcerro.noema.lib.impl`: Implementación del agregado central del agente, fábricas de infraestructura y modelo de chat → `AgentImpl.java`, `AgentManagerImpl.java`, `AgentAccessControlImpl.java`, `ChatModelImpl.java`, `AgentPathsImpl.java`.
-- `io.github.jjdelcerro.noema.lib.impl.memory.episodic`: Persistencia relacional y vectorial del histórico completo de turnos en H2 → `EpisodicMemoryImpl.java`, `TurnImpl.java`, `Counter.java`.
-- `io.github.jjdelcerro.noema.lib.impl.memory.recent`: Gestión de ventana conversacional activa serializada en JSON → `RecentMemoryImpl.java`.
-- `io.github.jjdelcerro.noema.lib.impl.memory.consolidate`: Persistencia híbrida (metadatos en H2, relatos narrativos en `.md`) de puntos de guardado → `ConsolidateMemoryImpl.java`.
-- `io.github.jjdelcerro.noema.lib.impl.memory.projected`: Pipeline de operaciones de filtrado y curación del contexto previo al LLM → `ProjectedMemoryImpl.java`.
-- `io.github.jjdelcerro.noema.lib.impl.memory.projected.operations`: Transformaciones cognitivas sobre la memoria proyectada → `TrimmingOperation.java`, `PendingAnnotationOperation.java`, `PinnedTurnsOperationImpl.java`, `TemporalPerceptionOperation.java`, `PeripheralAwarenessOperation.java`.
-- `io.github.jjdelcerro.noema.lib.impl.services.reasoning`: Despacho de eventos, bucle deliberativo y registro de herramientas del agente → `ReasoningServiceImpl.java`, `ReasoningServiceFactory.java`.
-- `io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file`: Herramientas de consulta, inspección, parcheo y ejecución segura en sistema de archivos → `FileReadTool.java`, `FileWriteTool.java`, `FileGrepTool.java`, `FileFuzzyGrepTool.java`, `FilePatchTool.java`, `ShellExecuteTool.java`, `ReadPaginatedResourceTool.java`.
-- `io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.skills`: Carga y ejecución de directivas procedimentales encapsuladas en `.claude/skills` → `ActivateSkillTool.java`, `DeactivateSkillTool.java`, `ListSkillsTool.java`, `RunSkillScriptTool.java`, `ReadSkillResourceTool.java`.
-- `io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.subagent`: Coordinación e invocación de subagentes declarativos aislados → `LaunchSubagentTool.java`, `ListSubagentsTool.java`.
-- `io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting`: Ejecución de código Groovy embebido en la JVM → `ScriptExecuteTool.java`.
-- `io.github.jjdelcerro.noema.lib.impl.services.sensors`: Bus sensorial multicanal con acumulación y despacho según la naturaleza del estímulo → `SensorsServiceImpl.java`, `DiscreteSensorData.java`, `MergeableSensorData.java`, `StateSensorData.java`, `UserSensorData.java`.
-- `io.github.jjdelcerro.noema.lib.impl.services.memory`: Motor de compactación cognitiva de memoria a largo plazo e introspección histórica → `MemoryConsolidationServiceImpl.java`, `LookupTurnTool.java`, `SearchFullHistoryTool.java`, `AnnotateObservationTool.java`.
-- `io.github.jjdelcerro.noema.lib.impl.services.embeddings`: Vectorización local ONNX, serialización y filtrado Top-K con chunking MaxP → `EmbeddingsService.java`, `EmbeddingFilterImpl.java`.
-- `io.github.jjdelcerro.noema.lib.impl.services.mcp`: Conexión de clientes Model Context Protocol sobre transporte Stdio o HTTP/SSE → `McpServiceImpl.java`, `McpToolWrapper.java`.
-- `io.github.jjdelcerro.noema.lib.impl.services.scheduler`: Planificación diferida persistente de alarmas sobre base de datos → `SchedulerServiceImpl.java`, `ScheduleAlarmTool.java`.
-- `io.github.jjdelcerro.noema.lib.impl.services.email`: Sensor proactivo IMAP IDLE y cliente SMTP saneado por Tika → `EmailService.java`, `EmailSendTool.java`, `EmailReadTool.java`, `EmailListTool.java`.
-- `io.github.jjdelcerro.noema.lib.impl.services.telegram`: Sensor reactivo y efector de notificaciones mediante Telegram Bot API → `TelegramService.java`, `TelegramTool.java`.
-- `io.github.jjdelcerro.noema.lib.impl.scripting`: Entorno de evaluación Groovy con fachadas de sistema y limitación de I/O → `ScriptEngine.java`, `ScriptContext.java`, `FsModule.java`, `LlmModule.java`, `WebModule.java`, `AnnotationModule.java`.
-- `io.github.jjdelcerro.noema.main`: Orquestación de arranque, despacho de interfaces de usuario y servidor web → `Main.java`, `MainWeb.java`, `MainLanterna.java`, `MainGUI.java`, `MainConsole.java`, `NoemaWebServer.java`, `BootUtils.java`.
-- `io.github.jjdelcerro.noema.ui`: Fábrica de interfaces y consolas de usuario unificadas → `AgentUILocator.java`, `AgentUIManager.java`, `AgentConsole.java`.
-- `io.github.jjdelcerro.noema.ui.lanterna`: Implementación de interfaz de usuario de texto (TUI) para consola → `MainLanternaWindow.java`, `HistoryChatBox.java`, `AgentLanternaSettingsImpl.java`.
-- `io.github.jjdelcerro.noema.ui.swing`: Implementación de interfaz de escritorio Swing con pestañas de configuración y chat → `MainChatPanel.java`, `AgentSwingSettingsImpl.java`, `SimpleTextEditor.java`.
-- `webapp`: Interfaz web SPA desacoplada consumidora de la API Javalin y SSE → `index.html`, `js/main.js`, `js/chat-ui.js`, `js/config-ui.js`, `js/api.js`.
+- `io.github.jjdelcerro.noema.lib` — interfaces y contratos del núcleo del agente → `Agent.java`, `AgentManager.java`, `AgentTool.java`, `AgentService.java`, `AgentPaths.java`, `AgentSettings.java`, `AgentConsole.java`, `AgentAccessControl.java`, `Subagent.java`, `SubagentDefinition.java`.
+- `io.github.jjdelcerro.noema.lib.memory` — contratos de memoria → `EpisodicMemory.java`, `RecentMemory.java`, `ProjectedMemory.java`, `ConsolidateMemory.java`, `Turn.java`.
+- `io.github.jjdelcerro.noema.lib.memory.projected` — operaciones de proyección → `ProjectedMemoryOperation.java`, `ProjectedMemoryOperationFactory.java`.
+- `io.github.jjdelcerro.noema.lib.memory.projected.operations` — operaciones específicas → `PinnedTurnsOperation.java`.
+- `io.github.jjdelcerro.noema.lib.services` — contratos de servicios → `ReasoningService.java`, `MemoryConsolidationService.java`, `SensorsService.java`.
+- `io.github.jjdelcerro.noema.lib.settings` — contratos de configuración → `AgentSettings.java`, `AgentSettingsGroup.java`, `AgentSettingsItem.java`.
+- `io.github.jjdelcerro.noema.lib.spi` — clases base para servicios → `AbstractAgentService.java`.
+- `io.github.jjdelcerro.noema.lib.impl` — implementaciones del núcleo → `AgentImpl.java`, `AgentManagerImpl.java`, `AgentAccessControlImpl.java`, `AgentPathsImpl.java`, `AgentActionsImpl.java`, `ChatModelImpl.java`, `ModelParametersImpl.java`, `SQLProviderImpl.java`, `SubagentImpl.java`, `SubagentDefinitionImpl.java`, `AbstractAgentTool.java`, `AbstractPaginatedAgentTool.java`, `ToolSpecificationBuilder.java`, `DateUtils.java`, `SLMUtils.java`, `AgentUtils.java`, `ExpressionEvaluator.java`, `FileFuzzySearchUtils.java`.
+- `io.github.jjdelcerro.noema.lib.impl.memory` — implementaciones de memoria → `recent/RecentMemoryImpl.java`, `projected/ProjectedMemoryImpl.java`, `projected/operations/*`, `episodic/EpisodicMemoryImpl.java`, `episodic/TurnImpl.java`, `episodic/Counter.java`, `consolidate/ConsolidateMemoryImpl.java`, `GsonUtils.java`.
+- `io.github.jjdelcerro.noema.lib.impl.services` — implementaciones de servicios → `reasoning/ReasoningServiceImpl.java`, `reasoning/ReasoningServiceFactory.java`, `reasoning/tools/*`, `memory/MemoryConsolidationServiceImpl.java`, `memory/MemoryConsolidationServiceFactory.java`, `sensors/SensorsServiceImpl.java`, `sensors/SensorsServiceFactory.java`, `sensors/tools/*`, `sensors/nature/*`, `embeddings/EmbeddingsService.java`, `embeddings/EmbeddingsServiceFactory.java`, `embeddings/EmbeddingFilterImpl.java`, `scheduler/SchedulerServiceImpl.java`, `scheduler/SchedulerServiceFactory.java`, `scheduler/tools/ScheduleAlarmTool.java`, `email/EmailService.java`, `email/EmailServiceFactory.java`, `email/tools/*`, `telegram/TelegramService.java`, `telegram/TelegramServiceFactory.java`, `telegram/tools/TelegramTool.java`, `mcp/McpServiceImpl.java`, `mcp/McpServiceFactory.java`, `mcp/McpToolWrapper.java`.
+- `io.github.jjdelcerro.noema.lib.impl.scripting` — scripting Groovy → `ScriptEngine.java`, `ScriptContext.java`, `ScriptModule.java`, `AbstractScriptModule.java`, `modules/FsModule.java`, `modules/LlmModule.java`, `modules/WebModule.java`, `modules/AnnotationModule.java`, `modules/SessionStateModule.java`, `modules/SubagentsModule.java`.
+- `io.github.jjdelcerro.noema.lib.impl.skills` — sistema de skills → `Skill.java`, `SkillUtils.java`.
+- `io.github.jjdelcerro.noema.main` — puntos de entrada → `Main.java`, `MainGUI.java`, `MainConsole.java`, `MainLanterna.java`, `MainWeb.java`, `BootUtils.java`, `NoemaWebServer.java`.
+- `io.github.jjdelcerro.noema.ui` — interfaces de UI → `AgentUIManager.java`, `AgentUISettings.java`, `AgentUILocator.java`.
+- `io.github.jjdelcerro.noema.ui.swing` — UI Swing → `MainChatPanel.java`, `WelcomePanel.java`, `SimpleTextEditor.java`, `DebugPanel.java`, `JMarkdownPanel.java`, `AgentSwingConsoleControllerUsingMultipleJTextPane.java`, `settings/*`.
+- `io.github.jjdelcerro.noema.ui.lanterna` — UI TUI → `MainLanternaWindow.java`, `HistoryChatBox.java`, `ColoredHistoryRenderer.java`, `ScrollPanel.java`, `AgentLanternaConsoleImpl.java`, `settings/*`.
+- `io.github.jjdelcerro.noema.ui.console` — UI consola → `AgentConsoleImpl.java`, `AgentConsoleManagerImpl.java`, `AgentConsoleSettingsImpl.java`.
 
 ## Contratos principales
 
-- `Agent` (`AgentImpl`, `SubagentImpl`, `FakeAgent`): Núcleo de orquestación, gestión de servicios compartidos, ciclo de vida (`start`/`stop`), acceso a modelos de chat y sensores.
-- `AgentManager` (`AgentManagerImpl`): Registro central de factorías de servicios, proveedores SQL, operaciones de memoria proyectada, subagentes activos y acciones de ciclo de vida.
-- `AgentAccessControl` (`AgentAccessControlImpl`): Guardián de seguridad; valida rutas de lectura/escritura en el sandbox, aplica whitelist/blacklist y restringe ejecución por flags de configuración.
-- `AgentService` (`AbstractAgentService`): Contrato de ciclo de vida de subsistemas acoplados al agente (`canStart`, `start`, `stop`, herramientas y parámetros del modelo).
-  - `ReasoningService` (`ReasoningServiceImpl`): Bucle principal deliberativo, orquestación LLM, registro de herramientas y despacho de eventos.
-  - `SensorsService` (`SensorsServiceImpl`): Ingesta, buffer y despacho de estímulos multicanal clasificados por `SensorNature`.
-  - `MemoryConsolidationService` (`MemoryConsolidationServiceImpl`): Fusión en espiral de turnos episódicos en puntos de guardado narrativos con verificación de citas.
-  - `SchedulerService` (`SchedulerServiceImpl`): Programación persistente y reprogramación de alarmas cronológicas.
-  - `EmbeddingsService` (`EmbeddingsService`): Motor de vectorización en memoria y cálculo de distancia coseno MaxP.
-  - `McpService` (`McpServiceImpl`): Gestor de conexiones cliente con servidores MCP externos.
-  - `EmailService` (`EmailService`): Escucha pasiva de correos entrantes autorizados y despacho de envíos.
-  - `TelegramService` (`TelegramService`): Canal bidireccional de mensajería con filtrado de `chatId`.
-- `AgentTool` (`AbstractAgentTool` → `AbstractPaginatedAgentTool`): Definición de herramientas para el LLM con especificación de esquema, modo de acceso (`READ`, `WRITE`, `EXECUTION`, `SCRIPTING`) y política de recorte de salida.
-- `EpisodicMemory` (`EpisodicMemoryImpl`, `FakeEpisodicMemory`): Repositorio maestro e inmutable de eventos pasados (`Turn`) y metadatos de consolidación sobre base de datos H2.
-- `RecentMemory` (`RecentMemoryImpl`, `FakeRecentMemory`): Estado activo de la conversación por subcanal; rastrea el umbral de compactación y permite poda atómica de turnos.
-- `ProjectedMemory` (`ProjectedMemoryImpl`): Proyección curada e inmutable de mensajes entregada al LLM tras evaluar el pipeline de operaciones de contexto.
-- `ProjectedMemoryOperation` (`ProjectedMemoryOperationFactory`):
-  - `PinnedTurnsOperationImpl`: Fija y reinyecta llamadas/respuestas de herramientas marcadas con `shouldPin()` y emite recordatorios periódicos.
-  - `TrimmingOperation`: Poda el contenido de respuestas pesadas de herramientas cuando superan la ventana de atención reciente.
-  - `PendingAnnotationOperation`: Detecta recursos leídos en zona de riesgo que no han sido consolidados con `annotate_observation` y genera advertencias efímeras.
-  - `TemporalPerceptionOperation`: Notifica pausas temporales prolongadas entre interacciones.
-  - `PeripheralAwarenessOperation`: Inyecta consciencia de actividad en otros subcanales concurrentes.
-- `AgentSettings` (`AgentSettingsImpl` extiende `AgentSettingsGroupImpl`): Árbol jerárquico de ajustes en disco (`settings.json`) con evaluación de expresiones booleanas dinámicas (`ExpressionEvaluator`).
-- `AgentConsole`: Canal abstracto de visualización y confirmación humana interactiva (`MainChatPanel`, `AgentLanternaConsoleImpl`, `AgentConsoleImpl`, `ServerAgentConsole`, `SseAgentConsole`).
-- `Subagent` (`SubagentImpl`): Trabajador subordinado ejecutor de recetas XML (`SubagentDefinition`) en sandbox temporal aislado con base de datos propia.
+- `Agent` — entidad central; implementación por defecto `AgentImpl`.
+- `AgentManager` — registro y factoría de agentes, servicios, acciones y subagentes; implementación `AgentManagerImpl`.
+- `AgentService` — servicio del agente; implementaciones en `AbstractAgentService` → `ReasoningServiceImpl`, `MemoryConsolidationServiceImpl`, `SensorsServiceImpl`, `EmbeddingsService`, `SchedulerServiceImpl`, `EmailService`, `TelegramService`, `McpServiceImpl`.
+- `AgentServiceFactory` — factoría de servicios; implementaciones en cada servicio.
+- `AgentTool` — herramienta del agente; implementaciones en `AbstractAgentTool` y `AbstractPaginatedAgentTool` → múltiples herramientas.
+- `AgentConsole` — abstracción de consola; implementaciones `AgentConsoleImpl`, `SwingAgentConsole`, `LanternaConsole`, `SseAgentConsole`.
+- `AgentAccessControl` — control de acceso; implementación `AgentAccessControlImpl`.
+- `AgentSettings` — configuración jerárquica; implementación `AgentSettingsImpl`.
+- `AgentPaths` — rutas del agente; implementación `AgentPathsImpl`.
+- `EpisodicMemory` — memoria a largo plazo; implementación `EpisodicMemoryImpl`.
+- `RecentMemory` — memoria de trabajo; implementación `RecentMemoryImpl`.
+- `ProjectedMemory` — proyección de contexto; implementación `ProjectedMemoryImpl`.
+- `ConsolidateMemory` — memoria consolidada; implementación `ConsolidateMemoryImpl`.
+- `Turn` — unidad de interacción; implementación `TurnImpl`.
+- `ProjectedMemoryOperation` — operación del pipeline de proyección; implementaciones en `impl.memory.projected.operations`.
+- `SensorsService` — sistema sensorial; implementación `SensorsServiceImpl`.
+- `ReasoningService` — orquestador del razonamiento; implementación `ReasoningServiceImpl`.
+- `MemoryConsolidationService` — servicio de consolidación; implementación `MemoryConsolidationServiceImpl`.
+- `Subagent` — trabajador aislado; implementación `SubagentImpl`.
+- `SubagentDefinition` — definición declarativa; implementación `SubagentDefinitionImpl`.
 
 ## Modelo de datos
 
-- Base de datos H2 Episódica (`.noema-agent/var/lib/episodic_memory.db`):
-  - Tabla `episodicmemory`: Registro inmutable de cada turno del sistema.
-    - `id INT PRIMARY KEY`: Identificador secuencial autoincremental gestionado por `Counter`.
-    - `timestamp TIMESTAMP`: Fecha y hora de ocurrencia del evento.
-    - `contenttype VARCHAR(50)`: Discriminador semántico (`chat`, `tool_execution`, `tool_execution_summarized`, `annotation`, `lookup_turn`).
-    - `subchannel VARCHAR(20)`: Canal o terminal de procedencia (`default`, identificadores de sesión).
-    - `annotation_type VARCHAR(100)`: Categoría opcional de clasificación para notas episódicas.
-    - `text_user CLOB`, `text_thinking CLOB`, `text_model CLOB`: Cadenas textuales de prompt, razonamiento intermedio y respuesta final.
-    - `tool_call CLOB`: JSON descriptivo de la invocación de herramienta.
-    - `tool_result CLOB`: Resultado de ejecución de herramienta (truncado a 2KB si excede `MAX_DB_TEXT_SIZE`).
-    - `embedding_blob BLOB`: Vector serializado en binario generado por el modelo de embeddings.
-  - Tabla `consolidatememory`: Metadatos de puntos de guardado.
-    - `id INT PRIMARY KEY`: Identificador único de consolidación.
-    - `cm_first INT`, `cm_last INT`: Rango inclusivo de turnos cubiertos por el punto de guardado.
-    - `timestamp TIMESTAMP`: Momento de consolidación.
-    - `subchannel VARCHAR(20)`: Subcanal al que pertenece la consolidación.
-- Base de datos H2 de Servicios (`.noema-agent/var/lib/service.db`):
-  - Tabla `SCHEDULER`: Registro de alarmas programadas.
-    - `id VARCHAR(255) PRIMARY KEY`: Clave única en formato `ALARM-<num>`.
-    - `timestamp TIMESTAMP`: Momento de creación.
-    - `alarm_time TIMESTAMP`: Momento programado para la ejecución.
-    - `reason VARCHAR(1024)`: Motivo o texto de la alarma.
-- Ficheros y almacenamiento estructurado en disco (`.noema-agent/var/`):
-  - `lib/consolidatememory/consolidatememory-{id}-{first}-{last}.md`: Contenido textual completo del punto de guardado (secciones "Resumen" y "El Viaje").
-  - `lib/recent_memory-{subchannel}.json`: Estado de la sesión conversacional activa (lista de mensajes y mapa de índices a turnos).
-  - `lib/projected_memory_{subchannel}.json`: Estado persistente de operaciones de contexto (último turno notificado, turnos anclados).
-  - `lib/sensors.json`: Memento con estadísticas de sensores, eventos encolados sin consumir y mapa de estados vigentes.
-  - `config/settings.json`: Configuración de ajustes locales del workspace.
-  - `config/settingsui.json`: Descriptor dinámico del árbol de configuración y formularios para la UI.
-  - `config/*.properties`: Tablas de dominios para combos (`models.properties`, `providers_urls.properties`, `apikeys.properties`, `available_tools.properties`).
-  - `var/tmp/`: Almacén de intercambio de herramientas paginadas (`out_*.out`, `find_*.tmp`, `grep_*.tmp`, `fuzzygrep_*.tmp`).
-  - `,jv` (ficheros ocultos junto a archivos modificados): Registro de revisiones deltas de JavaRCS antes de escrituras destructivas.
+- `episodicmemory` — tabla principal de turnos.
+  - `id INT PRIMARY KEY`
+  - `timestamp TIMESTAMP`
+  - `contenttype VARCHAR(50)`
+  - `subchannel VARCHAR(20)`
+  - `annotation_type VARCHAR(100)`
+  - `text_user CLOB`
+  - `text_thinking CLOB`
+  - `text_model CLOB`
+  - `tool_call CLOB`
+  - `tool_result CLOB`
+  - `embedding_blob BLOB`
+  - Invariantes: `id` autoincremental, `timestamp` no nulo, `contenttype` define el tipo de turno (`chat`, `tool_execution`, `lookup_turn`, `annotation`, etc.).
+- `consolidatememory` — metadatos de memorias consolidadas.
+  - `id INT PRIMARY KEY`
+  - `cm_first INT`
+  - `cm_last INT`
+  - `timestamp TIMESTAMP`
+  - `subchannel VARCHAR(20)`
+  - Invariantes: `cm_first` y `cm_last` definen el rango de turnos consolidados.
+- `SCHEDULER` — alarmas programadas.
+  - `id VARCHAR(255) PRIMARY KEY`
+  - `timestamp TIMESTAMP`
+  - `alarm_time TIMESTAMP`
+  - `reason VARCHAR(1024)`
 
 ## Flujos dominantes
 
-### Flujo: Despacho e interacción de turno conversacional
+### Flujo: Mensaje de usuario → respuesta del agente
 
-1. El usuario envía un mensaje desde cualquiera de las interfaces activas (Web SSE, Swing, Lanterna o CLI) invocando `AgentImpl.putUsersMessage(subchannel, text, callback)`.
-2. `SensorsServiceImpl.putEvent()` empaqueta el texto como `SensorEventUserImpl` (`SensorNature.USER`), actualiza estadísticas sensoriales y despierta el hilo del despachador mediante `sensorLock.notifyAll()`.
-3. El hilo continuo `ReasoningServiceImpl.eventDispatcher()` obtiene el evento mediante `sensors.getEvent()` y delega en `processSingleEvent(event)`.
-4. `RecentMemoryImpl.add()` recibe el mensaje de usuario. `ProjectedMemoryImpl.getMessages()` ensambla el contexto:
-   - Añade el prompt de sistema base (`reasoning-system.md`) enriquecido con módulos activos de identidad (`var/identity/core/` y `var/identity/environ/`).
-   - Inyecta el texto del último punto de guardado disponible (`ConsolidateMemoryImpl.getText()`).
-   - Concatena los mensajes de trabajo de `RecentMemoryImpl`.
-   - Ejecuta secuencialmente el pipeline de operaciones ordenado por prioridad: ancla turnos de skills (`PinnedTurnsOperationImpl`), poda salidas extensas de herramientas (`TrimmingOperation`), evalúa recursos sin anotar (`PendingAnnotationOperation`), verifica lapsos de tiempo (`TemporalPerceptionOperation`) y agrega consciencia de subcanales periféricos (`PeripheralAwarenessOperation`).
-5. `ChatModelImpl.generate()` serializa la petición a formato compatible OpenAI y la transmite al modelo de lenguaje con soporte de streaming hacia `AgentConsole`.
-6. Si el modelo devuelve solicitudes de herramientas (`hasToolExecutionRequests()`):
-   - `ReasoningServiceImpl.executeTool()` evalúa la política de permisos mediante `AgentAccessControlImpl.isToolAllowed()`.
-   - Si la herramienta modifica el entorno (`MODE_WRITE`, `MODE_EXECUTION`) y `humanConfirmationRequired` es verdadero, se solicita confirmación en `AgentConsole.confirm()`.
-   - Se ejecuta la herramienta y se crea un turno en `EpisodicMemoryImpl.add()` con `contenttype: tool_execution` (o `annotation` / `lookup_turn`).
-   - El resultado se inyecta en `RecentMemoryImpl` y el bucle vuelve a invocar `getModel().generate()`.
-7. Si el modelo devuelve una respuesta textual final:
-   - Se crea y persiste el turno de tipo `chat` en `EpisodicMemoryImpl`.
-   - `RecentMemoryImpl.consolideTurn()` vincula los mensajes de la iteración al ID del turno persistido.
-   - Si `RecentMemoryImpl.needConsolidation()` detecta que el número de turnos supera el umbral configurado (`reasoning/consolidation_turns`), se dispara la consolidación de memoria.
-   - Se persiste el estado de memoria en disco (`recentMemory.save()`, `projectedMemory.save()`).
-   - Se invoca `callback.onComplete()` para liberar el bloqueo visual en la interfaz de usuario.
+1. `MainGUI`/`MainConsole`/`MainWeb` recibe mensaje y llama a `Agent.putUsersMessage(subchannel, text, callback)`.
+2. `SensorsServiceImpl.putEvent(USER, ...)` encola el evento y notifica al dispatcher.
+3. `ReasoningServiceImpl.eventDispatcher()` consume el evento con `getEvent()`.
+4. `ReasoningServiceImpl.processSingleEvent()` crea un `UserMessage` y lo añade a `RecentMemory`.
+5. Bucle de razonamiento: `ProjectedMemory.getMessages()` construye contexto con `RecentMemory`, `ConsolidateMemory` y operaciones de proyección.
+6. `ChatModelImpl.generate()` envía al LLM y recibe `AiMessage`.
+7. Si hay llamadas a herramientas, `executeTool()` las ejecuta, persiste turnos en `EpisodicMemory` y añade resultados a `RecentMemory`.
+8. Cuando no hay más herramientas, se persiste el turno final `chat` en `EpisodicMemory`.
+9. Si `RecentMemory.needConsolidation()` es verdadero, se dispara `MemoryConsolidationServiceImpl.consolide()`.
+10. El callback `onComplete()` notifica a la UI.
 
-### Flujo: Consolidación y compactación en espiral de memoria (Context Spiral)
+### Flujo: Consolidación de memoria
 
-1. Al superar el umbral de turnos en `RecentMemoryImpl.needConsolidation()`, `ReasoningServiceImpl` invoca `performConsolidation()`.
-2. `RecentMemoryImpl.getConsolidateMark()` calcula un índice de corte cercano al 50% de los mensajes asegurando no fracturar bloques contiguos de herramientas ni llamadas paralelas.
-3. Se recuperan los turnos ordenados entre `mark1` y `mark2` desde la base de datos vía `EpisodicMemoryImpl.getTurnsByIds()`.
-4. `MemoryConsolidationServiceImpl.consolide()` recupera el último punto de guardado activo y construye un prompt structured en formato CSV con el esquema `code,timestamp,contenttype,text_user,text_model_thinking,text_model,tool_call,tool_result`.
-5. Se invoca al modelo de consolidación (`MEMORY_MODEL_ID`) bajo las instrucciones de `memory-consolidation.md` para producir un nuevo documento compuesto por las secciones obligatorias `# Resumen` y `# El Viaje`.
-6. `MemoryConsolidationServiceImpl` analiza el texto generado mediante expresiones regulares, extrae todas las referencias `{cite:ID}` y sustituye por `{badcite:ID}` cualquier ID alucinado que no pertenezca al conjunto de entrada válido.
-7. Se instancia un nuevo `ConsolidateMemoryImpl`, se persiste el contenido textual en `.noema-agent/var/lib/consolidatememory/consolidatememory-{id}-{first}-{last}.md` y se registran los metadatos en la tabla H2 `consolidatememory`.
-8. `RecentMemoryImpl.remove(mark1, mark2)` purga físicamente los mensajes antiguos ya consolidados del historial reciente en RAM y actualiza el archivo JSON en disco.
+1. `RecentMemoryImpl.needConsolidation()` evalúa número de turnos únicos.
+2. `ReasoningServiceImpl.performConsolidation()` obtiene `oldestMark` y `consolidateMark`.
+3. Recupera turnos de `EpisodicMemory` entre los IDs.
+4. `MemoryConsolidationServiceImpl.consolide()` construye prompt con `ConsolidateMemory` previo y CSV de turnos.
+5. Llama al LLM de consolidación y obtiene texto con citas `{cite:ID}`.
+6. Crea nuevo `ConsolidateMemory` y lo persiste en `EpisodicMemory` y disco.
+7. Elimina los turnos consolidados de `RecentMemory`.
+
+### Flujo: Ejecución de herramienta paginada
+
+1. LLM invoca `file_read` o `shell_execute`.
+2. `AbstractPaginatedAgentTool.execute()` resuelve `resource_id` y llama a `servePaginatedResource()`.
+3. Se lee el recurso, se pagina en bloques de 1000 líneas por defecto.
+4. Se devuelve cabecera con `STATUS`, `RESOURCE_ID`, `LINE_RANGE`, `TOTAL_LINES`, `HINT`.
+5. El LLM puede llamar a `read_paginated_resource` con el `HINT` para obtener el siguiente bloque.
 
 ## Puntos de entrada
 
-- CLI y selector de modo: `io.github.jjdelcerro.noema.main.Main`
-  - `--console` / `-c`: Lanza `MainConsole` con REPL de JLine 3.
-  - `--gui` / `-g` / `--swing`: Lanza `MainGUI` con ventana FlatLaf Swing.
-  - `--web` / `-w` / `-s` / `--serve`: Lanza `MainWeb` como demonio headless Javalin.
-  - `--tui` / `-t` (por defecto): Lanza `MainLanterna` con consola TUI basada en Lanterna.
-- Servidor Web REST y SSE: `NoemaWebServer` (puerto configurable vía `server/port`, por defecto `8080`):
-  - `POST /api/chat/{terminalId}`: Encolado de mensajes de usuario.
-  - `GET /api/chat/{terminalId}/history`: Recuperación de historial no consolidado.
-  - `GET /api/console/{terminalId}` (SSE): Streaming de respuestas, thinking, logs e incidencias.
-  - `GET /api/config/ui`: Descriptor visual `settingsui.json`.
-  - `GET /api/config/domains/{domainName}`: Carga de opciones `.properties`.
-  - `POST /api/config/multivalue`: Evaluación batch de reglas de visibilidad y valores.
-  - `GET / POST /api/config/<path>`: Lectura y modificación de parámetros de configuración.
-  - `GET /api/fs/directories`: Navegador de carpetas locales del servidor.
-  - `GET / POST /api/files/content`: Lector y escritor web para ficheros del agente (`var:/` o rutas absolutas).
-  - `POST /api/actions/{actionName}`: Disparador de acciones del ciclo de vida (`COMPACT_REASONING_SESSION`, etc.).
-- Suite de pruebas clave:
-  - `TargetedRetrievalE2ETest`: Arbitraje de herramientas de búsqueda frente a paginación masiva.
-  - `NeedleInHaystackE2ETest`: Resiliencia de memoria bajo ingesta de miles de líneas y compactación forzada.
-  - `RecentMemoryConsolidationBoundaryTest`: Pruebas de frontera en el corte atómico de turnos con herramientas múltiples.
-  - `FileFuzzySearchUtilsTest`: Precisión y ventanas deslizantes de la búsqueda semántica local.
+- `io.github.jjdelcerro.noema.main.Main` — selector de modo: `--gui`, `--console`, `--tui`, `--web`.
+- `io.github.jjdelcerro.noema.main.MainGUI` — interfaz Swing.
+- `io.github.jjdelcerro.noema.main.MainConsole` — consola JLine.
+- `io.github.jjdelcerro.noema.main.MainLanterna` — interfaz TUI Lanterna.
+- `io.github.jjdelcerro.noema.main.MainWeb` — servidor web Javalin headless.
+- Endpoints REST en `NoemaWebServer`: `POST /api/chat/{terminalId}`, `GET /api/chat/{terminalId}/history`, `GET /api/console/{terminalId}` (SSE), `GET/POST /api/config/*`, `GET /api/fs/directories`, `POST /api/actions/{actionName}`, `GET/POST /api/files/content`.
+- Tests: `ReasoningServiceTest`, `SensorsServiceTest`, `EmbeddingsServiceTest`, `AgentAccessControlTest`, `FileReadToolTest`, `FileGrepToolTest`, `LookupTurnToolTest`, `SearchFullHistoryToolTest`, `ReprojectionMemoryTest`, `RecentMemoryConsolidationBoundaryTest`, `TargetedRetrievalE2ETest`, `NeedleInHaystackE2ETest`.
 
 ## Build, run, test
 
-```bash
-# Compilación completa y empaquetado del Uber-JAR sombreado
-mvn clean package
+- Compilar: `mvn clean package`
+- Ejecutar GUI: `java -jar target/io.github.jjdelcerro.noema.main-*.jar --gui`
+- Ejecutar TUI: `java -jar target/io.github.jjdelcerro.noema.main-*.jar --tui`
+- Ejecutar consola: `java -jar target/io.github.jjdelcerro.noema.main-*.jar --console`
+- Ejecutar web: `java -jar target/io.github.jjdelcerro.noema.main-*.jar --web`
+- Ejecutar tests: `mvn test`
+- Test individual: `mvn test -Dtest=NombreTest`
+- Test E2E: `mvn test -Dtest=TargetedRetrievalE2ETest -Dtag=e2e` (requiere `~/.noema-tests.properties`).
 
-# Ejecución de la suite completa de pruebas unitarias y de integración
-mvn test
+## Estilo de nombrado de identificadores
 
-# Ejecución de un test unitario o de integración específico
-mvn test -Dtest=FileGrepToolTest
-mvn test -Dtest=RecentMemoryConsolidationBoundaryTest
-mvn test -Dtest=FileFuzzySearchUtilsTest
+- Interfaces: sustantivo del dominio, sin prefijo `I`. Ej: `Agent`, `AgentTool`, `EpisodicMemory`.
+- Implementaciones: sufijo `Impl`. Ej: `AgentImpl`, `EpisodicMemoryImpl`.
+- Clases abstractas: prefijo `Abstract`. Ej: `AbstractAgentTool`, `AbstractAgentService`.
+- Factorías: sufijo `Factory`. Ej: `ReasoningServiceFactory`.
+- Servicios: sufijo `Service` en interfaz y `ServiceImpl` en implementación. Ej: `ReasoningService` / `ReasoningServiceImpl`.
+- Herramientas: sufijo `Tool`. Ej: `FileReadTool`, `ShellExecuteTool`.
+- Operaciones de memoria: sufijo `Operation`. Ej: `TrimmingOperation`, `PinnedTurnsOperation`.
+- Sensores: sufijo `SensorData`, `SensorEvent`, `SensorInformation`. Ej: `DiscreteSensorData`, `SensorEventUserImpl`.
+- Utilidades: sufijo `Utils`. Ej: `DateUtils`, `SkillUtils`, `FileFuzzySearchUtils`.
+- Gestores: sufijo `Manager`. Ej: `AgentManager`, `RCSManager`.
+- Localizadores: sufijo `Locator`. Ej: `AgentLocator`, `AgentUILocator`.
+- Métodos: camelCase, verbo en inglés. Ej: `getMessages`, `add`, `remove`, `consolideTurn`, `processSingleEvent`.
+- Variables: camelCase, inglés. Ej: `recentMemory`, `projectedMessages`, `toolSpecifications`.
+- Constantes: mayúsculas con guiones bajos. Ej: `DEFAULT_SUBCHANNEL`, `MAX_DB_TEXT_SIZE`.
+- Paquetes: todo en minúsculas, sin guiones. Ej: `io.github.jjdelcerro.noema.lib.impl.memory.recent`.
+- Comentarios: español, ASCII puro, sin tildes ni eñes.
+- Nombres de herramientas expuestas al LLM: verbo en imperativo, inglés, snake_case. Ej: `file_read`, `file_write`, `shell_execute`, `annotate_observation`.
 
-# Ejecución de pruebas End-to-End con LLMs reales (requiere ~/.noema-tests.properties)
-mvn test -Dtest=TargetedRetrievalE2ETest
-mvn test -Dtest=NeedleInHaystackE2ETest
+## Reglas y Patrones Arquitectónicos
 
-# Ejecución del agente empaquetado mediante el script lanzador
-./noema --tui
-./noema --gui
-./noema --web
-./noema --console
-
-# Depuración con socket JDWP remoto activo en puerto 8765
-./noema --debug --web
-```
-
-## Convenciones
-
-- Aislamiento de configuración: Los ajustes del agente residen exclusivamente en `.noema-agent/` dentro de la carpeta del proyecto. Ajustes transversales del usuario residen en `~/.config/noema-agent/`.
-- Gestión de rutas relativas: Se resuelven estrictamente contra el workspace raíz mediante `AgentPaths` y se normalizan con barras inclinadas hacia adelante (`/`).
-- Protocolo de herramientas de lectura paginada: Todas las herramientas que extienden `AbstractPaginatedAgentTool` devuelven una cabecera delimitada por `---`. La cabecera incluye `STATUS`, `RESOURCE_ID`, `EMPTY`, `LINE_RANGE`, `TOTAL_LINES` y un campo `HINT` con la invocación exacta para continuar leyendo mediante `read_paginated_resource`.
-- Prevención de pérdida de datos en escritura: Cualquier herramienta que sobrescriba o aplique parches a ficheros (`FileWriteTool`, `FilePatchTool`, `FileSearchAndReplaceTool`, `FsModule`) realiza un check-in preventivo en JavaRCS si el archivo preexistía.
-- Modos de acceso y permisos: Las herramientas declaran su modo (`MODE_READ`, `MODE_WRITE`, `MODE_WEB`, `MODE_EXECUTION`, `MODE_SCRIPTING`). `AgentAccessControlImpl` inhabilita herramientas en tiempo de ejecución si la configuración del workspace bloquea esa modalidad.
-- Identidad de Sensores: Los sensores declaran una naturaleza (`SensorNature`):
-  - `DISCRETE`: Eventos independientes atómicos (cada uno genera un turno).
-  - `MERGEABLE`: Estímulos continuos (se concatenan en un solo bloque con marcas de tiempo).
-  - `AGGREGATABLE`: Volumen de eventos (se cuenta el número de ocurrencias).
-  - `STATE`: Condiciones volátiles (solo prevalece el último valor recibido).
-  - `USER`: Entrada de usuario prioritaria.
-
-## Decisiones arquitectónicas
-
-- Sustitución de ventanas infinitas por el Principio de la Espiral de Contexto: En lugar de saturar la ventana de atención con decenas de miles de tokens, el historial se sintetiza periódicamente en un relato narrativo cronológico que enlaza eventos detallados mediante citas `{cite:ID}`. Se gana fidelidad cognitiva y se reducen costes de inferencia.
-- Inversión de Control Simulada para Sensores: Los LLMs son pasivos y no admiten interrupciones asíncronas. Todo evento sensorial externo (Telegram, Email, reloj, finalización de subagentes) se inyecta en la memoria reciente simulando que el modelo realizó una consulta a una herramienta ficticia llamada `pool_event`, preservando la alternancia estricta del protocolo de mensajes (`User` → `AI` → `ToolExecutionResult`).
-- Memoria Proyectada Desacoplada: La sesión física en disco (`RecentMemoryImpl`) no se envía directamente al modelo. Se pasa por una capa de proyección en memoria (`ProjectedMemoryImpl`) que ejecuta operaciones de amnesia selectiva (`TrimmingOperation`), recordatorios periódicos (`PinnedTurnsOperation`) y advertencias de no-consolidación (`PendingAnnotationOperation`).
-- Delegación Algorítmica en Groovy Embebido: El LLM tiene prohibido realizar sumas, análisis estadísticos o filtrado masivo en su atención. Para ello cuenta con `execute_script`, que evalúa código Groovy en la JVM con acceso a streaming de archivos (`agent.fs.lines`), búsqueda semántica y consultas a modelos pequeños en proceso.
-- Ejecución segura de comandos con Firejail: Cuando el binario `firejail` está disponible en el host Linux, `ShellExecuteTool` confina la ejecución restringiendo el acceso de escritura al workspace, aislando la carpeta `home` del agente en un sandbox virtual y bloqueando el acceso a `.noema-agent/var/lib`.
+- Entidad principal: `Agent`. Todo servicio, herramienta y memoria se registra o se obtiene a través de él.
+- Inversión de dependencias: las interfaces viven en `lib`, las implementaciones en `impl`. Los servicios se registran mediante `AgentServiceFactory`.
+- Localizador de servicios: `AgentLocator.getAgentManager()` es el punto único de acceso a factorías, acciones y subagentes.
+- Patrón Factory para servicios: cada servicio tiene su `ServiceFactory` que implementa `canStart(settings)`.
+- Patrón Abstract Service: `AbstractAgentService` implementa la lógica común de servicios (enabled, running, factory).
+- Patrón Tool: `AgentTool` define `getSpecification()`, `execute()`, `getMode()`, `getType()`. `AbstractAgentTool` provee utilidades. `AbstractPaginatedAgentTool` añade paginación.
+- Patrón Operation Pipeline: `ProjectedMemory` ejecuta una lista ordenada de `ProjectedMemoryOperation` sobre la lista de mensajes proyectados.
+- Patrón Sensor: `SensorsService` recibe eventos, los clasifica por `SensorNature` y los entrega al dispatcher.
+- Patrón Memento: `RecentMemoryMark` y `ProjectedMemoryState` permiten guardar y restaurar estado.
+- Patrón Strategy: `SensorData` implementa diferentes estrategias de procesamiento según `SensorNature`.
+- Patrón Adapter: `GsonUtils` adapta mensajes de LangChain4j a JSON.
+- Patrón Wrapper: `McpToolWrapper` envuelve herramientas MCP como `AgentTool`.
+- Regla: para añadir un servicio, crear interfaz en `lib.services`, implementación en `impl.services`, factoría en `impl.services`.
+- Regla: para añadir una herramienta, extender `AbstractAgentTool` o `AbstractPaginatedAgentTool`, registrarla en el servicio correspondiente y añadirla a `available_tools.properties`.
+- Regla: para añadir una operación de memoria proyectada, implementar `ProjectedMemoryOperation` y `ProjectedMemoryOperationFactory`, y registrarla en `AgentManagerImpl`.
+- Regla: para añadir un sensor, implementar `SensorData` y registrar la naturaleza en `SensorsServiceImpl`.
+- Regla: toda persistencia en base de datos usa H2 y SQL directo a través de `SQLProvider`.
+- Regla: la configuración se gestiona mediante `AgentSettings` con estructura jerárquica y `settingsui.json` define la UI.
+- Regla: el control de acceso se centraliza en `AgentAccessControl`; ninguna herramienta debe acceder al disco sin pasar por `resolvePathOrNull`.
 
 ## Zonas sensibles
 
-- Atomicidad de corte en `RecentMemoryImpl.getConsolidateMark()`: Si el punto de corte cae entre un `AiMessage` que disparó llamadas a herramientas en paralelo y sus correspondientes `ToolExecutionResultMessage`, la memoria reciente quedará corrupta y los proveedores de LLM rechazarán la conversación con un error HTTP 400. La lógica de avance forzado para consumir resultados contiguos es crítica.
-- Sandbox de Groovy en `ScriptEngine.java`: `SecureASTCustomizer` bloquea importaciones de `System`, `Runtime` y `ProcessBuilder`, pero dado que `java.io.*` está disponible por defecto en Groovy, un script generado por el LLM podría instanciar `new File(...)` evadiendo `AgentAccessControlImpl` si no se añaden restricciones adicionales en el AST (documentado en `notas1.md`).
-- Orden de enrutamiento en `NoemaWebServer.java`: Javalin evalúa rutas en orden de registro. Endpoints específicos como `/api/config/ui`, `/api/config/multivalue` o `/api/config/domains/{domainName}` deben registrarse obligatoriamente antes que el comodín `/api/config/<path>`.
-- Sincronización de dependencias Jackson: La coexistencia de Apache Tika 2.8.0 y LangChain4j 1.16.3 provoca conflictos binarios si no se fijan explícitamente las versiones de `jackson-databind`, `jackson-core` y `jackson-annotations` en `2.17.2`.
+- `ReasoningServiceImpl.processSingleEvent()`: bucle de razonamiento con múltiples llamadas al LLM, herramientas y consolidación. Cualquier cambio puede romper la secuencia de turnos.
+- `RecentMemoryImpl.getConsolidateMark()`: cálculo del punto de corte para consolidación. Debe garantizar atomicidad de bloques de herramientas.
+- `MemoryConsolidationServiceImpl.consolide()`: prompt complejo que depende de la estructura CSV y del formato de citas.
+- `ProjectedMemoryImpl.getMessages()`: pipeline de operaciones; el orden y prioridad afectan al contexto final.
+- `AgentAccessControlImpl.resolvePath()`: sandbox de rutas; un error puede permitir acceso no autorizado.
+- `ScriptEngine.getCompilerConfiguration()`: sandbox de Groovy; la lista de imports prohibidos es crítica (ver `notas1.md`).
+- `SensorsServiceImpl.getEvent()`: concurrencia con `wait/notify`; puede bloquear el dispatcher.
+- `EpisodicMemoryImpl.add()`: inserción en H2 y cálculo de embeddings; el recorte de texto a 2KB puede perder información.
+- `ChatModelImpl.generate()`: manejo de streaming y timeouts; puede quedar colgado si el stream no emite eventos.
 
 ## Trampas conocidas
 
-- `Session` vs `RecentMemory` / `SourceOfTruth` vs `EpisodicMemory`: Existieron refactorizaciones terminológicas en el núcleo. La interfaz pública de historial activo es `RecentMemory` (antes `Session`), y el repositorio H2 es `EpisodicMemory` (antes `SourceOfTruth`). Quedan rastros documentales y comentarios que mencionan los nombres antiguos.
-- `search_full_history` vs `fetch_citation`: Las herramientas devuelven directamente el contenido íntegro del turno almacenado en la columna `text`. Si el modelo ejecuta `search_full_history`, no necesita invocar posteriormente `fetch_citation` sobre los códigos devueltos.
-- Prefijos de Resource ID (`tmp://`, `cache://`, `user://`): En `AbstractPaginatedAgentTool`, los recursos efímeros (`tmp://`) tienen ciclo de vida acotado y pueden ser eliminados por la política LRU de `ShellExecuteTool` o reinicios del proceso. Si el modelo intenta paginar un recurso expirado, recibirá un mensaje de error indicándole que debe regenerar el recurso original.
-- Herramientas deshabilitadas por configuración: Desmarcar una herramienta en la UI no la desregistra de `ReasoningServiceImpl`, sino que conmuta su flag interno `active = false` o la bloquea mediante `AgentAccessControlImpl.isToolAllowed()`, evitando que su esquema JSON sea emitido al LLM.
+- `SecureASTCustomizer` no bloquea `java.io.File` ni `java.nio.file.*` → un script Groovy puede saltarse el sandbox. (Ver `notas1.md`)
+- `AgentSettingsImpl.eval()` usa MVEL; una expresión mal formada puede lanzar excepción no controlada.
+- `ProjectedMemoryImpl.injectUnifiedNotification()` inyecta un `ToolExecutionResultMessage` ficticio con `pool_event`; si el LLM no espera esa herramienta, puede confundirse.
+- `RecentMemoryImpl.getNewestMark()` usa `turnOfMessage.size() - 1` como índice, pero el mapa puede no tener todas las claves; puede devolver null.
+- `EpisodicMemoryImpl.applyStoragePolicy()` trunca a 2KB y cambia `contenttype` a `tool_execution_summarized`; las búsquedas posteriores pueden no encontrar el texto completo.
+- `MemoryConsolidationServiceImpl.extractCitationIds()` no valida que los IDs existan; luego se reemplazan por `{badcite:ID}`.
+- `SubagentImpl.stop()` elimina el workspace temporal; si falla, deja basura.
+- `SensorsServiceImpl.stop()` persiste estado en `sensors.json`; si el proceso muere antes, se pierde.
+- `AgentImpl.getCurrentSubchannel()` usa `ReasoningServiceImpl.getCurrentSubchannel()`; si el servicio no está, devuelve default.
 
 ## Glosario del dominio
 
-- *Turno (`Turn`):* Unidad atómica e inmutable de interacción o evento persistida en la tabla `episodicmemory` de H2, identificada por un número entero secuencial (`code`).
-- *Subcanal (`subchannel`):* Identificador del terminal o hilo conversacional concurrente (por ejemplo, `default`, sesiones web o canales remotos).
-- *ConsolidateMemory:* Punto de guardado a largo plazo que fusiona el resumen ejecutivo previo con la crónica narrativa ("El Viaje"), verificando citas históricas.
-- *Memoria Reciente (`RecentMemory`):* Estructura conversacional en memoria y JSON local que retiene los últimos turnos sin consolidar de un subcanal específico.
-- *Memoria Proyectada (`ProjectedMemory`):* Colección inmutable y curada de mensajes construida al vuelo para ser transmitida al LLM en cada petición.
-- *Trimming:* Proceso de amnesia selectiva que reemplaza el cuerpo extenso de una herramienta antigua por la cabecera `CONTENT_TRIMMED: true` para ahorrar espacio en la ventana de contexto.
-- *Pinned Turn:* Par de petición y resultado de herramienta marcado con `shouldPin()` que se mantiene protegido al inicio de la proyección contextual para no perder directivas técnicas activas.
-- *Friso Histórico:* Principio narrativo por el cual la actualización de un punto de guardado debe fundirse orgánicamente con el texto anterior, impidiendo distinguir dónde terminaba el pasado y dónde comenzaba el nuevo lote conversacional.
+- **Turno**: unidad atómica de interacción; incluye mensaje de usuario, pensamiento del modelo, respuesta, llamada a herramienta y resultado.
+- **Memoria episódica**: base de datos de todos los turnos; fuente de verdad.
+- **Memoria reciente**: buffer de trabajo con los últimos mensajes no consolidados.
+- **Memoria consolidada**: resumen narrativo de un rango de turnos; incluye citas a turnos originales.
+- **Memoria proyectada**: contexto final que se envía al LLM; resultado de aplicar operaciones sobre memoria reciente y consolidada.
+- **Subcanal**: identificador de una conversación paralela (terminal, usuario, etc.).
+- **Sensor**: fuente de eventos externos (usuario, email, telegram, scheduler, notificaciones).
+- **Evento**: estímulo que entra en el sistema; puede ser de usuario, discreto, fusionable, agregable o de estado.
+- **pool_event**: herramienta ficticia que el agente usa para consultar eventos pendientes.
+- **Skill**: protocolo técnico paso a paso que el agente puede activar.
+- **Subagente**: trabajador aislado que ejecuta una receta XML en su propio sandbox.
+- **Anotación**: turno especial que guarda conocimiento o directivas en memoria episódica.
+- **Cita**: referencia `{cite:ID}` a un turno concreto.
+- **Consolidación**: proceso de destilar turnos en un relato narrativo.
+- **Proyección**: proceso de construir el contexto que ve el LLM.
+- **Operación de proyección**: paso del pipeline que modifica la lista de mensajes proyectados.
 
 ## Índice de búsqueda
 
-- Si buscas cómo se ensambla el contexto final enviado al modelo de lenguaje: `ProjectedMemoryImpl.java`
-- Si buscas la lógica de corte atómico para compactar memoria: `RecentMemoryImpl.java:getConsolidateMark`
-- Si buscas el prompt y directivas del proceso de compactación cognitiva: `memory-consolidation.md`
-- Si buscas el guardián de permisos y aislamiento del sandbox de archivos: `AgentAccessControlImpl.java`
-- Si buscas el bucle principal de consciencia y despacho de eventos: `ReasoningServiceImpl.java:eventDispatcher`
-- Si buscas la ingestión y acumulación multicanal de eventos sensoriales: `SensorsServiceImpl.java`
-- Si buscas las herramientas de manipulación de archivos y paginación: `AbstractPaginatedAgentTool.java`
-- Si buscas la integración y llamadas al motor local de embeddings y similitud MaxP: `EmbeddingsService.java`
-- Si buscas el aislamiento y ejecución de subagentes declarativos: `SubagentImpl.java`
-- Si buscas las reglas de seguridad del entorno Groovy embebido: `ScriptEngine.java` y `ScriptContext.java`
-- Si buscas las rutas REST y eventos Server-Sent Events de la interfaz web: `NoemaWebServer.java`
-
-## Estado actual
-
-- Versión: 0.1.0 activa.
-- Módulos operativos: Razonamiento, Memoria episódica H2, Consolidación cognitiva, Sensores (Reloj, Notificaciones, Telegram, Email, Planificador), Subagentes declarativos XML, Skills procedimentales, Scripting Groovy, Soporte MCP y Web UI SPA.
-- Deuda técnica y tareas abiertas:
-  - Robustecer el sandbox AST en `ScriptEngine.java` bloqueando tipos de E/S directa (`java.io.File`, `java.nio.file.*`) para forzar todo acceso a través de `agent.fs`.
-  - Rehidratar adecuadamente los subcanales en servicios de fondo (`SchedulerServiceImpl`, `EmailService`, `TelegramService`), que actualmente inyectan eventos apuntando al canal `"default"`.
-  - Terminar la implementación del método `ConsolidateMemoryImpl.getSummary()` para alimentar resúmenes rápidos a `PeripheralAwarenessOperation`.
-  - Investigar la tolerancia a fallos del modelo de chat cuando el primer mensaje de una conversación es un evento simulado de `pool_event`.
+- Si buscas el bucle de razonamiento → `grep -r "processSingleEvent"`.
+- Si buscas la consolidación de memoria → `grep -r "consolide"`.
+- Si buscas herramientas → `grep -r "extends AbstractAgentTool"`.
+- Si buscas servicios → `grep -r "extends AbstractAgentService"`.
+- Si buscas sensores → `grep -r "SensorNature"`.
+- Si buscas configuración → `grep -r "AgentSettings"`.
+- Si buscas control de acceso → `grep -r "resolvePathOrNull"`.
+- Si buscas scripting → `grep -r "ScriptEngine"`.
+- Si buscas skills → `grep -r "SkillUtils"`.
+- Si buscas subagentes → `grep -r "SubagentImpl"`.
+- Si buscas interfaz web → `grep -r "NoemaWebServer"`.
+- Si buscas UI Swing → `grep -r "MainChatPanel"`.
+- Si buscas UI TUI → `grep -r "MainLanternaWindow"`.
+- Si buscas tests → `grep -r "@Test"`.
+- Si buscas embeddings → `grep -r "EmbeddingsService"`.
+- Si buscas MCP → `grep -r "McpService"`.
+- Si buscas scheduler → `grep -r "SchedulerService"`.
+- Si buscas email → `grep -r "EmailService"`.
+- Si buscas Telegram → `grep -r "TelegramService"`.

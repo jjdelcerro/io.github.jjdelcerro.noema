@@ -4,9 +4,11 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.AgentActions;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
+import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.FakeConsole;
 import io.github.jjdelcerro.noema.lib.impl.FileFuzzySearchUtils.FuzzyMatch;
 import io.github.jjdelcerro.noema.lib.impl.persistence.FakeEpisodicMemory;
+import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsService;
 import io.github.jjdelcerro.noema.lib.impl.settings.AgentSettingsImpl;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import org.junit.jupiter.api.AfterEach;
@@ -54,6 +56,11 @@ public class FileFuzzySearchUtilsTest {
     // 4. Instanciación y arranque estándar del agente:
     // EmbeddingsService se inicializa automáticamente en memoria vía ONNX
     agent = new AgentImpl(null, null, settings, new FakeConsole(), new FakeEpisodicMemory(), accessControl);
+    agent.setupServices();
+    for (AgentService service : agent.getServices()) {
+      service.setEnabled(false);
+    }
+    agent.getService(EmbeddingsService.NAME).setEnabled(true);
     agent.start();
   }
 

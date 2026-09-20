@@ -94,6 +94,12 @@ public class FakeAgent implements Agent {
   }
 
   @Override
+  public void setupServices() {
+
+  }
+
+  
+  @Override
   public String getResourceAsString(String resname) {
     throw new UnsupportedOperationException("Not supported yet.");
   }

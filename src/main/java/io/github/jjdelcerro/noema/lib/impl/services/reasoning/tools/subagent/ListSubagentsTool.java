@@ -2,6 +2,7 @@ package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.subagent;
 
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
+import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.SubagentDefinition;
 import io.github.jjdelcerro.noema.lib.SubagentDefinition.SubagentParam;
@@ -52,6 +53,7 @@ public class ListSubagentsTool extends AbstractAgentTool {
       List<Map<String, Object>> catalog = new ArrayList<>();
 
       if (paths != null && !paths.isEmpty()) {
+        AgentManager agentManager = AgentLocator.getAgentManager();
         for (Path path : paths) {
           String fileName = path.getFileName().toString();
 
@@ -60,7 +62,7 @@ public class ListSubagentsTool extends AbstractAgentTool {
           }
 
           try {
-            SubagentDefinition def = AgentLocator.getAgentManager().createSubagentDefinition(path);
+            SubagentDefinition def = agentManager.createSubagentDefinition(path);
 
             Map<String, Object> entry = new LinkedHashMap<>();
             entry.put("name", def.getName());

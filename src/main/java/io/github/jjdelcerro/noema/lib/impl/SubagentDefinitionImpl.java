@@ -34,6 +34,7 @@ public class SubagentDefinitionImpl implements SubagentDefinition {
   private final String name;
   private final String description;
   private final List<SubagentParam> params;
+  private final List<SubagentAccessControl> accessControl;
   private final List<String> tools;
   private final String modelId;
   private final int timeoutSeconds;
@@ -46,6 +47,7 @@ public class SubagentDefinitionImpl implements SubagentDefinition {
           String name,
           String description,
           List<SubagentParam> params,
+          List<SubagentAccessControl> accessControl,
           List<String> tools,
           String modelId,
           int timeoutSeconds,
@@ -57,6 +59,7 @@ public class SubagentDefinitionImpl implements SubagentDefinition {
     this.name = Objects.requireNonNull(name, "Subagent name cannot be null");
     this.description = description != null ? description.trim() : "";
     this.params = params != null ? Collections.unmodifiableList(new ArrayList<>(params)) : Collections.emptyList();
+    this.accessControl = accessControl != null ? Collections.unmodifiableList(new ArrayList<>(accessControl)) : Collections.EMPTY_LIST;
     this.tools = tools != null ? Collections.unmodifiableList(new ArrayList<>(tools)) : Collections.emptyList();
     this.modelId = StringUtils.trimToNull(modelId);
     this.timeoutSeconds = timeoutSeconds > 0 ? timeoutSeconds : DEFAULT_TIMEOUT_SECONDS;
@@ -81,6 +84,10 @@ public class SubagentDefinitionImpl implements SubagentDefinition {
     return params;
   }
 
+  public List<SubagentAccessControl> getAccessControl() {
+    return accessControl;
+  }
+ 
   @Override
   public SubagentParam getParam(String paramName) {
     if (paramName == null) {
@@ -161,7 +168,7 @@ public class SubagentDefinitionImpl implements SubagentDefinition {
    * Replaces all occurrences of '{KEY}' with the corresponding value from the
    * params map.
    */
-  public static String resolvePlaceholders(String template, Map<String, ?> parameters) {
+  public String resolvePlaceholders(String template, Map<String, ?> parameters) {
     if (StringUtils.isBlank(template) || parameters == null || parameters.isEmpty()) {
       return template != null ? template : "";
     }
@@ -251,6 +258,7 @@ public class SubagentDefinitionImpl implements SubagentDefinition {
       }
 
       List<SubagentParam> params = parseParams(root);
+      List<SubagentAccessControl> accessControl = parseAccessControl(root);
       List<String> tools = parseTools(root);
       String systemPrompt = getChildText(root, "system_prompt");
       String memoryPrompt = getChildText(root, "memory_prompt");
@@ -261,6 +269,7 @@ public class SubagentDefinitionImpl implements SubagentDefinition {
               name.trim(),
               description,
               params,
+              accessControl,
               tools,
               modelId,
               timeoutSeconds,
@@ -275,6 +284,33 @@ public class SubagentDefinitionImpl implements SubagentDefinition {
     } catch (Exception e) {
       throw new IOException("Failed to parse subagent XML definition: " + e.getMessage(), e);
     }
+  }
+
+  private static List<SubagentAccessControl> parseAccessControl(Element root) {
+    List<SubagentAccessControl> operationsList = new ArrayList<>();
+    NodeList accessControlContainers = root.getElementsByTagName("accessControl");
+
+    if (accessControlContainers.getLength() > 0) {
+      Element paramsEl = (Element) accessControlContainers.item(0);
+      NodeList operationNodes = paramsEl.getElementsByTagName("operation");
+
+      for (int i = 0; i < operationNodes.getLength(); i++) {
+        Node node = operationNodes.item(i);
+        if (node.getNodeType() == Node.ELEMENT_NODE) {
+          Element operationEl = (Element) node;
+          String operationName = operationEl.getAttribute("name");
+          if (StringUtils.isBlank(operationName)) {
+            continue;
+          }
+
+          String pathStr = operationEl.getAttribute("path");
+          SubagentAccessControlOperation operation = SubagentAccessControlOperation.fromString(operationName);
+          SubagentAccessControl accessControl = new SubagentAccessControl(operation, pathStr);
+          operationsList.add(accessControl);
+        }
+      }
+    }
+    return operationsList;
   }
 
   private static List<SubagentParam> parseParams(Element root) {

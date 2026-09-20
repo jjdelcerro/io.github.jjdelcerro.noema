@@ -14,6 +14,8 @@ import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
 import io.github.jjdelcerro.noema.lib.Subagent;
 import io.github.jjdelcerro.noema.lib.SubagentDefinition;
+import static io.github.jjdelcerro.noema.lib.SubagentDefinition.SubagentAccessControlOperation.ADD_ALLOWED_PATH;
+import static io.github.jjdelcerro.noema.lib.SubagentDefinition.SubagentAccessControlOperation.ADD_NONWRITABLE_PATH;
 import io.github.jjdelcerro.noema.lib.SubagentDefinition.SubagentParam;
 import io.github.jjdelcerro.noema.lib.SubagentDefinition.SubagentParamType;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsService;
@@ -180,17 +182,17 @@ public class SubagentImpl implements Subagent {
       // Subagents operate in unattended mode
       this.subSettings.setProperty("access_control/humanConfirmationRequired", "false");
 
-      // Whitelist parent's workspace and allowed external paths
-      List<String> allowedPaths = new ArrayList<>();
-      if (parent.getPaths() != null && parent.getPaths().getWorkspaceFolder() != null) {
-        allowedPaths.add(parent.getPaths().getWorkspaceFolder().toAbsolutePath().normalize().toString());
-      }
-      if (parent.getAccessControl() != null) {
-        for (Path p : parent.getAccessControl().getAllowedPaths()) {
-          allowedPaths.add(p.toAbsolutePath().normalize().toString());
-        }
-      }
-      this.subSettings.setProperty("access_control/allowed_external_paths", allowedPaths);
+//      // Whitelist parent's workspace and allowed external paths
+//      List<String> allowedPaths = new ArrayList<>();
+//      if (parent.getPaths() != null && parent.getPaths().getWorkspaceFolder() != null) {
+//        allowedPaths.add(parent.getPaths().getWorkspaceFolder().toAbsolutePath().normalize().toString());
+//      }
+//      if (parent.getAccessControl() != null) {
+//        for (Path p : parent.getAccessControl().getAllowedPaths()) {
+//          allowedPaths.add(p.toAbsolutePath().normalize().toString());
+//        }
+//      }
+//      this.subSettings.setProperty("access_control/allowed_external_paths", allowedPaths);
 
       // Tools whitelist: only tools declared in XML are enabled
       List<String> allowedTools = definition.getTools();
@@ -320,17 +322,22 @@ public class SubagentImpl implements Subagent {
   // =========================================================================
   // EXECUTION API
   // =========================================================================
+
   @Override
-  public synchronized void start() {
+  public void setupServices() {
     if (this.subAgent == null) {
       setup();
     }
+  }
+
+  @Override
+  public synchronized void start() {
     if (this.subAgent != null) {
       this.subAgent.start();
 
       // Synchronize active tools whitelist in ReasoningService
       ReasoningService reasoning = (ReasoningService) this.subAgent.getService(ReasoningService.NAME);
-      if (reasoning != null) {
+      if (reasoning != null && reasoning.isEnabled() ) {
         List<String> allowedTools = definition.getTools();
         for (AgentTool tool : reasoning.getAvailableTools()) {
           boolean active = allowedTools.contains(tool.getName());
@@ -356,6 +363,53 @@ public class SubagentImpl implements Subagent {
 
       Map<String, Object> resolvedParams = normalizeParams(params);
 
+
+      // Whitelist parent's workspace and allowed external paths
+      List<String> allowedPaths = new ArrayList<>();
+      List<String> nonwritablePaths = new ArrayList<>();
+      List<String> nonreadablePaths = new ArrayList<>();
+      for (SubagentDefinition.SubagentAccessControl accessControl : this.definition.getAccessControl()) {
+        if( accessControl==null || accessControl.operation()==SubagentDefinition.SubagentAccessControlOperation.NOP) {
+          continue;
+        }
+        switch (accessControl.operation()) {
+          case EXTENDS_PARENT: // FIXME: Falta extender nonwritable y nonreadable paths
+            if (parent.getPaths() != null && parent.getPaths().getWorkspaceFolder() != null) {
+              allowedPaths.add(parent.getPaths().getWorkspaceFolder().toAbsolutePath().normalize().toString());
+            }
+            if (parent.getAccessControl() != null) {
+              for (Path p : parent.getAccessControl().getAllowedPaths()) {
+                allowedPaths.add(p.toAbsolutePath().normalize().toString());
+              }
+            }
+            break;
+          case ADD_ALLOWED_PATH:
+            allowedPaths.add(this.definition.resolvePlaceholders(accessControl.path(),resolvedParams));
+            break;
+          case ADD_NONWRITABLE_PATH:
+            nonwritablePaths.add(this.definition.resolvePlaceholders(accessControl.path(),resolvedParams));
+            break;            
+          case ADD_NONREADABLE_PATH:
+            nonreadablePaths.add(this.definition.resolvePlaceholders(accessControl.path(),resolvedParams));
+            break;
+          default:
+            // Do nothing
+        }
+      }
+      for (String path_s : allowedPaths) {
+        Path path = Path.of(path_s);
+        this.subAgent.getAccessControl().addAllowedPath(path);
+      }
+      for (String path_s : nonwritablePaths) {
+        Path path = Path.of(path_s);
+        this.subAgent.getAccessControl().addNonWritablePath(path);
+      }
+      for (String path_s : nonreadablePaths) {
+        Path path = Path.of(path_s);
+        this.subAgent.getAccessControl().addNonReadablePath(path);
+      }
+      this.subSettings.setProperty("access_control/allowed_external_paths", allowedPaths);
+      
       // --- FASE 1: Exploracion e Ingesta ---
       String promptIni = definition.resolvePromptIni(resolvedParams);
       subConsole.printSystemLog(String.format("Starting Subagent '%s' (ID: %d) Phase 1...", definition.getName(), this.id));
