@@ -17,7 +17,7 @@ convenga regenerarlo.
     
     <accessControl>
         <operation name="addAllowedPath" path="{PROJECT_PATH}"/>
-        <operation name="addAllowedPath" path="{PROJECT_PATH}/proyect-map.md"/>
+        <operation name="addAllowedPath" path="{PROJECT_PATH}/project-map.md"/>
         <operation name="addNonWritablePath" path="{PROJECT_PATH}"/>
     </accessControl>    
 
