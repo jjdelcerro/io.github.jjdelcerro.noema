@@ -60,7 +60,7 @@ public class FsModule extends AbstractScriptModule {
   -> agent.fs.find('**/*.java')
 • grep(regex, path): Iterable<GrepMatch(file, line, content)>
   -> agent.fs.grep('(?i)timeout', 'src/').each { println "${it.file}:${it.line} ${it.content}" }
-• fuzzygrep(query, path, [glob='**', limit=5, minSim=0.25]): Iterable<FuzzyMatch(file, startLine, endLine, content)>
+• fuzzygrep(query, path, [glob='**', limit=5, minSim=0.25]): Iterable<FuzzyMatch(file, startLine, endLine, similarity, content)>
   -> agent.fs.fuzzygrep('conexión base de datos', 'docs/').each { println "${it.file}:${it.startLine}-${it.endLine}" }
 • write(path, String|Iterable): void (auto-mkdir, copia de seguridad automática en RCS)
   -> agent.fs.write('out.txt', ['línea 1', 'línea 2'])

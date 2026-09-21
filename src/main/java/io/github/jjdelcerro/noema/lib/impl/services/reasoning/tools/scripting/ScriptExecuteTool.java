@@ -1,11 +1,7 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting;
 
-import io.github.jjdelcerro.noema.lib.impl.scripting.ScriptContext;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import groovy.lang.Binding;
-import groovy.lang.GroovyShell;
-import groovy.transform.TimedInterrupt;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.AbstractPaginatedAgentTool;
@@ -14,26 +10,20 @@ import static io.github.jjdelcerro.noema.lib.impl.scripting.ScriptContext.CONTEX
 import io.github.jjdelcerro.noema.lib.impl.scripting.ScriptEngine;
 import java.io.BufferedWriter;
 import org.apache.commons.lang3.StringUtils;
-import org.codehaus.groovy.control.CompilerConfiguration;
-import org.codehaus.groovy.control.customizers.ASTTransformationCustomizer;
-import org.codehaus.groovy.control.customizers.SecureASTCustomizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Tool that executes Groovy scripts in an embedded and sandboxed JVM
@@ -54,7 +44,7 @@ public class ScriptExecuteTool extends AbstractPaginatedAgentTool {
     this.outputGson = new GsonBuilder().setPrettyPrinting().create();
   }
 
-@Override
+  @Override
   public ToolSpecificationBuilder getSpecification() {
     return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
@@ -75,7 +65,7 @@ MUESTRA DE MÉTODOS PRINCIPALES (Catálogo parcial; consulta help() para funcion
 - ${CONTEXT_NAME}.fs.lines("ruta") : Iterable<String> (streaming bajo en memoria; procesa transparentemente texto, PDF, DOCX vía Tika)
 - ${CONTEXT_NAME}.fs.find("glob") : Iterable<String> con rutas relativas coincidentes (ej: "**/*.java")
 - ${CONTEXT_NAME}.fs.grep(regex, "ruta") : Iterable con coincidencias [.file, .line, .content]
-- ${CONTEXT_NAME}.fs.fuzzygrep(query, "ruta", [glob]) : Búsqueda semántica Top-K con [.file, .startLine, .endLine, .content]
+- ${CONTEXT_NAME}.fs.fuzzygrep(query, "ruta", [glob]) : Búsqueda semántica Top-K con [.file, .startLine, .endLine, .similarity, .content]
 - ${CONTEXT_NAME}.fs.write("ruta", content) : Escribe texto o líneas con auto-mkdir y copia de seguridad en JavaRCS
 - ${CONTEXT_NAME}.llm.query(prompt, texto) : Consulta semántica (DISYUNTOR: máx. 25/script; prohibido en bucles masivos sin pre-filtrar)
 - ${CONTEXT_NAME}.llm.sml_query(prompt) : Consulta al modelo local ONNX Qwen3.5 en memoria (rápido, sin coste API ni red)
@@ -88,8 +78,8 @@ MUESTRA DE MÉTODOS PRINCIPALES (Catálogo parcial; consulta help() para funcion
 
 """ + getShortPaginationInstruction(), "${CONTEXT_NAME}", CONTEXT_NAME))
             .addStringParameter("script", "The Groovy code to execute.");
-  }  
-  
+  }
+
   @Override
   public int getMode() {
     return AgentTool.MODE_SCRIPTING;
@@ -117,10 +107,10 @@ MUESTRA DE MÉTODOS PRINCIPALES (Catálogo parcial; consulta help() para funcion
 
     try (ScriptEngine engine = ScriptEngine.of(agent)) {
       ScriptEngine.ScriptResult result = engine.evaluate(args.script);
-      if( result.result()!=null ) {
+      if (result.result() != null) {
         BufferedWriter writer = Files.newBufferedWriter(
                 result.stdout(),
-                StandardCharsets.UTF_8, 
+                StandardCharsets.UTF_8,
                 StandardOpenOption.APPEND
         );
         writer.append(formatResult(result.result()));
