@@ -117,8 +117,7 @@ public class FileFuzzyGrepTool extends AbstractPaginatedAgentTool {
 
       for (int i = 0; i < results.size(); i++) {
         FileFuzzySearchUtils.FuzzyMatch c = results.get(i);
-        writer.write(String.format("=== COINCIDENCIA %d ===\n", i + 1));
-        writer.write(String.format("ARCHIVO: %s (Líneas %d-%d)\n", c.path().toAbsolutePath(), c.startLine(), c.endLine()));
+        writer.write(String.format("#%d ARCHIVO: %s Líneas %d-%d, similitud %f\n", i+1, c.path().toAbsolutePath(), c.startLine(), c.endLine(), c.similarity().getValue()));
         writer.write("---\n");
         writer.write(c.content());
         writer.write("\n\n");
