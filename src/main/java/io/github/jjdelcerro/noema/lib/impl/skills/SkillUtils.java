@@ -25,34 +25,42 @@ public class SkillUtils {
   private SkillUtils() {
   }
 
-  public static Path getSkillsFolder(Agent agent) {
+  public static List<Path> getSkillsFolders(Agent agent) {
     if (agent == null || agent.getPaths() == null || agent.getPaths().getWorkspaceFolder() == null) {
       return null;
     }
-    return agent.getPaths().getWorkspaceFolder().resolve(SKILLS_DIR).toAbsolutePath().normalize();
+    List<Path> r = new ArrayList();
+    r.add(agent.getPaths().getWorkspaceFolder().resolve(SKILLS_DIR).toAbsolutePath().normalize());
+    r.add(agent.getPaths().getConfigPath("skills").toAbsolutePath().normalize());
+    return r;
   }
 
   public static List<Skill> listSkills(Agent agent) {
-    Path skillsFolder = getSkillsFolder(agent);
-    if (skillsFolder == null || !Files.exists(skillsFolder) || !Files.isDirectory(skillsFolder)) {
+    List<Path> skillsFolders = getSkillsFolders(agent);
+    if (skillsFolders == null || skillsFolders.isEmpty()) {
       return Collections.emptyList();
     }
 
     List<Skill> skills = new ArrayList<>();
-    try (Stream<Path> stream = Files.list(skillsFolder)) {
-      List<Path> subdirs = stream.filter(Files::isDirectory).toList();
-      for (Path dir : subdirs) {
-        Path skillFile = dir.resolve(SKILL_FILE_NAME);
-        if (Files.exists(skillFile) && Files.isRegularFile(skillFile)) {
-          Skill skill = parseSkillFile(agent, dir, skillFile);
-          if (skill != null) {
-            skills.add(skill);
+    for (Path skillsFolder : skillsFolders) {      
+      if (skillsFolder == null || !Files.exists(skillsFolder) || !Files.isDirectory(skillsFolder)) {
+        continue;
+      }
+      try (Stream<Path> stream = Files.list(skillsFolder)) {
+        List<Path> subdirs = stream.filter(Files::isDirectory).toList();
+        for (Path dir : subdirs) {
+          Path skillFile = dir.resolve(SKILL_FILE_NAME);
+          if (Files.exists(skillFile) && Files.isRegularFile(skillFile)) {
+            Skill skill = parseSkillFile(agent, dir, skillFile);
+            if (skill != null) {
+              skills.add(skill);
+            }
           }
         }
+      } catch (IOException e) {
+        LOGGER.warn("Error listing skills in folder: {}", skillsFolder, e);
+        return Collections.emptyList();
       }
-    } catch (IOException e) {
-      LOGGER.warn("Error listing skills in folder: {}", skillsFolder, e);
-      return Collections.emptyList();
     }
 
     skills.sort(Comparator.comparing(Skill::getName, String.CASE_INSENSITIVE_ORDER));
@@ -64,27 +72,32 @@ public class SkillUtils {
       return null;
     }
 
-    Path skillsFolder = getSkillsFolder(agent);
-    if (skillsFolder == null || !Files.exists(skillsFolder)) {
+    List<Path> skillsFolders = getSkillsFolders(agent);
+    if (skillsFolders == null || skillsFolders.isEmpty()) {
       return null;
     }
+    for (Path skillsFolder : skillsFolders) {
+      if (skillsFolder == null || !Files.exists(skillsFolder)) {
+        continue;
+      }
+      Path skillDir = skillsFolder.resolve(name.trim()).normalize();
+      if (!skillDir.startsWith(skillsFolder)) {
+        LOGGER.warn("Path traversal attempt detected looking for skill: {}", name);
+        continue;
+      }
 
-    Path skillDir = skillsFolder.resolve(name.trim()).normalize();
-    if (!skillDir.startsWith(skillsFolder)) {
-      LOGGER.warn("Path traversal attempt detected looking for skill: {}", name);
-      return null;
+      if (!Files.exists(skillDir) || !Files.isDirectory(skillDir)) {
+        continue;
+      }
+
+      Path skillFile = skillDir.resolve(SKILL_FILE_NAME);
+      if (!Files.exists(skillFile) || !Files.isRegularFile(skillFile)) {
+        continue;
+      }
+
+      return parseSkillFile(agent, skillDir, skillFile);
     }
-
-    if (!Files.exists(skillDir) || !Files.isDirectory(skillDir)) {
-      return null;
-    }
-
-    Path skillFile = skillDir.resolve(SKILL_FILE_NAME);
-    if (!Files.exists(skillFile) || !Files.isRegularFile(skillFile)) {
-      return null;
-    }
-
-    return parseSkillFile(agent, skillDir, skillFile);
+    return null;
   }
 
   private static Skill parseSkillFile(Agent agent, Path skillDir, Path skillFile) {
