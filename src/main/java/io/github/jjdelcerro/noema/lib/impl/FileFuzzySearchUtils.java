@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.mutable.MutableDouble;
 
 /**
  * Utilidad centralizada para búsqueda semántica en archivos mediante embeddings
@@ -67,12 +68,13 @@ public final class FileFuzzySearchUtils {
           Path path,
           int startLine,
           int endLine,
+          MutableDouble similarity,
           String content
           ) {
 
     @Override
     public String toString() {
-      return String.format("%s:%d-%d:\n%s", file, startLine, endLine, content);
+      return String.format("file=%s;startline=%d;endline=%d;similarity=%f;content=\n%s\n----------\n", file, startLine, endLine, similarity.getValue(), content);
     }
   }
 
@@ -187,11 +189,14 @@ public final class FileFuzzySearchUtils {
           EmbeddingFilter<FuzzyMatch> filter,
           EmbeddingsService embeddingsService
   ) {
+//    System.err.println(startLine+":"+endLine);
     String chunkText = String.join("\n", window).trim();
     if (!chunkText.isBlank()) {
       float[] chunkVec = embeddingsService.embed(chunkText);
       if (chunkVec != null) {
-        filter.add(chunkVec, new FuzzyMatch(displayPath, file, startLine, endLine, chunkText));
+        MutableDouble similarity = new MutableDouble(1);
+        similarity.setValue(filter.add(chunkVec, new FuzzyMatch(displayPath, file, startLine, endLine, similarity, chunkText)));
+        
       }
     }
   }
