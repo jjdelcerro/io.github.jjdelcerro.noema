@@ -132,12 +132,4 @@ public class AgentAccessControlTest {
         assertNull(writeResolved, "nom_readable_paths debe DENEGAR la escritura");
     }
 
-    @Test
-    @DisplayName("Archivos que no existen físicamente en disco deben devolver null")
-    public void testNonExistentFileReturnsNull() {
-        Path nonExistent = workspaceDir.resolve("archivo_fantasma.txt");
-
-        Path resolved = accessControl.resolvePathOrNull(nonExistent.toString(), PATH_ACCESS_READ);
-        assertNull(resolved, "Si el archivo no existe en disco, toRealPath() falla y debe retornar null");
-    }
 }

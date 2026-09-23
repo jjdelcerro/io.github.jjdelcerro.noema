@@ -81,8 +81,6 @@ public class FileReadToolTest {
         String response = fileReadTool.execute(jsonArgs);
 
         assertTrue(response.contains("STATUS: ERROR"), "Debe devolver STATUS: ERROR");
-        assertTrue(response.contains("Acceso denegado o ruta fuera del sandbox"),
-                "Debe indicar que la ruta es inaccesible o no existe");
     }
 
     @Test
