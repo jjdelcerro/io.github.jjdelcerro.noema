@@ -9,6 +9,7 @@ import dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsGroup;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsItem;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsList;
@@ -34,6 +35,21 @@ public class McpServiceImpl extends AbstractAgentService {
     super(factory, agent);
   }
 
+  private void registerToolsInReasoning() {
+    if (this.tools.isEmpty()) {
+      return;
+    }
+    ReasoningService reasoning = (ReasoningService) agent.getService(ReasoningService.NAME);
+    if (reasoning == null) {
+      LOGGER.warn("ReasoningService no disponible; las herramientas MCP quedarán registradas solo en el servicio.");
+      return;
+    }
+    for (AgentTool tool : this.tools) {
+      reasoning.addTool(tool);
+      LOGGER.debug("Herramienta MCP '{}' registrada en ReasoningService.", tool.getName());
+    }
+  }
+
   @Override
   public synchronized void start() {
     if (running) {
@@ -55,11 +71,15 @@ public class McpServiceImpl extends AbstractAgentService {
         initSingleMcpServer(serverGroup);
       }
     }
-
+    registerToolsInReasoning();
     this.running = true;
   }
-
+  
   private void initSingleMcpServer(AgentSettingsGroup serverGroup) {
+    boolean enabled = serverGroup.getPropertyAsBoolean("enabled", true);
+    if( !enabled ) {
+      return;
+    }
     String name = serverGroup.getPropertyAsString("name", "unnamed");
     String type = serverGroup.getPropertyAsString("type", "stdio").toLowerCase();
     int mode = parseToolMode(serverGroup.getPropertyAsString("mode", "READ"));

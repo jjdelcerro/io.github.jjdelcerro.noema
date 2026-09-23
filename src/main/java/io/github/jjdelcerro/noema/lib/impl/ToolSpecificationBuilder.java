@@ -14,8 +14,18 @@ public class ToolSpecificationBuilder {
   private JsonObjectSchema.Builder parameters;
   private String name;
   private String description;
+  private JsonObjectSchema rawParameters;
 
   public ToolSpecificationBuilder() {
+  }
+
+  /**
+   * Establece un esquema ya construido, preservando tipos complejos (arrays
+   * anidados, enums, anyOf, etc.) tal cual vienen del servidor MCP.
+   */
+  public ToolSpecificationBuilder parameters(JsonObjectSchema rawParameters) {
+    this.rawParameters = rawParameters;
+    return this;
   }
 
   private JsonObjectSchema.Builder parameters() {
@@ -28,11 +38,11 @@ public class ToolSpecificationBuilder {
   public String name() {
     return this.name;
   }
-  
+
   public String description() {
     return this.description;
   }
-  
+
   public ToolSpecificationBuilder name(String name) {
     this.name = name;
     return this;
@@ -80,15 +90,17 @@ public class ToolSpecificationBuilder {
   }
 
   public ToolSpecification build() {
-  ToolSpecification.Builder toolSpecification = ToolSpecification.builder();
-  toolSpecification.name(name);
-  toolSpecification.description(description);
-    if (this.parameters != null) {
+    ToolSpecification.Builder toolSpecification = ToolSpecification.builder();
+    toolSpecification.name(name);
+    toolSpecification.description(description);
+    if (this.rawParameters != null) {
+      toolSpecification.parameters(this.rawParameters);
+    } else if (this.parameters != null) {
       toolSpecification.parameters(this.parameters.build());
     }
     return toolSpecification.build();
   }
-  
+
   public static ToolSpecificationBuilder create() {
     return new ToolSpecificationBuilder();
   }
