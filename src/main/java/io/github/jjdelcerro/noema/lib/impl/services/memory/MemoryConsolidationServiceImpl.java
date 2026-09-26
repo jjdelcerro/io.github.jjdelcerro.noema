@@ -46,6 +46,8 @@ public class MemoryConsolidationServiceImpl
         implements MemoryConsolidationService
   {
 
+  public static final String SYSTEM_PROMPT_FILENAME = "memory-consolidation.md";
+  
   private static final Logger LOGGER = LoggerFactory.getLogger(MemoryConsolidationServiceImpl.class);
 
   private final EpisodicMemory episodicMemory;
@@ -62,7 +64,7 @@ public class MemoryConsolidationServiceImpl
   @Override
   public void start() {
     String[] resources = new String[]{
-      "var/config/prompts/memory-consolidation.md"
+      "var/config/prompts/"+SYSTEM_PROMPT_FILENAME
     };
     for (String resPath : resources) {
       this.agent.installResource(resPath);
@@ -89,7 +91,7 @@ public class MemoryConsolidationServiceImpl
   }
 
   private void loadSystemPrompt() {
-    this.systemPrompt = agent.getResourceAsString("var/config/prompts/memory-consolidation.md");
+    this.systemPrompt = agent.getResourceAsString("var/config/prompts/"+SYSTEM_PROMPT_FILENAME);
     if (this.systemPrompt.isEmpty()) {
       throw new RuntimeException("No se pudo cargar el prompt del MemoryConsolidationService");
     }

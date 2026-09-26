@@ -1,5 +1,7 @@
 package io.github.jjdelcerro.noema.lib;
 
+import io.github.jjdelcerro.noema.lib.services.subagents.SubagentDefinition;
+import io.github.jjdelcerro.noema.lib.services.subagents.Subagent;
 import io.github.jjdelcerro.noema.lib.AgentActions.AgentAction;
 import io.github.jjdelcerro.noema.lib.impl.SQLProvider;
 import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemoryOperationFactory;
@@ -52,10 +54,6 @@ public interface AgentManager {
 
   Subagent getSubagent(int id);
 
-  Subagent createSubagent(Agent parent, SubagentDefinition definition, Path workspace);
-
-  SubagentDefinition createSubagentDefinition(Path xmlPath) throws IOException;
-  
   void registerProjectedMemoryOperation(ProjectedMemoryOperationFactory factory);
 
   ProjectedMemoryOperationFactory getProjectedMemoryOperationFactory(String name);

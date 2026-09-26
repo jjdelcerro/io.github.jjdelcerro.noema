@@ -8,7 +8,8 @@ if [ -d "$progdir/target" ] ; then
 else
 	jar=$(echo $progdir/io.github.jjdelcerro.noema.main-*.jar)
 fi
-if [ "$1" == "--debug" ] ; then
+args="$*"
+if [ ${args/*--debug*/--debug} == "--debug" ] ; then
 	suspend=y
 else
 	suspend=n

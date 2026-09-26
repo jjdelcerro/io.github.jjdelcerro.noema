@@ -8,8 +8,7 @@ import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
-import io.github.jjdelcerro.noema.lib.Subagent;
-import io.github.jjdelcerro.noema.lib.SubagentDefinition;
+import io.github.jjdelcerro.noema.lib.services.subagents.Subagent;
 import io.github.jjdelcerro.noema.lib.impl.memory.projected.operations.PendingAnnotationOperationFactory;
 import io.github.jjdelcerro.noema.lib.impl.memory.projected.operations.PeripheralAwarenessOperationFactory;
 import io.github.jjdelcerro.noema.lib.impl.memory.projected.operations.PinnedTurnsOperationFactory;
@@ -21,12 +20,14 @@ import io.github.jjdelcerro.noema.lib.impl.services.mcp.McpServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryConsolidationServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.scheduler.SchedulerServiceFactory;
+import io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptingServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceFactory;
+import io.github.jjdelcerro.noema.lib.impl.services.skills.SkillsServiceFactory;
+import io.github.jjdelcerro.noema.lib.impl.services.subagents.SubagentsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.telegram.TelegramServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.settings.AgentSettingsImpl;
 import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemoryOperationFactory;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
-import java.io.IOException;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -61,8 +62,8 @@ public class AgentManagerImpl implements AgentManager {
     this.registerProjectedMemoryOperation(new PendingAnnotationOperationFactory());
     this.registerProjectedMemoryOperation(new TemporalPerceptionOperationFactory());
     this.registerProjectedMemoryOperation(new PinnedTurnsOperationFactory());
-    this.registerProjectedMemoryOperation(new PeripheralAwarenessOperationFactory()); 
-    
+    this.registerProjectedMemoryOperation(new PeripheralAwarenessOperationFactory());
+
     this.registerService(new EmbeddingsServiceFactory());
     this.registerService(new SensorsServiceFactory());
 
@@ -70,8 +71,11 @@ public class AgentManagerImpl implements AgentManager {
     this.registerService(new McpServiceFactory());
 
     this.registerService(new SchedulerServiceFactory());
-    this.registerService(new EmailServiceFactory());
-    this.registerService(new TelegramServiceFactory());
+//    this.registerService(new EmailServiceFactory());
+//    this.registerService(new TelegramServiceFactory());
+    this.registerService(new SkillsServiceFactory());
+    this.registerService(new SubagentsServiceFactory());
+    this.registerService(new ScriptingServiceFactory());
 
     this.registerService(new ReasoningServiceFactory());
   }
@@ -172,16 +176,6 @@ public class AgentManagerImpl implements AgentManager {
   @Override
   public Subagent getSubagent(int id) {
     return this.activeSubagents.get(id);
-  }
-
-  @Override
-  public Subagent createSubagent(Agent parent, SubagentDefinition definition, Path workspace) {
-    return new SubagentImpl(parent, definition, workspace);
-  }
-
-  @Override
-  public SubagentDefinition createSubagentDefinition(Path xmlPath) throws IOException {
-    return SubagentDefinitionImpl.from(xmlPath);
   }
 
   @Override

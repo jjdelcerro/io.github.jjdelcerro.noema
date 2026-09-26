@@ -45,7 +45,6 @@ import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.Location
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.TimeTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.WeatherTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.WebGetTikaTool;
-import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryConsolidationServiceImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
 import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorEventUser;
@@ -75,14 +74,8 @@ import io.github.jjdelcerro.noema.lib.impl.memory.projected.ProjectedMemoryImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.AnnotateObservationTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.devel.LoadProjectMapTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.devel.UnloadProjectMapTool;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.scripting.ScriptExecuteTool;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.skills.ActivateSkillTool;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.skills.DeactivateSkillTool;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.skills.ListSkillsTool;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.skills.ReadSkillResourceTool;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.skills.RunSkillScriptTool;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.subagent.LaunchSubagentTool;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.subagent.ListSubagentsTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileFuzzyGrepTool;
+import io.github.jjdelcerro.noema.lib.impl.services.scripting.tools.ScriptExecuteTool;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
 import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
 import io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService;
@@ -96,7 +89,8 @@ public class ReasoningServiceImpl
         extends AbstractAgentService
         implements ReasoningService
   {
-
+  public static final String SYSTEM_PROMPT_FILENAME = "reasoning-system.md";
+  
   private static final Logger LOGGER = LoggerFactory.getLogger(ReasoningServiceImpl.class);
 
   protected String lastestSystemPrompt;
@@ -189,7 +183,7 @@ public class ReasoningServiceImpl
   @Override
   public void start() {
     String[] resources = new String[]{
-      "var/config/prompts/reasoning-system.md",
+      "var/config/prompts/"+SYSTEM_PROMPT_FILENAME,
       "var/identity/core/readme.md",
       "var/identity/environ/readme.md"
     };
@@ -277,9 +271,9 @@ public class ReasoningServiceImpl
 
     // --- CAPA 1: Instrucciones Operativas (Sistema Nervioso Autónomo) ---
     // Cargamos las instrucciones de comportamiento base
-    String basePrompt = agent.getResourceAsString("var/config/prompts/reasoning-system.md");
+    String basePrompt = agent.getResourceAsString("var/config/prompts/"+SYSTEM_PROMPT_FILENAME);
     if (StringUtils.isBlank(basePrompt)) {
-      LOGGER.error("No se pudo cargar el recurso base: var/config/prompts/reasoning-system.md");
+      LOGGER.error("No se pudo cargar el recurso base: var/config/prompts/"+SYSTEM_PROMPT_FILENAME);
       throw new RuntimeException("Error crítico: Prompt de sistema base no encontrado.");
     }
     sb.append(basePrompt).append("\n\n");
@@ -491,16 +485,9 @@ public class ReasoningServiceImpl
     AgentTool[] tools0 = new AgentTool[]{
       new ConsultEnvironTool(this.agent),
       new TimeTool(this.agent),
-      new LaunchSubagentTool(this.agent),
-      new ListSubagentsTool(this.agent),
-      new ScriptExecuteTool(this.agent),
       new FileGrepTool(this.agent),
+      new FileFuzzyGrepTool(this.agent),
       new FileReadTool(this.agent),
-      new ListSkillsTool(this.agent),
-      new ActivateSkillTool(this.agent),
-      new DeactivateSkillTool(this.agent),
-      new ReadSkillResourceTool(this.agent),
-      new RunSkillScriptTool(this.agent),
       
       new LoadProjectMapTool(this.agent),
       new UnloadProjectMapTool(this.agent),
