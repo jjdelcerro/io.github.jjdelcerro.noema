@@ -48,8 +48,8 @@ public class SubagentsServiceImpl
   @Override
   public void start() {
     String[] resources = new String[]{
-        "var/subagents/project_mapper.md",
-        "var/subagents/document_indexer.md"
+        "var/subagents/project_mapper.xml",
+        "var/subagents/document_indexer.xml"
     };
     for (String resPath : resources) {
       this.agent.installResource(resPath);
