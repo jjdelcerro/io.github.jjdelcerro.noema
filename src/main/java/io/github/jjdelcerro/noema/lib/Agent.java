@@ -21,44 +21,69 @@ import java.util.Collection;
  * @author jjdelcerro
  */
 public interface Agent {
-    
-    public static final String DEFAULT_SUBCHANNEL = "default";
+
+  public static final String DEFAULT_SUBCHANNEL = "default";
+  public static final String POLL_EVENT_TOOL_NAME = "poll_event";
 
   public enum ModelType {
     OPENAI,
     LLAMA_EMBEDDED
   }
-  
+
   public interface ModelParameters {
+
     public String providerUrl();
+
     public String providerApiKey();
+
     public String modelId();
+
     public double temperature();
+
     public int contextSize();
+
     public void setContextSize(int contextSize);
+
     public Path getWorkingDirectory();
+
     public Path getModelCachePath();
+
     public boolean canCacheTheModel();
+
     public String getTheKeyToCacheTheModel();
+
     public ModelType getModelType();
+
     public Object getExtraValue(String name);
   }
-  
+
   public interface ModelStreamCallback {
+
     public void StreamReasoning(String s);
+
     public void StreamResponse(String s);
+
     public void streamingFinished();
+
     public boolean streamingUsed();
+
     public void setStreamingUsed(boolean used);
   }
-  
+
   public interface ChatModel {
+
     public int getContextSize();
+
     public Response<AiMessage> generate(ChatMessage systemPrompt, ChatMessage message);
+
     public Response<AiMessage> generate(List<ChatMessage> messages);
+
     public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications);
+
     public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications, MutableBoolean abort, ModelStreamCallback streamCallback) throws Throwable;
+
     public Agent.ModelParameters getParameters();
+
     public ModelType getModelType();
   }
 
@@ -69,7 +94,7 @@ public interface Agent {
   public AgentSettings getSettings();
 
   public AgentConsole getConsole(String subchannel);
-  
+
   public AgentConsole getCurrentConsole();
 
   public EpisodicMemory getEpisodicMemory();
@@ -89,7 +114,7 @@ public interface Agent {
    * razonamiento.</li>
    * <li><b>Simulación de Herramienta:</b> Envuelve el contenido del evento
    * dentro de un {@link ToolExecutionResultMessage} asociado a una herramienta
-   * ficticia llamada {@code "pool_event"}.</li>
+   * ficticia llamada {@code "poll_event"}.</li>
    * </ol>
    * <p>
    * Esto "engaña" al modelo haciéndole creer que él mismo solicitó consultar
@@ -105,7 +130,7 @@ public interface Agent {
    *
    * @param channel El origen del evento (ej: "Telegram", "Email", "System").
    * Útil para que el LLM sepa contextualizar la fuente.
-     * @param subchannel
+   * @param subchannel
    * @param status
    * @param priority Nivel de urgencia del evento (ej: "normal", "high").
    * Actualmente informativo.
@@ -121,13 +146,12 @@ public interface Agent {
    * @see #processPendingEvents()
    */
   public void putEvent(String channel, String subchannel, String status, String priority, String eventText);
-  
+
   public void putUsersMessage(String subchannel, String text, SensorEventCallback callback);
-  
+
 //  public void putUsersMessage(String text, SensorEventCallback callback);
-  
   public SensorInformation registerSensor(String channel, String label, SensorNature nature, String description);
-  
+
   public AgentAccessControl getAccessControl();
 
   public void setConsole(String subchannel, AgentConsole console);
@@ -139,11 +163,11 @@ public interface Agent {
   public AgentService getService(String name);
 
   public Collection<AgentService> getServices();
-  
+
   public void setupServices();
-  
+
   public void start();
-  
+
   public void stop();
 
   public String getResourceAsString(String resname);
@@ -159,10 +183,10 @@ public interface Agent {
   public void installResource(String resPath);
 
   public int getConversationContextSize();
-  
+
   public int estimateTokenCount(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications);
-  
-  public String getCurrentSubchannel();  
-  
+
+  public String getCurrentSubchannel();
+
   public void addSharedService(AgentService service);
 }

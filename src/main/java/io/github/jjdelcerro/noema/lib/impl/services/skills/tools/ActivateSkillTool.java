@@ -43,7 +43,30 @@ public class ActivateSkillTool extends AbstractAgentTool {
   }
 
   @Override
-  public boolean shouldPin() {
+  public boolean shouldPin(ToolExecutionResultMessage result) {
+    if (result == null || StringUtils.isBlank(result.text())) {
+      return false;
+    }
+
+    String text = result.text().trim();
+
+    // Si devolvió el JSON estándar de error de AbstractAgentTool
+    if (text.startsWith("{")) {
+      try {
+        JsonObject json = JsonParser.parseString(text).getAsJsonObject();
+        if (json.has("status") && "error".equalsIgnoreCase(json.get("status").getAsString())) {
+          return false;
+        }
+      } catch (Exception ignored) {
+        // No es un JSON bien formado
+      }
+    }
+
+    // Fallback de seguridad ante errores genéricos de ejecución
+    if (text.startsWith("Error ejecutando herramienta")) {
+      return false;
+    }
+
     return true;
   }
 

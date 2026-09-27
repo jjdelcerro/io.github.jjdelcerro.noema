@@ -1,5 +1,5 @@
 ---
-name: desarrollo
+name: software_development
 description: Protocolo para discutir, diseñar y aplicar cambios sobre el código fuente de un proyecto. Úsala cuando el usuario quiera añadir, modificar, refactorizar o eliminar funcionalidad en ficheros de código, o cuando haya que explorar los fuentes para decidir cómo encaja una idea.
 version: 1.0.0
 ---

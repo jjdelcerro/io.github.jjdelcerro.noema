@@ -6,12 +6,14 @@ import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
+import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.impl.DateUtils;
 import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorEvent;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 
@@ -21,133 +23,135 @@ import org.apache.commons.lang3.StringUtils;
  */
 public abstract class AbstractSensorEvent implements ConsumableSensorEvent {
 
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+  private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    protected final SensorInformation sensor;
-    protected final String priority;
-    protected final String status;
-    protected final String text; // El estímulo original o base
-    protected final LocalDateTime startTimestamp;
-    protected LocalDateTime endTimestamp;
-    protected LocalDateTime deliveryTimestamp;
+  protected final SensorInformation sensor;
+  protected final String priority;
+  protected final String status;
+  protected final String text; // El estímulo original o base
+  protected final LocalDateTime startTimestamp;
+  protected LocalDateTime endTimestamp;
+  protected LocalDateTime deliveryTimestamp;
 
-    // Mensajes de protocolo para LangChain4j (Lazy Loading)
-    private AiMessage aiMessage;
-    private ToolExecutionResultMessage responseMessage;
-    private final SensorsService.SensorEventCallback callback;
-    private final String subchannel;
+  // Mensajes de protocolo para LangChain4j (Lazy Loading)
+  private AiMessage aiMessage;
+  private ToolExecutionResultMessage responseMessage;
+  private final SensorsService.SensorEventCallback callback;
+  private final String subchannel;
 
-    protected AbstractSensorEvent(SensorInformation sensor, String subchannel, String text, String priority, String status, LocalDateTime startTimestamp, SensorsService.SensorEventCallback callback) {
-        this.callback = callback;
-        this.sensor = sensor;
-        this.text = text;
-        this.priority = priority;
-        this.status = status;
-        this.startTimestamp = startTimestamp;
-        this.endTimestamp = startTimestamp;
-        this.subchannel = subchannel;
+  protected AbstractSensorEvent(SensorInformation sensor, String subchannel, String text, String priority, String status, LocalDateTime startTimestamp, SensorsService.SensorEventCallback callback) {
+    this.callback = callback;
+    this.sensor = sensor;
+    this.text = text;
+    this.priority = priority;
+    this.status = status;
+    this.startTimestamp = startTimestamp;
+    this.endTimestamp = startTimestamp;
+    this.subchannel = subchannel;
+  }
+
+  public SensorInformation getSensor() {
+    return this.sensor;
+  }
+
+  @Override
+  public String getChannel() {
+    return this.sensor.getChannel();
+  }
+
+  @Override
+  public String getPriority() {
+    return priority;
+  }
+
+  @Override
+  public String getStatus() {
+    return status;
+  }
+
+  /**
+   * Permite a las subclases acceder al texto base para construir getContents().
+   *
+   * @return
+   */
+  protected String getText() {
+    return text;
+  }
+
+  @Override
+  public LocalDateTime getStartTimestamp() {
+    return startTimestamp;
+  }
+
+  @Override
+  public LocalDateTime getEndTimestamp() {
+    return endTimestamp;
+  }
+
+  @Override
+  public LocalDateTime getDeliveryTimestamp() {
+    return deliveryTimestamp;
+  }
+
+  @Override
+  public void setDeliveryTimestamp(LocalDateTime deliveryTimestamp) {
+    this.deliveryTimestamp = deliveryTimestamp;
+  }
+
+  // --- Implementación de ConsumableSensorEvent ---
+  @Override
+  public String toJson() {
+    return GSON.toJson(Map.of(
+            "event_time", DateUtils.toString(startTimestamp),
+            "current_time", DateUtils.now(),
+            "channel", this.sensor.getChannel(),
+            "status", StringUtils.defaultString(status),
+            "priority", priority,
+            "contents", getContents()
+    ));
+  }
+
+  @Override
+  public ChatMessage getChatMessage() {
+    if (this.aiMessage == null) {
+      buildMessages();
     }
+    return this.aiMessage;
+  }
 
-    public SensorInformation getSensor() {
-        return this.sensor;
+  @Override
+  public ToolExecutionResultMessage getResponseMessage() {
+    if (this.responseMessage == null) {
+      buildMessages();
     }
+    return this.responseMessage;
+  }
 
-    @Override
-    public String getChannel() {
-        return this.sensor.getChannel();
-    }
+  private void buildMessages() {
+    // Creamos un ID único para la petición basado en el canal y el tiempo
+    String requestId = this.sensor.getChannel() + "_" + startTimestamp;
 
-    @Override
-    public String getPriority() {
-        return priority;
-    }
+    ToolExecutionRequest request = ToolExecutionRequest.builder()
+            .id(requestId)
+            .name(Agent.POLL_EVENT_TOOL_NAME)
+            .arguments("{}")
+            .build();
 
-    @Override
-    public String getStatus() {
-        return status;
-    }
+    this.aiMessage = AiMessage.builder()
+            .thinking("Consultando eventos pendientes en el sensor.")
+            .toolExecutionRequests(List.of(request))
+            .build();
+    this.responseMessage = ToolExecutionResultMessage.from(request, this.toJson());
+  }
 
-    /**
-     * Permite a las subclases acceder al texto base para construir
-     * getContents().
-     *
-     * @return
-     */
-    protected String getText() {
-        return text;
-    }
+  @Override
+  public SensorsService.SensorEventCallback getCallback() {
+    return callback;
+  }
 
-    @Override
-    public LocalDateTime getStartTimestamp() {
-        return startTimestamp;
-    }
-
-    @Override
-    public LocalDateTime getEndTimestamp() {
-        return endTimestamp;
-    }
-
-    @Override
-    public LocalDateTime getDeliveryTimestamp() {
-        return deliveryTimestamp;
-    }
-
-    @Override
-    public void setDeliveryTimestamp(LocalDateTime deliveryTimestamp) {
-        this.deliveryTimestamp = deliveryTimestamp;
-    }
-
-    // --- Implementación de ConsumableSensorEvent ---
-    @Override
-    public String toJson() {
-        return GSON.toJson(Map.of(
-                "event_time", DateUtils.toString(startTimestamp),
-                "current_time", DateUtils.now(),
-                "channel", this.sensor.getChannel(),
-                "status", StringUtils.defaultString(status),
-                "priority", priority,
-                "contents", getContents()
-        ));
-    }
-
-    @Override
-    public ChatMessage getChatMessage() {
-        if (this.aiMessage == null) {
-            buildMessages();
-        }
-        return this.aiMessage;
-    }
-
-    @Override
-    public ToolExecutionResultMessage getResponseMessage() {
-        if (this.responseMessage == null) {
-            buildMessages();
-        }
-        return this.responseMessage;
-    }
-
-    private void buildMessages() {
-        // Creamos un ID único para la petición basado en el canal y el tiempo
-        String requestId = this.sensor.getChannel() + "_" + startTimestamp;
-
-        ToolExecutionRequest request = ToolExecutionRequest.builder()
-                .id(requestId)
-                .name("pool_event")
-                .arguments("{}")
-                .build();
-
-        this.aiMessage = AiMessage.from(request);
-        this.responseMessage = ToolExecutionResultMessage.from(request, this.toJson());
-    }
-
-    @Override
-    public SensorsService.SensorEventCallback getCallback() {
-        return callback;
-    }
-
-    @Override
-    public String getSubchannel() {
-        return this.subchannel;
-    }
+  @Override
+  public String getSubchannel() {
+    return this.subchannel;
+  }
 
 }

@@ -85,12 +85,12 @@ import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
  * Orquestador principal del sistema. Gestiona el bucle de razonamiento, la
  * ejecucion de herramientas y la interaccion con el LLM.
  */
-public class ReasoningServiceImpl 
+public class ReasoningServiceImpl
         extends AbstractAgentService
-        implements ReasoningService
-  {
+        implements ReasoningService {
+
   public static final String SYSTEM_PROMPT_FILENAME = "reasoning-system.md";
-  
+
   private static final Logger LOGGER = LoggerFactory.getLogger(ReasoningServiceImpl.class);
 
   protected String lastestSystemPrompt;
@@ -183,7 +183,7 @@ public class ReasoningServiceImpl
   @Override
   public void start() {
     String[] resources = new String[]{
-      "var/config/prompts/"+SYSTEM_PROMPT_FILENAME,
+      "var/config/prompts/" + SYSTEM_PROMPT_FILENAME,
       "var/identity/core/readme.md",
       "var/identity/environ/readme.md"
     };
@@ -271,9 +271,9 @@ public class ReasoningServiceImpl
 
     // --- CAPA 1: Instrucciones Operativas (Sistema Nervioso Autónomo) ---
     // Cargamos las instrucciones de comportamiento base
-    String basePrompt = agent.getResourceAsString("var/config/prompts/"+SYSTEM_PROMPT_FILENAME);
+    String basePrompt = agent.getResourceAsString("var/config/prompts/" + SYSTEM_PROMPT_FILENAME);
     if (StringUtils.isBlank(basePrompt)) {
-      LOGGER.error("No se pudo cargar el recurso base: var/config/prompts/"+SYSTEM_PROMPT_FILENAME);
+      LOGGER.error("No se pudo cargar el recurso base: var/config/prompts/" + SYSTEM_PROMPT_FILENAME);
       throw new RuntimeException("Error crítico: Prompt de sistema base no encontrado.");
     }
     sb.append(basePrompt).append("\n\n");
@@ -488,10 +488,8 @@ public class ReasoningServiceImpl
       new FileGrepTool(this.agent),
       new FileFuzzyGrepTool(this.agent),
       new FileReadTool(this.agent),
-      
       new LoadProjectMapTool(this.agent),
       new UnloadProjectMapTool(this.agent),
-      
       new FileFindTool(this.agent),
       new FileWriteTool(this.agent),
       new FileSearchAndReplaceTool(this.agent),
@@ -533,9 +531,9 @@ public class ReasoningServiceImpl
   public int estimateMessagesTokenCount(String subchannel) {
     ProjectedMemory projection = this.getProjectedMemory(subchannel);
     return this.agent.estimateTokenCount(projection.getMessages(this.getRecentMemory(subchannel),
-                    this.getActiveConsolidateMemory(subchannel),
-                    this.getLastestSystemPrompt()
-            ),
+            this.getActiveConsolidateMemory(subchannel),
+            this.getLastestSystemPrompt()
+    ),
             null
     );
   }
@@ -680,12 +678,44 @@ public class ReasoningServiceImpl
       boolean turnFinished = false;
       while (!turnFinished && this.isRunning()) {
         projectedMemory.setLastInteractionTurn(recentMemory.getLastTurnId());
-        Response<AiMessage> response = this.getModel().generate(
-                projectedMemory.getMessages(recentMemory, consolidateMemory, this.getBaseSystemPrompt()),
-                this.getToolSpecifications(),
-                abort,
-                console
-        );
+
+        Response<AiMessage> response;
+        try {
+          response = this.getModel().generate(
+                  projectedMemory.getMessages(
+                          recentMemory, 
+                          consolidateMemory, 
+                          this.getBaseSystemPrompt()
+                  ),
+                  this.getToolSpecifications(),
+                  abort,
+                  console
+          );
+        } catch (Throwable t) {
+          LOGGER.warn("Fallo durante la invocación al modelo en el turno actual", t);
+          String errorMsg = "No se pudo completar el razonamiento debido a un error del proveedor: " + t.getMessage();
+          console.printSystemError(errorMsg);
+
+          AiMessage errorAiMessage = AiMessage.from(errorMsg);
+          recentMemory.add(errorAiMessage);
+
+          Turn errorTurn = this.episodicMemory.createTurn(
+                  LocalDateTime.now(),
+                  "chat",
+                  currentSubchannel,
+                  textUser,
+                  null,
+                  errorMsg,
+                  null,
+                  null,
+                  null
+          );
+          this.episodicMemory.add(errorTurn);
+          recentMemory.consolideTurn(errorTurn);
+          turnFinished = true;
+          break;
+        }
+
         console.streamingFinished();
         AiMessage aiMessage = response.content();
         recentMemory.add(aiMessage);
@@ -695,7 +725,7 @@ public class ReasoningServiceImpl
           if (StringUtils.isNotBlank(intermediateText)) {
             console.printModelResponse(intermediateText);
 //            finalLlmResponse.append(intermediateText).append("\n\n"); 
-          }          
+          }
           for (ToolExecutionRequest request : aiMessage.toolExecutionRequests()) {
             String result = executeTool(recentMemory, request);
 
@@ -711,8 +741,8 @@ public class ReasoningServiceImpl
               default:
                 contentType = "tool_execution";
             }
-            String aiThinking = StringUtils.defaultIfBlank(aiMessage.thinking(),null);
-            if( aiThinking!=null ) {
+            String aiThinking = StringUtils.defaultIfBlank(aiMessage.thinking(), null);
+            if (aiThinking != null) {
               console.printModelReasoning(aiThinking);
             }
             Turn toolTurn = this.episodicMemory.createTurn(
@@ -732,13 +762,13 @@ public class ReasoningServiceImpl
           }
           toolExecutionRetries = 0;
         } else {
-          String aiText = StringUtils.defaultIfBlank(aiMessage.text(),null);
-          String aiThinking = StringUtils.defaultIfBlank(aiMessage.thinking(),null);
+          String aiText = StringUtils.defaultIfBlank(aiMessage.text(), null);
+          String aiThinking = StringUtils.defaultIfBlank(aiMessage.thinking(), null);
           finalLlmResponse.append(aiText); // No esta claro que sea necesario mantener el finalLlmResponse
-          if( aiThinking!=null ) {
+          if (aiThinking != null) {
             console.printModelReasoning(aiThinking);
           }
-          if( aiText != null) {
+          if (aiText != null) {
             console.printModelResponse(aiText);
           }
           Turn responseTurn = this.episodicMemory.createTurn(

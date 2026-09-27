@@ -201,11 +201,15 @@ public class ProjectedMemoryImpl implements ProjectedMemory {
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
     ToolExecutionRequest request = ToolExecutionRequest.builder()
             .id("SystemNotice_" + UUID.randomUUID().toString().replace("-", ""))
-            .name("pool_event")
+            .name(Agent.POLL_EVENT_TOOL_NAME)
             .arguments("{}")
             .build();
 
-    projectedMessages.add(AiMessage.from(request));
+    AiMessage syntheticAi = AiMessage.builder()
+            .thinking("Procesando notificación del sistema.")
+            .toolExecutionRequests(List.of(request))
+            .build();
+    projectedMessages.add(syntheticAi);    
     projectedMessages.add(ToolExecutionResultMessage.from(request, gson.toJson(responseMap)));
   }
 

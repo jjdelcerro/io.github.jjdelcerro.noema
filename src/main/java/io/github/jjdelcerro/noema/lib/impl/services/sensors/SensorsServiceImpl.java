@@ -9,15 +9,14 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.events.PoolEventTool;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.aggregate.AggregateSensorData;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.discrete.DiscreteSensorData;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.mergeable.MergeableSensorData;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.state.StateSensorData;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.user.UserSensorData;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.persistence.SensorInformationGsonAdapter;
+import io.github.jjdelcerro.noema.lib.impl.services.sensors.tools.PollEventTool;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.tools.SensorStartTool;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.tools.SensorStatusTool;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.tools.SensorStopTool;
@@ -50,20 +49,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("UseSpecificCatch")
-public class SensorsServiceImpl 
+public class SensorsServiceImpl
         extends AbstractAgentService
-        implements SensorsService 
-  {
+        implements SensorsService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SensorsServiceImpl.class);
 
   public static final String SYSTEMCLOCK_SENSOR_NAME = "SYSTEMCLOCK";
   private static final String SYSTEMCLOCK_SENSOR_LABEL = "Reloj del Sistema";
-  private static final String SYSTEMCLOCK_SENSOR_DESCRIPTION = "Sensor interno de paso del tiempo"; 
+  private static final String SYSTEMCLOCK_SENSOR_DESCRIPTION = "Sensor interno de paso del tiempo";
 
   public static final String SYSTEMNOTIFICATION_SENSOR_NAME = "SYSTEMNOTIFICATION";
   private static final String SYSTEMNOTIFICATION_SENSOR_LABEL = "Notificacion del sistema";
-  private static final String SYSTEMNOTIFICATION_SENSOR_DESCRIPTION = "Sensor interno que recoge las notificaciones del sistema"; 
+  private static final String SYSTEMNOTIFICATION_SENSOR_DESCRIPTION = "Sensor interno que recoge las notificaciones del sistema";
 
   private final Map<String, SensorData> registeredSensors;
   private final BlockingQueue<SensorEvent> deliveryQueue;
@@ -91,17 +89,17 @@ public class SensorsServiceImpl
     sensorDataFactory.put(SensorNature.AGGREGATABLE, AggregateSensorData::new);
     sensorDataFactory.put(SensorNature.STATE, StateSensorData::new);
     sensorDataFactory.put(SensorNature.USER, UserSensorData::new);
-    
+
     SensorInformation sensorSystemClock = this.createSensorInformation(
             SYSTEMCLOCK_SENSOR_NAME,
             SYSTEMCLOCK_SENSOR_LABEL,
-            SensorNature.DISCRETE, 
+            SensorNature.DISCRETE,
             SYSTEMCLOCK_SENSOR_DESCRIPTION
     );
     SensorInformation sensorSystemNotification = this.createSensorInformation(
             SYSTEMNOTIFICATION_SENSOR_NAME,
             SYSTEMNOTIFICATION_SENSOR_LABEL,
-            SensorNature.DISCRETE, 
+            SensorNature.DISCRETE,
             SYSTEMNOTIFICATION_SENSOR_DESCRIPTION
     );
     this.registerSensor(sensorSystemClock);
@@ -120,11 +118,12 @@ public class SensorsServiceImpl
 
   /**
    * Busca una instancia de información.Si no existe, crea una minimalista
- (placeholder).Si el sensor se registra después con información rica, se
- actualizará en el cache.
+   * (placeholder).Si el sensor se registra después con información rica, se
+   * actualizará en el cache.
+   *
    * @param channel
    * @param nature
-   * @return 
+   * @return
    */
   public synchronized SensorInformation getOrPlaceholderInfo(String channel, SensorNature nature) {
     return knownSensors.computeIfAbsent(channel, c
@@ -390,7 +389,7 @@ public class SensorsServiceImpl
   @Override
   public List<AgentTool> getTools() {
     AgentTool[] tools = new AgentTool[]{
-      new PoolEventTool(this.agent),
+      new PollEventTool(this.agent),
       new SensorStartTool(this.agent),
       new SensorStopTool(this.agent),
       new SensorStatusTool(this.agent)
@@ -444,10 +443,10 @@ public class SensorsServiceImpl
             .registerTypeHierarchyAdapter(SensorEvent.class, new SensorEventGsonAdapter(this))
             .registerTypeHierarchyAdapter(SensorStatistics.class, new SensorStatisticsGsonAdapter())
             .registerTypeHierarchyAdapter(SensorInformation.class, new SensorInformationGsonAdapter())
-            .setPrettyPrinting()            
+            .setPrettyPrinting()
             .create();
   }
-  
+
   public ConsumableSensorEvent createSensorEvent(String channel, String subchannel, String text, String priority, String status, LocalDateTime timestamp, SensorsService.SensorEventCallback callback) {
     AbstractSensorData sensor = (AbstractSensorData) this.registeredSensors.get(channel);
     return sensor.createSensorEvent(subchannel, text, priority, status, timestamp, callback);

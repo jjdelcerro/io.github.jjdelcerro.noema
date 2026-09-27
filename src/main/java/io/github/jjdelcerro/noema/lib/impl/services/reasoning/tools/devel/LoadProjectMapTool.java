@@ -77,8 +77,12 @@ que finalices la tarea sobre el proyecto y decidas liberarlo invocando
   }
 
   @Override
-  public boolean shouldPin() {
-    return true;
+  public boolean shouldPin(ToolExecutionResultMessage result) {
+    if (result == null || StringUtils.isBlank(result.text())) {
+      return false;
+    }
+    // Solo se ancla si el mapa se cargó con éxito
+    return result.text().startsWith("STATUS: OK");
   }
 
   @Override

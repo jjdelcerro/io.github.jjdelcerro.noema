@@ -33,7 +33,7 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
   private static final long NOTIFICATION_TURN_INTERVAL = 5L;
 
   private final List<PinnedTurnStateImpl> pinnedTurns;
-  private long lastNotifiedTurn;
+  private int lastNotifiedIndex;
   private final Gson gson;
 
   public static class PinnedTurnStateImpl implements PinnedTurnState {
@@ -41,11 +41,17 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
     private final AiMessage requestMessage;
     private final ToolExecutionResultMessage resultMessage;
     private transient AgentTool tool;
+    private boolean pinned;
 
     public PinnedTurnStateImpl(AgentTool tool, AiMessage requestMessage, ToolExecutionResultMessage resultMessage) {
+      this(tool, requestMessage, resultMessage, true);
+    }
+
+    public PinnedTurnStateImpl(AgentTool tool, AiMessage requestMessage, ToolExecutionResultMessage resultMessage, boolean pinned) {
       this.tool = tool;
       this.requestMessage = requestMessage;
       this.resultMessage = resultMessage;
+      this.pinned = pinned;
     }
 
     @Override
@@ -66,11 +72,19 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
     public ToolExecutionResultMessage getResultMessage() {
       return resultMessage;
     }
+
+    public boolean isPinned() {
+      return pinned;
+    }
+
+    public void setPinned(boolean pinned) {
+      this.pinned = pinned;
+    }
   }
 
   public PinnedTurnsOperationImpl() {
     this.pinnedTurns = new ArrayList<>();
-    this.lastNotifiedTurn = 0L;
+    this.lastNotifiedIndex = -1;
     this.gson = createGson();
   }
 
@@ -93,22 +107,36 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
     return PRIORITY;
   }
 
+  @Override
   public List<PinnedTurnState> getPinnedTurns() {
-    return Collections.unmodifiableList(this.pinnedTurns);
+    List<PinnedTurnState> active = new ArrayList<>();
+    for (PinnedTurnStateImpl p : this.pinnedTurns) {
+      if (p.isPinned()) {
+        active.add(p);
+      }
+    }
+    return Collections.unmodifiableList(active);
   }
 
   /**
-   * Removes pinned turns matching the given predicate.
+   * Marks pinned turns matching the given predicate as unpinned.
    *
    * @param predicate condition to test each pinned turn
-   * @return true if any turn was removed
+   * @return true if any turn was unpinned
    */
   @Override
   public boolean removePinnedTurn(Predicate<PinnedTurnState> predicate) {
     if (predicate == null) {
       return false;
     }
-    return this.pinnedTurns.removeIf(predicate);
+    boolean removed = false;
+    for (PinnedTurnStateImpl state : this.pinnedTurns) {
+      if (state.isPinned() && predicate.test(state)) {
+        state.setPinned(false);
+        removed = true;
+      }
+    }
+    return removed;
   }
 
   @Override
@@ -130,8 +158,8 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
     // 3. Re-inject pinned turns that have been purged by consolidation
     reinjectCompactedPinnedTurns(projectedMessages);
 
-    // 4. Emit periodic reminder notifications every 5 turns
-    processPeriodicNotifications(memory, notifications);
+    // 4. Emit periodic reminder notifications every 5 messages
+    processPeriodicNotifications(projectedMessages, notifications);
   }
 
   private void captureNewPinnedTurns(ProjectedMemory memory, List<ChatMessage> messages) {
@@ -139,7 +167,7 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
       ChatMessage msg = messages.get(i);
       if (msg instanceof ToolExecutionResultMessage resultMsg) {
         AgentTool tool = memory.getTool(resultMsg.toolName());
-        if (tool != null && tool.shouldPin()) {
+        if (tool != null && tool.shouldPin(resultMsg)) {
           boolean alreadyPinned = this.pinnedTurns.stream()
                   .anyMatch(p -> p.getResultMessage().id().equals(resultMsg.id()));
 
@@ -181,6 +209,8 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
       insertIndex++;
     }
 
+    List<PinnedTurnStateImpl> toRemove = new ArrayList<>();
+
     for (PinnedTurnStateImpl pinnedTurn : this.pinnedTurns) {
       String callId = pinnedTurn.getResultMessage().id();
       boolean isPresentInRecent = false;
@@ -193,24 +223,58 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
       }
 
       if (!isPresentInRecent) {
-        projectedMessages.add(insertIndex++, pinnedTurn.getRequestMessage());
-        projectedMessages.add(insertIndex++, pinnedTurn.getResultMessage());
+        if (!pinnedTurn.isPinned()) {
+          toRemove.add(pinnedTurn);
+        } else {
+          projectedMessages.add(insertIndex++, pinnedTurn.getRequestMessage());
+          projectedMessages.add(insertIndex++, pinnedTurn.getResultMessage());
+        }
       }
+    }
+
+    if (!toRemove.isEmpty()) {
+      this.pinnedTurns.removeAll(toRemove);
     }
   }
 
-  private void processPeriodicNotifications(ProjectedMemory memory, List<String> notifications) {
+  private void processPeriodicNotifications(List<ChatMessage> projectedMessages, List<String> notifications) {
     if (this.pinnedTurns.isEmpty() || notifications == null) {
       return;
     }
 
-    long currentTurn = memory.getLastInteractionTurn();
-    if (currentTurn <= 0) {
+    boolean hasActivePins = false;
+    for (PinnedTurnStateImpl state : this.pinnedTurns) {
+      if (state.isPinned()) {
+        hasActivePins = true;
+        break;
+      }
+    }
+    if (!hasActivePins) {
+      this.lastNotifiedIndex = -1;
       return;
     }
 
-    if ((currentTurn - this.lastNotifiedTurn) >= NOTIFICATION_TURN_INTERVAL) {
+    int lastMessageIndex = projectedMessages.size();
+    if (lastMessageIndex <= 0) {
+      return;
+    }
+
+    // Inicializacion del reloj en el primer anclaje
+    if (this.lastNotifiedIndex < 0) {
+      this.lastNotifiedIndex = lastMessageIndex;
+      return;
+    }
+
+    // Solucion A: Si el contexto se ha reducido tras una consolidacion, resincronizamos el indice
+    if (lastMessageIndex < this.lastNotifiedIndex) {
+      this.lastNotifiedIndex = lastMessageIndex;
+    }
+
+    if ((lastMessageIndex - this.lastNotifiedIndex) >= NOTIFICATION_TURN_INTERVAL) {
       for (PinnedTurnStateImpl state : this.pinnedTurns) {
+        if (!state.isPinned()) {
+          continue;
+        }
         AgentTool tool = state.getTool();
         if (tool != null && state.getRequestMessage().hasToolExecutionRequests()) {
           for (ToolExecutionRequest req : state.getRequestMessage().toolExecutionRequests()) {
@@ -223,18 +287,19 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
           }
         }
       }
-      this.lastNotifiedTurn = currentTurn;
+      this.lastNotifiedIndex = lastMessageIndex;
     }
   }
 
   @Override
   public JsonObject getState() {
     JsonObject state = new JsonObject();
-    state.addProperty("lastNotifiedTurn", this.lastNotifiedTurn);
+    state.addProperty("lastNotifiedIndex", this.lastNotifiedIndex);
 
     JsonArray array = new JsonArray();
     for (PinnedTurnStateImpl item : this.pinnedTurns) {
       JsonObject itemObj = new JsonObject();
+      itemObj.addProperty("pinned", item.isPinned());
       itemObj.add("requestMessage", this.gson.toJsonTree(item.getRequestMessage(), ChatMessage.class));
       itemObj.add("resultMessage", this.gson.toJsonTree(item.getResultMessage(), ChatMessage.class));
       array.add(itemObj);
@@ -249,8 +314,10 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
       return;
     }
 
-    if (state.has("lastNotifiedTurn")) {
-      this.lastNotifiedTurn = state.get("lastNotifiedTurn").getAsLong();
+    if (state.has("lastNotifiedIndex")) {
+      this.lastNotifiedIndex = (int) state.get("lastNotifiedIndex").getAsLong();
+    } else if (state.has("lastNotifiedTurn")) {
+      this.lastNotifiedIndex = state.get("lastNotifiedTurn").getAsInt();
     }
 
     this.pinnedTurns.clear();
@@ -261,8 +328,9 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
           JsonObject itemObj = elem.getAsJsonObject();
           AiMessage req = (AiMessage) this.gson.fromJson(itemObj.get("requestMessage"), ChatMessage.class);
           ToolExecutionResultMessage res = (ToolExecutionResultMessage) this.gson.fromJson(itemObj.get("resultMessage"), ChatMessage.class);
+          boolean pinned = !itemObj.has("pinned") || itemObj.get("pinned").getAsBoolean();
           if (req != null && res != null) {
-            this.pinnedTurns.add(new PinnedTurnStateImpl(null, req, res));
+            this.pinnedTurns.add(new PinnedTurnStateImpl(null, req, res, pinned));
           }
         }
       }
