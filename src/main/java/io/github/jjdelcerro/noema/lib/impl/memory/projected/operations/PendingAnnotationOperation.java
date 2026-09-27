@@ -52,13 +52,35 @@ public class PendingAnnotationOperation implements ProjectedMemoryOperation {
         if (pendingResources.isEmpty()) {
             return;
         }
-
-        String warning = StringUtils.replace("""
-Has leido informacion de recursos sin extraer y consolidar informacion relevante.
-Si hay datos que deban conservarse relacionados con estos recursos usa la herramienta 'annotate_observation' con el parametro 'resource_id' correspondiente.
-Los recursos involucrados son: {RESOURCES_LIST}
-                """, "{RESOURCES_LIST}", StringUtils.join(pendingResources, ", ")).trim();
-
+        // Estoy indeciso de que version dejar, asi que de momento dejo estas tres aqui
+        String warning = """
+Hay turnos de herramientas con datos crudos en la ventana de consolidación sin anotar.
+Las anotaciones sobreviven a la poda del contexto; las lecturas/greps/finds crudos se eliminarán al salir de la ventana reciente.
+Anota solo si hay conocimiento derivado relevante (síntesis, relaciones, decisiones). No dupliques datos que puedas releer.
+Herramienta: {annotate_observation}(resource_id, note)
+Recursos pendientes: {resources_list}
+""";
+        warning = """
+[PODA DE CONTEXTO] Próxima poda de datos crudos: {resources_list} (las anotaciones sobreviven).
+Si hay conclusiones o decisiones que no puedas releer, usa {annotate_observation}(resource_id, note); si no, ignora este aviso.
+""";
+        warning = """
+[PODA DE CONTEXTO] Datos crudos próximos a eliminarse: {resources_list}
+Las anotaciones sobreviven; los datos crudos no.
+Anota solo conclusiones/decisiones/conocimiento-deribado irrepetible (no dupliques lo que puedas releer).
+Herramienta: {annotate_observation}(resource_id, note)        
+""";
+        warning = StringUtils.replace(
+                warning,
+                "{annotate_observation}", 
+                AnnotateObservationTool.TOOL_NAME
+        );
+        warning = StringUtils.replace(
+                warning,
+                "{resources_list}", 
+                StringUtils.join(pendingResources, ", ")
+        );
+        warning = warning.trim();
         notifications.add(warning);
     }
 

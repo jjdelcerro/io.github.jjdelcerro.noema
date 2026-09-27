@@ -48,7 +48,7 @@ public class TemporalPerceptionOperation implements ProjectedMemoryOperation {
             return;
         }
 
-        String timeNotice = "Ha pasado " + DateUtils.timeAgo(lastTime) + " desde la ultima interaccion con el usuario.";
+        String timeNotice = "[CONSCIENCIA TEMPORAL] Ha pasado " + DateUtils.timeAgo(lastTime) + " desde la ultima interaccion con el usuario.";
         notifications.add(timeNotice);
     }
 

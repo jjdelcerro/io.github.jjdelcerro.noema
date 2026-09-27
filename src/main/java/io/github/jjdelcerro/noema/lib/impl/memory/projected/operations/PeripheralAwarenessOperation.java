@@ -109,7 +109,7 @@ public class PeripheralAwarenessOperation implements ProjectedMemoryOperation {
 
     if (hasPeripheralChannels) {
       sb.append("\nSi requieres mas detalles sobre alguna de estas conversaciones, utiliza las herramientas de busqueda en el historial.");
-      notifications.add(sb.toString().trim());
+      notifications.add("[CONSCIENCIA PERIFERICA] "+sb.toString().trim());
     }
   }
 
