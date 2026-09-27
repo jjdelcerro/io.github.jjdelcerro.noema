@@ -4,6 +4,7 @@ import io.github.jjdelcerro.noema.lib.AbstractAgentAction;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.AgentActions;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
+import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import java.io.IOException;
@@ -105,12 +106,12 @@ public class AgentAccessControlImpl implements AgentAccessControl {
     }
   }
 
-  
   /**
-   * Resuelve la ruta canonica real del archivo o directorio respetando enlaces simbolicos.
-   * Si el archivo o alguno de sus directorios intermedios no existe fisicamente en disco,
-   * asciende por el arbol hasta encontrar el primer ancestro real existente, resuelve su
-   * toRealPath() y reconstruye los segmentos restantes sin asumir la existencia del padre.
+   * Resuelve la ruta canonica real del archivo o directorio respetando enlaces
+   * simbolicos. Si el archivo o alguno de sus directorios intermedios no existe
+   * fisicamente en disco, asciende por el arbol hasta encontrar el primer
+   * ancestro real existente, resuelve su toRealPath() y reconstruye los
+   * segmentos restantes sin asumir la existencia del padre.
    */
   private Path toRealPath(Path path) throws IOException {
     Path normalized = path.normalize();
@@ -138,9 +139,10 @@ public class AgentAccessControlImpl implements AgentAccessControl {
   }
 
   /**
-   * Comprueba si existe una regla en 'allowedExternalPaths' que coincida con 'target'
-   * y que tenga una especificidad (profundidad de segmentos) estrictamente mayor
-   * que el prefijo denegado, habilitando un "agujero" de acceso.
+   * Comprueba si existe una regla en 'allowedExternalPaths' que coincida con
+   * 'target' y que tenga una especificidad (profundidad de segmentos)
+   * estrictamente mayor que el prefijo denegado, habilitando un "agujero" de
+   * acceso.
    */
   private boolean isHoleAllowed(Path target, Path deniedPrefix) {
     int deniedDepth = deniedPrefix.getNameCount();
@@ -166,6 +168,14 @@ public class AgentAccessControlImpl implements AgentAccessControl {
       target = toRealPath(resolved);
     } catch (Exception e) {
       throw new IllegalArgumentException("Path invalido: " + rawPath);
+    }
+    String target_s = target.toString();
+    String targetPathString = target_s.replace("\\", "/");
+
+    // Invariante inmutable: la carpeta interna del agente nunca es accesible por el modelo
+    if (targetPathString.contains("/." + AgentPaths.AGENT_FOLDER_NAME + "/var/")
+            || targetPathString.endsWith("/." + AgentPaths.AGENT_FOLDER_NAME+"/var")) {
+      throw new SecurityException("ACCESO DENEGADO: La carpeta de control interno del agente no es accesible.");
     }
 
     // 2. Validar restricciones de lectura con soporte de agujeros mas especificos
@@ -196,7 +206,6 @@ public class AgentAccessControlImpl implements AgentAccessControl {
 
     // 4. Logica especifica para modo de escritura
     if (mode == AccessMode.PATH_ACCESS_WRITE) {
-      String target_s = target.toString();
 
       // Invariante inmutable: copias de backup RCS
       if (target_s.endsWith(",jv")) {
@@ -209,7 +218,6 @@ public class AgentAccessControlImpl implements AgentAccessControl {
       }
 
       // Invariante inmutable: directivas operativas de skills
-      String targetPathString = target_s.replace("\\", "/");
       if (targetPathString.contains("/.claude/skills/") || targetPathString.endsWith("/.claude/skills")) {
         throw new SecurityException("ACCESO DENEGADO: No se permite modificar archivos dentro de .claude/skills/");
       }
@@ -313,7 +321,8 @@ public class AgentAccessControlImpl implements AgentAccessControl {
   }
 
   /**
-   * Inspecciona las listas cargadas para identificar errores comunes de configuracion.
+   * Inspecciona las listas cargadas para identificar errores comunes de
+   * configuracion.
    */
   private void validateRules() {
     // 1. Detectar rutas en nom_writable_paths fuera del workspace y no incluidas en allowed_external_paths
@@ -342,7 +351,7 @@ public class AgentAccessControlImpl implements AgentAccessControl {
       }
     }
   }
-  
+
   private void checkIsolatedRestrictedPaths(List<Path> restrictedList, String listName) {
     for (Path p : restrictedList) {
       boolean isUnderRoot = p.startsWith(rootPath);
