@@ -28,9 +28,8 @@ public class CheckedListItemLanterna extends AbstractAgentSettingsItemLanterna {
         if (availableOptions != null) {
             for (AgentSettingsItemUI option : availableOptions) {
                 String technicalName = option.getValue();
-                String displayName = option.getLabel().replace("_", " ");
-
-                boolean isChecked = true;
+                String displayName = option.getLabel().replace("_", " ");                
+                boolean isChecked = false;
                 if (savedData != null) {
                     Optional<? extends AgentSettingsCheckedList.CheckedItem> match = savedData.getItems().stream()
                             .filter(i -> i.getValue().equals(technicalName))
@@ -39,7 +38,10 @@ public class CheckedListItemLanterna extends AbstractAgentSettingsItemLanterna {
                     if (match.isPresent()) {
                         isChecked = match.get().isChecked();
                     }
-                }
+                } else {
+                    // Solo si no existe configuracion guardada previa para esta lista
+                    isChecked = true;
+                }                
                 checkBoxList.addItem(displayName, isChecked);
             }
         }

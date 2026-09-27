@@ -463,13 +463,13 @@ async function createCheckedListControl(container, node) {
     const technicalName = item.value;
     const enabledKey = `${node.variableName}/${technicalName}/__enabled`;
 
-    let isChecked = true;
+    let isChecked = false;
     if (Array.isArray(savedData) && savedData.length > 0) {
       const match = savedData.find(s => s && s.value === technicalName);
-      if (match !== undefined && match.checked !== undefined) {
-        isChecked = Boolean(match.checked);
-      }
-    }
+      isChecked = Boolean(match && match.checked);
+    } else if (!savedData || savedData.length === 0) {
+      isChecked = true; // Fallback solo si la lista no existe en absoluto
+    }    
 
     const row = document.createElement('div');
     row.className = 'config-field-checkbox';

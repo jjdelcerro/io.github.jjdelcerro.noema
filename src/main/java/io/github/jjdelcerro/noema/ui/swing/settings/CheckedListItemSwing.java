@@ -83,6 +83,9 @@ public class CheckedListItemSwing extends AbstractAgentSettingsItemSwing {
         int index = list.locationToIndex(e.getPoint());
         if (index != -1) {
           ToolUIItem item = listModel.getElementAt(index);
+          if (!isChildEnabled(item.technicalName())) {
+            return;
+          }
           boolean newState = !item.checked();
           agent.getSettings().setChecked(getVariableName(), item.technicalName(), newState);
           save(); 
@@ -128,7 +131,9 @@ public class CheckedListItemSwing extends AbstractAgentSettingsItemSwing {
   private void setAllStates(DefaultListModel<ToolUIItem> model, boolean state) {
     for (int i = 0; i < model.getSize(); i++) {
       ToolUIItem item = model.getElementAt(i);
-      // Solo actualizamos si el estado es diferente al actual
+      if (state && !isChildEnabled(item.technicalName())) {
+        continue;
+      }
       if (item.checked() != state) {
         agent.getSettings().setChecked(getVariableName(), item.technicalName(), state);
         model.set(i, new ToolUIItem(item.label(), item.technicalName(), state));
@@ -147,16 +152,23 @@ public class CheckedListItemSwing extends AbstractAgentSettingsItemSwing {
         String technicalName = option.getValue();
         String displayName = option.getLabel().replace("_", " ");
         
-        boolean isChecked = true; 
+        boolean isChecked = false;
         if (savedData != null) {
-            Optional<? extends AgentSettingsCheckedList.CheckedItem> match = savedData.getItems().stream()
-                    .filter(i -> i.getValue().equals(technicalName))
-                    .findFirst();
-            
-            if (match.isPresent()) {
-                isChecked = match.get().isChecked();
-            }
+          Optional<? extends AgentSettingsCheckedList.CheckedItem> match = savedData.getItems().stream()
+                  .filter(i -> i.getValue().equals(technicalName))
+                  .findFirst();
+
+          if (match.isPresent()) {
+            isChecked = match.get().isChecked();
+          } else {
+            // Si hay datos guardados pero este elemento no figura, no esta activo
+            isChecked = false;
+          }
+        } else {
+          // Si no existe ninguna lista guardada todavia para esta variable
+          isChecked = true;
         }
+
         model.addElement(new ToolUIItem(displayName, technicalName, isChecked));
       }
     }
