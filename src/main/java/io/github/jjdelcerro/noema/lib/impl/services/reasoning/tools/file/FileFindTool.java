@@ -38,11 +38,6 @@ public class FileFindTool extends AbstractPaginatedAgentTool {
     public FileFindTool(Agent agent) {
         super(agent);
     }
-  
-    @Override
-    public boolean isAvailableByDefault() {
-      return false;
-    }
 
     @Override
     public ToolSpecificationBuilder getSpecification() {
