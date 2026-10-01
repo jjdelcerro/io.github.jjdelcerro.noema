@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib;
 
-import io.github.jjdelcerro.noema.lib.Agent.ModelParameters;
+import io.github.jjdelcerro.noema.lib.model.ModelParameters;
 import java.util.List;
 
 /**

@@ -12,7 +12,7 @@ import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.output.FinishReason;
 import dev.langchain4j.model.output.Response;
 import edu.emory.mathcs.backport.java.util.Collections;
-import io.github.jjdelcerro.noema.lib.AbstractAgentAction;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentAction;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.LookupTurnTool;
@@ -29,7 +29,7 @@ import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.impl.ModelParametersImpl;
+import io.github.jjdelcerro.noema.lib.impl.model.ModelParametersImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileExtractTextTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileFindTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileGrepTool;
@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_REASONING_MODEL;
 import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_REASONING_PROVIDER;
-import io.github.jjdelcerro.noema.lib.impl.DateUtils;
+import io.github.jjdelcerro.noema.lib.impl.utils.DateUtils;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.identity.ConsultEnvironTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web.TavilyWebSearchTool;
 import java.io.IOException;
@@ -70,6 +70,9 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
 import static io.github.jjdelcerro.noema.lib.AgentActions.COMPACT_REASONING_FULL_MEMORY;
 import static io.github.jjdelcerro.noema.lib.AgentActions.COMPACT_REASONING_MEMORY;
+import io.github.jjdelcerro.noema.lib.AgentLocator;
+import io.github.jjdelcerro.noema.lib.model.ChatModel;
+import io.github.jjdelcerro.noema.lib.model.ModelParameters;
 import io.github.jjdelcerro.noema.lib.impl.memory.projected.ProjectedMemoryImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.AnnotateObservationTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.devel.LoadProjectMapTool;
@@ -110,7 +113,7 @@ public class ReasoningServiceImpl
   private final EpisodicMemory episodicMemory;
   private final Map<String, RecentMemory> recentMemories;
   private final Map<String, ProjectedMemory> projectedMemories;
-  private Agent.ChatModel model;
+  private ChatModel model;
 
   private Map<String, ConsolidateMemory> activeConsolidateMemories;
 
@@ -456,16 +459,16 @@ public class ReasoningServiceImpl
   }
 
   @Override
-  public Agent.ChatModel getModel() {
+  public ChatModel getModel() {
     return model;
   }
 
   @Override
-  public Agent.ModelParameters getModelParameters(String name) {
+  public ModelParameters getModelParameters(String name) {
     AgentSettings settings = this.agent.getSettings();
     switch (name) {
       case ReasoningService.ID:
-        return new ModelParametersImpl(
+        return this.agent.getModelParameters(
                 settings.getPropertyAsString(REASONING_PROVIDER_URL),
                 settings.getPropertyAsString(REASONING_PROVIDER_API_KEY),
                 settings.getPropertyAsString(REASONING_MODEL_ID),
@@ -540,7 +543,7 @@ public class ReasoningServiceImpl
 
   @Override
   public String getModelName() {
-    Agent.ChatModel theModel = this.getModel();
+    ChatModel theModel = this.getModel();
     if (theModel == null) {
       return null;
     }

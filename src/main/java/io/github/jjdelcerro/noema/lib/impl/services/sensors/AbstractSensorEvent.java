@@ -7,7 +7,7 @@ import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.impl.DateUtils;
+import io.github.jjdelcerro.noema.lib.impl.utils.DateUtils;
 import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorEvent;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;

@@ -1,5 +1,8 @@
 package io.github.jjdelcerro.noema.lib.impl;
 
+import io.github.jjdelcerro.noema.lib.impl.utils.AgentUtils;
+import io.github.jjdelcerro.noema.lib.impl.utils.SLMUtils;
+import io.github.jjdelcerro.noema.lib.impl.model.AbstractChatModel;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceImpl;
@@ -10,6 +13,9 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.model.TokenCountEstimator;
 import dev.langchain4j.model.openai.OpenAiTokenCountEstimator;
 import io.github.jjdelcerro.noema.lib.Agent;
+import static io.github.jjdelcerro.noema.lib.model.ModelType.LANGCHAIN_OPENAI;
+import static io.github.jjdelcerro.noema.lib.model.ModelType.LLAMACPP_EMBEDDED;
+import static io.github.jjdelcerro.noema.lib.model.ModelType.ONNX_EMBEDDED;
 import io.github.jjdelcerro.noema.lib.AgentActions;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
@@ -21,7 +27,13 @@ import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.model.ChatModel;
 import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
+import io.github.jjdelcerro.noema.lib.model.ModelParameters;
+import io.github.jjdelcerro.noema.lib.impl.model.ModelParametersImpl;
+import io.github.jjdelcerro.noema.lib.impl.model.ModelUtils;
+import io.github.jjdelcerro.noema.lib.impl.model.langchainopenai.ChatModelLangchainOpenAI;
+import io.github.jjdelcerro.noema.lib.impl.model.onnx_embedded.ChatModelOnnxEmbedded;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsService;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
@@ -365,7 +377,7 @@ public class AgentImpl implements Agent {
     name = name.toUpperCase();
 
     ModelParameters params = this.getModelParameters(name);
-    return new ChatModelImpl(params);
+    return this.createChatModel(params);
   }
 
   @Override
@@ -378,6 +390,35 @@ public class AgentImpl implements Agent {
       }
     }
     return null;
+  }
+
+  @Override
+  public ModelParameters getModelParameters(String providerUrl, String providerApiKey, String modelId) {
+    return this.getModelParameters(providerUrl, providerApiKey, modelId, Double.NaN);
+  }
+
+  @Override
+  public ModelParameters getModelParameters(String providerUrl, String providerApiKey, String modelId, double temperature) {
+    return AgentLocator.getAgentManager().getModelParameters(
+            this.getPaths(), 
+            providerUrl, 
+            providerApiKey, 
+            modelId, 
+            temperature
+    );
+  }
+
+  @Override
+  public ChatModel createChatModel(ModelParameters params) {
+    switch (params.getModelType()) {
+      case LANGCHAIN_OPENAI:
+        return new ChatModelLangchainOpenAI(params);
+      case ONNX_EMBEDDED:
+        return new ChatModelOnnxEmbedded(params);
+      case LLAMACPP_EMBEDDED:
+      default:
+        throw new AssertionError();
+    }
   }
 
   @Override

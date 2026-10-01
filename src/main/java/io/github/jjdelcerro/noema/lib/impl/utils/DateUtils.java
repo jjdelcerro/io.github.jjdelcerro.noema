@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.lib.impl;
+package io.github.jjdelcerro.noema.lib.impl.utils;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;

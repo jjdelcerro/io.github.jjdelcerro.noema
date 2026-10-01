@@ -6,6 +6,7 @@ import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
+import io.github.jjdelcerro.noema.lib.model.ModelParameters;
 import static io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService.MEMORY_MODEL_ID;
 import static io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService.MEMORY_PROVIDER_API_KEY;
 import static io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService.MEMORY_PROVIDER_URL;
@@ -147,15 +148,19 @@ Asegúrese de ejecutar el agente en un entorno controlado o con backups actualiz
 
   private void updateConfigSummaryUI(boolean convOk, boolean memOk) {
     AgentManager manager = AgentLocator.getAgentManager();
-    Agent.ModelParameters reasoning = manager.getModelParameters(
+    ModelParameters reasoning = manager.getModelParameters(
+            this.settings.getPaths(),
             getProperty(REASONING_PROVIDER_URL),
             getProperty(REASONING_PROVIDER_API_KEY),
-            getProperty(REASONING_MODEL_ID)
+            getProperty(REASONING_MODEL_ID),
+            Double.NaN
     );
-    Agent.ModelParameters compact = manager.getModelParameters(
+    ModelParameters compact = manager.getModelParameters(
+            this.settings.getPaths(),
             getProperty(MEMORY_PROVIDER_URL),
             getProperty(MEMORY_PROVIDER_API_KEY),
-            getProperty(MEMORY_MODEL_ID)
+            getProperty(MEMORY_MODEL_ID),
+            Double.NaN
     );
 
     StringBuilder sb = new StringBuilder("<html><body>");

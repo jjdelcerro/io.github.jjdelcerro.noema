@@ -1,12 +1,13 @@
 package io.github.jjdelcerro.noema.lib.impl;
 
+import io.github.jjdelcerro.noema.lib.impl.utils.FileFuzzySearchUtils;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.AgentActions;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.FakeConsole;
-import io.github.jjdelcerro.noema.lib.impl.FileFuzzySearchUtils.FuzzyMatch;
+import io.github.jjdelcerro.noema.lib.impl.utils.FileFuzzySearchUtils.FuzzyMatch;
 import io.github.jjdelcerro.noema.lib.impl.persistence.FakeEpisodicMemory;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsService;
 import io.github.jjdelcerro.noema.lib.impl.settings.AgentSettingsImpl;

@@ -2,8 +2,8 @@ package io.github.jjdelcerro.noema.lib.impl.services.sensors.tools;
 
 import com.google.gson.GsonBuilder;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
-import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
+import io.github.jjdelcerro.noema.lib.impl.tools.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.persistence.SensorInformationGsonAdapter;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.persistence.SensorStatisticsGsonAdapter;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;

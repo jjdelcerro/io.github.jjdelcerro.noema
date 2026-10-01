@@ -7,9 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
-import io.github.jjdelcerro.noema.lib.impl.DateUtils;
-import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
+import io.github.jjdelcerro.noema.lib.impl.tools.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.utils.DateUtils;
+import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 import java.util.LinkedHashMap;
 import org.apache.commons.lang3.StringUtils;
 

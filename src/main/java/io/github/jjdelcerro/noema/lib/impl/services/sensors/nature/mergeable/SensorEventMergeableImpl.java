@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.mergeable;
 
-import io.github.jjdelcerro.noema.lib.impl.DateUtils;
+import io.github.jjdelcerro.noema.lib.impl.utils.DateUtils;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.AbstractSensorEvent;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorEventMergeable;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;

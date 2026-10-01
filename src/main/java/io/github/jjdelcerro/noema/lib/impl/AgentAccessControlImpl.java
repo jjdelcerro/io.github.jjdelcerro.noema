@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl;
 
-import io.github.jjdelcerro.noema.lib.AbstractAgentAction;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentAction;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.AgentActions;
 import io.github.jjdelcerro.noema.lib.AgentConsole;

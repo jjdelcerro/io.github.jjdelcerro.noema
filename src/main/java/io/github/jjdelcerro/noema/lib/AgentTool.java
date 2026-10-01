@@ -2,7 +2,7 @@ package io.github.jjdelcerro.noema.lib;
 
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
-import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
+import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 
 public interface AgentTool {
 

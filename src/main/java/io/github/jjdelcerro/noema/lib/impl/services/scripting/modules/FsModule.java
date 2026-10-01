@@ -7,7 +7,7 @@ import io.github.jjdelcerro.javarcs.lib.RCSManager;
 import io.github.jjdelcerro.javarcs.lib.commands.CheckinOptions;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentAccessControl;
-import io.github.jjdelcerro.noema.lib.impl.FileFuzzySearchUtils;
+import io.github.jjdelcerro.noema.lib.impl.utils.FileFuzzySearchUtils;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.AutoClosingLineIterator;
 import io.github.jjdelcerro.noema.lib.services.scripting.AbstractScriptModule;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptContextImpl;

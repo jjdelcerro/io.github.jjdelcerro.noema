@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.ui.swing;
 
-import io.github.jjdelcerro.noema.lib.AbstractAgentAction;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentAction;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;

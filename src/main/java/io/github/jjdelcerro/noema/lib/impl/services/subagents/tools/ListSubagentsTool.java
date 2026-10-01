@@ -4,8 +4,8 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.noema.lib.services.subagents.SubagentDefinition;
 import io.github.jjdelcerro.noema.lib.services.subagents.SubagentDefinition.SubagentParam;
-import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
-import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
+import io.github.jjdelcerro.noema.lib.impl.tools.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 import io.github.jjdelcerro.noema.lib.services.subagents.SubagentsService;
 import org.apache.commons.lang3.StringUtils;
 

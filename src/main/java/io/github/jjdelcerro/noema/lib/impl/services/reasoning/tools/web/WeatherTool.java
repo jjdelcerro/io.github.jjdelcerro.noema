@@ -10,8 +10,8 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
-import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
+import io.github.jjdelcerro.noema.lib.impl.tools.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 import java.util.Locale;
 
 /**

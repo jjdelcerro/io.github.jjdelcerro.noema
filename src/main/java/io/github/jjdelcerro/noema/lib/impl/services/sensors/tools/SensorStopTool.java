@@ -1,8 +1,8 @@
 package io.github.jjdelcerro.noema.lib.impl.services.sensors.tools;
 
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
-import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
+import io.github.jjdelcerro.noema.lib.impl.tools.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
 import java.util.List;
 import java.util.Map;

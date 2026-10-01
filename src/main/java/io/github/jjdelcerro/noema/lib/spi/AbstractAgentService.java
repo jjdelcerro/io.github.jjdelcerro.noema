@@ -8,6 +8,7 @@ import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.model.ModelParameters;
 import static io.github.jjdelcerro.noema.lib.impl.services.email.EmailService.NAME;
 import java.util.List;
 
@@ -53,7 +54,7 @@ public abstract class AbstractAgentService implements AgentService {
   }
 
   @Override
-  public Agent.ModelParameters getModelParameters(String name) {
+  public ModelParameters getModelParameters(String name) {
     return null;
   }
 

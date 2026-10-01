@@ -21,6 +21,7 @@ import com.googlecode.lanterna.terminal.Terminal;
 import io.github.jjdelcerro.noema.lib.Agent;
 import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
+import io.github.jjdelcerro.noema.lib.model.ChatModel;
 import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.SensorEventCallback;
@@ -415,7 +416,7 @@ public class MainLanternaWindow extends BasicWindow {
             return;
         }
 
-        Agent.ChatModel model = reasoning.getModel();
+        ChatModel model = reasoning.getModel();
         String modelName = (model != null) ? model.getParameters().modelId() : "-";
         int turns = reasoning.getTurnsCount(subchannel);
 

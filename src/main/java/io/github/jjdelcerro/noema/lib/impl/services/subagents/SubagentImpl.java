@@ -20,8 +20,8 @@ import io.github.jjdelcerro.noema.lib.services.subagents.SubagentDefinition.Suba
 import io.github.jjdelcerro.noema.lib.services.subagents.SubagentDefinition.SubagentParamType;
 import io.github.jjdelcerro.noema.lib.impl.AgentImpl;
 import io.github.jjdelcerro.noema.lib.impl.AgentPathsImpl;
-import io.github.jjdelcerro.noema.lib.impl.AgentUtils;
-import io.github.jjdelcerro.noema.lib.impl.DateUtils;
+import io.github.jjdelcerro.noema.lib.impl.utils.AgentUtils;
+import io.github.jjdelcerro.noema.lib.impl.utils.DateUtils;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsService;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryConsolidationServiceImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceImpl;
@@ -64,6 +64,8 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SYSTEMNOTIFICATION_SENSOR_NAME;
+import io.github.jjdelcerro.noema.lib.model.ChatModel;
+import io.github.jjdelcerro.noema.lib.model.ModelParameters;
 import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.ACTIVE_TOOLS;
 import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_MODEL_ID;
 import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_PROVIDER_API_KEY;
@@ -699,6 +701,21 @@ public class SubagentImpl implements Subagent {
       return;
     }
     this.subAgent.addSharedService(service);
+  }
+
+  @Override
+  public ModelParameters getModelParameters(String providerUrl, String providerApiKey, String modelId) {
+    return this.subAgent.getModelParameters(providerUrl, providerApiKey, modelId);
+  }
+
+  @Override
+  public ModelParameters getModelParameters(String providerUrl, String providerApiKey, String modelId, double temperature) {
+    return this.subAgent.getModelParameters(providerUrl, providerApiKey, modelId, temperature);
+  }
+
+  @Override
+  public ChatModel createChatModel(ModelParameters params) {
+    return this.subAgent.createChatModel(params);
   }
 
   // =========================================================================

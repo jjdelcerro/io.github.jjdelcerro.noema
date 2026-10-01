@@ -3,9 +3,9 @@ package io.github.jjdelcerro.noema.lib.impl.services.memory;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
-import io.github.jjdelcerro.noema.lib.AbstractAgentAction;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentAction;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.Agent.ModelParameters;
+import io.github.jjdelcerro.noema.lib.model.ModelParameters;
 import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_MEMORY_MODEL;
 import static io.github.jjdelcerro.noema.lib.AgentActions.CHANGE_MEMORY_PROVIDER;
 import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
@@ -15,7 +15,6 @@ import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.impl.ModelParametersImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.AnnotateObservationTool;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.LookupTurnTool;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.SearchFullHistoryTool;
@@ -30,6 +29,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
+import io.github.jjdelcerro.noema.lib.AgentLocator;
+import io.github.jjdelcerro.noema.lib.model.ChatModel;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
 import io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService;
 import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
@@ -38,21 +39,21 @@ import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 /**
  * Componente cognitivo encargado de la consolidación de la memoria. Ejecuta el
  * "Protocolo de Generación de Puntos de Guardado" utilizando un LLM.
- * 
- * TODO: Antes MemoryServiceImpl, habria que actualizar la documentacion con este cambio 
+ *
+ * TODO: Antes MemoryServiceImpl, habria que actualizar la documentacion con
+ * este cambio
  */
-public class MemoryConsolidationServiceImpl 
-        extends AbstractAgentService 
-        implements MemoryConsolidationService
-  {
+public class MemoryConsolidationServiceImpl
+        extends AbstractAgentService
+        implements MemoryConsolidationService {
 
   public static final String SYSTEM_PROMPT_FILENAME = "memory-consolidation.md";
-  
+
   private static final Logger LOGGER = LoggerFactory.getLogger(MemoryConsolidationServiceImpl.class);
 
   private final EpisodicMemory episodicMemory;
   private AgentConsole console;
-  private Agent.ChatModel model;
+  private ChatModel model;
   private String systemPrompt;
 
   public MemoryConsolidationServiceImpl(AgentServiceFactory factory, Agent agent) {
@@ -64,7 +65,7 @@ public class MemoryConsolidationServiceImpl
   @Override
   public void start() {
     String[] resources = new String[]{
-      "var/config/prompts/"+SYSTEM_PROMPT_FILENAME
+      "var/config/prompts/" + SYSTEM_PROMPT_FILENAME
     };
     for (String resPath : resources) {
       this.agent.installResource(resPath);
@@ -91,7 +92,7 @@ public class MemoryConsolidationServiceImpl
   }
 
   private void loadSystemPrompt() {
-    this.systemPrompt = agent.getResourceAsString("var/config/prompts/"+SYSTEM_PROMPT_FILENAME);
+    this.systemPrompt = agent.getResourceAsString("var/config/prompts/" + SYSTEM_PROMPT_FILENAME);
     if (this.systemPrompt.isEmpty()) {
       throw new RuntimeException("No se pudo cargar el prompt del MemoryConsolidationService");
     }
@@ -100,10 +101,11 @@ public class MemoryConsolidationServiceImpl
   /**
    * Ejecuta el proceso de compactación.
    *
-   * @param previous El ConsolidateMemory anterior (puede ser null si es la primera
-   * vez).
+   * @param previous El ConsolidateMemory anterior (puede ser null si es la
+   * primera vez).
    * @param newTurns La lista de turnos recientes a consolidar.
-   * @return Un nuevo ConsolidateMemory TRANSITORIO (ID -1) con el texto generado.
+   * @return Un nuevo ConsolidateMemory TRANSITORIO (ID -1) con el texto
+   * generado.
    */
   @Override
   public ConsolidateMemory consolide(String subchannel, ConsolidateMemory previous, List<Turn> newTurns) {
@@ -111,18 +113,18 @@ public class MemoryConsolidationServiceImpl
       throw new IllegalArgumentException("No hay turnos para consolidar.");
     }
     Set<Integer> validTurnIds = new HashSet<>();
-    if( previous != null ) {
+    if (previous != null) {
       validTurnIds.addAll(extractCitationIds(previous.getText()));
     }
     for (Turn turn : newTurns) {
       validTurnIds.add(turn.getId());
-      if ("lookup_turn".equals(turn.getContenttype()) 
-          || "tool_execution".equals(turn.getContenttype()) 
-          || "tool_execution_summarized".equals(turn.getContenttype())) {
-          validTurnIds.addAll(extractCitationIds(turn.getToolResult()));
+      if ("lookup_turn".equals(turn.getContenttype())
+              || "tool_execution".equals(turn.getContenttype())
+              || "tool_execution_summarized".equals(turn.getContenttype())) {
+        validTurnIds.addAll(extractCitationIds(turn.getToolResult()));
       }
     }
-    
+
     String userPrompt = buildUserPrompt(previous, newTurns);
 
     LOGGER.info("Iniciando consolidación de " + newTurns.size() + " turnos.");
@@ -136,12 +138,12 @@ public class MemoryConsolidationServiceImpl
 
     Collection<Integer> currentCitations = extractCitationIds(generatedText);
     for (Integer turnId : currentCitations) {
-      if( !validTurnIds.contains(turnId) ) {
-        LOGGER.warn("Encontrada cita "+turnId+" incorrecta.");
+      if (!validTurnIds.contains(turnId)) {
+        LOGGER.warn("Encontrada cita " + turnId + " incorrecta.");
         generatedText = generatedText.replace("{cite:" + turnId + "}", "{badcite:" + turnId + "}");
       }
     }
-    
+
     int firstId = newTurns.getFirst().getId();
     int lastId = newTurns.getLast().getId();
 
@@ -168,7 +170,7 @@ public class MemoryConsolidationServiceImpl
 
     while (matcher.find()) {
       String match = matcher.group(1);
-      String[] parts = StringUtils.split(match,',');
+      String[] parts = StringUtils.split(match, ',');
 
       for (String part : parts) {
         try {
@@ -177,7 +179,7 @@ public class MemoryConsolidationServiceImpl
             foundIds.add(Integer.valueOf(idStr));
           }
         } catch (NumberFormatException e) {
-          LOGGER.warn("Cita no valida '"+match+"'.");
+          LOGGER.warn("Cita no valida '" + match + "'.");
         }
       }
     }
@@ -192,7 +194,7 @@ public class MemoryConsolidationServiceImpl
     if (previous != null) {
       sb.append("MODO DE OPERACIÓN: 2 (Actualización)\n\n");
       sb.append("=== DOCUMENTO DE PUNTO DE GUARDADO ANTERIOR ===\n");
-      sb.append(previous.getText()); 
+      sb.append(previous.getText());
       sb.append("\n===============================================\n\n");
     } else {
       sb.append("MODO DE OPERACIÓN: 1 (Creación Inicial)\n\n");
@@ -229,7 +231,7 @@ public class MemoryConsolidationServiceImpl
     AgentSettings settings = this.agent.getSettings();
     switch (name) {
       case MemoryConsolidationService.ID:
-        return new ModelParametersImpl(
+        return this.agent.getModelParameters(
                 settings.getPropertyAsString(MEMORY_PROVIDER_URL),
                 settings.getPropertyAsString(MEMORY_PROVIDER_API_KEY),
                 settings.getPropertyAsString(MEMORY_MODEL_ID),
@@ -241,10 +243,10 @@ public class MemoryConsolidationServiceImpl
 
   @Override
   public boolean canStart() {
-    if( !this.factory.canStart(agent.getSettings()) ) {
+    if (!this.factory.canStart(agent.getSettings())) {
       return false;
     }
-    return this.agent.getEpisodicMemoryDatabase() != null ;
+    return this.agent.getEpisodicMemoryDatabase() != null;
   }
 
   @Override
@@ -257,12 +259,12 @@ public class MemoryConsolidationServiceImpl
     return Arrays.asList(tools);
   }
 
-  public Agent.ChatModel getModel() {
+  public ChatModel getModel() {
     return model;
   }
 
   public String getModelName() {
-    Agent.ChatModel theModel = this.getModel();
+    ChatModel theModel = this.getModel();
     if (theModel == null) {
       return null;
     }

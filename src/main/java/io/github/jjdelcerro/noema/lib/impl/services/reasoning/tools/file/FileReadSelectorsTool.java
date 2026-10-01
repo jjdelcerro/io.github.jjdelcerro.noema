@@ -2,7 +2,7 @@ package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.impl.AbstractPaginatedAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.tools.AbstractPaginatedAgentTool;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.tika.Tika;
 
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.github.jjdelcerro.noema.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
-import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
+import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 
 public class FileReadSelectorsTool extends AbstractPaginatedAgentTool {
 

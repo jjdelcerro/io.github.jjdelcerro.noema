@@ -9,8 +9,8 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Map;
 import java.util.regex.Pattern;
-import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
-import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
+import io.github.jjdelcerro.noema.lib.impl.tools.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 
 public class WebGetTool extends AbstractAgentTool { // NO USAR, usar WebGetTikaTool
 

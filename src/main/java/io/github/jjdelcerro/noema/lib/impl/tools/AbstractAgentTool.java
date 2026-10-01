@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.lib.impl;
+package io.github.jjdelcerro.noema.lib.impl.tools;
 
 import com.google.gson.Gson;
 import dev.langchain4j.model.chat.request.json.JsonArraySchema;

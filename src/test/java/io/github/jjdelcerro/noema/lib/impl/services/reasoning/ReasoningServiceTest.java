@@ -36,6 +36,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.model.ChatModel;
+import io.github.jjdelcerro.noema.lib.model.ModelStreamCallback;
 
 
 public class ReasoningServiceTest {
@@ -61,9 +63,9 @@ public class ReasoningServiceTest {
 
         // 3. Simulamos la respuesta del LLM
         String respuestaEsperada = "¡Hola! ¿En qué puedo ayudarte?";
-        Agent.ChatModel testModel = new FakeChatModel() {
+        ChatModel testModel = new FakeChatModel() {
             @Override
-            public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications, MutableBoolean abort, Agent.ModelStreamCallback streamCallback) throws Throwable {
+            public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications, MutableBoolean abort, ModelStreamCallback streamCallback) throws Throwable {
                 return Response.from(AiMessage.from(respuestaEsperada), null, FinishReason.STOP);
             }
         };
@@ -85,7 +87,7 @@ public class ReasoningServiceTest {
             }
             
             @Override
-            public Agent.ChatModel getModel() {
+            public ChatModel getModel() {
                 return testModel;
             }
             

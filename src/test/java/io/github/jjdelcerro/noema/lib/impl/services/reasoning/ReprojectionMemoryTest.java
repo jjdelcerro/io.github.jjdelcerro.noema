@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.model.ChatModel;
 
 @SuppressWarnings("unused")
 public class ReprojectionMemoryTest extends AbstractScriptedTest {
@@ -65,7 +66,7 @@ public class ReprojectionMemoryTest extends AbstractScriptedTest {
       }
 
       @Override
-      public Agent.ChatModel getModel() {
+      public ChatModel getModel() {
         return scriptedModel;
       }
 

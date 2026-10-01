@@ -2,12 +2,13 @@ package io.github.jjdelcerro.noema.ui.swing;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.formdev.flatlaf.extras.FlatSVGUtils;
-import io.github.jjdelcerro.noema.lib.AbstractAgentAction;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentAction;
 import io.github.jjdelcerro.noema.lib.Agent;
 import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
 import io.github.jjdelcerro.noema.lib.AgentConsole;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentManager;
+import io.github.jjdelcerro.noema.lib.model.ChatModel;
 import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
@@ -314,7 +315,7 @@ public class MainChatPanel extends JPanel {
         ReasoningService reasoning = (ReasoningService) agent.getService(ReasoningService.NAME);
         String subchannel = agent.getCurrentSubchannel();
         SwingUtilities.invokeLater(() -> {
-            Agent.ChatModel model = reasoning.getModel();
+            ChatModel model = reasoning.getModel();
             if (model == null) {
                 lblModelInfo.setText("?");
                 lblTokens.setText("?/?");

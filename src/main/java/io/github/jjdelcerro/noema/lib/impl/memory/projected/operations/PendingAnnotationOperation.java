@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.impl.AbstractPaginatedAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.tools.AbstractPaginatedAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.AnnotateObservationTool;
 import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemory;
 import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemoryOperation;

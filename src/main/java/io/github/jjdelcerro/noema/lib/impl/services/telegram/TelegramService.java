@@ -4,7 +4,7 @@ import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
 import io.github.jjdelcerro.noema.lib.Agent;
 import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
-import io.github.jjdelcerro.noema.lib.Agent.ModelParameters;
+import io.github.jjdelcerro.noema.lib.model.ModelParameters;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;

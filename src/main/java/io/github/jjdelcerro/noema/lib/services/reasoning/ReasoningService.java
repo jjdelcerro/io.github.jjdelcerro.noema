@@ -3,6 +3,7 @@ package io.github.jjdelcerro.noema.lib.services.reasoning;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentService;
 import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.model.ChatModel;
 import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemory;
 import java.util.List;
 
@@ -37,7 +38,7 @@ public interface ReasoningService extends AgentService {
 
   List<AgentTool> getAvailableTools();
 
-  Agent.ChatModel getModel();
+  ChatModel getModel();
 
   String getModelName();
 

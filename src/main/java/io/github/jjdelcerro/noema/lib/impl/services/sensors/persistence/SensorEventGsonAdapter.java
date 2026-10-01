@@ -7,7 +7,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import io.github.jjdelcerro.noema.lib.impl.DateUtils;
+import io.github.jjdelcerro.noema.lib.impl.utils.DateUtils;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.AbstractSensorEvent;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.aggregate.SensorEventAggregateImpl;

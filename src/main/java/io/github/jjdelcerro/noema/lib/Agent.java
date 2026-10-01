@@ -1,5 +1,7 @@
 package io.github.jjdelcerro.noema.lib;
 
+import io.github.jjdelcerro.noema.lib.model.ModelParameters;
+import io.github.jjdelcerro.noema.lib.model.ChatModel;
 import com.google.gson.JsonObject;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.AiMessage;
@@ -15,6 +17,7 @@ import java.util.List;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
 import java.util.Collection;
+import java.util.Map;
 
 /**
  *
@@ -24,68 +27,6 @@ public interface Agent {
 
   public static final String DEFAULT_SUBCHANNEL = "default";
   public static final String POLL_EVENT_TOOL_NAME = "poll_event";
-
-  public enum ModelType {
-    OPENAI,
-    LLAMA_EMBEDDED
-  }
-
-  public interface ModelParameters {
-
-    public String providerUrl();
-
-    public String providerApiKey();
-
-    public String modelId();
-
-    public double temperature();
-
-    public int contextSize();
-
-    public void setContextSize(int contextSize);
-
-    public Path getWorkingDirectory();
-
-    public Path getModelCachePath();
-
-    public boolean canCacheTheModel();
-
-    public String getTheKeyToCacheTheModel();
-
-    public ModelType getModelType();
-
-    public Object getExtraValue(String name);
-  }
-
-  public interface ModelStreamCallback {
-
-    public void StreamReasoning(String s);
-
-    public void StreamResponse(String s);
-
-    public void streamingFinished();
-
-    public boolean streamingUsed();
-
-    public void setStreamingUsed(boolean used);
-  }
-
-  public interface ChatModel {
-
-    public int getContextSize();
-
-    public Response<AiMessage> generate(ChatMessage systemPrompt, ChatMessage message);
-
-    public Response<AiMessage> generate(List<ChatMessage> messages);
-
-    public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications);
-
-    public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications, MutableBoolean abort, ModelStreamCallback streamCallback) throws Throwable;
-
-    public Agent.ModelParameters getParameters();
-
-    public ModelType getModelType();
-  }
 
   public AgentPaths getPaths();
 
@@ -176,6 +117,12 @@ public interface Agent {
 
   public ModelParameters getModelParameters(String name);
 
+  public ModelParameters getModelParameters(String providerUrl, String providerApiKey, String modelId);
+
+  public ModelParameters getModelParameters(String providerUrl, String providerApiKey, String modelId, double temperature);
+
+  public ChatModel createChatModel(ModelParameters params);
+  
   public String callChatModel(String docmapper_reasoning_llm, String extractStructureSystemPrompt, String doc_csv);
 
   public JsonObject callChatModelAsJson(String docmapper_basic_llm, String summaryAndCategorizeSystemPrompt, String contents);

@@ -7,7 +7,7 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 import io.github.jjdelcerro.noema.lib.AgentPaths;
 import io.github.jjdelcerro.noema.lib.impl.AgentPathsImpl;
-import io.github.jjdelcerro.noema.lib.impl.AgentUtils;
+import io.github.jjdelcerro.noema.lib.impl.utils.AgentUtils;
 import io.github.jjdelcerro.noema.lib.impl.ExpressionEvaluator;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.settings.AgentSettingsItem;

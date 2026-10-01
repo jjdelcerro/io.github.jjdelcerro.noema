@@ -2,8 +2,8 @@ package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.impl.AbstractPaginatedAgentTool;
-import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
+import io.github.jjdelcerro.noema.lib.impl.tools.AbstractPaginatedAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tika.Tika;
@@ -18,7 +18,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static io.github.jjdelcerro.noema.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
-import io.github.jjdelcerro.noema.lib.impl.FileFuzzySearchUtils;
+import io.github.jjdelcerro.noema.lib.impl.utils.FileFuzzySearchUtils;
 
 /**
  * Herramienta de búsqueda semántica en archivos mediante embeddings locales.

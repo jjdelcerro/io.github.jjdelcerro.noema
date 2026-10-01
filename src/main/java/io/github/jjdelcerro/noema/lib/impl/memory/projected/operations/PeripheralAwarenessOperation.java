@@ -3,7 +3,7 @@ package io.github.jjdelcerro.noema.lib.impl.memory.projected.operations;
 import com.google.gson.JsonObject;
 import dev.langchain4j.data.message.ChatMessage;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.impl.DateUtils;
+import io.github.jjdelcerro.noema.lib.impl.utils.DateUtils;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory.SubchannelActivity;
 import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemory;

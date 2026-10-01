@@ -1,5 +1,6 @@
 package io.github.jjdelcerro.noema.lib;
 
+import io.github.jjdelcerro.noema.lib.model.ModelParameters;
 import io.github.jjdelcerro.noema.lib.services.subagents.SubagentDefinition;
 import io.github.jjdelcerro.noema.lib.services.subagents.Subagent;
 import io.github.jjdelcerro.noema.lib.AgentActions.AgentAction;
@@ -44,8 +45,6 @@ public interface AgentManager {
 
   public String getVersion();
 
-  public Agent.ModelParameters getModelParameters(String providerUrl, String providerApiKey, String modelId);
-
   void registerSubagent(Subagent subagent);
 
   void unregisterSubagent(Subagent subagent);
@@ -59,4 +58,6 @@ public interface AgentManager {
   ProjectedMemoryOperationFactory getProjectedMemoryOperationFactory(String name);
 
   Collection<ProjectedMemoryOperationFactory> getProjectedMemoryOperationFactories();  
+
+  public ModelParameters getModelParameters(AgentPaths paths, String providerUrl, String providerApiKey, String modelId, double temperature);
 }

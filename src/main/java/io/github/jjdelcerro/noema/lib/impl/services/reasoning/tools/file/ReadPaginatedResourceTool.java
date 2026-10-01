@@ -2,8 +2,8 @@ package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.impl.AbstractPaginatedAgentTool;
-import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
+import io.github.jjdelcerro.noema.lib.impl.tools.AbstractPaginatedAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 import org.apache.commons.lang3.StringUtils;
 
 public class ReadPaginatedResourceTool extends AbstractPaginatedAgentTool {

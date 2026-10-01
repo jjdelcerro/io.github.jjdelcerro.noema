@@ -19,6 +19,8 @@ import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
 import java.util.List;
 import java.util.function.Supplier;
 import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.model.ChatModel;
+import io.github.jjdelcerro.noema.lib.model.ModelParameters;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -186,6 +188,21 @@ public class FakeAgent implements Agent {
   @Override
   public Collection<AgentService> getServices() {
     return Collections.EMPTY_LIST;
+  }
+
+  @Override
+  public ModelParameters getModelParameters(String providerUrl, String providerApiKey, String modelId) {
+    return null;
+  }
+
+  @Override
+  public ModelParameters getModelParameters(String providerUrl, String providerApiKey, String modelId, double temperature) {
+    return null;
+  }
+
+  @Override
+  public ChatModel createChatModel(ModelParameters params) {
+    return null;
   }
 
   private static class FakeConsole implements AgentConsole {

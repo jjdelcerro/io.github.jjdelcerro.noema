@@ -1,5 +1,7 @@
-package io.github.jjdelcerro.noema.lib;
+package io.github.jjdelcerro.noema.lib.spi;
 
+import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.AgentActions;
 import java.util.HashMap;
 
 /**

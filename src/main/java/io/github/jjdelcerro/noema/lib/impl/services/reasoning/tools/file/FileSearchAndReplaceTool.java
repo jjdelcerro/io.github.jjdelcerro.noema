@@ -8,12 +8,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.tools.AbstractAgentTool;
 import io.github.jjdelcerro.javarcs.lib.RCSCommand;
 import io.github.jjdelcerro.javarcs.lib.RCSLocator;
 import io.github.jjdelcerro.javarcs.lib.RCSManager;
 import io.github.jjdelcerro.javarcs.lib.commands.CheckinOptions;
-import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
+import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 
 public class FileSearchAndReplaceTool extends AbstractAgentTool {
 

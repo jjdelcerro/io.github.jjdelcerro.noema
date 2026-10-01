@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.lib.impl;
+package io.github.jjdelcerro.noema.lib.impl.utils;
 
 import io.github.jjdelcerro.noema.lib.AgentPaths;
 import java.io.InputStream;

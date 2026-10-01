@@ -12,7 +12,7 @@ import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentLocator;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.impl.DateUtils;
+import io.github.jjdelcerro.noema.lib.impl.utils.DateUtils;
 import io.github.jjdelcerro.noema.lib.impl.memory.GsonUtils;
 import io.github.jjdelcerro.noema.lib.memory.recent.RecentMemory;
 import org.apache.commons.lang3.StringUtils;

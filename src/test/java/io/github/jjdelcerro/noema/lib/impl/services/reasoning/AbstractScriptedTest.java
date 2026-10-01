@@ -12,10 +12,14 @@ import dev.langchain4j.model.output.FinishReason;
 import dev.langchain4j.model.output.Response;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.impl.AgentImpl;
-import io.github.jjdelcerro.noema.lib.impl.ModelParametersImpl;
+import io.github.jjdelcerro.noema.lib.impl.model.ModelParametersImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorInformationImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.user.SensorEventUserImpl;
+import io.github.jjdelcerro.noema.lib.model.ChatModel;
+import io.github.jjdelcerro.noema.lib.model.ModelParameters;
+import io.github.jjdelcerro.noema.lib.model.ModelStreamCallback;
+import io.github.jjdelcerro.noema.lib.model.ModelType;
 import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
 import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
@@ -49,7 +53,7 @@ public abstract class AbstractScriptedTest {
   // =========================================================================
   // MODELO FAKE EXTENSIBLE
   // =========================================================================
-  public static class ScriptedChatModel implements Agent.ChatModel {
+  public static class ScriptedChatModel implements ChatModel {
 
     protected final Queue<Response<AiMessage>> programmedResponses = new ArrayDeque<>();
     protected final List<List<ChatMessage>> capturedContexts = new ArrayList<>();
@@ -69,7 +73,7 @@ public abstract class AbstractScriptedTest {
     }
 
     @Override
-    public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications, MutableBoolean abort, Agent.ModelStreamCallback streamCallback) throws Throwable {
+    public Response<AiMessage> generate(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications, MutableBoolean abort, ModelStreamCallback streamCallback) throws Throwable {
       this.capturedContexts.add(new ArrayList<>(messages));
 
       if (this.programmedResponses.isEmpty()) {
@@ -110,13 +114,13 @@ public abstract class AbstractScriptedTest {
     }
 
     @Override
-    public Agent.ModelParameters getParameters() {
+    public ModelParameters getParameters() {
       return new ModelParametersImpl("http://fake", "key", "fake-model", 0.5);
     }
 
     @Override
-    public Agent.ModelType getModelType() {
-      return Agent.ModelType.OPENAI;
+    public ModelType getModelType() {
+      return ModelType.LANGCHAIN_OPENAI;
     }
   }
 

@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
-import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.tools.AbstractAgentTool;
 import io.github.jjdelcerro.noema.lib.Agent;
 import static io.github.jjdelcerro.noema.lib.AgentAccessControl.AccessMode.PATH_ACCESS_WRITE;
 
@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
+import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 
 public class FileMkdirTool extends AbstractAgentTool {
 

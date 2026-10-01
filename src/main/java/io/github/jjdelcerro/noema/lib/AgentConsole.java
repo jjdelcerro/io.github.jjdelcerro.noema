@@ -1,10 +1,12 @@
 package io.github.jjdelcerro.noema.lib;
 
+import io.github.jjdelcerro.noema.lib.model.ModelStreamCallback;
+
 /**
  *
  * @author jjdelcerro
  */
-public interface AgentConsole extends Agent.ModelStreamCallback {
+public interface AgentConsole extends ModelStreamCallback {
 
     public enum Format {
       RawText,

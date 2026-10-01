@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.lib.impl;
+package io.github.jjdelcerro.noema.lib.impl.tools;
 
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import io.github.jjdelcerro.noema.lib.Agent;

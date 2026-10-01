@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.lib.impl;
+package io.github.jjdelcerro.noema.lib.impl.utils;
 
 import ai.onnxruntime.genai.GenAIException;
 import ai.onnxruntime.genai.GeneratorParams;

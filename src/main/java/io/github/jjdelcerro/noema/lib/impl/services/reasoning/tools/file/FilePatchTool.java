@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
-import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.tools.AbstractAgentTool;
 import com.github.difflib.DiffUtils;
 import com.github.difflib.UnifiedDiffUtils;
 import com.github.difflib.patch.Patch;
@@ -17,7 +17,7 @@ import io.github.jjdelcerro.javarcs.lib.RCSCommand;
 import io.github.jjdelcerro.javarcs.lib.RCSLocator;
 import io.github.jjdelcerro.javarcs.lib.RCSManager;
 import io.github.jjdelcerro.javarcs.lib.commands.CheckinOptions;
-import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
+import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 
 public class FilePatchTool extends AbstractAgentTool {
 

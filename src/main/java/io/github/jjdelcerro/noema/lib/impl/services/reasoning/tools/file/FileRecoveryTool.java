@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
-import io.github.jjdelcerro.noema.lib.impl.AbstractAgentTool;
+import io.github.jjdelcerro.noema.lib.impl.tools.AbstractAgentTool;
 import io.github.jjdelcerro.noema.lib.Agent;
 import io.github.jjdelcerro.noema.lib.AgentTool;
 import io.github.jjdelcerro.javarcs.lib.RCSCommand;
@@ -15,7 +15,7 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import static io.github.jjdelcerro.noema.lib.AgentAccessControl.AccessMode.PATH_ACCESS_WRITE;
-import io.github.jjdelcerro.noema.lib.impl.ToolSpecificationBuilder;
+import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 
 /**
  * Herramienta para recuperar versiones antiguas de un archivo usando JavaRCS.

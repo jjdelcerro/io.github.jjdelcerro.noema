@@ -3,7 +3,7 @@ package io.github.jjdelcerro.noema.lib.impl.services.scripting.modules;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.impl.SLMUtils;
+import io.github.jjdelcerro.noema.lib.impl.utils.SLMUtils;
 import io.github.jjdelcerro.noema.lib.services.scripting.AbstractScriptModule;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptContextImpl;
 import java.util.ArrayList;
