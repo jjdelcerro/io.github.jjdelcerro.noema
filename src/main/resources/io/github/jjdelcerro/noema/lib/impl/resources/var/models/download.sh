@@ -7,10 +7,13 @@ set -e
 
 cd "$(dirname "$0")"
 
-for ff in \
-  "paraphrase-multilingual-MiniLM-L12-v2" \
+modelos=(
+  "paraphrase-multilingual-MiniLM-L12-v2"
   "Qwen3-0.6B"
-  "MiniCPM5-1B"
+  #"MiniCPM5-1B"
+)
+
+for ff in "${modelos[@]}"
 do
   chmod a+x "${ff}/download.sh"
   "./${ff}/download.sh"

@@ -7,11 +7,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Carpeta de destino para los archivos del modelo
 TARGET_DIR="${SCRIPT_DIR}"
 
-. $SCRIPT_DIR/../doanloadutils.sh
+. $SCRIPT_DIR/../downloadutils.sh
 
 echo "Comprobando archivos del modelo en: ${TARGET_DIR}"
 
-URL_BASE="https://huggingface.co/onnx-community/MiniCPM5-1B/tree/main"
+URL_BASE="https://huggingface.co/onnx-community/MiniCPM5-1B/resolve/main"
 
 for ff in \
   "chat_template.jinja" \

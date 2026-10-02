@@ -7,11 +7,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Carpeta de destino para los archivos del modelo
 TARGET_DIR="${SCRIPT_DIR}"
 
-. $SCRIPT_DIR/../doanloadutils.sh
+. $SCRIPT_DIR/../downloadutils.sh
 
 echo "Comprobando archivos del modelo en: ${TARGET_DIR}"
 
-URL_BASE="https://huggingface.co/onnx-community/Qwen3-0.6B-ONNX/tree/main/onnxruntime/cpu_and_mobile/cpu-int4-kld-block-128"
+URL_BASE="https://huggingface.co/onnx-community/Qwen3-0.6B-ONNX/resolve/main/onnxruntime/cpu_and_mobile/cpu-int4-kld-block-128"
 
 for ff in \
   "chat_template.jinja" \
