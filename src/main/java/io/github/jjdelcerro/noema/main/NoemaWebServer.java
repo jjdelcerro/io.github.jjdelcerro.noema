@@ -823,7 +823,7 @@ public class NoemaWebServer {
       if( this.streamingUsed() ) {
         this.bufferedReasoning.endblock();
         this.bufferedResponse.endblock();
-        broadcast("stream_end", message);
+        broadcast("stream_end", "");
       }
     }
 
