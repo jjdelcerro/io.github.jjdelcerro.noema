@@ -1,13 +1,13 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.devel;
 
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
-import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.AbstractAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
-import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemory;
-import io.github.jjdelcerro.noema.lib.memory.projected.operations.PinnedTurnsOperation;
-import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.operations.PinnedTurnsOperation;
+import io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService;
 
 import java.util.Map;
 

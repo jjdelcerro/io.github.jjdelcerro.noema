@@ -5,11 +5,11 @@ import com.google.gson.JsonParser;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
-import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemory;
-import io.github.jjdelcerro.noema.lib.memory.projected.operations.PinnedTurnsOperation;
-import io.github.jjdelcerro.noema.lib.memory.projected.operations.PinnedTurnsOperation.PinnedTurnState;
-import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.operations.PinnedTurnsOperation;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.operations.PinnedTurnsOperation.PinnedTurnState;
+import io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

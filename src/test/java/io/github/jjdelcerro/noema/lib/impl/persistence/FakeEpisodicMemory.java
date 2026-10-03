@@ -1,11 +1,11 @@
 package io.github.jjdelcerro.noema.lib.impl.persistence;
 
-import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
+import io.github.jjdelcerro.noema.lib.api.memory.episodic.Turn;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
-import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.episodic.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemory;
 
 public class FakeEpisodicMemory implements EpisodicMemory {
 

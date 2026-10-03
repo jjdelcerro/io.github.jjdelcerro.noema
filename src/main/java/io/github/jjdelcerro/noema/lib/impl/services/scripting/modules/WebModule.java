@@ -2,9 +2,9 @@ package io.github.jjdelcerro.noema.lib.impl.services.scripting.modules;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.AutoClosingLineIterator;
-import io.github.jjdelcerro.noema.lib.services.scripting.AbstractScriptModule;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.AbstractScriptModule;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptContextImpl;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;

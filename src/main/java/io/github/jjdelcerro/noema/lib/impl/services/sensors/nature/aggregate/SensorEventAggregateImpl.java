@@ -1,9 +1,9 @@
 package io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.aggregate;
 
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.AbstractSensorEvent;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorEventAggregate;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorEventAggregate;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorInformation;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService;
 import java.time.LocalDateTime;
 
 public class SensorEventAggregateImpl extends AbstractSensorEvent implements SensorEventAggregate {

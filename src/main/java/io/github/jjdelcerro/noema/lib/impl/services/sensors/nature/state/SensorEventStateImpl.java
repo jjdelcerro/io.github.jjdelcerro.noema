@@ -1,9 +1,9 @@
 package io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.state;
 
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.AbstractSensorEvent;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorEventState;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorEventState;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorInformation;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService;
 import java.time.LocalDateTime;
 
 public class SensorEventStateImpl extends AbstractSensorEvent implements SensorEventState {

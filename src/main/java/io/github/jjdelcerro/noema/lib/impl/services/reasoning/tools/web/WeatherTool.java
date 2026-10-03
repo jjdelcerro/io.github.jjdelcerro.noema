@@ -1,7 +1,7 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web;
 
 import com.google.gson.JsonObject;
-import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -9,7 +9,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Map;
-import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.AbstractAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 import java.util.Locale;

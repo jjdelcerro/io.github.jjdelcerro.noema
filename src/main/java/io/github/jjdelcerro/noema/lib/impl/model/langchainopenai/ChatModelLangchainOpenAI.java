@@ -10,7 +10,7 @@ import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiChatRequestParameters;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import io.github.jjdelcerro.noema.lib.impl.model.AbstractChatModelLangchain;
-import io.github.jjdelcerro.noema.lib.model.ModelParameters;
+import io.github.jjdelcerro.noema.lib.api.model.ModelParameters;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;

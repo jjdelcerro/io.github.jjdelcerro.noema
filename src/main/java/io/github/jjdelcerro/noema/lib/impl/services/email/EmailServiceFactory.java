@@ -1,9 +1,9 @@
 package io.github.jjdelcerro.noema.lib.impl.services.email;
 
-import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentService;
-import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.AgentService;
+import io.github.jjdelcerro.noema.lib.api.AgentServiceFactory;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettings;
 import static io.github.jjdelcerro.noema.lib.impl.services.email.EmailService.EMAIL_AUTHORIZED_SENDER;
 import static io.github.jjdelcerro.noema.lib.impl.services.email.EmailService.EMAIL_IMAP_HOST;
 import static io.github.jjdelcerro.noema.lib.impl.services.email.EmailService.EMAIL_PASSWORD;

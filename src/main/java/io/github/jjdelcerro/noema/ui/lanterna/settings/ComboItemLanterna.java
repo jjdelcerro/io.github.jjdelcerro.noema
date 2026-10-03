@@ -8,7 +8,7 @@ import com.googlecode.lanterna.gui2.Direction;
 import com.googlecode.lanterna.gui2.Label;
 import com.googlecode.lanterna.gui2.LinearLayout;
 import com.googlecode.lanterna.gui2.Panel;
-import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.ui.common.AgentSettingsItemUI;
 import java.util.List;
 

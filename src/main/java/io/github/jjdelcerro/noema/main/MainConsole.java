@@ -1,13 +1,13 @@
 package io.github.jjdelcerro.noema.main;
 
-import io.github.jjdelcerro.noema.lib.Agent;
-import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
-import io.github.jjdelcerro.noema.lib.AgentConsole;
-import io.github.jjdelcerro.noema.lib.AgentLocator;
-import io.github.jjdelcerro.noema.lib.AgentManager;
-import io.github.jjdelcerro.noema.lib.AgentPaths;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import static io.github.jjdelcerro.noema.lib.api.Agent.DEFAULT_SUBCHANNEL;
+import io.github.jjdelcerro.noema.lib.api.AgentConsole;
+import io.github.jjdelcerro.noema.lib.api.AgentLocator;
+import io.github.jjdelcerro.noema.lib.api.AgentManager;
+import io.github.jjdelcerro.noema.lib.api.AgentPaths;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettings;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;

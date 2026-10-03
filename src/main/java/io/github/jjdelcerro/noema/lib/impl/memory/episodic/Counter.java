@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.memory.episodic;
 
-import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
+import io.github.jjdelcerro.noema.lib.api.ConnectionSupplier;
 import io.github.jjdelcerro.noema.lib.impl.SQLProvider;
 import java.sql.Connection;
 import java.sql.ResultSet;

@@ -2,10 +2,10 @@ package io.github.jjdelcerro.noema.lib.impl.memory.episodic;
 
 import com.google.gson.JsonObject;
 import io.github.jjdelcerro.noema.lib.impl.memory.consolidate.ConsolidateMemoryImpl;
-import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemoryException;
-import io.github.jjdelcerro.noema.lib.memory.episodic.TurnException;
-import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
+import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemoryException;
+import io.github.jjdelcerro.noema.lib.api.memory.episodic.TurnException;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.memory.episodic.Turn;
 
 import java.io.FileWriter;
 import java.io.PrintWriter;
@@ -17,8 +17,8 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
-import io.github.jjdelcerro.noema.lib.AgentConsole;
-import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
+import io.github.jjdelcerro.noema.lib.api.AgentConsole;
+import io.github.jjdelcerro.noema.lib.api.ConnectionSupplier;
 import io.github.jjdelcerro.noema.lib.impl.SQLProvider;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingFilter;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsService;
@@ -27,8 +27,8 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
-import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.episodic.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemory;
 
 /**
  * Repositorio central que gestiona la persistencia (H2) y la indexación

@@ -1,9 +1,9 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning;
 
-import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentService;
-import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.AgentService;
+import io.github.jjdelcerro.noema.lib.api.AgentServiceFactory;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettings;
 import org.apache.commons.lang3.StringUtils;
 import static io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceImpl.REASONING_PROVIDER_URL;
 import static io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceImpl.REASONING_PROVIDER_API_KEY;

@@ -5,7 +5,7 @@ import dev.langchain4j.model.jlama.JlamaStreamingChatModel;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import io.github.jjdelcerro.noema.lib.impl.model.AbstractChatModelLangchain;
-import io.github.jjdelcerro.noema.lib.model.ModelParameters;
+import io.github.jjdelcerro.noema.lib.api.model.ModelParameters;
 import java.nio.file.Path;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;

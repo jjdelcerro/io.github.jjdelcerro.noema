@@ -2,7 +2,7 @@ package io.github.jjdelcerro.noema.lib.impl.persistence;
 
 import io.github.jjdelcerro.noema.lib.impl.memory.recent.RecentMemoryImpl;
 import java.nio.file.Path;
-import io.github.jjdelcerro.noema.lib.memory.recent.RecentMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.recent.RecentMemory;
 
 public class FakeRecentMemory extends RecentMemoryImpl implements RecentMemory {
 

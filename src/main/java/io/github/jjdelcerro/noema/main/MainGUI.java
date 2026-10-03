@@ -1,12 +1,12 @@
 package io.github.jjdelcerro.noema.main;
 
 import com.formdev.flatlaf.FlatDarkLaf;
-import io.github.jjdelcerro.noema.lib.spi.AbstractAgentAction;
-import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentConsole;
-import io.github.jjdelcerro.noema.lib.AgentLocator;
-import io.github.jjdelcerro.noema.lib.AgentManager;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
+import io.github.jjdelcerro.noema.lib.api.spi.AbstractAgentAction;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.AgentConsole;
+import io.github.jjdelcerro.noema.lib.api.AgentLocator;
+import io.github.jjdelcerro.noema.lib.api.AgentManager;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettings;
 import io.github.jjdelcerro.noema.ui.swing.AgentSwingInitializer;
 import io.github.jjdelcerro.noema.ui.swing.MainChatPanel;
 import io.github.jjdelcerro.noema.ui.swing.OpenEditorAction;

@@ -2,18 +2,18 @@ package io.github.jjdelcerro.noema.lib.impl.memory.projected.operations;
 
 import com.google.gson.JsonObject;
 import dev.langchain4j.data.message.ChatMessage;
-import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.impl.utils.DateUtils;
-import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
-import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory.SubchannelActivity;
-import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemory;
-import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemoryOperation;
+import io.github.jjdelcerro.noema.lib.api.memory.episodic.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.episodic.EpisodicMemory.SubchannelActivity;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperation;
 import org.apache.commons.lang3.StringUtils;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
-import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemory;
 
 public class PeripheralAwarenessOperation implements ProjectedMemoryOperation {
 

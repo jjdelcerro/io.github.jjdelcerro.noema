@@ -1,7 +1,7 @@
 package io.github.jjdelcerro.noema.lib.impl.services.skills;
 
-import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentService;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.AgentService;
 import java.util.List;
 
 /**

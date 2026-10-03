@@ -9,7 +9,7 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import io.github.jjdelcerro.noema.lib.impl.utils.DateUtils;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorStatisticsImpl;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorStatistics;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorStatistics;
 import java.lang.reflect.Type;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;

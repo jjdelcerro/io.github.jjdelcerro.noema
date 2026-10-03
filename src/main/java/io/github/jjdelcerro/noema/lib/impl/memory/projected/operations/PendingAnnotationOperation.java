@@ -3,11 +3,11 @@ package io.github.jjdelcerro.noema.lib.impl.memory.projected.operations;
 import com.google.gson.JsonObject;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
-import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.AbstractPaginatedAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.AnnotateObservationTool;
-import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemory;
-import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemoryOperation;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperation;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;

@@ -2,9 +2,9 @@ package io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.mergeable;
 
 import io.github.jjdelcerro.noema.lib.impl.utils.DateUtils;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.AbstractSensorEvent;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorEventMergeable;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorEventMergeable;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorInformation;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService;
 import java.time.LocalDateTime;
 
 public class SensorEventMergeableImpl extends AbstractSensorEvent implements SensorEventMergeable {

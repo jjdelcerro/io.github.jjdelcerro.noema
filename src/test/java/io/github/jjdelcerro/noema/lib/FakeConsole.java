@@ -1,5 +1,7 @@
 package io.github.jjdelcerro.noema.lib;
 
+import io.github.jjdelcerro.noema.lib.api.AgentConsole;
+
 public class FakeConsole implements AgentConsole {
 
     @Override public boolean confirm(String message) { return true; } // Por defecto auto-aprueba

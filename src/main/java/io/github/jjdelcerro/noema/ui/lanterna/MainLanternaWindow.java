@@ -18,13 +18,13 @@ import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.terminal.Terminal;
 
-import io.github.jjdelcerro.noema.lib.Agent;
-import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
-import io.github.jjdelcerro.noema.lib.AgentConsole;
-import io.github.jjdelcerro.noema.lib.model.ChatModel;
-import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
-import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.SensorEventCallback;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import static io.github.jjdelcerro.noema.lib.api.Agent.DEFAULT_SUBCHANNEL;
+import io.github.jjdelcerro.noema.lib.api.AgentConsole;
+import io.github.jjdelcerro.noema.lib.api.model.ChatModel;
+import io.github.jjdelcerro.noema.lib.api.memory.episodic.Turn;
+import io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService.SensorEventCallback;
 import io.github.jjdelcerro.noema.ui.AgentUILocator;
 
 import java.awt.Toolkit;
@@ -39,8 +39,8 @@ import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 import org.apache.commons.lang3.StringUtils;
-import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
-import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.episodic.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemory;
 
 @SuppressWarnings("UseSpecificCatch")
 public class MainLanternaWindow extends BasicWindow {

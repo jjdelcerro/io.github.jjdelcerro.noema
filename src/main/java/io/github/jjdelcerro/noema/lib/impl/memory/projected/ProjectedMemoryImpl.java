@@ -9,12 +9,12 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.Content;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
-import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentLocator;
-import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.AgentLocator;
+import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.utils.DateUtils;
 import io.github.jjdelcerro.noema.lib.impl.memory.GsonUtils;
-import io.github.jjdelcerro.noema.lib.memory.recent.RecentMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.recent.RecentMemory;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,11 +39,11 @@ import java.util.UUID;
 import java.util.function.Function;
 
 import static io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl.SYSTEMNOTIFICATION_SENSOR_NAME;
-import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemory;
-import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemoryOperation;
-import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemoryOperationFactory;
-import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_HIGH;
-import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperation;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperationFactory;
+import static io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService.PRIORITY_HIGH;
+import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemory;
 
 public class ProjectedMemoryImpl implements ProjectedMemory {
 

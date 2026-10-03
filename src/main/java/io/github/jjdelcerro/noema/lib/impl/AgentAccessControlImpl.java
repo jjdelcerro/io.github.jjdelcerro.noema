@@ -1,12 +1,12 @@
 package io.github.jjdelcerro.noema.lib.impl;
 
-import io.github.jjdelcerro.noema.lib.spi.AbstractAgentAction;
-import io.github.jjdelcerro.noema.lib.AgentAccessControl;
-import io.github.jjdelcerro.noema.lib.AgentActions;
-import io.github.jjdelcerro.noema.lib.AgentConsole;
-import io.github.jjdelcerro.noema.lib.AgentPaths;
-import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
+import io.github.jjdelcerro.noema.lib.api.spi.AbstractAgentAction;
+import io.github.jjdelcerro.noema.lib.api.AgentAccessControl;
+import io.github.jjdelcerro.noema.lib.api.AgentActions;
+import io.github.jjdelcerro.noema.lib.api.AgentConsole;
+import io.github.jjdelcerro.noema.lib.api.AgentPaths;
+import io.github.jjdelcerro.noema.lib.api.AgentTool;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettings;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

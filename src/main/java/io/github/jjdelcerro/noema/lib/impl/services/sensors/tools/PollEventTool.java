@@ -1,13 +1,13 @@
 package io.github.jjdelcerro.noema.lib.impl.services.sensors.tools;
 
 import com.google.gson.GsonBuilder;
-import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.impl.tools.AbstractAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.persistence.SensorEventGsonAdapter;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorEvent;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorEvent;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService;
 
 /**
  * Tool that allows the LLM to pool for pending sensory events from all

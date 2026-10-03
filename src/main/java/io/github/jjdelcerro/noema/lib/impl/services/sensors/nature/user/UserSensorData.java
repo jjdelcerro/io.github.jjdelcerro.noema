@@ -2,9 +2,9 @@ package io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.user;
 
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.AbstractSensorData;
 import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorStatistics;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorInformation;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorStatistics;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService;
 import java.time.LocalDateTime;
 
 public class UserSensorData extends AbstractSensorData {

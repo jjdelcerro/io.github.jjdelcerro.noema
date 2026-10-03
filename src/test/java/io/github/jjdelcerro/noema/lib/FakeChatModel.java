@@ -1,9 +1,9 @@
 package io.github.jjdelcerro.noema.lib;
 
-import io.github.jjdelcerro.noema.lib.model.ChatModel;
-import io.github.jjdelcerro.noema.lib.model.ModelParameters;
-import io.github.jjdelcerro.noema.lib.model.ModelStreamCallback;
-import io.github.jjdelcerro.noema.lib.model.ModelType;
+import io.github.jjdelcerro.noema.lib.api.model.ChatModel;
+import io.github.jjdelcerro.noema.lib.api.model.ModelParameters;
+import io.github.jjdelcerro.noema.lib.api.model.ModelStreamCallback;
+import io.github.jjdelcerro.noema.lib.api.model.ModelType;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;

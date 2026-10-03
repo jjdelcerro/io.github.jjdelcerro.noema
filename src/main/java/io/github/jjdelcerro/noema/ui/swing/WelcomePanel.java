@@ -1,17 +1,17 @@
 package io.github.jjdelcerro.noema.ui.swing;
 
 import com.formdev.flatlaf.extras.FlatSVGUtils;
-import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentLocator;
-import io.github.jjdelcerro.noema.lib.AgentManager;
-import io.github.jjdelcerro.noema.lib.AgentPaths;
-import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
-import io.github.jjdelcerro.noema.lib.model.ModelParameters;
-import static io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService.MEMORY_MODEL_ID;
-import static io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService.MEMORY_PROVIDER_API_KEY;
-import static io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService.MEMORY_PROVIDER_URL;
-import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.AgentLocator;
+import io.github.jjdelcerro.noema.lib.api.AgentManager;
+import io.github.jjdelcerro.noema.lib.api.AgentPaths;
+import io.github.jjdelcerro.noema.lib.api.AgentServiceFactory;
+import io.github.jjdelcerro.noema.lib.api.model.ModelParameters;
+import static io.github.jjdelcerro.noema.lib.api.services.memory.MemoryConsolidationService.MEMORY_MODEL_ID;
+import static io.github.jjdelcerro.noema.lib.api.services.memory.MemoryConsolidationService.MEMORY_PROVIDER_API_KEY;
+import static io.github.jjdelcerro.noema.lib.api.services.memory.MemoryConsolidationService.MEMORY_PROVIDER_URL;
+import io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettings;
 import io.github.jjdelcerro.noema.main.BootUtils;
 import io.github.jjdelcerro.noema.main.MainGUI;
 import java.awt.Dimension;
@@ -30,11 +30,11 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import org.apache.commons.lang3.StringUtils;
-import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_PROVIDER_URL;
-import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_PROVIDER_API_KEY;
-import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_MODEL_ID;
+import static io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService.REASONING_PROVIDER_URL;
+import static io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService.REASONING_PROVIDER_API_KEY;
+import static io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService.REASONING_MODEL_ID;
 import java.nio.file.Files;
-import io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService;
+import io.github.jjdelcerro.noema.lib.api.services.memory.MemoryConsolidationService;
 
 /**
  * Panel de bienvenida para la selección de workspace y validación de

@@ -1,9 +1,9 @@
 package io.github.jjdelcerro.noema.lib.impl.services.sensors.persistence;
 
 import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorEvent;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorStatistics;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorEvent;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorInformation;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorStatistics;
 import java.util.List;
 import java.util.Map;
 

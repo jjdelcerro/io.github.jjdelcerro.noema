@@ -1,10 +1,10 @@
 package io.github.jjdelcerro.noema.lib.impl.services.scripting.modules;
 
 import com.google.gson.Gson;
-import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.services.scripting.AbstractScriptModule;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.AbstractScriptModule;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptContextImpl;
-import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
+import io.github.jjdelcerro.noema.lib.api.memory.episodic.Turn;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;

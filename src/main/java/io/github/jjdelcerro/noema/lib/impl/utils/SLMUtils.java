@@ -3,7 +3,7 @@ package io.github.jjdelcerro.noema.lib.impl.utils;
 import ai.onnxruntime.genai.GenAIException;
 import ai.onnxruntime.genai.GeneratorParams;
 import ai.onnxruntime.genai.SimpleGenAI;
-import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import java.nio.file.Path;
 
 /**

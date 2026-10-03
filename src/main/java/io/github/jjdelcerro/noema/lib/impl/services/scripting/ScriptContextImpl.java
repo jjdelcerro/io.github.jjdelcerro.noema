@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.services.scripting;
 
-import io.github.jjdelcerro.noema.lib.services.scripting.ScriptModule;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptModule;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.FsModule;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.SessionStateModule;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.AnnotationModule;
@@ -9,7 +9,7 @@ import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.WebModule;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.SubagentsModule;
 import groovy.lang.GroovyObjectSupport;
 import groovy.lang.MissingPropertyException;
-import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import io.github.jjdelcerro.noema.lib.services.scripting.ScriptContext;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext;
 
 /**
  * Root context object ('agent') exposed to the embedded Groovy environment.

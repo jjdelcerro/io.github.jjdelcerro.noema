@@ -1,9 +1,9 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file;
 
-import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentAccessControl;
-import io.github.jjdelcerro.noema.lib.AgentActions;
-import io.github.jjdelcerro.noema.lib.AgentPaths;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.AgentAccessControl;
+import io.github.jjdelcerro.noema.lib.api.AgentActions;
+import io.github.jjdelcerro.noema.lib.api.AgentPaths;
 import io.github.jjdelcerro.noema.lib.FakeConsole;
 import io.github.jjdelcerro.noema.lib.impl.AgentAccessControlImpl;
 import io.github.jjdelcerro.noema.lib.impl.AgentActionsImpl;
@@ -11,7 +11,7 @@ import io.github.jjdelcerro.noema.lib.impl.AgentImpl;
 import io.github.jjdelcerro.noema.lib.impl.AgentPathsImpl;
 import io.github.jjdelcerro.noema.lib.impl.persistence.FakeEpisodicMemory;
 import io.github.jjdelcerro.noema.lib.impl.settings.AgentSettingsImpl;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

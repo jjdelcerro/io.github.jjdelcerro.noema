@@ -2,14 +2,14 @@ package io.github.jjdelcerro.noema.lib.impl.services.scripting.tools;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.AbstractPaginatedAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 import static io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptContextImpl.CONTEXT_NAME;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptEngineImpl;
-import io.github.jjdelcerro.noema.lib.services.scripting.ScriptEngine;
-import io.github.jjdelcerro.noema.lib.services.scripting.ScriptingService;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptEngine;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptingService;
 import java.io.BufferedWriter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;

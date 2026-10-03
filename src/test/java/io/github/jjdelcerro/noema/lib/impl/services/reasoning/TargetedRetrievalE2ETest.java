@@ -1,10 +1,10 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning;
 
-import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentLocator;
-import io.github.jjdelcerro.noema.lib.AgentManager;
-import io.github.jjdelcerro.noema.lib.AgentPaths;
-import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.AgentLocator;
+import io.github.jjdelcerro.noema.lib.api.AgentManager;
+import io.github.jjdelcerro.noema.lib.api.AgentPaths;
+import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.FakeAgentUIManager;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.AnnotateObservationTool;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.LookupTurnTool;
@@ -13,9 +13,9 @@ import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileFuz
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileGrepTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileReadTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.ReadPaginatedResourceTool;
-import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
-import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
+import io.github.jjdelcerro.noema.lib.api.memory.episodic.Turn;
+import io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettings;
 import io.github.jjdelcerro.noema.main.BootUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -40,12 +40,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService.MEMORY_MODEL_ID;
-import static io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService.MEMORY_PROVIDER_API_KEY;
-import static io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService.MEMORY_PROVIDER_URL;
-import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_MODEL_ID;
-import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_PROVIDER_API_KEY;
-import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.REASONING_PROVIDER_URL;
+import static io.github.jjdelcerro.noema.lib.api.services.memory.MemoryConsolidationService.MEMORY_MODEL_ID;
+import static io.github.jjdelcerro.noema.lib.api.services.memory.MemoryConsolidationService.MEMORY_PROVIDER_API_KEY;
+import static io.github.jjdelcerro.noema.lib.api.services.memory.MemoryConsolidationService.MEMORY_PROVIDER_URL;
+import static io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService.REASONING_MODEL_ID;
+import static io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService.REASONING_PROVIDER_API_KEY;
+import static io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService.REASONING_PROVIDER_URL;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;

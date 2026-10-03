@@ -14,10 +14,10 @@ import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.aggregate.Sen
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.discrete.SensorEventDiscreteImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.mergeable.SensorEventMergeableImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.state.SensorEventStateImpl;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorEvent;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorEventAggregate;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorEvent;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorEventAggregate;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorInformation;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorNature;
 import java.lang.reflect.Type;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;

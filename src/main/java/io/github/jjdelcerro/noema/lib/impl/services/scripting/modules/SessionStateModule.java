@@ -1,7 +1,7 @@
 package io.github.jjdelcerro.noema.lib.impl.services.scripting.modules;
 
-import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.services.scripting.AbstractScriptModule;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.AbstractScriptModule;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptContextImpl;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

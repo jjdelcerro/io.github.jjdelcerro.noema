@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.services.sensors;
 
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorStatistics;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorStatistics;
 import java.time.LocalDateTime;
 
 /**

@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.settings;
 
-import io.github.jjdelcerro.noema.lib.settings.AgentSettingsPaths;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsPaths;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;

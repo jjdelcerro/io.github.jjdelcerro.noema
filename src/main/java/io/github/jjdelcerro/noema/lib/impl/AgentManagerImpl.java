@@ -1,16 +1,16 @@
 package io.github.jjdelcerro.noema.lib.impl;
 
 import io.github.jjdelcerro.noema.lib.impl.model.ModelParametersImpl;
-import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.model.ModelParameters;
-import io.github.jjdelcerro.noema.lib.AgentActions;
-import io.github.jjdelcerro.noema.lib.AgentActions.AgentAction;
-import io.github.jjdelcerro.noema.lib.AgentConsole;
-import io.github.jjdelcerro.noema.lib.AgentManager;
-import io.github.jjdelcerro.noema.lib.AgentPaths;
-import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
-import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
-import io.github.jjdelcerro.noema.lib.services.subagents.Subagent;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.model.ModelParameters;
+import io.github.jjdelcerro.noema.lib.api.AgentActions;
+import io.github.jjdelcerro.noema.lib.api.AgentActions.AgentAction;
+import io.github.jjdelcerro.noema.lib.api.AgentConsole;
+import io.github.jjdelcerro.noema.lib.api.AgentManager;
+import io.github.jjdelcerro.noema.lib.api.AgentPaths;
+import io.github.jjdelcerro.noema.lib.api.AgentServiceFactory;
+import io.github.jjdelcerro.noema.lib.api.ConnectionSupplier;
+import io.github.jjdelcerro.noema.lib.api.services.subagents.Subagent;
 import io.github.jjdelcerro.noema.lib.impl.memory.projected.operations.PendingAnnotationOperationFactory;
 import io.github.jjdelcerro.noema.lib.impl.memory.projected.operations.PeripheralAwarenessOperationFactory;
 import io.github.jjdelcerro.noema.lib.impl.memory.projected.operations.PinnedTurnsOperationFactory;
@@ -28,8 +28,8 @@ import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceFactor
 import io.github.jjdelcerro.noema.lib.impl.services.skills.SkillsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.subagents.SubagentsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.settings.AgentSettingsImpl;
-import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemoryOperationFactory;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperationFactory;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettings;
 
 import java.nio.file.Path;
 import java.util.ArrayList;

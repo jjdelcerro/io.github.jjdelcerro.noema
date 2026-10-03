@@ -1,9 +1,9 @@
 package io.github.jjdelcerro.noema.lib.impl.model;
 
-import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.model.ChatModel;
-import io.github.jjdelcerro.noema.lib.model.ModelParameters;
-import io.github.jjdelcerro.noema.lib.model.ModelType;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.model.ChatModel;
+import io.github.jjdelcerro.noema.lib.api.model.ModelParameters;
+import io.github.jjdelcerro.noema.lib.api.model.ModelType;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;

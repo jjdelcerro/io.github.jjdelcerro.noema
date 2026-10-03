@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.services.subagents;
 
-import io.github.jjdelcerro.noema.lib.services.subagents.SubagentDefinition;
+import io.github.jjdelcerro.noema.lib.api.services.subagents.SubagentDefinition;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;

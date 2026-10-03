@@ -3,8 +3,8 @@ package io.github.jjdelcerro.noema.lib.impl.memory.projected.operations;
 import com.google.gson.JsonObject;
 import dev.langchain4j.data.message.ChatMessage;
 import io.github.jjdelcerro.noema.lib.impl.utils.DateUtils;
-import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemory;
-import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemoryOperation;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperation;
 
 import java.time.Duration;
 import java.time.LocalDateTime;

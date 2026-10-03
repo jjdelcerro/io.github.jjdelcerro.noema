@@ -1,8 +1,8 @@
 package io.github.jjdelcerro.noema.ui.swing;
 
-import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentTool;
-import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.AgentTool;
+import io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService;
 import io.github.jjdelcerro.noema.ui.swing.settings.CheckedListItemSwing;
 import java.awt.BorderLayout;
 import java.awt.Component;

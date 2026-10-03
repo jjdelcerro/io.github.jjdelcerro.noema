@@ -1,7 +1,7 @@
 package io.github.jjdelcerro.noema.lib.impl.model;
 
-import io.github.jjdelcerro.noema.lib.model.ModelParameters;
-import io.github.jjdelcerro.noema.lib.model.ModelType;
+import io.github.jjdelcerro.noema.lib.api.model.ModelParameters;
+import io.github.jjdelcerro.noema.lib.api.model.ModelType;
 import java.util.HashMap;
 import java.util.Map;
 

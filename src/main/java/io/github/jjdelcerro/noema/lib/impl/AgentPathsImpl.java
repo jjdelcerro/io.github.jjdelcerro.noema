@@ -1,7 +1,7 @@
 package io.github.jjdelcerro.noema.lib.impl;
 
-import static io.github.jjdelcerro.noema.lib.AgentManager.AGENT_NAME;
-import io.github.jjdelcerro.noema.lib.AgentPaths;
+import static io.github.jjdelcerro.noema.lib.api.AgentManager.AGENT_NAME;
+import io.github.jjdelcerro.noema.lib.api.AgentPaths;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

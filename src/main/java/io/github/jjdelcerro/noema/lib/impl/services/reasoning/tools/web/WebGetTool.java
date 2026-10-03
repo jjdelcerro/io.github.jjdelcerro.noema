@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.web;
 
-import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 
 import java.net.URI;
 import java.net.http.HttpClient;

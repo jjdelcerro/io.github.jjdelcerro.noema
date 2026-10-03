@@ -1,11 +1,11 @@
 package io.github.jjdelcerro.noema.lib.impl.services.memory.tools;
 
-import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.AbstractAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.utils.DateUtils;
 import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
-import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
+import io.github.jjdelcerro.noema.lib.api.memory.episodic.Turn;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;

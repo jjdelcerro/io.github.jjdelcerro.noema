@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.settings;
 
-import io.github.jjdelcerro.noema.lib.settings.AgentSettingsCheckedList;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsCheckedList;
 import java.util.ArrayList;
 import java.util.List;
 

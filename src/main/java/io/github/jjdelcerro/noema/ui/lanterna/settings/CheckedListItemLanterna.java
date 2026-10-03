@@ -3,8 +3,8 @@ package io.github.jjdelcerro.noema.ui.lanterna.settings;
 import com.google.gson.JsonObject;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.*;
-import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettingsCheckedList;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsCheckedList;
 import io.github.jjdelcerro.noema.ui.common.AgentSettingsItemUI;
 
 import java.util.List;

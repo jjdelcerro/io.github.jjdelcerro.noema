@@ -1,11 +1,11 @@
 package io.github.jjdelcerro.noema.lib.impl.settings;
 
-import io.github.jjdelcerro.noema.lib.settings.AgentSettingsCheckedList;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettingsGroup;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettingsItem;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettingsList;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettingsPaths;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettingsString;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsCheckedList;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsGroup;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsItem;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsList;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsPaths;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsString;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;

@@ -1,0 +1,49 @@
+package io.github.jjdelcerro.noema.lib.api.memory.episodic;
+
+import java.time.LocalDateTime;
+
+/**
+ *
+ * @author jjdelcerro
+ */
+public interface Turn {
+
+  /**
+   * Devuelve el texto concatenado que representa el contenido semántico del
+   * turno.Útil para que el EpisodicMemory calcule el embedding sobre esto.
+   *
+   * @return
+   */
+  String getContentForEmbedding();
+
+  String getContenttype();
+
+  String getSubchannel();
+  
+  float[] getEmbedding();
+
+  int getId();
+
+  String getTextModel();
+
+  String getTextModelThinking();
+
+  String getTextUser();
+
+  LocalDateTime getTimestamp();
+
+  String getToolCall();
+
+  String getToolResult();
+
+  String getAnnotationType();
+  
+  /**
+   * Genera una línea CSV formateada y escapada para el protocolo de
+   * compactación.
+   *
+   * @return
+   */
+  String toCSVLine();
+
+}

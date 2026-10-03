@@ -1,10 +1,10 @@
 package io.github.jjdelcerro.noema.lib.impl.services.scripting;
 
-import io.github.jjdelcerro.noema.lib.services.scripting.ScriptEngine;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptEngine;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import groovy.transform.TimedInterrupt;
-import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -19,8 +19,8 @@ import org.codehaus.groovy.control.customizers.ASTTransformationCustomizer;
 import org.codehaus.groovy.control.customizers.SecureASTCustomizer;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
-import io.github.jjdelcerro.noema.lib.services.scripting.ScriptContext;
-import static io.github.jjdelcerro.noema.lib.services.scripting.ScriptContext.CONTEXT_NAME;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext;
+import static io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext.CONTEXT_NAME;
 
 /**
  *

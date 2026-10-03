@@ -2,7 +2,7 @@ package io.github.jjdelcerro.noema.ui.console;
 
 import org.jline.reader.LineReader;
 import org.jline.terminal.Terminal;
-import io.github.jjdelcerro.noema.lib.AgentConsole;
+import io.github.jjdelcerro.noema.lib.api.AgentConsole;
 
 /**
  * Implementación de ConsoleOutput basada en JLine3. Proporciona salida

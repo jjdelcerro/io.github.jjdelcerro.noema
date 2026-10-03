@@ -1,7 +1,7 @@
 package io.github.jjdelcerro.noema.lib.impl.services.sensors;
 
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorInformation;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorNature;
 
 /**
  * POJO implementation of {@link SensorInformation}.

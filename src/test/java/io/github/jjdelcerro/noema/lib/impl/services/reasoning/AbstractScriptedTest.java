@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning;
 
-import io.github.jjdelcerro.noema.lib.memory.recent.RecentMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.recent.RecentMemory;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.AiMessage;
@@ -10,20 +10,20 @@ import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.output.FinishReason;
 import dev.langchain4j.model.output.Response;
-import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.impl.AgentImpl;
 import io.github.jjdelcerro.noema.lib.impl.model.ModelParametersImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorInformationImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.user.SensorEventUserImpl;
-import io.github.jjdelcerro.noema.lib.model.ChatModel;
-import io.github.jjdelcerro.noema.lib.model.ModelParameters;
-import io.github.jjdelcerro.noema.lib.model.ModelStreamCallback;
-import io.github.jjdelcerro.noema.lib.model.ModelType;
+import io.github.jjdelcerro.noema.lib.api.model.ChatModel;
+import io.github.jjdelcerro.noema.lib.api.model.ModelParameters;
+import io.github.jjdelcerro.noema.lib.api.model.ModelStreamCallback;
+import io.github.jjdelcerro.noema.lib.api.model.ModelType;
 import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorInformation;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorNature;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
 import java.time.LocalDateTime;

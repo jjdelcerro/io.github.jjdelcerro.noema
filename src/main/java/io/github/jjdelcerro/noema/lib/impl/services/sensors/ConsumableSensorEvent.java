@@ -1,5 +1,6 @@
 package io.github.jjdelcerro.noema.lib.services.sensors;
 
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorEvent;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 

@@ -3,7 +3,7 @@ package io.github.jjdelcerro.noema.ui.lanterna;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
-import io.github.jjdelcerro.noema.lib.AgentConsole;
+import io.github.jjdelcerro.noema.lib.api.AgentConsole;
 
 import java.io.IOException;
 

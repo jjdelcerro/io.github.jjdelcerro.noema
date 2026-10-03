@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.ui.swing;
 
-import io.github.jjdelcerro.noema.lib.AgentConsole;
+import io.github.jjdelcerro.noema.lib.api.AgentConsole;
 import io.github.jjdelcerro.noema.ui.AgentUILocator;
 
 /**

@@ -4,9 +4,9 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.AbstractSensorEvent;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorEventUser;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorEventUser;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorInformation;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService;
 import java.time.LocalDateTime;
 
 public class SensorEventUserImpl extends AbstractSensorEvent implements SensorEventUser {

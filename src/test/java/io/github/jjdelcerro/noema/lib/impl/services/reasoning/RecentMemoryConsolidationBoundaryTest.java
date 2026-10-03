@@ -1,12 +1,12 @@
 package io.github.jjdelcerro.noema.lib.impl.services.reasoning;
 
-import io.github.jjdelcerro.noema.lib.memory.recent.RecentMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.recent.RecentMemory;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
-import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.impl.persistence.FakeRecentMemory;
 import io.github.jjdelcerro.noema.lib.impl.persistence.FakeTurn;
 import org.junit.jupiter.api.BeforeEach;

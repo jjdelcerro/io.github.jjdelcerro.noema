@@ -2,8 +2,8 @@ package io.github.jjdelcerro.noema.lib.impl.services.sensors.persistence;
 
 import com.google.gson.*;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorInformationImpl;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorInformation;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorNature;
 import java.lang.reflect.Type;
 
 /**

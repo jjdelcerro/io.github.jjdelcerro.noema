@@ -1,6 +1,6 @@
 
-import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentPaths;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.AgentPaths;
 import io.github.jjdelcerro.noema.lib.FakeConsole;
 import io.github.jjdelcerro.noema.lib.impl.AgentImpl;
 import io.github.jjdelcerro.noema.lib.impl.AgentPathsImpl;
@@ -9,10 +9,10 @@ import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceFactor
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.SensorsServiceImpl;
 import io.github.jjdelcerro.noema.lib.impl.settings.AgentSettingsImpl;
 import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorInformation;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorNature;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettings;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.concurrent.CountDownLatch;

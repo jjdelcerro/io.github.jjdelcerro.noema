@@ -1,14 +1,14 @@
 package io.github.jjdelcerro.noema.main;
 
-import io.github.jjdelcerro.noema.lib.Agent;
-import io.github.jjdelcerro.noema.lib.AgentConsole;
-import io.github.jjdelcerro.noema.lib.AgentLocator;
-import io.github.jjdelcerro.noema.lib.AgentManager;
-import io.github.jjdelcerro.noema.lib.AgentPaths;
-import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
-import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
-import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.AgentConsole;
+import io.github.jjdelcerro.noema.lib.api.AgentLocator;
+import io.github.jjdelcerro.noema.lib.api.AgentManager;
+import io.github.jjdelcerro.noema.lib.api.AgentPaths;
+import io.github.jjdelcerro.noema.lib.api.AgentServiceFactory;
+import io.github.jjdelcerro.noema.lib.api.ConnectionSupplier;
+import io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettings;
 import io.github.jjdelcerro.noema.ui.AgentUILocator;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -22,7 +22,7 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.h2.tools.Server;
-import io.github.jjdelcerro.noema.lib.services.memory.MemoryConsolidationService;
+import io.github.jjdelcerro.noema.lib.api.services.memory.MemoryConsolidationService;
 
 /**
  *

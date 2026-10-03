@@ -1,14 +1,14 @@
 package io.github.jjdelcerro.noema.lib.impl.services.sensors.tools;
 
 import com.google.gson.GsonBuilder;
-import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.impl.tools.AbstractAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.persistence.SensorInformationGsonAdapter;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.persistence.SensorStatisticsGsonAdapter;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorStatistics;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorInformation;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorStatistics;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

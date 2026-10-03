@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.services.scheduler;
 
-import io.github.jjdelcerro.noema.lib.AgentService;
+import io.github.jjdelcerro.noema.lib.api.AgentService;
 import java.time.LocalDateTime;
 
 /**

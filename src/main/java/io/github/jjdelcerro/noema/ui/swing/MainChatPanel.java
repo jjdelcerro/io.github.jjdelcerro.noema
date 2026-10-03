@@ -2,17 +2,17 @@ package io.github.jjdelcerro.noema.ui.swing;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.formdev.flatlaf.extras.FlatSVGUtils;
-import io.github.jjdelcerro.noema.lib.spi.AbstractAgentAction;
-import io.github.jjdelcerro.noema.lib.Agent;
-import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
-import io.github.jjdelcerro.noema.lib.AgentConsole;
-import io.github.jjdelcerro.noema.lib.AgentLocator;
-import io.github.jjdelcerro.noema.lib.AgentManager;
-import io.github.jjdelcerro.noema.lib.model.ChatModel;
-import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
-import io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.SensorEventCallback;
+import io.github.jjdelcerro.noema.lib.api.spi.AbstractAgentAction;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import static io.github.jjdelcerro.noema.lib.api.Agent.DEFAULT_SUBCHANNEL;
+import io.github.jjdelcerro.noema.lib.api.AgentConsole;
+import io.github.jjdelcerro.noema.lib.api.AgentLocator;
+import io.github.jjdelcerro.noema.lib.api.AgentManager;
+import io.github.jjdelcerro.noema.lib.api.model.ChatModel;
+import io.github.jjdelcerro.noema.lib.api.memory.episodic.Turn;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettings;
+import io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService.SensorEventCallback;
 import io.github.jjdelcerro.noema.main.MainGUI;
 import io.github.jjdelcerro.noema.ui.AgentUILocator;
 import java.awt.BorderLayout;
@@ -48,8 +48,8 @@ import javax.swing.Timer;
 import javax.swing.UIManager;
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.lang3.StringUtils;
-import io.github.jjdelcerro.noema.lib.memory.episodic.EpisodicMemory;
-import io.github.jjdelcerro.noema.lib.memory.consolidate.ConsolidateMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.episodic.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemory;
 
 public class MainChatPanel extends JPanel {
 

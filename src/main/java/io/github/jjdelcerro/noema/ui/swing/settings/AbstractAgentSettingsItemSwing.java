@@ -1,7 +1,7 @@
 package io.github.jjdelcerro.noema.ui.swing.settings;
 
 import com.google.gson.JsonObject;
-import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.ui.common.AbstractAgentSettingsItemUI;
 import io.github.jjdelcerro.noema.ui.common.AgentSettingsItemUI;
 

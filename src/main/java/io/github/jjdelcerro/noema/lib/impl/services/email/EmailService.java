@@ -1,17 +1,17 @@
 package io.github.jjdelcerro.noema.lib.impl.services.email;
 
 import com.google.gson.Gson;
-import io.github.jjdelcerro.noema.lib.Agent;
-import static io.github.jjdelcerro.noema.lib.Agent.DEFAULT_SUBCHANNEL;
-import io.github.jjdelcerro.noema.lib.AgentService;
-import io.github.jjdelcerro.noema.lib.AgentServiceFactory;
-import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.api.Agent;
+import static io.github.jjdelcerro.noema.lib.api.Agent.DEFAULT_SUBCHANNEL;
+import io.github.jjdelcerro.noema.lib.api.AgentService;
+import io.github.jjdelcerro.noema.lib.api.AgentServiceFactory;
+import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.services.email.tools.EmailListTool;
 import io.github.jjdelcerro.noema.lib.impl.services.email.tools.EmailReadTool;
 import io.github.jjdelcerro.noema.lib.impl.services.email.tools.EmailSendTool;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorNature;
-import static io.github.jjdelcerro.noema.lib.services.sensors.SensorsService.PRIORITY_NORMAL;
-import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorNature;
+import static io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService.PRIORITY_NORMAL;
+import io.github.jjdelcerro.noema.lib.api.spi.AbstractAgentService;
 import jakarta.mail.*;
 import jakarta.mail.internet.*;
 import org.apache.tika.Tika;

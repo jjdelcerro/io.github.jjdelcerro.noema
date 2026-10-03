@@ -1,7 +1,7 @@
 package io.github.jjdelcerro.noema.lib.impl.settings;
 
-import io.github.jjdelcerro.noema.lib.settings.AgentSettingsItem;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettingsList;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsItem;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsList;
 
 import java.util.ArrayList;
 import java.util.Iterator;

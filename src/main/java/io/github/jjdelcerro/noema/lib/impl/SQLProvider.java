@@ -1,7 +1,7 @@
 package io.github.jjdelcerro.noema.lib.impl;
 
-import io.github.jjdelcerro.noema.lib.AgentLocator;
-import io.github.jjdelcerro.noema.lib.ConnectionSupplier;
+import io.github.jjdelcerro.noema.lib.api.AgentLocator;
+import io.github.jjdelcerro.noema.lib.api.ConnectionSupplier;
 import java.util.List;
 
 /**

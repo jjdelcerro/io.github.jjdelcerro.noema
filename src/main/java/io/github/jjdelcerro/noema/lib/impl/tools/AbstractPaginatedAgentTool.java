@@ -1,7 +1,7 @@
 package io.github.jjdelcerro.noema.lib.impl.tools;
 
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
-import io.github.jjdelcerro.noema.lib.Agent;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import org.apache.commons.collections4.map.LRUMap;
 import org.apache.commons.lang3.StringUtils;
 
@@ -14,9 +14,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.github.jjdelcerro.noema.lib.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
-import io.github.jjdelcerro.noema.lib.AgentTool;
-import static io.github.jjdelcerro.noema.lib.AgentTool.TrimResultType.None;
+import static io.github.jjdelcerro.noema.lib.api.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
+import io.github.jjdelcerro.noema.lib.api.AgentTool;
+import static io.github.jjdelcerro.noema.lib.api.AgentTool.TrimResultType.None;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.FileInputStream;

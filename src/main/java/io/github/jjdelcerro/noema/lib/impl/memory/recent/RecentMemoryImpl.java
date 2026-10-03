@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.memory.recent;
 
-import io.github.jjdelcerro.noema.lib.memory.recent.RecentMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.recent.RecentMemory;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import dev.langchain4j.data.message.ChatMessage;
@@ -8,8 +8,8 @@ import dev.langchain4j.data.message.Content;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import io.github.jjdelcerro.noema.lib.impl.memory.GsonUtils.ChatMessageAdapter;
 import io.github.jjdelcerro.noema.lib.impl.memory.GsonUtils.ContentAdapter;
-import io.github.jjdelcerro.noema.lib.settings.AgentSettings;
-import io.github.jjdelcerro.noema.lib.memory.episodic.Turn;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettings;
+import io.github.jjdelcerro.noema.lib.api.memory.episodic.Turn;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -20,7 +20,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static io.github.jjdelcerro.noema.lib.services.reasoning.ReasoningService.MEMORY_CONSOLIDATION_TURNS;
+import static io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService.MEMORY_CONSOLIDATION_TURNS;
 
 /**
  * Agregado que gobierna el estado de la sesion activa de conversacion. Gestiona

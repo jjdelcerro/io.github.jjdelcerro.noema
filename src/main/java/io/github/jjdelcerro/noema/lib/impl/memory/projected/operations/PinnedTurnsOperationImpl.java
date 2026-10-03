@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.memory.projected.operations;
 
-import io.github.jjdelcerro.noema.lib.memory.projected.operations.PinnedTurnsOperation;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.operations.PinnedTurnsOperation;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -12,9 +12,9 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.Content;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
-import io.github.jjdelcerro.noema.lib.AgentTool;
+import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.memory.GsonUtils;
-import io.github.jjdelcerro.noema.lib.memory.projected.ProjectedMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.settings;
 
-import io.github.jjdelcerro.noema.lib.settings.AgentSettingsString;
+import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsString;
 
 public class AgentSettingsStringImpl implements AgentSettingsString {
 

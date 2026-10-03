@@ -7,11 +7,11 @@ package io.github.jjdelcerro.noema.lib.impl.services.sensors;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.aggregate.SensorEventAggregateImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.sensors.nature.discrete.SensorEventDiscreteImpl;
 import io.github.jjdelcerro.noema.lib.services.sensors.ConsumableSensorEvent;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorData;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorEvent;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorInformation;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorStatistics;
-import io.github.jjdelcerro.noema.lib.services.sensors.SensorsService;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorData;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorEvent;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorInformation;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorStatistics;
+import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService;
 import java.time.LocalDateTime;
 
 /**
