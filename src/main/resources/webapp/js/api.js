@@ -91,6 +91,12 @@ export function connectSSE(terminalId, handlers = {}) {
     }
   });
 
+  eventSource.addEventListener('stream_end', (event) => {
+    if (handlers.onStreamEnd) {
+      handlers.onStreamEnd();
+    }
+  });
+
   return {
     close: () => eventSource.close(),
     getReadyState: () => eventSource.readyState

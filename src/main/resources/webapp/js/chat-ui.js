@@ -1,4 +1,3 @@
- 
 /**
  * Módulo de gestión de la interfaz de chat, historial y conexión SSE.
  */
@@ -12,6 +11,10 @@ let activeSseControl = null;
 // Estado para agrupación consecutiva de mensajes
 let lastBlockType = null;
 let lastBlockElement = null;
+
+// Estado para control del bloque de streaming activo
+let activeStreamingBlock = null;
+let activeStreamingType = null;
 
 // Referencias al DOM
 let chatArea = null;
@@ -34,7 +37,7 @@ function adjustTextareaHeight() {
 
 /**
  * Inicializa las referencias del DOM y configura los listeners del chat.
- * 
+ *
  * @param {string} initialTerminalId - Identificador de terminal a activar.
  */
 export function initChatUI(initialTerminalId) {
@@ -43,7 +46,7 @@ export function initChatUI(initialTerminalId) {
     btnSend = document.getElementById('btn-send');
     btnExport = document.getElementById('btn-export');
     btnCopyConversation = document.getElementById('btn-copy-conversation');
-    
+
     const statusIndicator = document.getElementById('status-indicator');
     if (statusIndicator) {
         statusDot = statusIndicator.querySelector('.status-dot');
@@ -66,7 +69,7 @@ export function initChatUI(initialTerminalId) {
             handleSend();
         }
     });
-    
+
     if (initialTerminalId) {
         switchTerminal(initialTerminalId);
     }
@@ -74,8 +77,8 @@ export function initChatUI(initialTerminalId) {
 
 /**
  * Cambia el terminal activo, cierra la conexión SSE previa y carga el nuevo historial.
- * 
- * @param {string} newTerminalId 
+ *
+ * @param {string} newTerminalId
  */
 export async function switchTerminal(newTerminalId) {
     if (!newTerminalId || newTerminalId.trim() === '') {
@@ -116,14 +119,15 @@ export async function switchTerminal(newTerminalId) {
         showToast('No se pudo recuperar el historial previo', 'error');
     }
 
-    // 4. Iniciar canal SSE para eventos en tiempo real
+    // 4. Iniciar canal SSE para eventos en tiempo real con soporte de streaming
     activeSseControl = connectSSE(currentTerminalId, {
         onConnectionOpen: () => setConnectionStatus('connected'),
-        onConnectionError: () => setConnectionStatus('connecting'),
-        onThinking: (data) => addMessage('thinking', data.content), 
-        onResponse: (data) => addMessage('response', data.content),
-        onLog: (data) => addMessage('log', data.content),
-        onError: (data) => addMessage('error', data.content)
+                                  onConnectionError: () => setConnectionStatus('connecting'),
+                                  onThinking: (data) => appendStreamChunk('thinking', data.content),
+                                  onResponse: (data) => appendStreamChunk('response', data.content),
+                                  onStreamEnd: () => finishStreaming(),
+                                  onLog: (data) => { finishStreaming(); addMessage('log', data.content); },
+                                  onError: (data) => { finishStreaming(); addMessage('error', data.content); }
     });
 }
 
@@ -145,15 +149,123 @@ export function clearChat() {
     }
     lastBlockType = null;
     lastBlockElement = null;
+    finishStreaming();
+}
+
+/**
+ * Acumula y renderiza progresivamente fragmentos en streaming sobre un único bloque.
+ *
+ * @param {string} type - 'thinking' o 'response'.
+ * @param {string} chunk - Trozo de texto recibido del stream.
+ */
+export function appendStreamChunk(type, chunk) {
+    if (!chatArea || !chunk) return;
+
+    const isNearBottom = chatArea.scrollHeight - chatArea.scrollTop - chatArea.clientHeight < 80;
+    const rawChunk = String(chunk);
+
+    // Si ya existe un bloque de streaming del mismo tipo, concatenamos y re-renderizamos
+    if (activeStreamingBlock && activeStreamingType === type) {
+        activeStreamingBlock.__rawContents[0] += rawChunk;
+        const paragraph = activeStreamingBlock.querySelector('.message-item');
+        if (paragraph) {
+            paragraph.innerHTML = formatContent(type, activeStreamingBlock.__rawContents[0]);
+        }
+    } else {
+        // Si cambia el tipo (ej. de 'thinking' a 'response'), finalizamos el bloque previo
+        finishStreaming();
+
+        const block = document.createElement('div');
+        block.className = `message-block ${type}`;
+        block.__rawContents = [rawChunk];
+
+        const paragraph = document.createElement('div');
+        paragraph.className = 'message-item';
+        paragraph.innerHTML = formatContent(type, rawChunk);
+
+        const actions = document.createElement('div');
+        actions.className = 'message-actions';
+
+        if (type === 'log' || type === 'error' || type === 'thinking') {
+            const isThinking = type === 'thinking';
+            // Mientras fluye el stream de thinking se mantiene abierto para que sea visible
+            if (!isThinking) {
+                block.classList.add('collapsed');
+            }
+            const collapseButton = document.createElement('button');
+            collapseButton.className = 'collapse-message-button';
+            collapseButton.type = 'button';
+            collapseButton.textContent = isThinking ? '⌄' : '›';
+            collapseButton.title = isThinking ? 'Contraer mensaje' : 'Expandir mensaje';
+            collapseButton.setAttribute('aria-label', isThinking ? 'Contraer mensaje' : 'Expandir mensaje');
+            collapseButton.setAttribute('aria-expanded', isThinking ? 'true' : 'false');
+            collapseButton.addEventListener('click', () => toggleMessageBlock(block, collapseButton));
+            actions.appendChild(collapseButton);
+        }
+
+        const copyButton = document.createElement('button');
+        copyButton.className = 'copy-message-button';
+        copyButton.type = 'button';
+        copyButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="5" width="10" height="13" rx="2"></rect><path d="M15 5V4a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h2"></path></svg>';
+        copyButton.title = 'Copiar';
+        copyButton.setAttribute('aria-label', 'Copiar mensaje como Markdown');
+        copyButton.addEventListener('click', () => copyBlockAsMarkdown(block, copyButton));
+        actions.appendChild(copyButton);
+
+        if (type === 'log' || type === 'error' || type === 'thinking') {
+            const blockLabel = document.createElement('span');
+            blockLabel.className = 'message-block-label';
+            if (type === 'thinking') {
+                blockLabel.textContent = 'Razonamiento';
+            } else if (type === 'log') {
+                blockLabel.textContent = 'Mensajes del sistema';
+            } else {
+                blockLabel.textContent = 'Incidencias';
+            }
+            actions.appendChild(blockLabel);
+        }
+
+        block.appendChild(paragraph);
+        block.appendChild(actions);
+        chatArea.appendChild(block);
+
+        activeStreamingBlock = block;
+        activeStreamingType = type;
+        lastBlockType = type;
+        lastBlockElement = block;
+    }
+
+    if (isNearBottom) {
+        chatArea.scrollTop = chatArea.scrollHeight;
+    }
+}
+
+/**
+ * Da por concluido el bloque de streaming activo y restaura el estado.
+ */
+export function finishStreaming() {
+    if (activeStreamingBlock && activeStreamingType === 'thinking') {
+        // Al terminar el razonamiento, se colapsa automáticamente siguiendo la convención de la UI
+        activeStreamingBlock.classList.add('collapsed');
+        const collapseButton = activeStreamingBlock.querySelector('.collapse-message-button');
+        if (collapseButton) {
+            collapseButton.textContent = '›';
+            collapseButton.title = 'Expandir mensaje';
+            collapseButton.setAttribute('aria-expanded', 'false');
+        }
+    }
+    activeStreamingBlock = null;
+    activeStreamingType = null;
 }
 
 /**
  * Inyecta un mensaje en el área de chat aplicando la lógica de agrupación, formato y colapso.
- * 
+ *
  * @param {string} type - 'user', 'response', 'thinking', 'log' o 'error'.
  * @param {string} content - Contenido del mensaje.
  */
 export function addMessage(type, content) {
+    finishStreaming();
     if (!chatArea || !content) return;
 
     const isNearBottom = chatArea.scrollHeight - chatArea.scrollTop - chatArea.clientHeight < 80;
@@ -236,7 +348,7 @@ export function addMessage(type, content) {
 function mapHistoryType(backendType) {
     switch (backendType) {
         case 'user-message': return 'user';
-        case 'thinking': return 'thinking'; 
+        case 'thinking': return 'thinking';
         case 'response': return 'response';
         case 'log': return 'log';
         case 'error': return 'error';
@@ -249,8 +361,8 @@ function mapHistoryType(backendType) {
  */
 function getBlockMarkdown(block) {
     return block && Array.isArray(block.__rawContents)
-        ? block.__rawContents.join('\n\n')
-        : '';
+    ? block.__rawContents.join('\n\n')
+    : '';
 }
 
 async function copyText(text) {
@@ -361,7 +473,7 @@ function formatContent(type, content) {
             return window.DOMPurify.sanitize(parsed);
         }
     }
-    
+
     // Escape básico contra XSS para otros tipos de mensajes
     const temp = document.createElement('div');
     temp.textContent = content;
@@ -374,6 +486,8 @@ function formatContent(type, content) {
 async function handleSend() {
     const text = messageInput.value.trim();
     if (!text || !currentTerminalId) return;
+
+    finishStreaming();
 
     // Muestra optimista inmediata en la UI
     addMessage('user', text);
@@ -390,7 +504,7 @@ async function handleSend() {
 
 /**
  * Actualiza la apariencia del indicador de conexión en la cabecera.
- * 
+ *
  * @param {string} status - 'connected', 'connecting' o 'disconnected'.
  */
 export function setConnectionStatus(status) {
