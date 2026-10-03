@@ -11,6 +11,8 @@ import io.github.jjdelcerro.noema.lib.impl.utils.FileFuzzySearchUtils;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.AutoClosingLineIterator;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.AbstractScriptModule;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptContextImpl;
+import io.github.jjdelcerro.noema.lib.impl.utils.FileSearchAndReplaceUtils;
+import io.github.jjdelcerro.noema.lib.impl.utils.FileSearchAndReplaceUtils.SearchAndReplaceResult;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -65,6 +67,8 @@ public class FsModule extends AbstractScriptModule {
   -> agent.fs.fuzzygrep('conexión base de datos', 'docs/').each { println "${it.file}:${it.startLine}-${it.endLine}" }
 • write(path, String|Iterable): void (auto-mkdir, copia de seguridad automática en RCS)
   -> agent.fs.write('out.txt', ['línea 1', 'línea 2'])
+• searchAndReplace(path, oldText, newText): SearchAndReplaceResult(status, path, strategy, message, preview, startLine, replacedLineCount)
+  -> def res = agent.fs.searchAndReplace('f.txt', old, new); println res.status == 'success' ? res.preview : res.messag         
 """;
   }
 
@@ -310,4 +314,26 @@ public class FsModule extends AbstractScriptModule {
     Path path = validatePath(rawPath, AgentAccessControl.AccessMode.PATH_ACCESS_READ);
     return FileFuzzySearchUtils.search(agent, path, query, filePattern, limit, minSimilarity);
   }
+
+  /**
+   * Reemplaza un bloque de texto en un archivo aplicando la estrategia en
+   * cascada (exacta -> tolerante a indentacion -> sugerencia difusa),
+   * respetando los saltos de linea originales (CRLF/LF) y registrando copia
+   * previa en JavaRCS si esta activo.
+   *
+   * @param rawPath Ruta relativa o absoluta del archivo a modificar.
+   * @param oldText Bloque de texto a buscar (debe ser unico en el archivo).
+   * @param newText Nuevo texto a insertar (cadena vacia para eliminar).
+   * @return SearchAndReplaceResult con el estado, estrategia aplicada, mensaje
+   * y vista previa.
+   */
+  public SearchAndReplaceResult searchAndReplace(String rawPath, String oldText, String newText) {
+    return FileSearchAndReplaceUtils.searchAndReplace(
+            agent.getAccessControl(),
+            rawPath,
+            oldText,
+            newText
+    );
+  }
+
 }
