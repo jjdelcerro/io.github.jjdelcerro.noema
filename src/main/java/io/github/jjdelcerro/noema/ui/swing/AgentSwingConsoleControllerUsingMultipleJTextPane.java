@@ -165,7 +165,7 @@ public class AgentSwingConsoleControllerUsingMultipleJTextPane implements AgentC
     public void appendText(String text) {
       JMarkdownPanel markdownPanel = (JMarkdownPanel) this.contents;
       String oldMd = markdownPanel.getMarkdownText();
-      String newMd = oldMd + "\n" + text;
+      String newMd = oldMd + text;
       markdownPanel.setMarkdownText(this.getTypeName() + ":", newMd);
       this.contents.setPreferredSize(null);
     }
