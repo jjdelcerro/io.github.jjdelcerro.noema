@@ -1,7 +1,6 @@
 package io.github.jjdelcerro.noema.ui.swing;
 
 import com.formdev.flatlaf.extras.FlatSVGUtils;
-import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.AgentLocator;
 import io.github.jjdelcerro.noema.lib.api.AgentManager;
 import io.github.jjdelcerro.noema.lib.api.AgentPaths;
@@ -13,7 +12,6 @@ import static io.github.jjdelcerro.noema.lib.api.services.memory.MemoryConsolida
 import io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettings;
 import io.github.jjdelcerro.noema.main.BootUtils;
-import io.github.jjdelcerro.noema.main.MainGUI;
 import java.awt.Dimension;
 import java.awt.GraphicsConfiguration;
 import java.awt.Image;
@@ -35,6 +33,7 @@ import static io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningSer
 import static io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService.REASONING_MODEL_ID;
 import java.nio.file.Files;
 import io.github.jjdelcerro.noema.lib.api.services.memory.MemoryConsolidationService;
+import io.github.jjdelcerro.noema.main.MainSwing;
 
 /**
  * Panel de bienvenida para la selección de workspace y validación de
@@ -268,8 +267,7 @@ Asegúrese de ejecutar el agente en un entorno controlado o con backups actualiz
     int y = bounds.y + (bounds.height - frame.getHeight()) / 2;
     frame.setLocation(x, y);
     try {
-      List<Image> icons = FlatSVGUtils.createWindowIconImages(
-              MainGUI.class.getResource("/io/github/jjdelcerro/noema/ui/swing/app_icon.svg")
+      List<Image> icons = FlatSVGUtils.createWindowIconImages(MainSwing.class.getResource("/io/github/jjdelcerro/noema/ui/swing/app_icon.svg")
       );
       frame.setIconImages(icons);
     } catch (Exception e) {

@@ -16,7 +16,7 @@ import static java.lang.System.exit;
 import java.net.URI;
 import javax.swing.*;
 
-public class MainGUI {
+public class MainSwing {
 
     public static void main(String[] args) {
         FlatDarkLaf.setup(); 

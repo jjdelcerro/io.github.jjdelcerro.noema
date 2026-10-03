@@ -13,7 +13,6 @@ import io.github.jjdelcerro.noema.lib.api.memory.episodic.Turn;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService;
 import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService.SensorEventCallback;
-import io.github.jjdelcerro.noema.main.MainGUI;
 import io.github.jjdelcerro.noema.ui.AgentUILocator;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -50,417 +49,416 @@ import net.miginfocom.swing.MigLayout;
 import org.apache.commons.lang3.StringUtils;
 import io.github.jjdelcerro.noema.lib.api.memory.episodic.EpisodicMemory;
 import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemory;
+import io.github.jjdelcerro.noema.main.MainSwing;
 
 public class MainChatPanel extends JPanel {
 
-    private final JPanel chatHistory;
-    private final JTextArea inputArea;
-    private final JButton btnSend, btnStop, btnTools, btnInsert;
-    private final JLabel lblModelInfo, lblTokens, lblTimer;
-    private final JButton settingsBtn, btnSave, btnCopy;
+  private final JPanel chatHistory;
+  private final JTextArea inputArea;
+  private final JButton btnSend, btnStop, btnTools, btnInsert;
+  private final JLabel lblModelInfo, lblTokens, lblTimer;
+  private final JButton settingsBtn, btnSave, btnCopy;
 
-    private final AgentSwingConsoleControllerUsingMultipleJTextPane consoleController;
-    private Agent agent;
-    private AgentSettings settings;
-    private Timer thinkingTimer;
-    private long thinkingStartTime;
+  private final AgentSwingConsoleControllerUsingMultipleJTextPane consoleController;
+  private Agent agent;
+  private AgentSettings settings;
+  private Timer thinkingTimer;
+  private long thinkingStartTime;
 
-    public MainChatPanel(AgentSettings settings) {
-        this.settings = settings;
-        setLayout(new BorderLayout());
+  public MainChatPanel(AgentSettings settings) {
+    this.settings = settings;
+    setLayout(new BorderLayout());
 
-        // --- 1. PANELES LATERALES (Existentes) ---    
-        // --- Panel Izquierdo (Settings) ---
-        JPanel leftBar = new JPanel(new MigLayout("wrap 1, ins 10, filly", "[]", "[][grow]"));
-        leftBar.setBackground(Color.DARK_GRAY);
-        settingsBtn = createSidebarButton();
-        leftBar.add(settingsBtn, "w 28!, h 28!");
+    // --- 1. PANELES LATERALES (Existentes) ---    
+    // --- Panel Izquierdo (Settings) ---
+    JPanel leftBar = new JPanel(new MigLayout("wrap 1, ins 10, filly", "[]", "[][grow]"));
+    leftBar.setBackground(Color.DARK_GRAY);
+    settingsBtn = createSidebarButton();
+    leftBar.add(settingsBtn, "w 28!, h 28!");
 
-        // --- Panel Derecho (Guardar y Copiar) ---
-        JPanel rightBar = new JPanel(new MigLayout("wrap 1, ins 10, filly", "[]", "[][][grow]"));
-        rightBar.setBackground(Color.DARK_GRAY);
-        btnSave = createSidebarButton();
-        btnCopy = createSidebarButton();
-        rightBar.add(btnSave, "w 28!, h 28!");
-        rightBar.add(btnCopy, "w 28!, h 28!");
+    // --- Panel Derecho (Guardar y Copiar) ---
+    JPanel rightBar = new JPanel(new MigLayout("wrap 1, ins 10, filly", "[]", "[][][grow]"));
+    rightBar.setBackground(Color.DARK_GRAY);
+    btnSave = createSidebarButton();
+    btnCopy = createSidebarButton();
+    rightBar.add(btnSave, "w 28!, h 28!");
+    rightBar.add(btnCopy, "w 28!, h 28!");
 
-        // --- 2. HISTORIAL DE CHAT ---
-        chatHistory = new JPanel(new MigLayout("fillx, wrap 1, ins 1 10 1 10", "[grow, left]"));
-        chatHistory.setBackground(Color.DARK_GRAY);
-        JScrollPane historyScroll = new JScrollPane(chatHistory);
-        historyScroll.setBorder(null);
-        historyScroll.getVerticalScrollBar().setUnitIncrement(16);
+    // --- 2. HISTORIAL DE CHAT ---
+    chatHistory = new JPanel(new MigLayout("fillx, wrap 1, ins 1 10 1 10", "[grow, left]"));
+    chatHistory.setBackground(Color.DARK_GRAY);
+    JScrollPane historyScroll = new JScrollPane(chatHistory);
+    historyScroll.setBorder(null);
+    historyScroll.getVerticalScrollBar().setUnitIncrement(16);
 
-        JPanel centerContainer = new JPanel(new BorderLayout());
-        centerContainer.add(leftBar, BorderLayout.WEST);
-        centerContainer.add(historyScroll, BorderLayout.CENTER);
-        centerContainer.add(rightBar, BorderLayout.EAST);
-        add(centerContainer, BorderLayout.CENTER);
+    JPanel centerContainer = new JPanel(new BorderLayout());
+    centerContainer.add(leftBar, BorderLayout.WEST);
+    centerContainer.add(historyScroll, BorderLayout.CENTER);
+    centerContainer.add(rightBar, BorderLayout.EAST);
+    add(centerContainer, BorderLayout.CENTER);
 
-        // --- 3. CÁPSULA DE ENTRADA (Estilo Gemini) ---
-        JPanel bottomPanel = new JPanel(new MigLayout("fillx, ins 10 15 15 15", "[grow]"));
-        bottomPanel.setBackground(Color.DARK_GRAY);
+    // --- 3. CÁPSULA DE ENTRADA (Estilo Gemini) ---
+    JPanel bottomPanel = new JPanel(new MigLayout("fillx, ins 10 15 15 15", "[grow]"));
+    bottomPanel.setBackground(Color.DARK_GRAY);
 
-        // Contenedor principal redondeado
-        JPanel inputCapsule = new JPanel(new MigLayout("fillx, wrap 1, ins 8 12 8 12", "[grow]"));
-        inputCapsule.setBackground(new Color(45, 45, 45)); // Un gris ligeramente distinto o el mismo
-        inputCapsule.setBorder(new com.formdev.flatlaf.ui.FlatLineBorder(
-                new Insets(1, 1, 1, 1), UIManager.getColor("Component.borderColor"), 1, 25));
+    // Contenedor principal redondeado
+    JPanel inputCapsule = new JPanel(new MigLayout("fillx, wrap 1, ins 8 12 8 12", "[grow]"));
+    inputCapsule.setBackground(new Color(45, 45, 45)); // Un gris ligeramente distinto o el mismo
+    inputCapsule.setBorder(new com.formdev.flatlaf.ui.FlatLineBorder(
+            new Insets(1, 1, 1, 1), UIManager.getColor("Component.borderColor"), 1, 25));
 
-        // Area de texto (Arriba en la cápsula)
-        inputArea = new JTextArea(3, 20);
-        inputArea.setLineWrap(true);
-        inputArea.setWrapStyleWord(true);
-        inputArea.setOpaque(false);
-        inputArea.setBorder(null);
-        inputArea.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
+    // Area de texto (Arriba en la cápsula)
+    inputArea = new JTextArea(3, 20);
+    inputArea.setLineWrap(true);
+    inputArea.setWrapStyleWord(true);
+    inputArea.setOpaque(false);
+    inputArea.setBorder(null);
+    inputArea.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
 
-        JScrollPane inputScroll = new JScrollPane(inputArea);
-        inputScroll.setOpaque(false);
-        inputScroll.getViewport().setOpaque(false);
-        inputScroll.setBorder(null);
-        inputCapsule.add(inputScroll, "growx, hmin 60");
+    JScrollPane inputScroll = new JScrollPane(inputArea);
+    inputScroll.setOpaque(false);
+    inputScroll.getViewport().setOpaque(false);
+    inputScroll.setBorder(null);
+    inputCapsule.add(inputScroll, "growx, hmin 60");
 
-        // BARRA DE CONTROL (Abajo en la cápsula)
-        // [Herramientas] --- [Metadata] --- [Timer] [+] [Send/Stop]
-        JPanel controlBar = new JPanel(new MigLayout("fillx, ins 0", "[pref][grow, center][pref][pref][pref]"));
-        controlBar.setOpaque(false);
+    // BARRA DE CONTROL (Abajo en la cápsula)
+    // [Herramientas] --- [Metadata] --- [Timer] [+] [Send/Stop]
+    JPanel controlBar = new JPanel(new MigLayout("fillx, ins 0", "[pref][grow, center][pref][pref][pref]"));
+    controlBar.setOpaque(false);
 
-        // 1. Botón Herramientas (Izq)
-        btnTools = createCapsuleButton("tools.svg", "Herramientas");
-        btnTools.addActionListener(e -> {
-            if (agent != null) {
-                Window parentWindow = SwingUtilities.getWindowAncestor(this);
-                JSelectToolsPanel toolsPanel = new JSelectToolsPanel(agent);
-                toolsPanel.showWindow(parentWindow);
-            }
-        });
-        controlBar.add(btnTools);
+    // 1. Botón Herramientas (Izq)
+    btnTools = createCapsuleButton("tools.svg", "Herramientas");
+    btnTools.addActionListener(e -> {
+      if (agent != null) {
+        Window parentWindow = SwingUtilities.getWindowAncestor(this);
+        JSelectToolsPanel toolsPanel = new JSelectToolsPanel(agent);
+        toolsPanel.showWindow(parentWindow);
+      }
+    });
+    controlBar.add(btnTools);
 
-        // 2. Metadata (Centro)
-        JPanel metaDataPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        metaDataPanel.setOpaque(false);
-        lblModelInfo = new JLabel("Cargando modelo...");
-        lblModelInfo.setForeground(Color.GRAY);
-        lblModelInfo.setFont(new Font(Font.SANS_SERIF, Font.ITALIC, 11));
-        lblTokens = new JLabel("0 + 0");
-        lblTokens.setForeground(Color.GRAY);
-        lblTokens.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
-        metaDataPanel.add(lblModelInfo);
-        metaDataPanel.add(new JLabel("|")).setForeground(Color.DARK_GRAY);
-        metaDataPanel.add(lblTokens);
-        controlBar.add(metaDataPanel, "growx");
+    // 2. Metadata (Centro)
+    JPanel metaDataPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+    metaDataPanel.setOpaque(false);
+    lblModelInfo = new JLabel("Cargando modelo...");
+    lblModelInfo.setForeground(Color.GRAY);
+    lblModelInfo.setFont(new Font(Font.SANS_SERIF, Font.ITALIC, 11));
+    lblTokens = new JLabel("0 + 0");
+    lblTokens.setForeground(Color.GRAY);
+    lblTokens.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
+    metaDataPanel.add(lblModelInfo);
+    metaDataPanel.add(new JLabel("|")).setForeground(Color.DARK_GRAY);
+    metaDataPanel.add(lblTokens);
+    controlBar.add(metaDataPanel, "growx");
 
-        // 3. Timer (Oculto por defecto)
-        lblTimer = new JLabel("0.0s");
-        lblTimer.setForeground(UIManager.getColor("ProgressBar.foreground"));
-        lblTimer.setFont(new Font(Font.MONOSPACED, Font.BOLD, 12));
-        lblTimer.setVisible(false);
-        controlBar.add(lblTimer, "gapright 10");
+    // 3. Timer (Oculto por defecto)
+    lblTimer = new JLabel("0.0s");
+    lblTimer.setForeground(UIManager.getColor("ProgressBar.foreground"));
+    lblTimer.setFont(new Font(Font.MONOSPACED, Font.BOLD, 12));
+    lblTimer.setVisible(false);
+    controlBar.add(lblTimer, "gapright 10");
 
-        // 4. Botón Insertar (+)
-        btnInsert = createCapsuleButton("insert.svg", "Insertar");
-        controlBar.add(btnInsert);
+    // 4. Botón Insertar (+)
+    btnInsert = createCapsuleButton("insert.svg", "Insertar");
+    controlBar.add(btnInsert);
 
-        // 5. Botón Enviar / Stop (Superpuestos)
-        btnSend = createCapsuleButton("send.svg", "Enviar (Ctrl+Enter)");
-        btnStop = createCapsuleButton("stop.svg", "Detener"); // Necesitarás stop.svg
-        btnStop.setVisible(false);
+    // 5. Botón Enviar / Stop (Superpuestos)
+    btnSend = createCapsuleButton("send.svg", "Enviar (Ctrl+Enter)");
+    btnStop = createCapsuleButton("stop.svg", "Detener"); // Necesitarás stop.svg
+    btnStop.setVisible(false);
 
-        // Usamos un panel pequeño para que ocupen el mismo sitio
-        JPanel actionStack = new JPanel(new BorderLayout());
-        actionStack.setOpaque(false);
-        actionStack.add(btnSend, BorderLayout.CENTER);
-        actionStack.add(btnStop, BorderLayout.NORTH); // El layout se encarga de visibilidad
-        controlBar.add(actionStack);
+    // Usamos un panel pequeño para que ocupen el mismo sitio
+    JPanel actionStack = new JPanel(new BorderLayout());
+    actionStack.setOpaque(false);
+    actionStack.add(btnSend, BorderLayout.CENTER);
+    actionStack.add(btnStop, BorderLayout.NORTH); // El layout se encarga de visibilidad
+    controlBar.add(actionStack);
 
-        inputCapsule.add(controlBar, "growx, gaptop 5");
-        bottomPanel.add(inputCapsule, "growx");
-        add(bottomPanel, BorderLayout.SOUTH);
+    inputCapsule.add(controlBar, "growx, gaptop 5");
+    bottomPanel.add(inputCapsule, "growx");
+    add(bottomPanel, BorderLayout.SOUTH);
 
-        // --- 4. LÓGICA Y EVENTOS ---
-        consoleController = new AgentSwingConsoleControllerUsingMultipleJTextPane(chatHistory);
-        initIcons();
-        setupActions();
-        setupThinkingTimer();
+    // --- 4. LÓGICA Y EVENTOS ---
+    consoleController = new AgentSwingConsoleControllerUsingMultipleJTextPane(chatHistory);
+    initIcons();
+    setupActions();
+    setupThinkingTimer();
 
-        this.setPreferredSize(new Dimension(1000, 700));
+    this.setPreferredSize(new Dimension(1000, 700));
 
+  }
+
+  private void initIcons() {
+    try {
+      String iconPath = "io/github/jjdelcerro/noema/ui/swing/";
+      settingsBtn.setIcon(new FlatSVGIcon(iconPath + "settings.svg", 16, 16));
+      btnSave.setIcon(new FlatSVGIcon(iconPath + "save.svg", 16, 16));
+      btnCopy.setIcon(new FlatSVGIcon(iconPath + "copy.svg", 16, 16));
+    } catch (Exception ignored) {
+    }
+  }
+
+  private JButton createCapsuleButton(String iconName, String tooltip) {
+    JButton btn = new JButton();
+    try {
+      btn.setIcon(new FlatSVGIcon("io/github/jjdelcerro/noema/ui/swing/" + iconName, 8, 8));
+    } catch (Exception e) {
+      btn.setText(iconName.replace(".svg", ""));
+    }
+    btn.setToolTipText(tooltip);
+    btn.putClientProperty("JButton.buttonType", "roundRect");
+    // Márgenes internos para hacerlo alargado (oblongo)
+    btn.setMargin(new Insets(2, 12, 2, 12));
+    return btn;
+  }
+
+  private void setupActions() {
+    // Ctrl+Enter para enviar
+    KeyStroke ctrlEnter = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, java.awt.event.InputEvent.CTRL_DOWN_MASK);
+    inputArea.getInputMap(JComponent.WHEN_FOCUSED).put(ctrlEnter, "send");
+    inputArea.getActionMap().put("send", new AbstractAction() {
+      @Override
+      public void actionPerformed(java.awt.event.ActionEvent e) {
+        handleSend();
+      }
+    });
+
+    btnSend.addActionListener(e -> handleSend());
+    btnCopy.addActionListener(e -> handleCopy());
+    settingsBtn.addActionListener(e -> {
+      handleShowSetting();
+    });
+  }
+
+  private void handleCopy() {
+    String text = this.consoleController.getMarkdown();
+    Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+    StringSelection selection = new StringSelection(text);
+    clipboard.setContents(selection, null);
+  }
+
+  private void handleShowSetting() {
+    if (agent != null) {
+      AgentUILocator.getAgentUIManager().createSettings(agent).showWindow();
+    }
+  }
+
+  private void setupThinkingTimer() {
+    thinkingTimer = new Timer(100, e -> {
+      double elapsed = (System.currentTimeMillis() - thinkingStartTime) / 1000.0;
+      lblTimer.setText(String.format("%.1fs", elapsed));
+    });
+  }
+
+  private void handleSend() {
+    if (!inputArea.isEnabled()) {
+      return;
     }
 
-    private void initIcons() {
-        try {
-            String iconPath = "io/github/jjdelcerro/noema/ui/swing/";
-            settingsBtn.setIcon(new FlatSVGIcon(iconPath + "settings.svg", 16, 16));
-            btnSave.setIcon(new FlatSVGIcon(iconPath + "save.svg", 16, 16));
-            btnCopy.setIcon(new FlatSVGIcon(iconPath + "copy.svg", 16, 16));
-        } catch (Exception ignored) {
-        }
+    String text = inputArea.getText().trim();
+    if (text.isEmpty() || agent == null) {
+      return;
     }
 
-    private JButton createCapsuleButton(String iconName, String tooltip) {
-        JButton btn = new JButton();
-        try {
-            btn.setIcon(new FlatSVGIcon("io/github/jjdelcerro/noema/ui/swing/" + iconName, 8, 8));
-        } catch (Exception e) {
-            btn.setText(iconName.replace(".svg", ""));
-        }
-        btn.setToolTipText(tooltip);
-        btn.putClientProperty("JButton.buttonType", "roundRect");
-        // Márgenes internos para hacerlo alargado (oblongo)
-        btn.setMargin(new Insets(2, 12, 2, 12));
-        return btn;
-    }
+    inputArea.setText("");
+    consoleController.printUserMessage(text);
 
-    private void setupActions() {
-        // Ctrl+Enter para enviar
-        KeyStroke ctrlEnter = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, java.awt.event.InputEvent.CTRL_DOWN_MASK);
-        inputArea.getInputMap(JComponent.WHEN_FOCUSED).put(ctrlEnter, "send");
-        inputArea.getActionMap().put("send", new AbstractAction() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
-                handleSend();
-            }
-        });
-
-        btnSend.addActionListener(e -> handleSend());
-        btnCopy.addActionListener(e -> handleCopy());
-        settingsBtn.addActionListener(e -> {
-            handleShowSetting();
-        });
-    }
-
-    private void handleCopy() {
-        String text = this.consoleController.getMarkdown();
-        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-        StringSelection selection = new StringSelection(text);
-        clipboard.setContents(selection, null);
-    }
-
-    private void handleShowSetting() {
-        if (agent != null) {
-            AgentUILocator.getAgentUIManager().createSettings(agent).showWindow();
-        }
-    }
-
-    private void setupThinkingTimer() {
-        thinkingTimer = new Timer(100, e -> {
-            double elapsed = (System.currentTimeMillis() - thinkingStartTime) / 1000.0;
-            lblTimer.setText(String.format("%.1fs", elapsed));
-        });
-    }
-
-    private void handleSend() {
-        if (!inputArea.isEnabled()) {
-            return;
-        }
-
-        String text = inputArea.getText().trim();
-        if (text.isEmpty() || agent == null) {
-            return;
-        }
-
-        inputArea.setText("");
-        consoleController.printUserMessage(text);
-
-        startThinking();
+    startThinking();
 
 //    Thread.ofVirtual().start(() -> {
-        Thread.ofPlatform().start(() -> {
-            // FIXME: deberia haber algo en el UI para que el user ponga el subchannel y tomarlo de ahi.
-            agent.putUsersMessage(DEFAULT_SUBCHANNEL, text, new SensorEventCallback() {
-                @Override
-                public void onComplete(String response) {
+    Thread.ofPlatform().start(() -> {
+      // FIXME: deberia haber algo en el UI para que el user ponga el subchannel y tomarlo de ahi.
+      agent.putUsersMessage(DEFAULT_SUBCHANNEL, text, new SensorEventCallback() {
+        @Override
+        public void onComplete(String response) {
 //          try {
 //            consoleController.printModelResponse(response);
 //          } catch (Exception e) {
 //            consoleController.printSystemError("Error: " + e.getMessage());
 //          } finally {
-                    stopThinking();
-                    updateMetadata();
+          stopThinking();
+          updateMetadata();
 //          }
-                }
-            });
-        });
-    }
-
-    private void startThinking() {
-        SwingUtilities.invokeLater(() -> {
-            inputArea.setEnabled(false);
-            btnSend.setVisible(false);
-            btnStop.setVisible(true);
-            lblTimer.setText("0.0s");
-            lblTimer.setVisible(true);
-            thinkingStartTime = System.currentTimeMillis();
-            thinkingTimer.start();
-        });
-    }
-
-    private void stopThinking() {
-        SwingUtilities.invokeLater(() -> {
-            thinkingTimer.stop();
-            btnStop.setVisible(false);
-            btnSend.setVisible(true);
-            lblTimer.setVisible(false);
-
-            inputArea.setEnabled(true);
-            inputArea.requestFocusInWindow();
-        });
-    }
-
-    public void updateMetadata() {
-        if (agent == null) {
-            return;
         }
-        ReasoningService reasoning = (ReasoningService) agent.getService(ReasoningService.NAME);
-        String subchannel = agent.getCurrentSubchannel();
-        SwingUtilities.invokeLater(() -> {
-            ChatModel model = reasoning.getModel();
-            if (model == null) {
-                lblModelInfo.setText("?");
-                lblTokens.setText("?/?");
-            } else {
-                lblModelInfo.setText(model.getParameters().modelId());
-                lblTokens.setText(
-                        String.format(
-                                Locale.ENGLISH,
-                                "%d - %.1f/%.1f",
-                                reasoning.getTurnsCount(subchannel),
-                                (reasoning.estimateToolsTokenCount(subchannel) + reasoning.estimateSystemPromptTokenCount(subchannel) + reasoning.estimateMessagesTokenCount(subchannel)) / 1024.0,
-                                agent.getConversationContextSize() / 1024.0
-                        )
-                );
-                lblTokens.setToolTipText(
-                        String.format(
-                                Locale.ENGLISH,
-                                "Turnos %d\nTokens en el prompt del sistema %.1fk, en herramientas %.1fk, en mensajes %.1fk\nTotal tokens consumido %.1fk de %.1fk disponible",
-                                reasoning.getTurnsCount(subchannel),
-                                reasoning.estimateToolsTokenCount(subchannel) / 1024.0,
-                                reasoning.estimateSystemPromptTokenCount(subchannel) / 1024.0,
-                                reasoning.estimateMessagesTokenCount(subchannel) / 1024.0,
-                                (reasoning.estimateToolsTokenCount(subchannel) + reasoning.estimateSystemPromptTokenCount(subchannel) + reasoning.estimateMessagesTokenCount(subchannel)) / 1024.0,
-                                agent.getConversationContextSize() / 1024.0
-                        )
-                );
-            }
-        });
+      });
+    });
+  }
+
+  private void startThinking() {
+    SwingUtilities.invokeLater(() -> {
+      inputArea.setEnabled(false);
+      btnSend.setVisible(false);
+      btnStop.setVisible(true);
+      lblTimer.setText("0.0s");
+      lblTimer.setVisible(true);
+      thinkingStartTime = System.currentTimeMillis();
+      thinkingTimer.start();
+    });
+  }
+
+  private void stopThinking() {
+    SwingUtilities.invokeLater(() -> {
+      thinkingTimer.stop();
+      btnStop.setVisible(false);
+      btnSend.setVisible(true);
+      lblTimer.setVisible(false);
+
+      inputArea.setEnabled(true);
+      inputArea.requestFocusInWindow();
+    });
+  }
+
+  public void updateMetadata() {
+    if (agent == null) {
+      return;
     }
+    ReasoningService reasoning = (ReasoningService) agent.getService(ReasoningService.NAME);
+    String subchannel = agent.getCurrentSubchannel();
+    SwingUtilities.invokeLater(() -> {
+      ChatModel model = reasoning.getModel();
+      if (model == null) {
+        lblModelInfo.setText("?");
+        lblTokens.setText("?/?");
+      } else {
+        lblModelInfo.setText(model.getParameters().modelId());
+        lblTokens.setText(
+                String.format(
+                        Locale.ENGLISH,
+                        "%d - %.1f/%.1f",
+                        reasoning.getTurnsCount(subchannel),
+                        (reasoning.estimateToolsTokenCount(subchannel) + reasoning.estimateSystemPromptTokenCount(subchannel) + reasoning.estimateMessagesTokenCount(subchannel)) / 1024.0,
+                        agent.getConversationContextSize() / 1024.0
+                )
+        );
+        lblTokens.setToolTipText(
+                String.format(
+                        Locale.ENGLISH,
+                        "Turnos %d\nTokens en el prompt del sistema %.1fk, en herramientas %.1fk, en mensajes %.1fk\nTotal tokens consumido %.1fk de %.1fk disponible",
+                        reasoning.getTurnsCount(subchannel),
+                        reasoning.estimateToolsTokenCount(subchannel) / 1024.0,
+                        reasoning.estimateSystemPromptTokenCount(subchannel) / 1024.0,
+                        reasoning.estimateMessagesTokenCount(subchannel) / 1024.0,
+                        (reasoning.estimateToolsTokenCount(subchannel) + reasoning.estimateSystemPromptTokenCount(subchannel) + reasoning.estimateMessagesTokenCount(subchannel)) / 1024.0,
+                        agent.getConversationContextSize() / 1024.0
+                )
+        );
+      }
+    });
+  }
 
-    public void setAgent(Agent agent) {
-        this.agent = agent;
-        SwingUtilities.invokeLater(() -> {
-            Thread.ofPlatform().start(() -> showHistory(agent));
-            inputArea.setEnabled(true);
-            updateMetadata();
-            inputArea.requestFocusInWindow();
-            this.agent.getActions().addAction(new AbstractAgentAction(this.agent, "DEBUG_DIALOG") {
-                @Override
-                public boolean perform(AgentSettings settings) {
-                    Map<String, Object> context = new HashMap<>();
-                    context.put("self", agent.getService(ReasoningService.NAME));
-                    context.put("agent", agent);
-                    context.put("agentManager", AgentLocator.getAgentManager());
-                    DebugPanel panel = new DebugPanel(context);
-                    panel.showWindow("Debug");
-                    return true;
-                }
-            });
-        });
-    }
-
-    private void showHistory(Agent agent) {
-        String subchannel = agent.getCurrentSubchannel();
-        try {
-            EpisodicMemory sot = agent.getEpisodicMemory();
-
-            // Cargar el punto de guardado (resumen/relato activo) si existe
-            ConsolidateMemory activeConsolidateMemory = sot.getLatestConsolidateMemory(subchannel);
-
-            // Cargar la lista de turnos sin consolidar
-            List<Turn> turns = sot.getUnconsolidatedTurns(subchannel);
-
-            // 2. Renderizar los elementos de forma secuencial en el hilo de Swing (EDT)
-
-            // a) Si hay un ConsolidateMemory anterior, mostramos el relato/resumen consolidado
-            if (activeConsolidateMemory != null && StringUtils.isNotBlank(activeConsolidateMemory.getText())) {
-                consoleController.printSystemLog(activeConsolidateMemory.getText(), AgentConsole.Format.Markdown);
-            }
-
-            // b) Recorremos los turnos no consolidados y dibujamos sus componentes
-            for (Turn turn : turns) {
-                // Mensaje original del usuario
-                if (StringUtils.isNotBlank(turn.getTextUser())) {
-                    consoleController.printUserMessage(turn.getTextUser());
-                }
-
-                if (StringUtils.isNotBlank(turn.getTextModelThinking())) {
-                    consoleController.printModelReasoning(turn.getTextModelThinking());
-                }
-
-                // Logs de llamadas a herramientas (si las hubo)
-                if (StringUtils.isNotBlank(turn.getToolCall())) {
-                    consoleController.printSystemLog(turn.getToolCall());
-                }
-
-                // Mensajes de error en herramientas (si aplica)
-                if ("error".equals(turn.getContenttype()) && StringUtils.isNotBlank(turn.getToolResult())) {
-                    consoleController.printSystemError(turn.getToolResult());
-                }
-
-                // Respuesta final del modelo
-                if (StringUtils.isNotBlank(turn.getTextModel())) {
-                    consoleController.printModelResponse(turn.getTextModel());
-                }
-            }
-        } catch (Exception e) {
-            consoleController.printSystemError("Error al cargar el historial del terminal: " + e.getMessage());
+  public void setAgent(Agent agent) {
+    this.agent = agent;
+    SwingUtilities.invokeLater(() -> {
+      Thread.ofPlatform().start(() -> showHistory(agent));
+      inputArea.setEnabled(true);
+      updateMetadata();
+      inputArea.requestFocusInWindow();
+      this.agent.getActions().addAction(new AbstractAgentAction(this.agent, "DEBUG_DIALOG") {
+        @Override
+        public boolean perform(AgentSettings settings) {
+          Map<String, Object> context = new HashMap<>();
+          context.put("self", agent.getService(ReasoningService.NAME));
+          context.put("agent", agent);
+          context.put("agentManager", AgentLocator.getAgentManager());
+          DebugPanel panel = new DebugPanel(context);
+          panel.showWindow("Debug");
+          return true;
         }
-    }
+      });
+    });
+  }
 
-    public AgentConsole getConsole() {
-        return consoleController;
-    }
+  private void showHistory(Agent agent) {
+    String subchannel = agent.getCurrentSubchannel();
+    try {
+      EpisodicMemory sot = agent.getEpisodicMemory();
 
-    private JButton createSidebarButton() {
-        JButton btn = new JButton();
+      // Cargar el punto de guardado (resumen/relato activo) si existe
+      ConsolidateMemory activeConsolidateMemory = sot.getLatestConsolidateMemory(subchannel);
 
-        btn.setContentAreaFilled(true);
-        btn.setBorderPainted(true);
+      // Cargar la lista de turnos sin consolidar
+      List<Turn> turns = sot.getUnconsolidatedTurns(subchannel);
 
-        btn.putClientProperty("Component.arc", 10);
+      // 2. Renderizar los elementos de forma secuencial en el hilo de Swing (EDT)
+      // a) Si hay un ConsolidateMemory anterior, mostramos el relato/resumen consolidado
+      if (activeConsolidateMemory != null && StringUtils.isNotBlank(activeConsolidateMemory.getText())) {
+        consoleController.printSystemLog(activeConsolidateMemory.getText(), AgentConsole.Format.Markdown);
+      }
 
-        btn.setFocusable(false);
-        btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-
-        btn.setMargin(new Insets(4, 4, 4, 4));
-
-        return btn;
-    }
-
-    public void showWindow() {
-        AgentManager manager = AgentLocator.getAgentManager();
-
-        GraphicsConfiguration config = MouseInfo.getPointerInfo().getDevice().getDefaultConfiguration();
-        Rectangle bounds = config.getBounds();
-
-        JFrame frame = new JFrame(manager.getName() + " v" + manager.getVersion());
-        frame.getContentPane().add(this);
-        frame.pack(); // Importante para que el frame tenga tamaño antes de calcular la posición
-        int x = bounds.x + (bounds.width - frame.getWidth()) / 2;
-        int y = bounds.y + (bounds.height - frame.getHeight()) / 2;
-        frame.setLocation(x, y);
-        try {
-            List<Image> icons = FlatSVGUtils.createWindowIconImages(
-                    MainGUI.class.getResource("/io/github/jjdelcerro/noema/ui/swing/app_icon.svg")
-            );
-            frame.setIconImages(icons);
-        } catch (Exception e) {
-            System.err.println("No se pudo cargar el icono de la aplicación: " + e.getMessage());
+      // b) Recorremos los turnos no consolidados y dibujamos sus componentes
+      for (Turn turn : turns) {
+        // Mensaje original del usuario
+        if (StringUtils.isNotBlank(turn.getTextUser())) {
+          consoleController.printUserMessage(turn.getTextUser());
         }
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        frame.add(this);
-        frame.setVisible(true);
+        if (StringUtils.isNotBlank(turn.getTextModelThinking())) {
+          consoleController.printModelReasoning(turn.getTextModelThinking());
+        }
+
+        // Logs de llamadas a herramientas (si las hubo)
+        if (StringUtils.isNotBlank(turn.getToolCall())) {
+          consoleController.printSystemLog(turn.getToolCall());
+        }
+
+        // Mensajes de error en herramientas (si aplica)
+        if ("error".equals(turn.getContenttype()) && StringUtils.isNotBlank(turn.getToolResult())) {
+          consoleController.printSystemError(turn.getToolResult());
+        }
+
+        // Respuesta final del modelo
+        if (StringUtils.isNotBlank(turn.getTextModel())) {
+          consoleController.printModelResponse(turn.getTextModel());
+        }
+      }
+    } catch (Exception e) {
+      consoleController.printSystemError("Error al cargar el historial del terminal: " + e.getMessage());
     }
+  }
+
+  public AgentConsole getConsole() {
+    return consoleController;
+  }
+
+  private JButton createSidebarButton() {
+    JButton btn = new JButton();
+
+    btn.setContentAreaFilled(true);
+    btn.setBorderPainted(true);
+
+    btn.putClientProperty("Component.arc", 10);
+
+    btn.setFocusable(false);
+    btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+
+    btn.setMargin(new Insets(4, 4, 4, 4));
+
+    return btn;
+  }
+
+  public void showWindow() {
+    AgentManager manager = AgentLocator.getAgentManager();
+
+    GraphicsConfiguration config = MouseInfo.getPointerInfo().getDevice().getDefaultConfiguration();
+    Rectangle bounds = config.getBounds();
+
+    JFrame frame = new JFrame(manager.getName() + " v" + manager.getVersion());
+    frame.getContentPane().add(this);
+    frame.pack(); // Importante para que el frame tenga tamaño antes de calcular la posición
+    int x = bounds.x + (bounds.width - frame.getWidth()) / 2;
+    int y = bounds.y + (bounds.height - frame.getHeight()) / 2;
+    frame.setLocation(x, y);
+    try {
+      List<Image> icons = FlatSVGUtils.createWindowIconImages(MainSwing.class.getResource("/io/github/jjdelcerro/noema/ui/swing/app_icon.svg")
+      );
+      frame.setIconImages(icons);
+    } catch (Exception e) {
+      System.err.println("No se pudo cargar el icono de la aplicación: " + e.getMessage());
+    }
+    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+    frame.add(this);
+    frame.setVisible(true);
+  }
 
 }

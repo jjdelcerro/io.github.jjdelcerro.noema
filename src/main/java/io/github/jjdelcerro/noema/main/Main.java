@@ -43,7 +43,7 @@ public class Main {
             MainConsole.main(args);
             break;
           case MODE_SWING:
-            MainGUI.main(args);
+            MainSwing.main(args);
             break;
           case MODE_WEB:
             MainWeb.main(args);
