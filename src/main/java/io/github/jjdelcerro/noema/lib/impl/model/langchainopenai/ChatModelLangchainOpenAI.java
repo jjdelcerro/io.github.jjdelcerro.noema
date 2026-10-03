@@ -9,7 +9,7 @@ import dev.langchain4j.model.chat.request.ChatRequestParameters;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiChatRequestParameters;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
-import io.github.jjdelcerro.noema.lib.impl.model.langchain.AbstractLangchainChatModel;
+import io.github.jjdelcerro.noema.lib.impl.model.AbstractChatModelLangchain;
 import io.github.jjdelcerro.noema.lib.model.ModelParameters;
 import java.time.Duration;
 import java.util.HashMap;
@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author jjdelcerro
  */
-public class ChatModelLangchainOpenAI extends AbstractLangchainChatModel {
+public class ChatModelLangchainOpenAI extends AbstractChatModelLangchain {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ChatModelLangchainOpenAI.class);
   private static final String[] EXTRA_PARAM_NAMES = {"thinking", "reasoning_effort", "enable_thinking"};

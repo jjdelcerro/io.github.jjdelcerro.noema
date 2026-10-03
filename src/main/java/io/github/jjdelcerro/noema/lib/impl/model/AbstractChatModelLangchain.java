@@ -7,14 +7,13 @@ import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.request.ChatRequestParameters;
+import dev.langchain4j.model.chat.request.DefaultChatRequestParameters;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.CompleteToolCall;
 import dev.langchain4j.model.chat.response.PartialThinking;
 import dev.langchain4j.model.chat.response.PartialToolCall;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.model.output.Response;
-import io.github.jjdelcerro.noema.lib.impl.model.AbstractChatModel;
-import io.github.jjdelcerro.noema.lib.impl.model.InterruptedModelGenerateException;
 import io.github.jjdelcerro.noema.lib.model.ModelParameters;
 import io.github.jjdelcerro.noema.lib.model.ModelStreamCallback;
 import java.util.List;
@@ -29,19 +28,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Clase base para cualquier proveedor que se apoye en la API unificada de LangChain4j.
- * Centraliza las llamadas síncronas, el bucle reactivo de streaming, la detección
- * de bloqueos (stalls) y la cancelación colaborativa.
+ * Clase base para cualquier proveedor que se apoye en la API unificada de
+ * LangChain4j. Centraliza las llamadas síncronas, el bucle reactivo de
+ * streaming, la detección de bloqueos (stalls) y la cancelación colaborativa.
  */
 public abstract class AbstractChatModelLangchain extends AbstractChatModel {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(AbstractLangchainChatModel.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(AbstractChatModelLangchain.class);
 
   protected static final long STALL_CHECK_INTERVAL_MILLIS = 20_000L;
   protected static final long STALL_REPORT_MILLIS = 90_000L;
   protected static final long MAX_STALL_TIMEOUT_MILLIS = 180_000L;
 
-  public AbstractLangchainChatModel(ModelParameters parameters) {
+  public AbstractChatModelLangchain(ModelParameters parameters) {
     super(parameters);
   }
 
@@ -56,11 +55,12 @@ public abstract class AbstractChatModelLangchain extends AbstractChatModel {
   protected abstract StreamingChatModel getStreamingModel();
 
   /**
-   * Construcción por defecto del ChatRequest estándar de LangChain4j.
-   * Las subclases (como OpenAI) pueden sobreescribirlo si requieren parámetros específicos del vendor.
+   * Construcción por defecto del ChatRequest estándar de LangChain4j. Las
+   * subclases (como OpenAI) pueden sobreescribirlo si requieren parámetros
+   * específicos del vendor.
    */
   protected ChatRequest createChatRequest(List<ChatMessage> messages, List<ToolSpecification> toolSpecifications) {
-    ChatRequestParameters.Builder paramsBuilder = ChatRequestParameters.builder()
+    DefaultChatRequestParameters.Builder paramsBuilder = ChatRequestParameters.builder()
             .modelName(this.parameters.modelId())
             .temperature(this.parameters.temperature());
 

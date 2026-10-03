@@ -1,23 +1,12 @@
-package io.github.jjdelcerro.noema.lib.impl.model.llamacpp;
+package io.github.jjdelcerro.noema.lib.impl.model.langchainllamacpp_embedded;
 
-import dev.langchain4j.community.model.llama.LlamaChatModel;
-import dev.langchain4j.community.model.llama.LlamaStreamingChatModel;
-import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.chat.StreamingChatModel;
-import io.github.jjdelcerro.noema.lib.impl.model.langchain.AbstractLangchainChatModel;
-import io.github.jjdelcerro.noema.lib.model.ModelParameters;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Proveedor embebido local basado en llama.cpp (vía java-llama.cpp) para modelos .gguf.
  *
  * @author jjdelcerro
  */
-public class ChatModelLlamacppEmbedded extends AbstractLangchainChatModel {
+public class ChatModelLlamacppEmbedded { /* extends AbstractChatModelLangchain {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ChatModelLlamacppEmbedded.class);
 
@@ -98,4 +87,5 @@ public class ChatModelLlamacppEmbedded extends AbstractLangchainChatModel {
     }
     return this.streamingModel;
   }
+*/
 }

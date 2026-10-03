@@ -1,10 +1,10 @@
-package io.github.jjdelcerro.noema.lib.impl.model.jlama;
+package io.github.jjdelcerro.noema.lib.impl.model.langchainjlama_embedded;
 
-import dev.langchain4j.community.model.jlama.JlamaChatModel;
-import dev.langchain4j.community.model.jlama.JlamaStreamingChatModel;
+import dev.langchain4j.model.jlama.JlamaChatModel;
+import dev.langchain4j.model.jlama.JlamaStreamingChatModel;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
-import io.github.jjdelcerro.noema.lib.impl.model.AbstractLangchainChatModel;
+import io.github.jjdelcerro.noema.lib.impl.model.AbstractChatModelLangchain;
 import io.github.jjdelcerro.noema.lib.model.ModelParameters;
 import java.nio.file.Path;
 import org.apache.commons.lang3.StringUtils;
@@ -15,15 +15,15 @@ import org.slf4j.LoggerFactory;
  *
  * @author jjdelcerro
  */
-public class ChatModelJlamaEmbedded extends AbstractLangchainChatModel {
+public class ChatModelJlamaEmbedded extends AbstractChatModelLangchain {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ChatModelJlamacppEmbedded.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ChatModelJlamaEmbedded.class);
 
   private final Path modelPath;
   private ChatModel model;
   private StreamingChatModel streamingModel;
 
-  public ChatModelJlamacppEmbedded(ModelParameters parameters) {
+  public ChatModelJlamaEmbedded(ModelParameters parameters) {
     super(parameters);
     this.model = null;
     this.streamingModel = null;
