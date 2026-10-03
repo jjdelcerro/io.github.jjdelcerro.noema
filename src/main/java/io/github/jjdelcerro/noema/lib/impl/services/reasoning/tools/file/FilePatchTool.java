@@ -44,7 +44,7 @@ Pero por ahora, prueba así; los modelos de 2025 suelen ser bastante buenos sigu
   
   @Override
   public boolean isAvailableByDefault() {
-    return false;
+    return false; // Por defecto esta herramienta la dejaremos deshabilitada en favor de search_and_replace
   }
 
   @Override
