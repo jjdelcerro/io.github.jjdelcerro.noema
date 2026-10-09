@@ -70,6 +70,7 @@ MUESTRA DE MÉTODOS PRINCIPALES (Catálogo parcial; consulta help() para funcion
 - ${CONTEXT_NAME}.fs.fuzzygrep(query, "ruta", [glob]) : Búsqueda semántica Top-K con [.file, .startLine, .endLine, .similarity, .content]
 - ${CONTEXT_NAME}.fs.write("ruta", content) : Escribe texto o líneas con auto-mkdir y copia de seguridad en JavaRCS
 - ${CONTEXT_NAME}.fs.searchAndReplace(path, oldText, newText): SearchAndReplaceResult(status, path, strategy, message, preview, startLine, replacedLineCount)
+- ${CONTEXT_NAME}.llm.query(prompt) : Consulta usando un LLM (el mismo que el razonador).
 - ${CONTEXT_NAME}.llm.sml_query(prompt) : Consulta al modelo local ONNX Qwen3.5 en memoria (rápido, sin coste API ni red)
 - ${CONTEXT_NAME}.llm.extractJson(prompt, texto) : Extrae datos estructurados como Map o List de Groovy
 - ${CONTEXT_NAME}.web.lines("url") : Streaming de líneas de texto limpio extraído de URLs o PDFs web
