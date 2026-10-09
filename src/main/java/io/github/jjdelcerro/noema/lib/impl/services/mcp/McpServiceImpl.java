@@ -22,6 +22,9 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.*;
+import org.apache.commons.compress.compressors.FileNameUtil;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOCase;
 
 public class McpServiceImpl extends AbstractAgentService {
 
@@ -81,9 +84,11 @@ public class McpServiceImpl extends AbstractAgentService {
       return;
     }
     String name = serverGroup.getPropertyAsString("name", "unnamed");
+    String prefix = serverGroup.getPropertyAsString("prefix", "");
     String type = serverGroup.getPropertyAsString("type", "stdio").toLowerCase();
     int mode = parseToolMode(serverGroup.getPropertyAsString("mode", "READ"));
-
+    AgentSettingsList include_tools = serverGroup.getPropertyAsList("include_tools");
+    
     try {
       McpTransport transport = null;
 
@@ -137,7 +142,16 @@ public class McpServiceImpl extends AbstractAgentService {
 
       // Envolver las herramientas en McpToolWrapper de Noema
       for (ToolSpecification spec : mcpTools) {
-        this.tools.add(new McpToolWrapper(agent, client, spec, mode));
+        for (AgentSettingsItem tool : include_tools) {
+          if( FilenameUtils.wildcardMatch(spec.name(), ((AgentSettingsString)tool).getValue(), IOCase.SENSITIVE)) {
+            if( StringUtils.isNotBlank(prefix)) {
+              spec = spec.toBuilder()
+                      .name(prefix+spec.name())
+                      .build();
+            }
+            this.tools.add(new McpToolWrapper(agent, client, spec, mode, prefix));
+          }
+        }
       }
 
       this.activeClients.add(client);

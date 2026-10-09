@@ -7,18 +7,22 @@ import dev.langchain4j.service.tool.ToolExecutionResult;
 import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.impl.tools.AbstractAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 
 public class McpToolWrapper extends AbstractAgentTool {
 
   private final McpClient mcpClient;
   private final ToolSpecification toolSpecification;
   private final int mode;
+  private final String prefix;
 
-  public McpToolWrapper(Agent agent, McpClient mcpClient, ToolSpecification toolSpecification, int mode) {
+  public McpToolWrapper(Agent agent, McpClient mcpClient, ToolSpecification toolSpecification, int mode, String prefix) {
     super(agent);
     this.mcpClient = mcpClient;
     this.toolSpecification = toolSpecification;
     this.mode = mode; // MODE_READ, MODE_WRITE, etc.
+    this.prefix = prefix;
   }
 
   @Override
@@ -47,8 +51,12 @@ public class McpToolWrapper extends AbstractAgentTool {
   @Override
   public String execute(String jsonArguments) {
     try {
+      String name = this.toolSpecification.name();
+      if( StringUtils.isNotBlank(this.prefix) ) {
+        name = Strings.CS.removeStart(name, this.prefix);
+      }
       ToolExecutionRequest request = ToolExecutionRequest.builder()
-              .name(toolSpecification.name())
+              .name(name)
               .arguments(jsonArguments)
               .build();
 

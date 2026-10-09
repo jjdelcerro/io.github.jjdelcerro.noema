@@ -105,13 +105,49 @@
     "servers": [
       {
         "name": "codebase-memory",
+        "prefix": "codebasememory.",
         "type": "stdio",
         "mode": "READ",
-        "enabled": true,
+        "enabled": false,
         "command": [
           "codebase-memory-mcp"
-        ]
-      }
+        ],
+        "include_tools": [
+          "*"
+        ],
+        "env": {  
+        }
+      },
+      {
+        "name": "java-lsp",
+        "prefix": "javalsp.",
+        "type": "stdio",
+        "mode": "READ",
+        "enabled": false,
+        "command": [
+          "mcp-language-server",
+          "--workspace", ".",
+          "--lsp", "jdtls"
+        ],
+        "include_tools": [
+          "diagnostics"
+        ],
+        "env": {  
+        }
+      },      
+      {
+        "name": "aide",
+        "type": "http",
+        "url": "http://127.0.0.1:8000/mcp",
+        "prefix": "aide.",
+        "mode": "READ",
+        "enabled": true,
+        "include_tools": [
+          "*"
+        ],
+        "env": {  
+        }
+      }      
     ]
   }  
 }
