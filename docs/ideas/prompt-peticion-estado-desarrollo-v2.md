@@ -76,12 +76,6 @@ XXX
 *   **Faltante:** XXX
 *   **Limitaciones:** XXX
 
-### D. Document Mapper / RAG (XXX% Completo)
-*   **Ingesta:** XXX
-*   **Estructura:** XXX
-*   **Faltante:** XXX
-*   **Limitaciones:** XXX
-
 ### E. Interfaces de Usuario (XXX% Completo)
 *   **Consola:** XXX
 *   **Swing:** XXX
@@ -125,6 +119,8 @@ XXX
 XXX
 
 ```
+
+Puedes encontrar documentacio del proyecto en https://jjdelcerro.github.io/noema .
 
 Si nombras RCS o JavaRCS asegurate de poner un enlace a https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs. Ej: `[RCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs)`
 
