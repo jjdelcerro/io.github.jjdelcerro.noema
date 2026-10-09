@@ -143,13 +143,31 @@ public class McpServiceImpl extends AbstractAgentService {
       // Envolver las herramientas en McpToolWrapper de Noema
       for (ToolSpecification spec : mcpTools) {
         for (AgentSettingsItem tool : include_tools) {
-          if( FilenameUtils.wildcardMatch(spec.name(), ((AgentSettingsString)tool).getValue(), IOCase.SENSITIVE)) {
+          String toolName = StringUtils.strip(((AgentSettingsString)tool).getValue());
+          if( StringUtils.isBlank(toolName)) {
+            continue;
+          }
+          boolean allow = true;
+          if( toolName.charAt(0)=='!') {
+            allow = false;
+            toolName = toolName.substring(1);
+          }
+          if( StringUtils.isBlank(toolName)) {
+            continue;
+          }
+          boolean match = FilenameUtils.wildcardMatch(spec.name(), toolName, IOCase.SENSITIVE);
+          if( !allow && match ) {
+            break;
+          }
+          if( match ) {
+            ToolSpecification spec2 = spec;
             if( StringUtils.isNotBlank(prefix)) {
-              spec = spec.toBuilder()
-                      .name(prefix+spec.name())
+              spec2 = spec2.toBuilder()
+                      .name(prefix+spec2.name())
                       .build();
             }
-            this.tools.add(new McpToolWrapper(agent, client, spec, mode, prefix));
+            this.tools.add(new McpToolWrapper(agent, client, spec2, mode, prefix));
+            break;
           }
         }
       }
