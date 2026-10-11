@@ -76,7 +76,7 @@ XXX
 *   **Faltante:** XXX
 *   **Limitaciones:** XXX
 
-### E. Interfaces de Usuario (XXX% Completo)
+### D. Interfaces de Usuario (XXX% Completo)
 *   **Consola:** XXX
 *   **Swing:** XXX
 *   **Web:** XXX
