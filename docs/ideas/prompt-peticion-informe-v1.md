@@ -84,13 +84,19 @@ Incluye una descripcion detallada de los principales mecanismos:
 * Subagentes
 * Skills
 
-Incluye previo a la seccion de vision general informacion sobre:
-* Versión Analizada
-* Fecha de Análisis
-* Autor del Informe: Gemini (IA), basado en la inspección estática del código fuente.
+Incluye al final del informa un parrafo con la atribucion de autoria del informe con el formato:
+```
+---
+
+*Documento generado por Gemini (IA) a partir del análisis estático del código fuente, versión ${version}, ${fecha_actual}.*
+```
+
+En el que reemplaces los valores:
+* `${version}` por la version del proyecto indicada en el prompt
+* `${fecha_actual}` por la fecha en la que se realiza el informe.
 
 
-Los siguientes documentos y proyectos están disponibles y deben enlazarse en markdown **cuando el informe aborde el tema correspondiente**. No es obligatorio citar todos los documentos; solo debes enlazar la primera mención relevante de cada concepto o servicio en el cuerpo del informe. No introduzcas enlaces forzados si el tema no aparece de forma natural.
+Los siguientes documentos y proyectos están disponibles y deben enlazarse en markdown **cuando el informe aborde el tema correspondiente**. No debes citar todos los documentos; solo debes enlazar la primera mención relevante de cada concepto o servicio en el cuerpo del informe. No introduzcas enlaces forzados si el tema no aparece de forma natural.
 
 Lista de referencias:
 

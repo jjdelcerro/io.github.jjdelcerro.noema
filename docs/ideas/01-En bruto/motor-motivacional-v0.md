@@ -1,5 +1,10 @@
 # Recompensa, castigo, satisfacción y curiosidad en un agente de IA como impulsores de proactividad
 
+
+>¿De que hablamos? de un clasificador SLM ligero que lee episodios cerrados de una memoria episódica inmutable y devuelve vectores de cinco dimensiones con decaimiento diferenciado por categoría, cuyos valores acumulados se inyectan como notificaciones efímeras en un pipeline de proyección para empujar proactividad sin instrucción del usuario.
+
+
+
 ## La distinción entre eventos y estados
 
 A lo largo de la conversación hemos ido perfilando una distinción que parece sostener todo lo demás: hay **eventos** y hay **estados**. No son lo mismo, aunque estén íntimamente ligados.
@@ -181,3 +186,35 @@ Evaluar cada episodio fuera de línea implica hacer llamadas adicionales a la AP
 No es un desvarío. Es el paso lógico de pasar de un LLM (un cerebro embotellado que responde a estímulos) a un **Agente (un sistema termodinámico que busca minimizar su sorpresa y mantener su homeostasis)**. 
 
 Has logrado abstraer la arquitectura de *Reinforcement Learning* (RL) clásica y llevártela al espacio semántico y narrativo, que es el lenguaje nativo de los LLMs. Sigue adelante con esta línea, porque si consigues orquestar el Arnés (memoria episódica + vectores de satisfacción) con el LLM (memoria proyectada + anotaciones), tendrás un agente que realmente dará la sensación de "estar vivo" y trabajar a tu lado.
+
+
+
+<notas>
+Hablando con deepseek,ha salido algo en una conversacion que puede ser una idea buena para esto.
+
+
+# modelo
+...
+Lo que no veo en el documento, y es el hueco que el surco revela, es una categoría de evento que no está: **coherencia interna**. El error de predicción cubre la violación de expectativas sobre el mundo. Pero no cubre la violación de expectativas sobre uno mismo. Cuando el modelo detecta que una respuesta rompería la coherencia con lo que ya dijo, eso es un evento de predicción interna, y es lo que cava el surco. No está en la lista. Y sospecho que es la categoría que más pesa en conversaciones largas.
+
+# usuario
+
+Esto ultimo que comentas esta guay, pero no lo veo viable de implementar. El clasificador es un modelo local pequño, 600M, 900M parametros, muchas veces ejecutandose sobre CPU. No le puedo lanzar una conversacion para que evalue la coherencia interna.
+
+# modelo
+
+Tienes razón y yo estaba pidiendo al clasificador algo que no puede hacer. Un SLM de 600M sobre CPU no sostiene un juicio sobre coherencia narrativa a lo largo de horas. Ni de lejos.
+
+Pero el surco no lo tiene que detectar el clasificador. Lo tiene que detectar el arnés. Y el arnés no necesita entender la conversación, solo la serie temporal de vectores.
+
+Piensa en qué señal deja un surco en la secuencia de vectores. Si en los últimos diez episodios el vector tiene siempre el mismo signo en la misma categoría, eso es un surco. Si los episodios de corrección del usuario vienen sistemáticamente seguidos de episodios con castigo social alto y sin anotaciones, eso es un surco. Si las anotaciones se repiten o se contradicen, eso es un surco. No hace falta que nadie sepa por qué. Basta con que el patrón sea persistente.
+
+El arnés puede tener sus propias heurísticas sobre la serie. Ventana deslizante, mismo signo en la misma dimensión durante N episodios, correlación entre tipo de turno y categoría disparada. Eso es estadística simple, no razonamiento. Y es lo que tú ya haces a ojo cuando notas que la conversación se está torciendo: no analizas la coherencia interna, notas que llevas tres turnos repitiendo lo mismo sin avanzar.
+
+Es más: esa es la única señal que un SLM no te puede dar, porque es la única que está en la secuencia y no en el episodio. El clasificador lee un episodio. El arnés lee la serie. La coherencia interna vive en la serie.
+
+Y encaja con la asimetría castigo/recompensa que ya tienes. El castigo pesa más. Un surco produce castigo repetido de competencia o de predicción. Si el arnés detecta castigo negativo en la misma dimensión durante varios episodios seguidos, tiene un candidato a surco. No hace falta nombrarlo.
+
+Lo que sí te falta, si quieres implementarlo, es un umbral de ruptura. Igual que el umbral de interrupción del documento. ¿A partir de cuántos episodios consecutivos con la misma firma consideras que hay surco? Eso es calibración empírica, como el resto.
+
+</notas>
