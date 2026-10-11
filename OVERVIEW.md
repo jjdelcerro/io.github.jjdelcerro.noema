@@ -1,6 +1,3 @@
-* Versión Analizada: 0.1.0
-* Fecha de Análisis: 30 de Agosto de 2026
-* Autor del Informe: Gemini (IA), basado en la inspección estática del código fuente.
 
 ## Visión General
 
@@ -175,3 +172,7 @@ La comunicación entre el núcleo del agente y estas interfaces se abstrae a tra
 Noema presenta una arquitectura pragmática y altamente cohesionada para la experimentación con agentes autónomos persistentes. Su mayor innovación reside en el rechazo a la dependencia de infraestructuras externas complejas y en su enfoque para la gestión del estado cognitivo. 
 
 En lugar de delegar la memoria a la fuerza bruta de ventanas de tokens masivas, Noema implementa una "espiral de contexto" donde la información se destila, se ancla semánticamente en una base de datos local y se proyecta dinámicamente. La combinación de este modelo de memoria con capacidades de *scripting* seguro (RLM) y delegación asíncrona (Subagentes) da como resultado un sistema capaz de mantener coherencia a largo plazo, operar sobre sistemas de archivos reales de forma segura y reaccionar a estímulos externos, todo ello encapsulado en un único proceso de la JVM.
+
+---
+
+*Documento generado por Gemini (IA) a partir del análisis estático del código fuente, versión 0.1.0, 30 de agosto de 2026.*

@@ -1,6 +1,7 @@
+
 # Noema: laboratorio de arquitectura para agentes de IA
 
-> ⚠️ **Estado del Proyecto: Prototipo de Investigación (Alpha)**
+> ⚠️ **Estado del Proyecto: Prototipo de Investigación**
 >
 > Este repositorio contiene el código fuente que acompaña a mi serie de artículos sobre *Arquitectura de Agentes y Memoria Híbrida*.
 >
@@ -8,73 +9,52 @@
 > **¿Problemas al compilar o ejecutar?** Dame un toque y lo vemos. El estado del código cambia rápido y puede que haya algo roto que no haya detectado o haya dejado aparcado. Puedo tener cosas sin commitar o sin subir. Si te interesa el proyecto, me alegrará ayudarte a que funcione.
 
 
-## Propósito del Proyecto
+## Propósito del proyecto
 
 El objetivo de este software es demostrar que es posible construir un Agente Autónomo con persistencia real y capacidad de agencia sin depender de infraestructuras complejas en la nube o frameworks pesados.
 
 Implementa los conceptos teóricos de:
 
-*   **Memoria híbrida determinista:** Separación de roles entre un servicio de conversación
-    (ReasoningService) y otro para la consolidación narrativa (MemoryService).
-*   **Proactividad simulada:** Implementación del patrón `pool_event` y gestión de
-    eventos a través del SensorsService para permitir al agente reaccionar a estímulos 
-    externos dentro del ciclo síncrono del LLM.
-*   **Independencia:** Ejecución local (On-Premise) con soporte para LLMs remotos o locales.
+*   **Memoria híbrida determinista:** Separación de roles entre un servicio de razonamiento
+    y otro para la consolidación narrativa.
+*   **Proactividad simulada:** Implementación del patrón de inyección de eventos simulada 
+    y gestión de eventos a través del servicio de sensores para permitir al agente reaccionar a
+    estímulos externos dentro del ciclo síncrono del LLM.
+*   **Independencia:** Ejecución local con soporte para LLMs remotos o locales.
 
-## Interfaz de Usuario
+## Interfaz de usuario
 
 Noema no solo procesa texto; interactúa con su entorno. 
 
 ![Noema en acción](./screenshot.png)
 
-En captura se puede ver cómo el agente, ante una consulta meteorológica, 
+En la captura se puede ver cómo el agente, ante una consulta meteorológica, 
 decide de forma autónoma localizar al usuario y consultar una API de clima externa antes de responder.
 
-*   **Razonamiento y Herramientas:** Visualización clara de la ejecución de `AgentTools`.
+*   **Razonamiento y Herramientas:** Visualización clara de la ejecución de las herramientas.
 *   **Diseño Moderno:** Interfaz con la estética de los asistentes de IA actuales con soporte para Markdown.
 *   **Control de Contexto:** Monitorización en tiempo real de los tokens utilizados (Herramientas + Conversación).
 
-## Stack Tecnológico
+## Stack tecnológico
 
 La implementación prioriza la ligereza y el control explícito de recursos:
 
-*   **Core:** Java 21.
-*   **Orquestación:** LangChain4j (sin integraciones de alto nivel, uso "bare-metal").
+*   **Core:** Java
+*   **Orquestación:** LangChain4j (sin integraciones de alto nivel, solo la interacción con los modelos).
 *   **Persistencia:** H2 Database embebida (Modo mixto: Relacional + BLOBs para vectores).
 *   **Arquitectura:** Diseño modular basado en *Service Locator* e inyección manual. Sin Spring Boot ni frameworks de DI.
-*   **UI:** Escritorio (Swing) y Consola (JLine 3, aunque este lo he tenido abandonada últimamente).
+*   **UI:** Escritorio (Swing), Web, TUI y Consola (JLine 3, aunque este lo he tenido abandonado últimamente).
 
-## Documentación y Arquitectura
+## Documentación y arquitectura
 
-La documentación técnica detallada de este proyecto reside en un archivo especial 
-dentro de este mismo repositorio, aunque para variar esta incompleta:
+Para una descripción técnica del proyecto, qué es, cómo está construido o qué mecanismos implementa, puedes consultar **[OVERVIEW](./OVERVIEW.md)**.
 
-📄 **[AGENT_CONTEXT.md](./AGENT_CONTEXT.md)**
-
-> **Nota sobre este archivo:**
->
-> Este proyecto se desarrolla utilizando una metodología de colaboración con IA. 
-> El archivo `AGENT_CONTEXT.md` actúa como el **Contexto Vivo** que utiliza mi 
-> asistente para entender el proyecto. Contiene el análisis de la arquitectura, 
-> los patrones de diseño y las decisiones técnicas fundamentales.
->
-> Si quieres entender cómo funciona este sistema "bajo el capó", ese es el 
-> documento que debes leer.
-
-📄 **[DEVELOPMENT_STATUS.md](./DEVELOPMENT_STATUS.md)**
-
-Este proyecto es un organismo vivo que evoluciona junto con mis investigaciones. 
-Para conocer el grado de completitud de cada bloque y la deuda técnica identificada, 
-consultalo.
-
-> **Nota:** Este informe es generado y actualizado de vez en cuando con ayuda 
-> de mi asistente de IA tras cada hito relevante, actuando como un registro del 
-> progreso y los desafíos pendientes.
+Para conocer el estado de desarrollo actual y la deuda técnica identificada, consulta **[DEVELOPMENT_STATUS](./DEVELOPMENT_STATUS.md)**.
 
 📄 **Otra documentación relevante**
 
 Puedes encontrar interesantes algunos de los artículos que he publicado y para 
-los que este proyecto a sido el patio de pruebas.
+los que este proyecto ha sido el patio de pruebas.
 
 *   [Noema: cuando el patio de juegos no viene de serie](https://jjdelcerro.github.io/es/blog/noema-cuando-el-patio-de-juegos-no-viene-de-serie/)
 *   [¿Qué es un agente?](https://jjdelcerro.github.io/es/blog/que-es-un-agente/)
@@ -83,25 +63,20 @@ los que este proyecto a sido el patio de pruebas.
 *   [¿Memoria narrativa o resumen para un LLM?](https://jjdelcerro.github.io/es/blog/memoria-narrativa-o-resumen-para-un-llm/)
 *   [Diseñando memoria narrativa trazable para agentes conversacionales](https://jjdelcerro.github.io/es/blog/disenando-memoria-narrativa-trazable-para-agentes-conversacionales/)
 
-## Características Principales
+Si quieres acceder a todos los artículos que he ido publicando los puedes encontrar [aquí](https://jjdelcerro.github.io).
 
-1.  **Gestión de Memoria:**
-    *   **Session:** Memoria de corto plazo.
-    *   **Turns:** Persistencia inmutable de interacciones.
-    *   **CheckPoints:** Resúmenes narrativos ("El Viaje") generados por IA para compactar la historia sin perder referencias. Esta parte, aunque debería estar funcional, aun estoy trabajando en ella, y puede que no funcione correctamente.
+## Características principales
 
-2.  **Herramientas (Agency):**
-    *   Sistema de archivos (Lectura, escritura, parches...). Las herramientas de lectura deberían funcionar, las de escritura no ha sido mi prioridad probarlas.
-    *   Navegación Web (Búsqueda y extracción con Apache Tika). El acceso a documentos en la web, y acceso a algunas APIs como la consulta de la ubicacion y el tiempo, estan funcionando; pero la búsqueda no.
-    *   Comunicación (Cliente de Email IMAP/SMTP, Bot de Telegram). Esta parte esta "dejada caer" sin más. Una prueba para ver como se podría abordar, pero no esta funcional, y en estos momentos no esta entre mis prioridades.
+1.  **Gestión de Memoria:** pensada para funcionar a largo plazo, un agente puede funcionar durante semanas manteniendo una interacción coherente con el usuario.
+
+2.  **Herramientas:**
+    *   Sistema de archivos (Lectura, escritura, parches...). Las herramientas de lectura funcionan.
+    *   Navegación Web (Búsqueda y extracción con Apache Tika). El acceso a documentos en la web, y acceso a algunas APIs como la consulta de la ubicación y el tiempo, están funcionando; pero la búsqueda no.
+    *   Comunicación (Cliente de Email IMAP/SMTP, Bot de Telegram). Esta parte está "dejada caer" sin más. Una prueba para ver cómo se podría abordar, pero no está funcional, y en estos momentos no está entre mis prioridades.
     *   Planificador de tareas (Scheduler en lenguaje natural).
 
-3.  **Document Mapper (RAG Estructural):**
-    *   Sistema de ingestión de documentos que genera una Tabla de Contenidos 
-        estructural antes de vectorizar, permitiendo búsquedas más precisas 
-        que el RAG tradicional. Esto es el siguiente punto de investigación, no es mas que una primera implementación para comprobar la viabilidad, pero no lo considero funcional en estos momentos.
 
-## Inicio Rápido
+## Inicio rápido
 
 ### Requisitos
 *   JDK 21 o superior.
@@ -115,50 +90,66 @@ SPIs de LangChain4j/Tika.
 mvn clean package
 ```
 
-### Configuración y primer arranque
+### Arranque
+
+El repositorio incluye un script `noema` que resuelve el JAR y añade los 
+flags de la JVM necesarios para el motor de embeddings. Úsalo como punto de 
+entrada:
+
+```bash
+./noema
+```
+
+Si necesitas lanzar el JAR directamente, consulta los flags que aplica el 
+script; son obligatorios en función de la versión de Java instalada.
+
+### Configuración
 
 El agente necesita configurar los proveedores de LLM. Al arrancar la aplicación
 presenta un diálogo de inicio, que permite seleccionar la carpeta de trabajo, y 
 nos muestra la configuración actual para los modelos básicos que precisa
 para funcionar. Desde ahí mismo puede accederse al diálogo de configuración para
-editar la lista de de proveedores, modelos o API-KEYS y configurar éstos en la 
+editar la lista de proveedores, modelos o API-KEYS y configurar éstos en la 
 aplicación. Aunque permite la configuración en el arranque, no esperes un asistente
-de "siguiente->siguiente". Requiere que tengas conocimientos minimos sobre que es 
-un LLM, que son herramientas y como configurar el acceso a ellos.
+de "siguiente->siguiente". Requiere que tengas conocimientos mínimos sobre qué es 
+un LLM, qué son herramientas y cómo configurar el acceso a ellos.
 
 
-1.  Ejecuta el JAR.
+1.  Ejecuta el script `noema`.
 2.  Accede a la configuración, configura el proveedor, API-Keys y modelos y selecciona
     los que vayas a usar en cada parte de la aplicación.
-3.  Una vez realizada la configuración cierra el dialogo de configuración para
+3.  Una vez realizada la configuración cierra el diálogo de configuración para
     volver a la ventana de inicio y pulsa en continuar.
-   
-## Desarrollo y Depuración
+
+### Modos de ejecución
+
+Por defecto, la aplicación arranca con la interfaz gráfica (Swing). Una vez 
+configurados los proveedores de LLM desde el diálogo inicial, esa configuración 
+persiste en el espacio de trabajo y puedes lanzar el agente en otros modos 
+mediante argumentos de línea de comandos:
+
+*   `--web`: levanta el servidor web embebido. El navegador no se abre 
+    automáticamente; accede manualmente a la URL que se muestra al arrancar.
+*   `--console`: consola interactiva basada en JLine.
+*   `--tui`: interfaz de terminal basada en Lanterna.
+
+Cada modo es una ejecución independiente del agente. El modo elegido determina qué interfaz se levanta; no conviven entre sí.
+
+## Desarrollo y depuración
 
 Dado que este es un proyecto de investigación, es muy probable que quieras 
-inspeccionar el estado interno del agente (ej: ver el contenido de `Session` o 
-los vectores en memoria) mientras se ejecuta.
+inspeccionar el estado interno del agente (por ejemplo, el contenido de la 
+memoria episódica o los vectores) mientras se ejecuta.
 
-Recomiendo lanzar el agente exponiendo el puerto JDWP. Te dejo aquí un pequeño 
-script de ejemplo (`noema`) para facilitar esto:
+El repositorio incluye un script `noema` que lanza la aplicación 
+exponiendo el puerto JDWP en el `8765`. Una vez iniciada, puedes conectar 
+tu depurador a ese puerto para inspeccionar el estado en caliente.
 
-```bash
-#!/bin/bash
-cd $(dirname $0)
-echo "Current folder $PWD"
-if [ "$1" == "--debug" ] ; then
-	suspend=y
-else
-	suspend=n
-fi
-exec java "-agentlib:jdwp=transport=dt_socket,address=8765,server=y,suspend=${suspend}" -jar noema.jar $@
-```
-
-Una vez iniciada la aplicación puedes acceder al modo debugger en el puerto 8765. 
-Si precisas depurar el arranque inicia el script con "--debug" y luego conectate
-desde el entorno de depuración.
+Si necesitas depurar el arranque (por ejemplo, para analizar la inicialización 
+de los servicios), lanza el script con el argumento `--debug`. El proceso 
+quedará suspendido hasta que te conectes desde el entorno de depuración.
     
-## Estructura de Datos y Personalización
+## Estructura de datos y personalización
 
 La aplicación crea en la carpeta de trabajo seleccionada una carpeta `.noema-agent`
 en la que podemos encontrar la siguiente estructura:
@@ -166,15 +157,15 @@ en la que podemos encontrar la siguiente estructura:
 * **home** (usada como home cuando se usa firejail para ejecutar comandos de shell).
 * **var**
 
-  * **cache**, carpeta donde guarda la cache de documentos que procesa, por ejemplo,
+  * **cache**, carpeta donde guarda la caché de documentos que procesa, por ejemplo,
     datos de texto extraídos de pdf.
-  * **config**, aquí esta la configuración del agente, en el fichero "settings.json",
+  * **config**, aquí está la configuración del agente, en el fichero "settings.json",
     así como los prompts que utiliza en algunas de las tareas que realiza. Pueden
     editarse esos prompts en caliente para experimentar con ellos.
   * **identity**, aquí están los ficheros que conforman la identidad del agente.
 
     * **core**, estos se cargan automáticamente en el prompt del sistema.
-    * **environ**, de estos solo se carga un indice para que el agente pueda cargarlos
+    * **environ**, de estos solo se carga un índice para que el agente pueda cargarlos
       completos cuando los necesite.
 
   * **lib**, aquí se guardan las bases de datos de memoria y servicios del agente, 
@@ -184,16 +175,15 @@ en la que podemos encontrar la siguiente estructura:
   * **tmp**, aquí van a parar los ficheros temporales que genera el agente.
 
 
-### 1. La Base de Conocimiento (Source of Truth)
+### 1. La base de conocimiento
 
-*   **`var/lib/memory.mv.db`**: Base de Datos H2 empotrada. Contiene la tabla de 
+*   **`var/lib/memory.mv.db`**: Base de Datos H2 embebida. Contiene la tabla de 
     turnos inmutables, metadatos y los embeddings vectoriales. 
 
-### 2. Memoria Narrativa (Checkpoints)
+### 2. Memoria narrativa 
 
-*   **`var/lib/checkpoints/checkpoint-XXX.md`**: Aquí es donde sucede la magia 
-    de la consolidación. Son los archivos de "El Viaje" generados por el MemoryService.
-    Leer estos archivos es la mejor forma de validar cómo el agente compacta la 
+*   **`var/lib/consolidatememory/consolidatememory-XXX-XXX-XXX.md`**: Estos son los archivos generados por el proceso de consolidación de la memoria.
+    Leer estos archivos es la mejor forma de validar cómo el agente consolida la 
     historia sin perder el contexto cognitivo.
 
 ### 3. Los prompts
@@ -205,16 +195,16 @@ en la que podemos encontrar la siguiente estructura:
     > del agente sin necesidad de volver a compilar el código.
     >
 
-### 4. Estado y Configuración
+### 4. Estado y configuración
 
 *   **`var/config/settings.json`**: Parámetros de conexión a los proveedores de LLM.
-*   **`var/lib/active_session.json`**: Un snapshot memento de la sesión activa 
+*   **`var/lib/recent_memory-XXX.json`**: Un snapshot memento de la memoria reciente 
     para permitir la recuperación ante cierres inesperados.
 
-### 5. Inspección de datos en vivo (H2 Console)
+### 5. Inspección de datos en vivo
 
 Para facilitar la auditoría de la memoria del agente, la aplicación inicia 
-automáticamente un servidor web de H2. En el dialogo de configuración
+automáticamente un servidor web de H2. En el diálogo de configuración
 hay posibilidad de configurar el puerto de este servicio así como un botón
 para iniciar la herramienta en el navegador.
 
@@ -232,13 +222,12 @@ Me he centrado en tratar de tener funcionando la parte de:
 * Que las opciones de configuración sean mínimamente funcionales.
 * Gestión básica de la seguridad.
 * Herramientas básicas de acceso disco
-* Herramientas básicas de acceso a internet (recuperacion y busqueda de contenidos usando [tavily](https://www.tavily.com/pricing))
+* Herramientas básicas de acceso a internet (recuperación y búsqueda de contenidos usando [tavily](https://www.tavily.com/pricing))
 * Herramientas básicas de control de versiones.
-* Ejecución de comandos de shell, aun falta probar la parte de firejail.
+* Ejecución de comandos de shell, aún falta probar la parte de firejail.
 
 Hay muchas cosas que no están funcionales:
 
-* El servicio de "documentos".
 * Correo.
 * Telegram.
 * Muchas opciones de configuración, para asistir en la adición de archivos de 
@@ -251,4 +240,6 @@ tiempo.
 
 ---
 *Desarrollado por [Joaquin del Cerro](https://github.com/jjdelcerro) como parte de la investigación sobre arquitecturas de IA.*
+
+
 
