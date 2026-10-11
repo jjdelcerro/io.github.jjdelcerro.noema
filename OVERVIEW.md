@@ -1,178 +1,192 @@
+# Análisis Arquitectónico y Técnico: Proyecto Noema
 
 ## Visión General
 
-Noema es un proyecto de agente autónomo diseñado como un compañero de investigación y reflexión a largo plazo. A diferencia de los agentes orientados a la resolución rápida de tareas de desarrollo de software, Noema está concebido para mantener una única conversación continua que evoluciona con el tiempo. 
+Noema es un proyecto personal y experimental de ingeniería de software concebido para operar como un agente conversacional y analítico de propósito general. A diferencia de los agentes diseñados exclusivamente para el desarrollo de software o la resolución de tareas efímeras, Noema está construido para actuar como un compañero de investigación persistente. Su diseño permite sostener reflexiones, debates y análisis técnicos prolongados a lo largo del tiempo.
 
-Su filosofía arquitectónica se basa en la autonomía, la privacidad y la mínima fricción de infraestructura. No requiere despliegues complejos en la nube ni bases de datos externas; todo su estado, configuración y persistencia se gestionan localmente mediante archivos y una base de datos embebida. El sistema aborda el problema de la degradación del contexto en interacciones prolongadas mediante una sofisticada estratificación de la información, consolidando el pasado en narrativas ("El Viaje") y proyectando dinámicamente solo lo estrictamente necesario hacia el modelo de lenguaje (LLM).
+El pilar fundamental del proyecto es la eliminación del concepto de "sesiones". El sistema opera bajo un paradigma de continuidad histórica absoluta, reteniendo toda la interacción a largo plazo mediante una gestión de retención histórica apoyada en bases de datos locales. Fiel a una filosofía de cero fricción y soberanía tecnológica, el proyecto no requiere infraestructura externa (ni bases de datos vectoriales en la nube, ni brokers de mensajería externos). Todo el estado, la memoria semántica, el control de versiones y el motor de ejecución se empaquetan y resuelven localmente en la máquina del usuario, utilizando librerías nativas o implementaciones propias.
 
 ## Stack Tecnológico
 
-El proyecto está construido sobre un ecosistema robusto y autocontenido en el entorno Java:
+El ecosistema tecnológico ha sido seleccionado para priorizar la ejecución local, la autonomía y la mínima dependencia de servicios gestionados:
 
-*   **Lenguaje y Plataforma:** Java (diseñado para compilar en JDK 25), gestionado con Maven.
-*   **Integración LLM:** LangChain4j, utilizado como abstracción principal para la comunicación con proveedores de modelos de lenguaje (OpenAI, DeepSeek, Groq, OpenRouter) y modelos locales (Jlama).
-*   **Persistencia:** H2 Database Engine en modo embebido para el almacenamiento estructurado y vectorial.
-*   **Procesamiento de Datos:** Apache Tika para la extracción de texto de documentos binarios (PDF, DOCX) y web; Gson para la serialización JSON.
-*   **Motor de Scripting:** Apache Groovy, embebido y securizado para la ejecución de lógica programática dinámica.
-*   **Control de Versiones Interno:** [JavaRCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs), una implementación pura en Java del sistema de control de revisiones, utilizada para respaldos automáticos.
-*   **Interfaces de Usuario:**
-    *   [Interface swing (GUI)](https://jjdelcerro.github.io/noema/docs/05-capa-de-presentacion-e-interfaces/01-swing.html): Construida con FlatLaf y MigLayout.
-    *   [Interface Lanterna (TUI)](https://jjdelcerro.github.io/noema/docs/05-capa-de-presentacion-e-interfaces/02-tui.html): Para entornos de terminal ricos.
-    *   Consola Clásica: Implementada con JLine3.
-    *   [Interface web](https://jjdelcerro.github.io/noema/docs/05-capa-de-presentacion-e-interfaces/03-web.html): Servidor embebido basado en Javalin con frontend en HTML/JS/CSS puro.
+*   **Plataforma Base:** Java (preparado para JDK 25), utilizando características avanzadas como `--add-modules jdk.incubator.vector` y `--enable-native-access=ALL-UNNAMED` para acelerar el procesamiento matemático local.
+*   **Orquestación de IA:** LangChain4j como abstracción principal para la comunicación con proveedores de modelos de lenguaje (OpenAI, DeepSeek, Groq, OpenRouter).
+*   **Inferencia y Embeddings Locales:** ONNX Runtime (`onnxruntime-genai`) y Jlama para la ejecución de Modelos de Lenguaje Pequeños (SLM) y el cálculo de vectores semánticos en el mismo proceso de la JVM.
+*   **Persistencia:** Base de datos relacional embebida H2 para el almacenamiento transaccional de eventos, memoria a largo plazo y persistencia vectorial.
+*   **Gestión de Datos y Serialización:** Gson para manipulación JSON y Apache Tika para la extracción robusta de texto desde binarios (PDF, DOCX, HTML).
+*   **Motor de Ejecución Dinámica:** Apache Groovy, fuertemente confinado para la ejecución de scripts en tiempo de ejecución.
+*   **Control de Versiones Local:** Implementación nativa [JavaRCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs) y `java-diff-utils` para garantizar copias de seguridad automáticas previas a cualquier mutación de archivos.
+*   **Capa de Presentación:** Múltiples interfaces que comparten un mismo contrato:
+    *   [Interface swing (GUI)](https://jjdelcerro.github.io/noema/docs/05-capa-de-presentacion-e-interfaces/01-swing.html) (FlatLaf, MigLayout, RSyntaxTextArea).
+    *   [Interface Lanterna (TUI)](https://jjdelcerro.github.io/noema/docs/05-capa-de-presentacion-e-interfaces/02-tui.html) para terminales de texto avanzados.
+    *   [Interface web](https://jjdelcerro.github.io/noema/docs/05-capa-de-presentacion-e-interfaces/03-web.html) soportada por Javalin con Server-Sent Events (SSE).
+    *   Consola interactiva clásica mediante JLine.
 
-## Estructura de Paquetes
+## Estructura de Paquetes, Interfaces e Implementación
 
-El código fuente sigue una clara separación entre contratos, implementaciones y capas de presentación:
+La arquitectura sigue el principio de Inversión de Dependencias, separando estrictamente los contratos públicos de sus implementaciones concretas:
 
-*   `io.github.jjdelcerro.noema.lib`: Contiene las interfaces públicas, contratos de servicios, modelos de datos y definiciones de la API del agente. Es el núcleo abstracto del sistema.
-*   `io.github.jjdelcerro.noema.lib.impl`: Aloja las implementaciones concretas de los servicios, la persistencia, las herramientas y la lógica de negocio.
-*   `io.github.jjdelcerro.noema.ui`: Define las abstracciones para la capa de presentación.
-*   `io.github.jjdelcerro.noema.ui.*` (swing, lanterna, console): Implementaciones específicas de cada paradigma de interfaz de usuario.
-*   `io.github.jjdelcerro.noema.main`: Clases de arranque (`Main`, `BootUtils`) que ensamblan las dependencias y lanzan el agente en el modo seleccionado.
+*   `io.github.jjdelcerro.noema.lib.api`: Contiene las abstracciones centrales (`Agent`, `AgentManager`, `AgentTool`, `AgentService`). Define las interfaces de configuración, memorias y factorías, asegurando que los componentes no se acoplen a implementaciones específicas.
+*   `io.github.jjdelcerro.noema.lib.api.spi`: Define clases base abstractas (como `AbstractAgentService` o `AbstractAgentAction`) para facilitar la creación de nuevos módulos.
+*   `io.github.jjdelcerro.noema.lib.impl`: Aloja el núcleo operativo (`AgentImpl`, `AgentManagerImpl`).
+    *   `impl.memory`: Resoluciones concretas de la estratificación del historial y el pipeline de proyección.
+    *   `impl.services`: Implementaciones de la lógica de negocio divididas por dominio (razonamiento, consolidación, sensores, embeddings, scripting, etc.).
+    *   `impl.tools`: Clases base abstractas para herramientas, destacando el soporte integrado para paginación.
+*   `io.github.jjdelcerro.noema.ui`: Contratos de la capa de presentación (`AgentConsole`, `AgentUIManager`).
+*   `io.github.jjdelcerro.noema.main`: Puntos de entrada de la aplicación y utilidades de inicialización (`BootUtils`).
 
 ## Arquitectura y Diseño
 
-La arquitectura de Noema es modular y orientada a servicios, gobernada por un localizador central y un ciclo de vida bien definido.
-
 ### 1. El Kernel (o Core)
 
-*   **Agent y AgentManager:** La interfaz `Agent` es la fachada principal que expone el estado, la memoria y los servicios. El `AgentManager` actúa como un patrón *Service Locator* y *Factory*, registrando y proveyendo las implementaciones concretas de los subsistemas.
-*   **Arranque y ciclo de vida:** El proceso de inicio, gobernado por `BootUtils`, establece las conexiones a la base de datos H2, instancia el gestor de configuración, registra los servicios y arranca el bucle de eventos. El cierre ordenado se garantiza mediante *shutdown hooks* de la JVM.
-*   **Infraestructura de Datos:** `SQLProvider` abstrae las consultas SQL, permitiendo adaptar la persistencia (actualmente fuertemente acoplada a H2 por el uso de arrays para vectores).
-*   **Topología de Archivos:** Todo el estado del agente reside en un espacio de trabajo local (por defecto `.noema-agent`). Esta carpeta contiene subdirectorios estandarizados: `var/config` (ajustes y prompts), `var/lib` (bases de datos H2), `var/tmp` (archivos efímeros), `var/cache` y `home` (sandbox para ejecución de comandos).
+El núcleo del sistema está diseñado como un orquestador agnóstico que inicializa, localiza y conecta los diferentes subsistemas.
+
+*   **`Agent` y `AgentManager`:** La interfaz `Agent` es el contrato principal que expone los recursos del sistema al resto de componentes. El `AgentManager` actúa como un patrón *Service Locator* y *Factory*, administrando el registro de servicios, herramientas y operaciones dinámicas sin acoplamiento duro.
+*   **Ciclo de Vida:** Gestionado principalmente en `BootUtils` y `AgentImpl`. El proceso incluye la resolución canónica de rutas, la instanciación de las conexiones a base de datos, el registro de factorías y la inicialización de los servicios. Al finalizar, un *ShutdownHook* garantiza el cierre ordenado de las bases de datos y la persistencia de estados en memoria.
+*   **Infraestructura de Datos:** Mediante la abstracción `SQLProvider`, el agente gestiona dos conexiones separadas a H2: una para la memoria a largo plazo y otra para la persistencia de servicios (como el programador de tareas). Se emplean mecanismos como la clase `Counter` para garantizar la asignación atómica de identificadores numéricos en un entorno embebido.
+*   **Topología de Archivos:** Todo el estado del sistema se localiza utilizando [AgentPaths](https://jjdelcerro.github.io/noema/docs/01-fundamentos-y-ciclo-de-vida/02-agent-paths.html). Por defecto, la información reside en un directorio `.noema-agent/` que contiene:
+    *   `var/config/`: Ajustes JSON y plantillas de instrucciones (prompts).
+    *   `var/lib/`: Ficheros binarios de H2 y volcados de texto del historial consolidado.
+    *   `var/cache/` y `var/tmp/`: Almacenamiento efímero para extracciones y volcados de depuración.
+    *   `var/identity/`: Ficheros de texto plano que definen el comportamiento y el contexto del agente.
+    *   `home/`: Entorno asilado para la ejecución opcional de comandos.
 
 ### 2. Capacidades Horizontales (Cross-cutting Concerns)
 
-*   **Seguridad y control de acceso:** El [AgentAccessControl](https://jjdelcerro.github.io/noema/docs/01-fundamentos-y-ciclo-de-vida/04-seguridad-y-control-de-acceso.html) es un componente crítico. Define un *sandbox* estricto, gestionando listas blancas y negras de rutas de lectura y escritura. Intercepta las llamadas a herramientas para validar permisos de red, ejecución de shell y escritura en disco. Además, obliga a la confirmación humana para acciones destructivas e inyecta respaldos automáticos (RCS) antes de modificar archivos.
-*   **Jerarquía de archivos:** El componente [AgentPaths](https://jjdelcerro.github.io/noema/docs/01-fundamentos-y-ciclo-de-vida/02-agent-paths.html) resuelve las rutas relativas y absolutas, garantizando que el agente opere siempre dentro de los límites físicos de su espacio de trabajo o de las rutas explícitamente autorizadas.
-*   **Configuración jerárquica:** El [AgentSettings](https://jjdelcerro.github.io/noema/docs/01-fundamentos-y-ciclo-de-vida/03-agent-settings.html) maneja un árbol de configuración en formato JSON. Soporta evaluación dinámica de expresiones (vía MVEL/Groovy) para habilitar o deshabilitar capacidades en caliente.
+*   **Seguridad y Control de Acceso:** El componente [AgentAccessControl](https://jjdelcerro.github.io/noema/docs/01-fundamentos-y-ciclo-de-vida/04-seguridad-y-control-de-acceso.html) es la barrera defensiva del sistema. Intercepta toda petición de acceso a disco, resolviendo la ruta de manera canónica para evitar ataques de salto de directorio (*path traversal*). Administra listas de rutas permitidas, denegadas y de solo lectura. Además, intercepta la ejecución de herramientas para exigir la confirmación del usuario antes de operaciones destructivas o de comunicación con el exterior.
+*   **Gestión de Rutas y Sandbox:** Apoyado en `AgentPaths`, asegura que las operaciones por defecto se mantengan confinadas al directorio de trabajo del proyecto, previniendo alteraciones accidentales del sistema anfitrión.
+*   **Sistema de Configuración Jerárquica:** A través de [AgentSettings](https://jjdelcerro.github.io/noema/docs/01-fundamentos-y-ciclo-de-vida/03-agent-settings.html), el sistema expone un árbol de preferencias persistido en JSON. Incorpora la clase `ExpressionEvaluator` para permitir que ciertas capacidades o herramientas se habiliten o deshabiliten dinámicamente evaluando expresiones lógicas y matemáticas en tiempo real.
 
 ### 3. Servicios Cognitivos
 
-Estos servicios conforman el "motor de pensamiento" del agente, gestionando cómo procesa la información y cómo la retiene a lo largo del tiempo.
+Estos servicios conforman el motor lógico y el sistema de retención de información del agente. Su diseño iterativo permite que el agente funcione indefinidamente sin perder el hilo de la investigación.
 
-*   **Visión general del modelo de memoria:** La persistencia cognitiva de Noema está estratificada para evitar el colapso del contexto. No se envía todo el historial al LLM; en su lugar, la información fluye a través de diferentes estados de compresión y relevancia.
-*   **[ReasoningService](https://jjdelcerro.github.io/noema/docs/03-catalogo-de-servicios/01-reasoning.html):** Es el orquestador del pensamiento. Mantiene un bucle continuo que extrae eventos de los sensores, ensambla el contexto proyectado, invoca al LLM, ejecuta las herramientas solicitadas y registra los resultados. Maneja el concepto de `subchannels` para mantener conversaciones paralelas e independientes.
-*   **[MemoryConsolidationService](https://jjdelcerro.github.io/noema/docs/03-catalogo-de-servicios/02-memory-consolidation.html):** Actúa en segundo plano. Cuando la memoria reciente alcanza un umbral, este servicio toma los turnos crudos y el resumen anterior, y utiliza un LLM para generar una nueva narrativa consolidada ("El Viaje"). Este proceso asegura que el agente mantenga una comprensión profunda de la historia sin arrastrar el peso de los tokens originales.
+*   **[ReasoningService](https://jjdelcerro.github.io/noema/docs/03-catalogo-de-servicios/01-reasoning.html):** Es el orquestador del bucle de eventos lógicos. Consume estímulos entrantes, ensambla el contexto, invoca a los modelos de lenguaje, gestiona la intercepción y ejecución segura de herramientas, e intercala los resultados en la memoria. Administra el concepto de `subchannels` para mantener hilos de conversación completamente paralelos e independientes, simulando una consciencia multiterminal.
+*   **[MemoryConsolidationService](https://jjdelcerro.github.io/noema/docs/03-catalogo-de-servicios/02-memory-consolidation.html):** Actúa como un proceso de compactación asíncrono. Monitorea el tamaño de la conversación activa y, al alcanzar un umbral crítico, utiliza un modelo de lenguaje secundario para sintetizar los turnos recientes junto con el resumen anterior. Este servicio genera un relato continuo que mantiene referencias numéricas exactas a los eventos originales, previniendo la fatiga del contexto.
+
+*Nota:* La persistencia física que da soporte a estos servicios está implementada en `EpisodicMemoryImpl`, la cual registra de forma inmutable cada turno y su correspondiente vector semántico.
 
 ### 4. Servicios de Periferia
 
-Gestionan la interacción del agente con el mundo exterior y la ejecución de tareas especializadas.
+Módulos especializados que gestionan la interacción de Noema con el mundo exterior, el tiempo y la ejecución de tareas secundarias.
 
-*   **[SensorsService](https://jjdelcerro.github.io/noema/docs/03-catalogo-de-servicios/03-sensors.html):** Un bus de eventos asíncrono. Los estímulos externos (mensajes, alarmas) se encolan aquí. El servicio clasifica los eventos por su naturaleza (discretos, fusionables, de estado o agregables) para optimizar cómo se presentan al motor de razonamiento.
-*   **[SchedulerService](https://jjdelcerro.github.io/noema/docs/03-catalogo-de-servicios/04-scheduler.html):** Permite al agente programar alarmas y recordatorios futuros. Persiste las tareas en H2 y las inyecta en el bus de sensores cuando se cumple el plazo.
-*   **[EmbeddingsService](https://jjdelcerro.github.io/noema/docs/03-catalogo-de-servicios/05-embeddings.html):** Proporciona vectorización local utilizando modelos ONNX (ej. AllMiniLmL6V2). Permite la búsqueda semántica rápida sobre el historial almacenado en H2 sin depender de APIs externas de embedding.
-*   **Comunicaciones (Email / Telegram):** Servicios bidireccionales. Actúan como sensores (escuchando mediante IMAP IDLE o Long Polling) inyectando notificaciones, y como efectores (herramientas) permitiendo al agente enviar mensajes o leer correos completos bajo demanda.
-*   **Model Context Protocol (MCP):** Un servicio que permite conectar a Noema con servidores MCP externos (vía stdio o HTTP/SSE), descubriendo y envolviendo sus herramientas dinámicamente para que el agente las utilice.
-
-## Mecanismos Principales (Análisis Detallado)
-
-### Gestión de Memoria
-
-El sistema de memoria es la piedra angular de Noema, diseñado bajo el principio de la "espiral de contexto". Se divide en cuatro capas:
-
-1.  **[EpisodicMemory](https://jjdelcerro.github.io/noema/docs/02-el-sistema-de-memoria/020-memoria-episodica.html):** La fuente de la verdad. Almacena en la base de datos H2 cada `Turn` (interacción, pensamiento, llamada a herramienta) de forma inmutable, junto con su vector de embedding para búsquedas futuras.
-2.  **[RecentMemory](https://jjdelcerro.github.io/noema/docs/02-el-sistema-de-memoria/040-memoria-reciente.html):** Un buffer en RAM (respaldado en JSON) que contiene los mensajes de la conversación actual que aún no han sido consolidados.
-3.  **[ConsolidateMemory](https://jjdelcerro.github.io/noema/docs/02-el-sistema-de-memoria/030-memoria-consolidada.html):** El resultado del `MemoryConsolidationService`. Es un documento Markdown que fusiona el resumen anterior con los turnos recientes, manteniendo referencias exactas (`{cite:ID}`) a la memoria episódica.
-4.  **[ProjectedMemory](https://jjdelcerro.github.io/noema/docs/02-el-sistema-de-memoria/050-memoria-proyectada.html):** Es la vista dinámica y efímera que se envía al LLM en cada turno. Se construye ensamblando el prompt del sistema, la memoria consolidada y la memoria reciente. 
-
-**El Pipeline de Operaciones de la Memoria Proyectada:**
-Antes de enviar el contexto al LLM, la `ProjectedMemory` pasa por un pipeline de transformaciones registrables (`ProjectedMemoryOperationFactory`) que alteran dinámicamente el contexto:
-*   *TrimmingOperation:* Recorta resultados masivos de herramientas (ej. lecturas de archivos gigantes) dejando solo una advertencia de que el contenido fue asimilado en turnos anteriores.
-*   *PendingAnnotationOperation:* Detecta si el agente ha leído recursos grandes sin tomar notas (`annotate_observation`) y genera una advertencia efímera (notificación del sistema) para forzarlo a consolidar el conocimiento.
-*   *TemporalPerceptionOperation:* Inyecta notificaciones sobre el paso del tiempo si ha habido una pausa larga en la conversación.
-*   *PinnedTurnsOperation:* Fija llamadas a herramientas críticas (como la activación de un *skill*) en la parte superior del contexto para que sus reglas no se pierdan tras una consolidación.
-*   *PeripheralAwarenessOperation:* Informa al agente sobre la actividad reciente en otros subcanales (terminales), dándole consciencia de sus conversaciones paralelas.
-
-### Gestión de la Identidad del Agente
-
-La identidad no está codificada en el código fuente, sino que se ensambla dinámicamente en el prompt del sistema a partir de archivos Markdown. Se divide en:
-*   **Core (`var/identity/core`):** Constituye el ADN técnico y las reglas operativas inmutables. Los módulos se activan o desactivan desde la configuración.
-*   **Entorno (`var/identity/environ`):** Archivos `.ref.md` que actúan como un índice ligero de conocimientos sobre el usuario o el proyecto. Si el agente detecta un tema relevante en este índice, utiliza la herramienta `consult_environ` para cargar el documento denso completo bajo demanda.
-
-### Gestión de Eventos y Proactividad
-
-El agente no es puramente reactivo. El `SensorsService` encola eventos del mundo exterior (mensajes de Telegram, correos, alarmas del planificador). El `ReasoningService` consume esta cola. Para mantener la ilusión de control y la coherencia del formato de chat del LLM, el orquestador inyecta estos eventos simulando que el modelo ejecutó una herramienta ficticia llamada `pool_event`. Esto evita inyecciones de prompt directas y permite al agente reaccionar orgánicamente a estímulos asíncronos.
-
-### Flujos en el Reasoning Service
-
-El bucle principal (`processSingleEvent`) sigue un flujo estricto:
-1. Recibe un evento (del usuario o de un sensor).
-2. Proyecta la memoria (aplica el pipeline de operaciones).
-3. Invoca al LLM.
-4. Si el LLM devuelve texto, responde al usuario, registra el turno en la `EpisodicMemory` y evalúa si es necesaria una consolidación.
-5. Si el LLM solicita herramientas, las ejecuta (pasando por el `AgentAccessControl`), registra los resultados como nuevos turnos episódicos, y vuelve al paso 2 para que el LLM analice los resultados.
-
-### [Subagentes](https://jjdelcerro.github.io/noema/docs/04-subsistemas-de-ejecucion-y-capacidades/02-subagentes.html)
-
-Los subagentes son trabajadores desechables que se ejecutan de forma asíncrona en segundo plano. Se definen mediante recetas XML (`var/subagents/*.xml`) que especifican sus prompts, herramientas permitidas y parámetros. Cuando el agente principal lanza un subagente, este opera en un *workspace* temporal aislado. Al finalizar, el subagente inyecta un evento de notificación en el canal original con el resultado de su trabajo, permitiendo delegar tareas pesadas (como indexación masiva) sin bloquear la conversación principal.
-
-### [Scripting](https://jjdelcerro.github.io/noema/docs/04-subsistemas-de-ejecucion-y-capacidades/04-scripting.html) y Habilidades ([skills](https://jjdelcerro.github.io/noema/docs/04-subsistemas-de-ejecucion-y-capacidades/03-skills.md))
-
-Noema implementa el paradigma de *Recursive Language Models* (RLM) mediante la herramienta `execute_script`. El agente puede escribir y ejecutar código Groovy en un entorno embebido y altamente securizado (`SecureASTCustomizer`, `TimedInterrupt`). El script tiene acceso a un objeto `agent` (`ScriptContext`) que expone fachadas para iterar archivos sin agotar la memoria, hacer subconsultas al LLM, o registrar anotaciones.
-
-Los **Skills** son paquetes procedimentales (`.claude/skills/`) que contienen directivas Markdown y scripts auxiliares. El agente puede "activar" un skill, lo que ancla sus reglas en la memoria proyectada (`PinnedTurnsOperation`) hasta que la tarea finaliza, guiando su comportamiento para procedimientos técnicos complejos.
+*   **[SensorsService](https://jjdelcerro.github.io/noema/docs/03-catalogo-de-servicios/03-sensors.html):** Funciona como el bus de eventos asíncronos del agente. Recibe estímulos externos (correos, temporizadores, mensajes) y los encola. Implementa estrategias de fusión inteligente según la naturaleza del sensor (agregando conteos para evitar spam, fusionando textos secuenciales, o descartando estados obsoletos) antes de entregarlos al motor de razonamiento.
+*   **[SchedulerService](https://jjdelcerro.github.io/noema/docs/03-catalogo-de-servicios/04-scheduler.html):** Dota al agente de percepción del tiempo futuro. Permite programar alarmas o recordatorios que se persisten en base de datos. Cuando el temporizador expira, inyecta un evento en el bus de sensores.
+*   **[Scripting](https://jjdelcerro.github.io/noema/docs/04-subsistemas-de-ejecucion-y-capacidades/04-scripting.html) (ScriptingService):** Provee un entorno de ejecución dinámico embebido basado en Groovy. Permite al agente ejecutar cálculos, iterar archivos grandes o aplicar filtros de forma local sin requerir llamadas costosas al LLM para tareas puramente algorítmicas (implementando un patrón de Recursive Language Models).
+*   **Comunicaciones (EmailService / TelegramService):** Actúan de forma dual. Como efectores, exponen herramientas de envío de mensajes. Como sensores, mantienen escuchas activas (IMAP IDLE o Long Polling) para detectar interacciones externas, inyectando eventos ligeros en el sistema para que el agente decida si requiere descargar y leer el contenido completo.
+*   **[EmbeddingsService](https://jjdelcerro.github.io/noema/docs/03-catalogo-de-servicios/05-embeddings.html):** Motor de cálculo vectorial ejecutado localmente mediante ONNX. Permite la vectorización de textos y la búsqueda semántica rápida (Top-K) sobre la memoria o los archivos locales, aplicando una estrategia de *MaxP* fragmentando documentos extensos en pequeños bloques para no diluir el significado.
+*   **McpService:** Integración del Model Context Protocol, permitiendo conectar servidores externos para dotar al agente de herramientas descubiertas dinámicamente en tiempo de ejecución.
+*   **SubagentsService:** Sistema de delegación de tareas pesadas en segundo plano mediante la orquestación de trabajadores aislados definidos en XML.
+*   **SkillsService:** Motor de descubrimiento y carga de flujos procedimentales y directivas técnicas predefinidas.
 
 ## Herramientas del Agente
 
-Las herramientas (clases que implementan `AgentTool`) son los efectores de Noema. Se dividen en los siguientes bloques funcionales:
+Las herramientas (clases que implementan `AgentTool` o la variante con soporte de fragmentación en [Herramientas base y paginación](https://jjdelcerro.github.io/noema/docs/04-subsistemas-de-ejecucion-y-capacidades/01-herramientas-base-y-paginacion.html)) son los actuadores del sistema. 
 
-*   **Sistema y Memoria:**
-    *   `pool_event`: Consulta interna de eventos pendientes.
-    *   `fetch_citation`: Recupera un turno exacto de la memoria episódica usando su ID.
-    *   `search_full_history`: Búsqueda semántica vectorial en todo el historial.
-    *   `annotate_observation`: Registra un hallazgo o directiva directamente en la memoria a largo plazo.
-    *   `consult_environ`: Carga módulos densos de identidad/entorno.
-    *   `schedule_alarm`: Programa un evento futuro en el planificador.
-    *   `sensor_stop` / `sensor_start` / `sensor_status`: Gestión del flujo de atención y silenciamiento de canales.
-*   **[Herramientas base y paginación](https://jjdelcerro.github.io/noema/docs/04-subsistemas-de-ejecucion-y-capacidades/01-herramientas-base-y-paginacion.html) (Archivos):**
-    *   `file_read`: Lectura de archivos de texto (paginada).
-    *   `read_paginated_resource`: Herramienta universal para continuar leyendo bloques de recursos largos.
-    *   `file_find`: Búsqueda de archivos por patrón glob.
-    *   `file_grep`: Búsqueda de texto o regex dentro de archivos.
-    *   `file_read_selectors`: Lectura combinada de múltiples archivos.
-    *   `file_write`: Creación o sobrescritura de archivos.
+*   **Manipulación y Búsqueda en el Sistema de Archivos:**
+    *   `file_find`: Búsqueda de rutas mediante patrones glob.
+    *   `file_read`: Lectura de archivos de texto acotada por líneas.
+    *   `file_read_selectors`: Combinación de múltiples archivos en un único volcado.
+    *   `read_paginated_resource`: Herramienta universal para continuar la lectura secuencial de salidas largas.
+    *   `file_grep`: Búsqueda mediante expresiones regulares.
+    *   `file_fuzzygrep`: Búsqueda semántica en archivos basada en vectores ONNX locales.
+    *   `file_write`: Sobrescritura de archivos.
     *   `file_mkdir`: Creación de directorios.
-    *   `file_search_and_replace`: Reemplazo exacto de bloques de texto.
     *   `file_patch`: Aplicación de parches en formato Unified Diff.
-    *   `file_extract_text`: Extracción de texto de binarios (PDF, DOCX) vía Tika.
-    *   `file_history` / `file_recovery`: Interacción con el historial de versiones local (JavaRCS).
-*   **Ejecución y Scripting:**
-    *   `shell_execute`: Ejecución de comandos Bash (con soporte para aislamiento vía Firejail).
-    *   `execute_script`: Ejecución de código Groovy en el sandbox de la JVM.
-*   **Internet y Web:**
-    *   `web_search`: Búsqueda en internet (soporta proveedores Tavily y Brave).
-    *   `web_get_content`: Descarga y extracción de texto de URLs.
-    *   `get_weather`: Consulta meteorológica (Open-Meteo).
-    *   `get_current_location`: Geolocalización por IP.
-    *   `get_current_time`: Reloj del sistema con soporte de zonas horarias.
-*   **Comunicaciones:**
-    *   `email_list_inbox` / `email_read` / `email_send`: Gestión de correo electrónico como secretaria virtual.
-    *   `telegram_send`: Envío proactivo de mensajes al usuario.
-*   **Subagentes y Skills:**
-    *   `list_subagents` / `launch_subagent`: Descubrimiento y orquestación de trabajadores asíncronos.
-    *   `list_skills` / `activate_skill` / `deactivate_skill` / `read_skill_resource` / `run_skill_script`: Gestión del ciclo de vida de los procedimientos técnicos empaquetados.
+    *   `file_search_and_replace`: Localización y reemplazo exacto o tolerante a indentación de bloques de texto.
+    *   `file_extract_text`: Extracción de contenido estructurado desde formatos binarios complejos (PDF, DOCX) utilizando Apache Tika.
+    *   `file_history` y `file_recovery`: Exploración de la bitácora y recuperación de versiones previas apoyadas en el motor RCS interno.
+*   **Sistema, Memoria y Percepción Temporal:**
+    *   `poll_event`: Herramienta técnica inyectada para consultar la cola de eventos sensoriales pendientes.
+    *   `fetch_citation`: Recuperación exacta de un turno histórico de la base de datos mediante su ID único.
+    *   `search_full_history`: Búsqueda semántica sobre la base de datos de eventos pasados.
+    *   `annotate_observation`: Registro directo de reglas, hallazgos o conclusiones en la memoria a largo plazo.
+    *   `schedule_alarm`: Programación de eventos futuros en el sistema.
+    *   `get_current_time`: Consulta del reloj interno y zonas horarias.
+    *   `consult_environ`: Inyección bajo demanda de conocimiento denso sobre el entorno del usuario.
+    *   `sensor_stop`, `sensor_start`, `sensor_status`: Herramientas de modulación de atención para detener o reiniciar canales de ruido.
+*   **Ejecución Computacional:**
+    *   `execute_script`: Delegación de lógica procedimental o procesamiento masivo al motor Groovy seguro.
+    *   `shell_execute`: Ejecución de comandos del sistema operativo (con soporte opcional de confinamiento vía Firejail).
+*   **Interacción Web e Internet:**
+    *   `web_search`: Búsqueda en la web (integraciones modulares para Tavily o Brave).
+    *   `web_get_content`: Descarga de URLs y sanitización de HTML/Documentos para extraer texto limpio.
+    *   `get_current_location` y `get_weather`: Consultas de entorno físico y meteorológico por IP.
+*   **Comunicaciones Externas:**
+    *   `email_list_inbox`, `email_read`, `email_send`: Interfaz completa para la gestión de correo como secretaria virtual.
+    *   `telegram_send`: Envío de notificaciones salientes a un chat autorizado.
+*   **Orquestación de [Subagentes](https://jjdelcerro.github.io/noema/docs/04-subsistemas-de-ejecucion-y-capacidades/02-subagentes.html) y Procedimientos:**
+    *   `list_subagents` y `launch_subagent`: Descubrimiento y despacho asíncrono de trabajadores en segundo plano.
+    *   `list_skills`, `activate_skill`, `deactivate_skill`, `read_skill_resource`, `run_skill_script`: Gestión del ciclo de vida de los protocolos técnicos de actuación.
+*   **Herramientas de Desarrollo:**
+    *   `load_project_map` y `unload_project_map`: Gestión del documento de arquitectura persistente en la memoria de trabajo.
+
+## Mecanismos Principales (Análisis Detallado)
+
+### 1. Gestión de Memoria Estratificada
+
+El sistema implementa una [Visión general del modelo de memoria](https://jjdelcerro.github.io/noema/docs/02-el-sistema-de-memoria/010-vision-general-de-modelo-de-memoria.html) diseñada para sostener la coherencia lógica en investigaciones de larga duración. Se organiza en capas para evitar la sobresaturación del límite de tokens del LLM:
+
+*   **[EpisodicMemory](https://jjdelcerro.github.io/noema/docs/02-el-sistema-de-memoria/020-memoria-episodica.html):** Almacenamiento inmutable en H2. Registra cada turno conversacional, la ejecución de cada herramienta y su correspondiente representación vectorial.
+*   **[RecentMemory](https://jjdelcerro.github.io/noema/docs/02-el-sistema-de-memoria/040-memoria-reciente.html):** Buffer temporal en RAM (respaldado en disco) que retiene los intercambios más recientes. Cuando alcanza un umbral definido, los turnos se trasladan asíncronamente al servicio de consolidación.
+*   **[ConsolidateMemory](https://jjdelcerro.github.io/noema/docs/02-el-sistema-de-memoria/030-memoria-consolidada.html):** Documento narrativo que sintetiza el pasado. En lugar de un mero resumen, genera una crónica que incluye etiquetas de cita (ej: `{cite:87}`) que permiten al agente realizar "flashbacks" deterministas consultando la base de datos real en caso de duda.
+*   **[ProjectedMemory](https://jjdelcerro.github.io/noema/docs/02-el-sistema-de-memoria/050-memoria-proyectada.html):** Es el constructo final que se envía al LLM en cada interacción. Funciona como un *pipeline* transformacional dinámico y registrable que procesa la información antes de la inferencia, utilizando clases que implementan `ProjectedMemoryOperation`:
+    *   *TrimmingOperation:* Recorta salidas voluminosas de herramientas antiguas, dejando una advertencia de que el dato fue podado por eficiencia.
+    *   *PendingAnnotationOperation:* Si el agente consumió texto masivo sin tomar notas (`annotate_observation`), inyecta una advertencia efímera para forzar la retención de conclusiones.
+    *   *TemporalPerceptionOperation:* Inyecta notificaciones sobre el paso del tiempo real en ausencias prolongadas.
+    *   *PeripheralAwarenessOperation:* Mantiene informado al agente sobre la actividad ocurrida en otros subcanales concurrentes.
+    *   *PinnedTurnsOperation:* Fija permanentemente en el contexto los resultados de herramientas críticas (como mapas de proyecto o *skills* activos) protegiéndolos de la compactación.
+
+### 2. Gestión de la Identidad del Agente
+
+La identidad técnica y operativa de Noema no está escrita rígidamente en el código fuente, sino que se compone ensamblando ficheros Markdown desde el directorio `var/identity/`. Se fragmenta en dos bloques:
+*   **Core:** Determina la constitución fundamental (reglas de código, restricciones tecnológicas, paradigma filosófico) inyectada estáticamente en el prompt principal.
+*   **Entorno (Environ):** Archivos `.ref.md` que funcionan como anclas ligeras en el prompt. Si el modelo detecta un tema mencionado en las referencias, utiliza la herramienta `consult_environ` para cargar el documento denso completo bajo demanda (Page-in).
+
+### 3. Gestión de Habilidades ([skills](https://jjdelcerro.github.io/noema/docs/04-subsistemas-de-ejecucion-y-capacidades/03-skills.md))
+
+Representan procedimientos técnicos empaquetados. Un skill se define en un archivo Markdown con metadatos. Al utilizar la herramienta `activate_skill`, el agente ancla las instrucciones del procedimiento en la memoria proyectada mediante una operación del pipeline (`PinnedTurnsOperation`). Esto obliga al agente a operar bajo restricciones procedimentales estrictas hasta que el protocolo concluye y ejecuta `deactivate_skill`.
+
+### 4. Gestión de Eventos y Proactividad
+
+Para romper la naturaleza puramente pasiva de los LLMs, el sistema implementa un enrutamiento asíncrono. Eventos provenientes de temporizadores o comunicaciones de red se almacenan en el bus del `SensorsService`. 
+Cuando el orquestador principal se encuentra ocioso, inyecta un engaño protocolario: crea un turno artificial donde simula que el propio modelo decidió invocar una herramienta llamada `pool_event`, devolviendo el evento en formato JSON como resultado de esa herramienta. Esto permite notificar al modelo de sucesos externos respetando estrictamente la estructura conversacional esperada por las APIs.
+
+### 5. Gestión de la Seguridad
+
+Dado su carácter experimental y sus amplias capacidades, Noema aplica contención en múltiples frentes:
+*   **Aislamiento de Ficheros:** El [AgentAccessControl](https://jjdelcerro.github.io/noema/docs/01-fundamentos-y-ciclo-de-vida/04-seguridad-y-control-de-acceso.html) normaliza todas las rutas a su forma absoluta y canónica, verificando la pertenencia a las listas blancas o listas de solo-lectura, impidiendo escapes del espacio de trabajo.
+*   **Check-in Automático (RCS):** Antes de que las herramientas `file_write`, `file_patch` o `file_search_and_replace` modifiquen el disco, el agente invoca silenciosamente a JavaRCS para registrar una instantánea inmutable del estado anterior, permitiendo regresiones seguras.
+*   **Autorización Expresa:** Cualquier herramienta clasificada como escritura, ejecución en shell o acceso web pausa el bucle de razonamiento y eleva una solicitud a la interfaz del usuario [AgentConsole y la comunicacion Core-UI](https://jjdelcerro.github.io/noema/docs/05-capa-de-presentacion-e-interfaces/00-contrato-agentconsole-y-comunicacion.md) para requerir confirmación explícita.
+*   **Sandbox de Código:** El intérprete Groovy embebido cuenta con restricciones en el Árbol de Sintaxis Abstracta (`SecureASTCustomizer`) e interrupciones por tiempo para mitigar bucles infinitos o la instanciación de clases prohibidas.
+*   **Aislamiento de Procesos:** Si el anfitrión Linux dispone de la utilidad `firejail`, las ejecuciones de shell se lanzan en un contenedor estricto con un directorio temporal simulado.
+
+### 6. Flujos en el Reasoning Service
+
+El corazón operativo reside en el método `processSingleEvent` del [ReasoningService](https://jjdelcerro.github.io/noema/docs/03-catalogo-de-servicios/01-reasoning.html). La secuencia es:
+1.  Recepción de un estímulo entrante (del usuario o de un sensor).
+2.  Ensamblado del contexto aplicando las operaciones del pipeline de la `ProjectedMemory`.
+3.  Llamada bloqueante/streaming al proveedor del LLM.
+4.  Si el modelo retorna texto directo, se envía al usuario, se persiste en la base de datos episódica y se evalúa el umbral de consolidación.
+5.  Si el modelo solicita la ejecución de herramientas, el servicio las extrae, evalúa los permisos de seguridad, ejecuta el código subyacente y reinyecta los resultados (`ToolExecutionResultMessage`) repitiendo el proceso desde el paso 2 hasta que el modelo decide finalizar el turno.
+
+### 7. Subagentes
+
+El componente de [Subagentes](https://jjdelcerro.github.io/noema/docs/04-subsistemas-de-ejecucion-y-capacidades/02-subagentes.html) permite la ejecución asíncrona de tareas de fondo de largo aliento. Definidos declarativamente mediante recetas XML (que indican parámetros, herramientas permitidas y un prompt de dos fases), estos trabajadores se instancian en un hilo separado con su propia base de datos temporal y espacio de trabajo aislado. Operan de manera independiente y, al finalizar, notifican los resultados al canal de la conversación principal mediante el sensor de notificaciones del sistema, autodestruyendo su entorno al terminar.
 
 ## Construcción y Despliegue
 
-El proyecto se compila utilizando Maven. El archivo `pom.xml` está configurado para generar un único artefacto ejecutable (Fat JAR) mediante el `maven-shade-plugin`. 
-Un aspecto crítico de la construcción es el uso de `ServicesResourceTransformer`, necesario para fusionar correctamente los archivos `META-INF/services/` requeridos por librerías modulares como LangChain4j y Apache Tika.
+La compilación se gobierna mediante Apache Maven. El proyecto está empaquetado como un Fat JAR utilizando el `maven-shade-plugin`. Es de vital importancia en este proceso el uso del `ServicesResourceTransformer` para combinar correctamente las firmas del Service Provider Interface (SPI) requeridas por módulos como Apache Tika y LangChain4j. 
 
-El punto de entrada de la aplicación es `io.github.jjdelcerro.noema.main.Main`, el cual actúa como un enrutador que permite lanzar el agente en diferentes modalidades dependiendo de los argumentos de línea de comandos:
-*   GUI (Swing/FlatLaf).
-*   TUI (Lanterna).
-*   Consola interactiva (JLine).
-*   Servidor Web *headless* (Javalin).
-
-La comunicación entre el núcleo del agente y estas interfaces se abstrae a través del contrato [AgentConsole y la comunicacion Core-UI](https://jjdelcerro.github.io/noema/docs/05-capa-de-presentacion-e-interfaces/00-contrato-agentconsole-y-comunicacion.md), permitiendo que el agente sea agnóstico respecto a cómo se renderizan sus pensamientos y respuestas.
+El despliegue local es autosuficiente y carece de dependencias en la nube (más allá del acceso a las APIs de los modelos de lenguaje). El punto de entrada principal (`Main.java`) actúa como un enrutador que inicializa el sistema con la interfaz de usuario deseada, permitiendo invocar la variante gráfica (`--gui`), de terminal modal (`--tui`), clásica interactiva (`--console`), o desplegar el servidor REST/SSE sin cabeza (`--web`).
 
 ## Conclusión
 
-Noema presenta una arquitectura pragmática y altamente cohesionada para la experimentación con agentes autónomos persistentes. Su mayor innovación reside en el rechazo a la dependencia de infraestructuras externas complejas y en su enfoque para la gestión del estado cognitivo. 
+El proyecto Noema constituye un ejercicio arquitectónico avanzado en la construcción de agentes de IA persistentes. Supera los enfoques convencionales centrados en ventanas de tokens cada vez más masivas mediante la implementación de una ingeniería de la atención rigurosa. 
 
-En lugar de delegar la memoria a la fuerza bruta de ventanas de tokens masivas, Noema implementa una "espiral de contexto" donde la información se destila, se ancla semánticamente en una base de datos local y se proyecta dinámicamente. La combinación de este modelo de memoria con capacidades de *scripting* seguro (RLM) y delegación asíncrona (Subagentes) da como resultado un sistema capaz de mantener coherencia a largo plazo, operar sobre sistemas de archivos reales de forma segura y reaccionar a estímulos externos, todo ello encapsulado en un único proceso de la JVM.
+Al adoptar un sistema estratificado y mecanismos proactivos (como forzar al agente a tomar notas, resumir asíncronamente y recuperar contexto mediante búsquedas exactas o semánticas limitadas), el sistema logra mitigar las alucinaciones y la fatiga del contexto en periodos de ejecución indefinidos. Todo ello integrado en un diseño de software sólido que blinda la seguridad mediante *sandboxing*, exige confirmación asíncrona y persigue una autonomía tecnológica basada en la delegación algorítmica local y el control estricto de las operaciones sobre el sistema anfitrión.
 
 ---
 
-*Documento generado por Gemini (IA) a partir del análisis estático del código fuente, versión 0.1.0, 30 de agosto de 2026.*
+*Documento generado por Gemini (IA) a partir del análisis estático del código fuente, versión 0.8.0, 11 de octubre de 2026.*

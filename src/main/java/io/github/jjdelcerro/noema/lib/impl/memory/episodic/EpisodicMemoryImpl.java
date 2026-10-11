@@ -32,10 +32,8 @@ import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemory;
 
 /**
  * Repositorio central que gestiona la persistencia (H2) y la indexación
- * vectorial. Actúa como "Source of Truth" para el estado del agente.
+ * vectorial. 
  *
- * TODO: Antes SourceOfTruthImpl, habria que actualizar la documentacion con
- * este cambio
  */
 @SuppressWarnings("UseSpecificCatch")
 public class EpisodicMemoryImpl implements EpisodicMemory {

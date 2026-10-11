@@ -26,8 +26,6 @@ import static io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningSer
  * Agregado que gobierna el estado de la sesion activa de conversacion. Gestiona
  * la lista de mensajes (Protocolo) y su sincronizacion con los Turnos
  * (Archivo).
- * 
- * TODO: Antes SessionImpl, habria que actualizar la documentacion con este cambio
  */
 public class RecentMemoryImpl implements RecentMemory {
 

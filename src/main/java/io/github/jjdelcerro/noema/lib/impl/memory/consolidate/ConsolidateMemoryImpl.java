@@ -16,7 +16,6 @@ import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemory;
  * viven en la Base de Datos. - El contenido textual (Resumen + El Viaje) vive
  * en un archivo físico (.md).
  * 
- * TODO: Antes CheckPointImpl, habria que actualizar la documentacion con este cambio 
  */
 public class ConsolidateMemoryImpl implements ConsolidateMemory {
 

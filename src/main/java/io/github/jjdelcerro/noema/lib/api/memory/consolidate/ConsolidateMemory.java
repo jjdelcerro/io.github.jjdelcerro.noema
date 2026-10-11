@@ -4,9 +4,6 @@ import java.time.LocalDateTime;
 
 /**
  *
- *
- * TODO: Antes CheckPoint, habria que actualizar la documentacion con este cambio
- *
  * @author jjdelcerro
  */
 public interface ConsolidateMemory {
