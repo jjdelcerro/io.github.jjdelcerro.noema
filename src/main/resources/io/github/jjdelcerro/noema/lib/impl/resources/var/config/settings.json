@@ -143,6 +143,9 @@
         "mode": "READ",
         "enabled": true,
         "include_tools": [
+          "!dap_*", "!gh_*", "!git_*", "!index_*", 
+          "!job_*", "!memory_*", "!scip_*", 
+          "!work_last_known_state", "!task_context", "!public_api_diff",
           "*"
         ],
         "env": {  
