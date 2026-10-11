@@ -148,7 +148,7 @@ public class AgentManagerImpl implements AgentManager {
 
   @Override
   public String getVersion() {
-    return "0.1.0";
+    return "0.8.0";
   }
 
 // =========================================================================

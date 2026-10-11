@@ -25,7 +25,7 @@ Puntos a tener en cuenta a la hora de realizar el analisis del proyecto:
     
 **No uses conceptos como "memoria infinita" o "contexto infinito" para referirte a como gestiona la memoria el agente. Si utilizas conceptos como memoria o contexto infinito FALLAS en la realizacion del informe.**
 
-Trata de no utilizar referencias biologicas para definer conportamientos de la aplicacion.
+Trata de no utilizar referencias biologicas para definer conportamientos de la aplicacion. evita metáforas y analogías en general; describe los mecanismos en términos funcionales
 
 No uses tablas excepto en la seccion "Resumen del Estado".
     
@@ -96,13 +96,7 @@ XXX
 
 XXX
 
-
-## 6. Próximos Hitos (Roadmap Sugerido)
-
-XXX
-
-
-## 7. Resumen del Estado
+## 6. Resumen del Estado
 
 | Área | Estado | Calidad del Código | Riesgo |
 | :--- | :---: | :---: | :---: |
@@ -120,10 +114,14 @@ XXX
 
 ```
 
-Puedes encontrar documentacio del proyecto en https://jjdelcerro.github.io/noema .
+Puedes encontrar documentacio tecnica del proyecto en https://jjdelcerro.github.io/noema , consultala antes de decidir el estado de esta.
 
 Si nombras RCS o JavaRCS asegurate de poner un enlace a https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs. Ej: `[RCS](https://github.com/jjdelcerro/io.github.jjdelcerro.javarcs)`
 
 
 Sientete libre de incluir cualquier detalle del proyecto que crees que es relevante relacionado con el estado del proyecto tal como lo has analizado.
+
+No incluyas una seccion de proximos hitos o similar.
+
+
 

@@ -25,7 +25,7 @@ Puntos a tener en cuenta a la hora de realizar el analisis del proyecto:
     
 **No uses conceptos como "memoria infinita" o "contexto infinito" para referirte a como gestiona la memoria el agente. Si utilizas conceptos como memoria o contexto infinito FALLAS en la realizacion del informe.**
 
-Trata de no utilizar referencias biologicas para definer conportamientos de la aplicacion.
+Trata de no utilizar referencias biologicas para definer conportamientos de la aplicacion. evita metáforas y analogías en general; describe los mecanismos en términos funcionales.
 No uses tablas para presentar la informacion.
     
 Teniendo en cuenta todo esto prepara un informe que incluya como minimo:
@@ -118,9 +118,9 @@ onsolidation.html
 * "SchedulerService": https://jjdelcerro.github.io/noema/docs/03-catalogo-de-servicios/04-scheduler.html
 * "Herramientas base y paginación": https://jjdelcerro.github.io/noema/docs/04-subsistemas-de-ejecucion-y-capacidades/01-herramientas-base-y-paginacion.html
 * "Subagentes": https://jjdelcerro.github.io/noema/docs/04-subsistemas-de-ejecucion-y-capacidades/02-subagentes.html
-* "Habilidades procedimentales, skills": https://jjdelcerro.github.io/noema/docs/04-subsistemas-de-ejecucion-y-capacidades/03-skills.md
+* "Habilidades procedimentales, skills": https://jjdelcerro.github.io/noema/docs/04-subsistemas-de-ejecucion-y-capacidades/03-skills.html
 * "Scripting": https://jjdelcerro.github.io/noema/docs/04-subsistemas-de-ejecucion-y-capacidades/04-scripting.html
-* "AgentConsole y la comunicacion Core-UI": https://jjdelcerro.github.io/noema/docs/05-capa-de-presentacion-e-interfaces/00-contrato-agentconsole-y-comunicacion.md
+* "AgentConsole y la comunicacion Core-UI": https://jjdelcerro.github.io/noema/docs/05-capa-de-presentacion-e-interfaces/00-contrato-agentconsole-y-comunicacion.html
 * "Interface swing (GUI)": https://jjdelcerro.github.io/noema/docs/05-capa-de-presentacion-e-interfaces/01-swing.html
 * "Interface Lanterna (TUI)": https://jjdelcerro.github.io/noema/docs/05-capa-de-presentacion-e-interfaces/02-tui.html
 * "Interface web": https://jjdelcerro.github.io/noema/docs/05-capa-de-presentacion-e-interfaces/03-web.html
