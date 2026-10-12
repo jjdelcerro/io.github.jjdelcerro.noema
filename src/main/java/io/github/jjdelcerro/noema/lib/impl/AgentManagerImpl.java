@@ -17,7 +17,6 @@ import io.github.jjdelcerro.noema.lib.impl.memory.projected.operations.PinnedTur
 import io.github.jjdelcerro.noema.lib.impl.memory.projected.operations.TemporalPerceptionOperationFactory;
 import io.github.jjdelcerro.noema.lib.impl.memory.projected.operations.TrimmingOperationFactory;
 import io.github.jjdelcerro.noema.lib.impl.model.ModelUtils;
-import io.github.jjdelcerro.noema.lib.impl.model.langchainopenai.ChatModelLangchainOpenAI;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.mcp.McpServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.MemoryConsolidationServiceFactory;
@@ -30,6 +29,8 @@ import io.github.jjdelcerro.noema.lib.impl.services.subagents.SubagentsServiceFa
 import io.github.jjdelcerro.noema.lib.impl.settings.AgentSettingsImpl;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperationFactory;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettings;
+import java.io.IOException;
+import java.io.InputStream;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -39,6 +40,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
@@ -148,9 +150,18 @@ public class AgentManagerImpl implements AgentManager {
 
   @Override
   public String getVersion() {
-    return "0.8.0";
-  }
-
+        Properties props = new Properties();
+        try (InputStream is = this.getClass().getResourceAsStream("/version.properties")) {
+            if (is != null) {
+                props.load(is);
+                return props.getProperty("app.version");
+            }
+        } catch (IOException e) {
+            // Do nothing
+        }
+        return "0.0.0";
+  }   
+  
 // =========================================================================
   // SUBAGENT REGISTRY AND FACTORY
   // =========================================================================
