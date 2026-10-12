@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.lib.api.spi;
+package io.github.jjdelcerro.noema.lib.spi;
 
 import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.AgentActions;

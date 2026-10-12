@@ -15,7 +15,7 @@ import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsItem;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsList;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsPaths;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsString;
-import io.github.jjdelcerro.noema.lib.api.spi.AbstractAgentService;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

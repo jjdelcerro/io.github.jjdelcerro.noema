@@ -3,7 +3,7 @@ package io.github.jjdelcerro.noema.lib.impl.services.memory;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
-import io.github.jjdelcerro.noema.lib.api.spi.AbstractAgentAction;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentAction;
 import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.model.ModelParameters;
 import static io.github.jjdelcerro.noema.lib.api.AgentActions.CHANGE_MEMORY_MODEL;
@@ -34,7 +34,7 @@ import io.github.jjdelcerro.noema.lib.api.model.ChatModel;
 import io.github.jjdelcerro.noema.lib.api.memory.episodic.EpisodicMemory;
 import io.github.jjdelcerro.noema.lib.api.services.memory.MemoryConsolidationService;
 import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemory;
-import io.github.jjdelcerro.noema.lib.api.spi.AbstractAgentService;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 
 /**
  * Componente cognitivo encargado de la consolidación de la memoria. Ejecuta el

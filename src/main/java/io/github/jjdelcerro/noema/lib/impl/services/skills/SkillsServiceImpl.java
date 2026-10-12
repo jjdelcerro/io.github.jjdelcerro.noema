@@ -8,7 +8,7 @@ import io.github.jjdelcerro.noema.lib.impl.services.skills.tools.DeactivateSkill
 import io.github.jjdelcerro.noema.lib.impl.services.skills.tools.ListSkillsTool;
 import io.github.jjdelcerro.noema.lib.impl.services.skills.tools.ReadSkillResourceTool;
 import io.github.jjdelcerro.noema.lib.impl.services.skills.tools.RunSkillScriptTool;
-import io.github.jjdelcerro.noema.lib.api.spi.AbstractAgentService;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -12,7 +12,7 @@ import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.services.telegram.tools.TelegramTool;
 import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorNature;
 import static io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService.PRIORITY_NORMAL;
-import io.github.jjdelcerro.noema.lib.api.spi.AbstractAgentService;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;

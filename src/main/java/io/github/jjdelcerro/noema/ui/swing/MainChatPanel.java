@@ -2,7 +2,7 @@ package io.github.jjdelcerro.noema.ui.swing;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.formdev.flatlaf.extras.FlatSVGUtils;
-import io.github.jjdelcerro.noema.lib.api.spi.AbstractAgentAction;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentAction;
 import io.github.jjdelcerro.noema.lib.api.Agent;
 import static io.github.jjdelcerro.noema.lib.api.Agent.DEFAULT_SUBCHANNEL;
 import io.github.jjdelcerro.noema.lib.api.AgentConsole;

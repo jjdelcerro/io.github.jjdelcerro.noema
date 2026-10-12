@@ -1,7 +1,7 @@
 package io.github.jjdelcerro.noema.main;
 
 import com.formdev.flatlaf.FlatDarkLaf;
-import io.github.jjdelcerro.noema.lib.api.spi.AbstractAgentAction;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentAction;
 import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.AgentConsole;
 import io.github.jjdelcerro.noema.lib.api.AgentLocator;

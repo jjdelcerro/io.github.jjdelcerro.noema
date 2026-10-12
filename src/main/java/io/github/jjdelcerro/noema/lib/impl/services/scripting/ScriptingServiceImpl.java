@@ -6,7 +6,7 @@ import io.github.jjdelcerro.noema.lib.api.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.tools.ScriptExecuteTool;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptEngine;
-import io.github.jjdelcerro.noema.lib.api.spi.AbstractAgentService;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

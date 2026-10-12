@@ -28,7 +28,7 @@ import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorInformation;
 import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorNature;
 import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorStatistics;
 import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService;
-import io.github.jjdelcerro.noema.lib.api.spi.AbstractAgentService;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;

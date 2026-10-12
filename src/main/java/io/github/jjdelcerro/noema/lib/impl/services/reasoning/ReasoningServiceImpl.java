@@ -12,7 +12,7 @@ import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.output.FinishReason;
 import dev.langchain4j.model.output.Response;
 import edu.emory.mathcs.backport.java.util.Collections;
-import io.github.jjdelcerro.noema.lib.api.spi.AbstractAgentAction;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentAction;
 import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.LookupTurnTool;
@@ -82,7 +82,7 @@ import io.github.jjdelcerro.noema.lib.impl.services.scripting.tools.ScriptExecut
 import io.github.jjdelcerro.noema.lib.api.memory.episodic.EpisodicMemory;
 import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemory;
 import io.github.jjdelcerro.noema.lib.api.services.memory.MemoryConsolidationService;
-import io.github.jjdelcerro.noema.lib.api.spi.AbstractAgentService;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 
 /**
  * Orquestador principal del sistema. Gestiona el bucle de razonamiento, la

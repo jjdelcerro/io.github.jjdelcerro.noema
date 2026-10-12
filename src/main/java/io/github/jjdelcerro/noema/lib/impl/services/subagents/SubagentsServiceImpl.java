@@ -8,7 +8,7 @@ import io.github.jjdelcerro.noema.lib.api.services.subagents.Subagent;
 import io.github.jjdelcerro.noema.lib.api.services.subagents.SubagentDefinition;
 import io.github.jjdelcerro.noema.lib.impl.services.subagents.tools.LaunchSubagentTool;
 import io.github.jjdelcerro.noema.lib.impl.services.subagents.tools.ListSubagentsTool;
-import io.github.jjdelcerro.noema.lib.api.spi.AbstractAgentService;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

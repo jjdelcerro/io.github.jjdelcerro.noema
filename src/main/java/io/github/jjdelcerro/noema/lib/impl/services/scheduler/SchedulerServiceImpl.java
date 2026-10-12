@@ -11,7 +11,7 @@ import io.github.jjdelcerro.noema.lib.impl.memory.episodic.Counter;
 import io.github.jjdelcerro.noema.lib.impl.services.scheduler.tools.ScheduleAlarmTool;
 import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorNature;
 import static io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService.PRIORITY_NORMAL;
-import io.github.jjdelcerro.noema.lib.api.spi.AbstractAgentService;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

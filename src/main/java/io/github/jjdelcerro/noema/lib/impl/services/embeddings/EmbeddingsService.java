@@ -9,7 +9,7 @@ import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.AgentService;
 import io.github.jjdelcerro.noema.lib.api.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.api.AgentTool;
-import io.github.jjdelcerro.noema.lib.api.spi.AbstractAgentService;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.file.Path;

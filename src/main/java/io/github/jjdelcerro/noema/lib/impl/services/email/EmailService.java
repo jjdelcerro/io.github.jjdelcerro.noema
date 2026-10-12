@@ -11,7 +11,7 @@ import io.github.jjdelcerro.noema.lib.impl.services.email.tools.EmailReadTool;
 import io.github.jjdelcerro.noema.lib.impl.services.email.tools.EmailSendTool;
 import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorNature;
 import static io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService.PRIORITY_NORMAL;
-import io.github.jjdelcerro.noema.lib.api.spi.AbstractAgentService;
+import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 import jakarta.mail.*;
 import jakarta.mail.internet.*;
 import org.apache.tika.Tika;
