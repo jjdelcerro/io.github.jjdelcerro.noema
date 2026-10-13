@@ -12,6 +12,7 @@ TARGET_DIR="${SCRIPT_DIR}"
 echo "Comprobando archivos del modelo en: ${TARGET_DIR}"
 
 URL_BASE="https://huggingface.co/onnx-community/Qwen3-0.6B-ONNX/resolve/main/onnxruntime/cpu_and_mobile/cpu-int4-kld-block-128"
+rm -f "${TARGET_DIR}/files.txt"
 
 for ff in \
   "chat_template.jinja" \
@@ -22,6 +23,7 @@ for ff in \
   "tokenizer_config.json"
 do
   download_file "${URL_BASE}/${ff}?download=true" "${TARGET_DIR}/${ff}"
+  echo "$(basename ${ff})" >>"${TARGET_DIR}/files.txt"
 done
 
 echo "Listo"

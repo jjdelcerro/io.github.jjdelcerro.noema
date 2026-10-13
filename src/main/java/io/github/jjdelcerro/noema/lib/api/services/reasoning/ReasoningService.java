@@ -19,8 +19,7 @@ public interface ReasoningService extends AgentService {
   String MEMORY_CONSOLIDATION_TURNS = "reasoning/consolidation_turns";
   String MEMORY_CONSOLIDATION_TOKENS = "reasoning/consolidation_tokens";
   String ACTIVE_TOOLS = "reasoning/active_tools";
-  
-  
+
   String NAME = "Reasoning";
   String ID = "REASONING";
 
@@ -29,9 +28,9 @@ public interface ReasoningService extends AgentService {
   int estimateMessagesTokenCount(String subchannel);
 
   int estimateToolsTokenCount(String subchannel);
-  
+
   int estimateSystemPromptTokenCount(String subchannel);
-  
+
   int getTurnsCount(String subchannel);
 
   AgentTool getAvailableTool(String name);
@@ -45,7 +44,8 @@ public interface ReasoningService extends AgentService {
   boolean isToolActive(String name);
 
   void setToolActive(String name, boolean active);
-  
+
   public ProjectedMemory getProjectedMemory(String subchannel);
-  
+
+  public String getProjectedMemoryAsJson(String subchannel);
 }

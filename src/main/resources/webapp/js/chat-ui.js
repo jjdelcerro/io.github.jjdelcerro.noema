@@ -2,7 +2,7 @@
  * Módulo de gestión de la interfaz de chat, historial y conexión SSE.
  */
 
-import { sendMessage, fetchHistory, connectSSE } from './api.js';
+import { sendMessage, fetchHistory, fetchContextXml, connectSSE } from './api.js';
 import { showToast } from './toast.js';
 
 let currentTerminalId = '';
@@ -16,8 +16,16 @@ let lastBlockElement = null;
 let activeStreamingBlock = null;
 let activeStreamingType = null;
 
+// Estado de pestañas y caché XSLT
+let currentTab = 'chat'; // 'chat' | 'context'
+let cachedXslDoc = null;
+
 // Referencias al DOM
 let chatArea = null;
+let contextArea = null;
+let composerArea = null;
+let tabChat = null;
+let tabContext = null;
 let messageInput = null;
 let btnSend = null;
 let statusDot = null;
@@ -42,6 +50,10 @@ function adjustTextareaHeight() {
  */
 export function initChatUI(initialTerminalId) {
     chatArea = document.getElementById('chat-area');
+    contextArea = document.getElementById('context-area');
+    composerArea = document.getElementById('composer-area');
+    tabChat = document.getElementById('tab-chat');
+    tabContext = document.getElementById('tab-context');
     messageInput = document.getElementById('message-input');
     btnSend = document.getElementById('btn-send');
     btnExport = document.getElementById('btn-export');
@@ -51,6 +63,14 @@ export function initChatUI(initialTerminalId) {
     if (statusIndicator) {
         statusDot = statusIndicator.querySelector('.status-dot');
         statusText = document.getElementById('status-text');
+    }
+
+    // Listeners de pestañas
+    if (tabChat) {
+        tabChat.addEventListener('click', () => switchTab('chat'));
+    }
+    if (tabContext) {
+        tabContext.addEventListener('click', () => switchTab('context'));
     }
 
     // Listeners de envío
@@ -72,6 +92,79 @@ export function initChatUI(initialTerminalId) {
 
     if (initialTerminalId) {
         switchTerminal(initialTerminalId);
+    }
+}
+
+/**
+ * Alterna entre la pestaña de conversación y la de inspección de contexto proyectado.
+ *
+ * @param {'chat' | 'context'} tab
+ */
+async function switchTab(tab) {
+    if (tab === currentTab) return;
+    currentTab = tab;
+
+    if (tab === 'chat') {
+        if (tabChat) {
+            tabChat.classList.add('active');
+            tabChat.setAttribute('aria-selected', 'true');
+        }
+        if (tabContext) {
+            tabContext.classList.remove('active');
+            tabContext.setAttribute('aria-selected', 'false');
+        }
+        if (chatArea) chatArea.hidden = false;
+        if (contextArea) contextArea.hidden = true;
+        if (composerArea) composerArea.classList.remove('hidden');
+    } else if (tab === 'context') {
+        if (tabContext) {
+            tabContext.classList.add('active');
+            tabContext.setAttribute('aria-selected', 'true');
+        }
+        if (tabChat) {
+            tabChat.classList.remove('active');
+            tabChat.setAttribute('aria-selected', 'false');
+        }
+        if (chatArea) chatArea.hidden = true;
+        if (contextArea) contextArea.hidden = false;
+        if (composerArea) composerArea.classList.add('hidden');
+        await loadProjectedContext();
+    }
+}
+
+/**
+ * Descarga el XML de contexto proyectado, aplica la XSLT y renderiza el resultado.
+ */
+async function loadProjectedContext() {
+    if (!contextArea || !currentTerminalId) return;
+
+    contextArea.innerHTML = '<div class="message-block log"><div class="message-item">Cargando contexto proyectado...</div></div>';
+
+    try {
+        // 1. Obtener la plantilla XSLT (con caché en memoria)
+        if (!cachedXslDoc) {
+            const xslResponse = await fetch('/css/conversation.xsl');
+            if (!xslResponse.ok) {
+                throw new Error(`Fallo descargando conversation.xsl (${xslResponse.status})`);
+            }
+            const xslText = await xslResponse.text();
+            cachedXslDoc = new DOMParser().parseFromString(xslText, 'application/xml');
+        }
+
+        // 2. Obtener el XML del contexto proyectado desde el servidor
+        const xmlText = await fetchContextXml(currentTerminalId);
+        const xmlDoc = new DOMParser().parseFromString(xmlText, 'application/xml');
+
+        // 3. Transformación XSLT client-side en el navegador
+        const xsltProcessor = new XSLTProcessor();
+        xsltProcessor.importStylesheet(cachedXslDoc);
+        const resultFragment = xsltProcessor.transformToFragment(xmlDoc, document);
+
+        contextArea.replaceChildren(resultFragment);
+    } catch (error) {
+        console.error('Error cargando contexto proyectado:', error);
+        contextArea.innerHTML = `<div class="message-block error"><div class="message-item">Error al procesar contexto: ${error.message}</div></div>`;
+        showToast('No se pudo cargar el contexto proyectado', 'error');
     }
 }
 
@@ -119,15 +212,25 @@ export async function switchTerminal(newTerminalId) {
         showToast('No se pudo recuperar el historial previo', 'error');
     }
 
+    // Si la pestaña activa es la de contexto, recargar su vista
+    if (currentTab === 'context') {
+        loadProjectedContext();
+    }
+
     // 4. Iniciar canal SSE para eventos en tiempo real con soporte de streaming
     activeSseControl = connectSSE(currentTerminalId, {
         onConnectionOpen: () => setConnectionStatus('connected'),
-                                  onConnectionError: () => setConnectionStatus('connecting'),
-                                  onThinking: (data) => appendStreamChunk('thinking', data.content),
-                                  onResponse: (data) => appendStreamChunk('response', data.content),
-                                  onStreamEnd: () => finishStreaming(),
-                                  onLog: (data) => { finishStreaming(); addMessage('log', data.content); },
-                                  onError: (data) => { finishStreaming(); addMessage('error', data.content); }
+        onConnectionError: () => setConnectionStatus('connecting'),
+        onThinking: (data) => appendStreamChunk('thinking', data.content),
+        onResponse: (data) => appendStreamChunk('response', data.content),
+        onStreamEnd: () => {
+            finishStreaming();
+            if (currentTab === 'context') {
+                loadProjectedContext();
+            }
+        },
+        onLog: (data) => { finishStreaming(); addMessage('log', data.content); },
+        onError: (data) => { finishStreaming(); addMessage('error', data.content); }
     });
 }
 
@@ -135,10 +238,8 @@ export async function switchTerminal(newTerminalId) {
  * Limpia la vista del chat y resetea el agrupador de bloques.
  */
 function updateTerminalChrome(terminalId) {
-    const title = document.querySelector('#conversation-title span');
     const sidebarId = document.getElementById('sidebar-terminal-id');
     const sidebarName = document.getElementById('sidebar-terminal-name');
-    if (title) title.textContent = terminalId;
     if (sidebarId) sidebarId.textContent = terminalId;
     if (sidebarName) sidebarName.textContent = 'Terminal activo';
 }
@@ -146,6 +247,9 @@ function updateTerminalChrome(terminalId) {
 export function clearChat() {
     if (chatArea) {
         chatArea.innerHTML = '';
+    }
+    if (contextArea) {
+        contextArea.innerHTML = '';
     }
     lastBlockType = null;
     lastBlockElement = null;

@@ -26,20 +26,26 @@ public interface ProjectedMemory {
   );
 
   public LocalDateTime getLastInteractionTime();
-  
+
   public void setLastInteractionTime(LocalDateTime lastInteractionTime);
-  
+
   public void setLastInteractionTurn(long turnid);
-  
+
   public long getLastInteractionTurn();
-  
+
   public AgentTool getTool(String name);
-  
+
   public void save();
-  
+
   public ProjectedMemoryOperation getOperation(String name);
-  
+
   public Agent getAgent();
-  
+
   public String getSubchannel();
+
+  public String getMessagesAsJson(
+          RecentMemory recentMemory,
+          ConsolidateMemory consolidateMemory,
+          String systemPrompt
+  );
 }

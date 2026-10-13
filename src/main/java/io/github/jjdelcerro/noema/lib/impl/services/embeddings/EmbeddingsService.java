@@ -6,9 +6,8 @@ import dev.langchain4j.model.embedding.onnx.PoolingMode;
 import dev.langchain4j.model.embedding.onnx.allminilml6v2q.AllMiniLmL6V2QuantizedEmbeddingModel;
 import dev.langchain4j.model.embedding.onnx.bgesmallenv15q.BgeSmallEnV15QuantizedEmbeddingModel;
 import io.github.jjdelcerro.noema.lib.api.Agent;
-import io.github.jjdelcerro.noema.lib.api.AgentService;
 import io.github.jjdelcerro.noema.lib.api.AgentServiceFactory;
-import io.github.jjdelcerro.noema.lib.api.AgentTool;
+import io.github.jjdelcerro.noema.lib.impl.utils.AgentUtils;
 import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -69,6 +68,7 @@ public class EmbeddingsService extends AbstractAgentService {
         }
     }
 
+    public static final String DEFAULT_MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2";
     public static final String NAME = "Embeddings";
 
     private EmbeddingModel[] embeddingModels;
@@ -82,20 +82,17 @@ public class EmbeddingsService extends AbstractAgentService {
     public void start() {
 //        agent.getCurrentConsole().printSystemLog("Loading local embeddings...");
         
-        String[] resources = new String[]{
-          "var/models/paraphrase-multilingual-MiniLM-L12-v2/model_quantized.onnx",
-          "var/models/paraphrase-multilingual-MiniLM-L12-v2/tokenizer.json"
-        };
-        for (String resPath : resources) {
-          this.agent.installResource(resPath);
+        List<String> resources = AgentUtils.readLinesResourceFile("var/models/"+DEFAULT_MODEL_NAME+"/files.txt");
+        for (String resname : resources) {
+          this.agent.installResource("var/models/"+DEFAULT_MODEL_NAME+"/"+resname);
         }        
         
         this.embeddingModels = new EmbeddingModel[]{
           new EmbeddingModel(
                   0, 
                   384, 
-                  agent.getPaths().getAgentPath(resources[0]),
-                  agent.getPaths().getAgentPath(resources[1])
+                  agent.getPaths().getAgentPath("var/models/"+DEFAULT_MODEL_NAME+"/"+resources.get(0)),
+                  agent.getPaths().getAgentPath("var/models/"+DEFAULT_MODEL_NAME+"/"+resources.get(1))
           ),
           new EmbeddingModel(1, 384, AllMiniLmL6V2QuantizedEmbeddingModel.class),
           new EmbeddingModel(2, 384, BgeSmallEnV15QuantizedEmbeddingModel.class)

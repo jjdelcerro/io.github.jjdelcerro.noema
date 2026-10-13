@@ -686,8 +686,8 @@ public class ReasoningServiceImpl
         try {
           response = this.getModel().generate(
                   projectedMemory.getMessages(
-                          recentMemory, 
-                          consolidateMemory, 
+                          recentMemory,
+                          consolidateMemory,
                           this.getBaseSystemPrompt()
                   ),
                   this.getToolSpecifications(),
@@ -832,4 +832,21 @@ public class ReasoningServiceImpl
   public String getCurrentSubchannel() {
     return this.currentSubchannel;
   }
+
+  @Override
+  public String getProjectedMemoryAsJson(String subchannel) {
+    RecentMemory recentMemory = this.getRecentMemory(subchannel);
+    ConsolidateMemory consolidateMemory = this.getActiveConsolidateMemory(subchannel);
+    String systemPrompt = this.getBaseSystemPrompt();
+
+    // Creamos una instancia EFÍMERA e independiente para no mutar el razonador activo
+    ProjectedMemory ephemeral = new ProjectedMemoryImpl(
+            this.agent,
+            this::getAvailableTool,
+            subchannel
+    );
+
+    return ephemeral.getMessagesAsJson(recentMemory, consolidateMemory, systemPrompt);
+  }
+
 }

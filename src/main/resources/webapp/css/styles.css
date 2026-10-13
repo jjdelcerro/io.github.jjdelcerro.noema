@@ -58,6 +58,48 @@ button {
   border-right: 1px solid var(--line);
 }
 
+.sidebar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sidebar-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--muted);
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.sidebar-toggle:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-toggle svg {
+  display: block;
+}
+
+.app-shell.sidebar-collapsed .terminal-sidebar {
+  display: none;
+}
+
+.app-shell.sidebar-collapsed #btn-collapse-sidebar {
+  display: none;
+}
+
+.app-shell:not(.sidebar-collapsed) #btn-expand-sidebar {
+  display: none;
+}
+
 .brand-lockup,
 .mobile-brand {
   display: flex;
@@ -249,9 +291,61 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 76px;
+  min-height: 40px;
+  padding: 0 34px;
+}
+
+.header-left,
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+/* ==========================================================================
+   Pestañas de Navegación del Panel Central (Chat / Contexto)
+   ========================================================================== */
+.conversation-tabbar {
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 6px;
   padding: 0 34px;
   border-bottom: 1px solid var(--line);
+}
+
+.conversation-tabbar .tab-button {
+  position: relative;
+  padding: 8px 14px;   /* antes 12px 14px */
+  color: var(--muted);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.conversation-tabbar .tab-button:hover {
+  color: var(--ink);
+}
+
+.conversation-tabbar .tab-button.active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.conversation-tabbar .tab-button.active::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
 }
 
 .mobile-brand {
@@ -352,6 +446,30 @@ button {
   margin: 0 auto;
   padding: 48px 34px 28px;
   scrollbar-color: var(--surface2) transparent;
+}
+
+/* ==========================================================================
+   Área de Inspección de Contexto Proyectado (XML / XSLT)
+   ========================================================================== */
+.context-area {
+  width: min(960px, 100%);
+  flex: 1;
+  overflow-y: auto;
+  margin: 0 auto;
+  padding: 24px 34px;
+  scrollbar-color: var(--surface2) transparent;
+}
+
+/* Regla estricta para asegurar que respete el atributo hidden */
+.context-area[hidden],
+.chat-area[hidden] {
+  display: none !important;
+}
+
+/* Integración limpia con el HTML generado por conversation.xsl */
+.context-area .conversation-container {
+  background: transparent !important;
+  padding: 0 !important;
 }
 
 .welcome-card {
@@ -552,6 +670,10 @@ button {
   width: min(860px, 100%);
   margin: 0 auto;
   padding: 10px 34px 24px;
+}
+
+.composer-area.hidden {
+  display: none !important;
 }
 
 .composer-shell {
@@ -1446,15 +1568,15 @@ body:has(.config-panel:not(.hidden))::before {
     display: none;
   }
   .conversation-header {
+    justify-content: space-between;
     padding: 0 16px;
   }
+
   .mobile-brand {
     display: flex;
     font-weight: 700;
   }
-  .conversation-title {
-    display: none;
-  }
+
   .header-tools {
     gap: 9px;
   }
@@ -1495,5 +1617,13 @@ body:has(.config-panel:not(.hidden))::before {
     max-height: 30vh;
     border-right: 0;
     border-bottom: 1px solid var(--line);
+  }
+
+  .context-area {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .header-left #btn-expand-sidebar {
+    display: none;
   }
 }

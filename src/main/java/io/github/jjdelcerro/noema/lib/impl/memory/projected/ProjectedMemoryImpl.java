@@ -330,5 +330,45 @@ public class ProjectedMemoryImpl implements ProjectedMemory {
     return subchannel;
   }
   
-  
+  @Override
+  public String getMessagesAsJson(
+          RecentMemory recentMemory,
+          ConsolidateMemory consolidateMemory,
+          String systemPrompt
+  ) {
+    List<ChatMessage> projectedMessages = new ArrayList<>();
+
+    // 1. Capa base: Prompt de sistema + Memoria Compactada (Relato)
+    assembleSystemContext(projectedMessages, systemPrompt, consolidateMemory);
+
+    // 2. Capa conversacional: Copia de trabajo de los mensajes recientes
+    if (recentMemory != null) {
+      projectedMessages.addAll(recentMemory.getMessages());
+    }
+
+    // 3. Ejecución secuencial del Pipeline de Operaciones
+    List<String> notifications = new ArrayList<>();
+    for (ProjectedMemoryOperation op : this.operations) {
+      try {
+        op.process(this, projectedMessages, notifications);
+      } catch (Exception e) {
+        LOGGER.error("Error executing operation '{}' on projected memory", op.getName(), e);
+      }
+    }
+
+    // 4. Inyección unificada de notificaciones efímeras si existen
+    if (!notifications.isEmpty()) {
+      injectUnifiedNotification(projectedMessages, notifications);
+    }
+
+    // 5. Serialización limpia en memoria (SIN dump() en disco y SIN setLastInteractionTime)
+    Gson gson = new GsonBuilder()
+            .setPrettyPrinting()
+            .registerTypeAdapter(ChatMessage.class, new GsonUtils.ChatMessageAdapter())
+            .registerTypeAdapter(Content.class, new GsonUtils.ContentAdapter())
+            .enableComplexMapKeySerialization()
+            .create();
+
+    return gson.toJson(projectedMessages);
+  }  
 }

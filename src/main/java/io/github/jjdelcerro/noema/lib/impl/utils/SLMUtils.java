@@ -5,6 +5,7 @@ import ai.onnxruntime.genai.GeneratorParams;
 import ai.onnxruntime.genai.SimpleGenAI;
 import io.github.jjdelcerro.noema.lib.api.Agent;
 import java.nio.file.Path;
+import java.util.List;
 
 /**
  *
@@ -12,27 +13,14 @@ import java.nio.file.Path;
  */
 public class SLMUtils {
 
-  private static final String SLM_NAME = "Qwen3.5-0.8B";
+  private static final String SLM_NAME = "Qwen3-0.6B";
 
   private static SimpleGenAI model;
 
   public static void start(Agent agent) {
-    String[] resources = new String[]{
-      "onnx/decoder_model_merged_q4.onnx",
-      "onnx/decoder_model_merged_q4.onnx_data",
-      "onnx/embed_tokens_q4.onnx",
-      "onnx/embed_tokens_q4.onnx_data",
-      "README.md",
-      "chat_template.jinja",
-      "config.json",
-      "generation_config.json",
-      "preprocessor_config.json",
-      "processor_config.json",
-      "tokenizer.json",
-      "tokenizer_config.json"
-    };
-    for (String resPath : resources) {
-      agent.installResource("var/models/" + SLM_NAME + "/" + resPath);
+    List<String> resources = AgentUtils.readLinesResourceFile("var/models/"+SLM_NAME+"/files.txt");
+    for (String resname : resources) {
+      agent.installResource("var/models/" + SLM_NAME + "/" + resname);
     }
   }
 

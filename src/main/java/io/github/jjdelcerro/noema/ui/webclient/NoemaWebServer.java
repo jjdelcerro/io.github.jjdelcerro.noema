@@ -13,6 +13,7 @@ import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsItem;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsPaths;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsString;
 import io.github.jjdelcerro.noema.lib.api.memory.episodic.Turn;
+import io.github.jjdelcerro.noema.lib.impl.utils.ConversationJsonToXml;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.http.sse.SseClient;
@@ -20,6 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Reader;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,7 +36,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.StringUtils;
-import static org.jline.utils.Colors.s;
 
 /**
  * Servidor Web embebido para Noema. Organizado mediante referencias a métodos
@@ -79,6 +81,7 @@ public class NoemaWebServer {
     this.app.post("/api/chat/{terminalId}", this::handlePostChatMessage);
     this.app.get("/api/chat/{terminalId}/history", this::handleGetHistory);
     this.app.sse("/api/console/{terminalId}", this::handleSseConsole);
+    this.app.get("/api/chat/{terminalId}/context.xml", this::handleGetContextXml);
 
     // 2. Configuración dinámica (Rutas específicas antes que las genéricas <path>)
     this.app.get("/api/config/ui", this::handleGetConfigUi);
@@ -681,7 +684,7 @@ public class NoemaWebServer {
       private final StringBuffer buffer;
       private boolean active;
       private final int delayms;
-      private final ScheduledExecutorService scheduler; 
+      private final ScheduledExecutorService scheduler;
       private ScheduledFuture<?> task;
 
       public BufferedOutput(Consumer<String> output, int delayms) {
@@ -689,11 +692,11 @@ public class NoemaWebServer {
         this.buffer = new StringBuffer();
         this.delayms = delayms;
         this.scheduler = Executors.newSingleThreadScheduledExecutor(
-            Thread.ofPlatform()
-                  .daemon(true)
-                  .name("noema-buffer-stream-"+subchannel)
-                  .factory()
-        );        
+                Thread.ofPlatform()
+                        .daemon(true)
+                        .name("noema-buffer-stream-" + subchannel)
+                        .factory()
+        );
         this.task = null;
         this.active = false;
       }
@@ -702,38 +705,38 @@ public class NoemaWebServer {
         boolean startTimer = this.buffer.length() == 0;
         this.active = true;
         this.buffer.append(s);
-        if (startTimer && this.task == null ) {
+        if (startTimer && this.task == null) {
           this.task = this.scheduler.schedule(this::flush, delayms, TimeUnit.MILLISECONDS);
         }
       }
 
       private synchronized void flush() {
-          String s = buffer.toString();
-          if( StringUtils.isNotBlank(s) ) {
-            try {
-              output.accept(s);
-            } catch(Exception ex) {
-              // Do nothing
-            }
+        String s = buffer.toString();
+        if (StringUtils.isNotBlank(s)) {
+          try {
+            output.accept(s);
+          } catch (Exception ex) {
+            // Do nothing
           }
-          buffer.setLength(0);
-          this.task = null;
+        }
+        buffer.setLength(0);
+        this.task = null;
       }
-      
+
       public synchronized boolean isActive() {
         return this.active;
       }
 
       public synchronized void endblock() {
-        if( this.task!=null ) {
+        if (this.task != null) {
           this.task.cancel(false);
         }
-        if (this.buffer.length() > 0) {          
+        if (this.buffer.length() > 0) {
           String s = buffer.toString();
-          if( StringUtils.isNotBlank(s) ) {
+          if (StringUtils.isNotBlank(s)) {
             try {
               output.accept(s);
-            } catch(Exception ex) {
+            } catch (Exception ex) {
               // Do nothing
             }
           }
@@ -802,7 +805,7 @@ public class NoemaWebServer {
 
     @Override
     public void printModelResponse(String message) {
-      if (this.streamingUsed() ) {
+      if (this.streamingUsed()) {
         bufferedResponse.endblock();
       } else {
         broadcast("response", message);
@@ -811,7 +814,7 @@ public class NoemaWebServer {
 
     @Override
     public void printModelReasoning(String message) {
-      if (this.streamingUsed() ) {
+      if (this.streamingUsed()) {
         bufferedReasoning.endblock();
       } else {
         broadcast("thinking", message);
@@ -820,7 +823,7 @@ public class NoemaWebServer {
 
     @Override
     public void streamingFinished() {
-      if( this.streamingUsed() ) {
+      if (this.streamingUsed()) {
         this.bufferedReasoning.endblock();
         this.bufferedResponse.endblock();
         broadcast("stream_end", "");
@@ -838,4 +841,27 @@ public class NoemaWebServer {
     }
 
   }
+
+  private void handleGetContextXml(Context ctx) throws Exception {
+    String terminalId = ctx.pathParam("terminalId");
+    String json = this.agent.getProjectedMemoryAsJson(terminalId);
+
+    if (StringUtils.isBlank(json)) {
+      ctx.status(404).json(Map.of("error", "No hay contexto proyectado disponible para el terminal: " + terminalId));
+      return;
+    }
+
+    try (StringReader reader = new StringReader(json); StringWriter writer = new StringWriter()) {
+      // Usamos "/css/conversation.xsl" para que el navegador lo renderice nativamente
+      // si alguien abre la URL del XML directamente en una pestaña
+      ConversationJsonToXml.json2xml(reader, writer, "/css/conversation.xsl");
+
+      byte[] payload = writer.toString().getBytes(StandardCharsets.UTF_8);
+      ctx.contentType("application/xml; charset=UTF-8").result(payload);
+    } catch (Exception e) {
+      LOGGER.error("Error transformando contexto a XML para el terminal '{}'", terminalId, e);
+      ctx.status(500).json(Map.of("error", "Fallo al transformar contexto a XML: " + e.getMessage()));
+    }
+  }
+
 }

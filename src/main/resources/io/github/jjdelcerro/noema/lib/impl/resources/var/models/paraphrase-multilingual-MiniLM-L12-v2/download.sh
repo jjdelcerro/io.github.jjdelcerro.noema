@@ -12,12 +12,14 @@ TARGET_DIR="${SCRIPT_DIR}"
 echo "Comprobando archivos del modelo en: ${TARGET_DIR}"
 
 URL_BASE="https://huggingface.co/Xenova/paraphrase-multilingual-MiniLM-L12-v2/resolve/main"
+rm -f "${TARGET_DIR}/files.txt"
 
 for ff in \
   "onnx/model_quantized.onnx" \
   "tokenizer.json"
 do
   download_file "${URL_BASE}/${ff}?download=true" "${TARGET_DIR}/$(basename ${ff})"
+  echo "$(basename ${ff})" >>"${TARGET_DIR}/files.txt"
 done
 
 echo "Listo"

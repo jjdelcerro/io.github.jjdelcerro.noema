@@ -122,7 +122,7 @@ public interface Agent {
   public ModelParameters getModelParameters(String providerUrl, String providerApiKey, String modelId, double temperature);
 
   public ChatModel createChatModel(ModelParameters params);
-  
+
   public String callChatModel(String docmapper_reasoning_llm, String extractStructureSystemPrompt, String doc_csv);
 
   public JsonObject callChatModelAsJson(String docmapper_basic_llm, String summaryAndCategorizeSystemPrompt, String contents);
@@ -136,4 +136,8 @@ public interface Agent {
   public String getCurrentSubchannel();
 
   public void addSharedService(AgentService service);
+
+  default String getProjectedMemoryAsJson(String subchannel) {
+    return null;
+  }
 }

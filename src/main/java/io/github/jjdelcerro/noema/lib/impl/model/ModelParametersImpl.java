@@ -42,7 +42,7 @@ public class ModelParametersImpl implements ModelParameters {
     this.temperature = temperature;
     this.modelId = modelId;
     this.extraParams = extraParams;
-    this.contextSize = (int) extraParams.getOrDefault("context", -1);
+    this.contextSize = ((Number)extraParams.getOrDefault("context", -1)).intValue();
     this.modelType = ModelType.from(
             (String) extraParams.getOrDefault(
                     "type",
@@ -50,7 +50,7 @@ public class ModelParametersImpl implements ModelParameters {
             )
     );
     if (Double.isNaN(temperature)) {
-      this.temperature = (double) extraParams.getOrDefault("temperature", DEFAULT_TEMPERATURE);
+      this.temperature = ((Number)extraParams.getOrDefault("temperature", DEFAULT_TEMPERATURE)).doubleValue();
     }
   }
 
@@ -110,6 +110,7 @@ public class ModelParametersImpl implements ModelParameters {
     return this.modelType;
   }
 
+  @Override
   public Map<String, Object> getExtraParams() {
     return extraParams;
   }

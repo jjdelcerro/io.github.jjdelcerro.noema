@@ -45,6 +45,23 @@ export async function fetchHistory(terminalId) {
 }
 
 /**
+ * Descarga el XML de contexto proyectado de la conversación para un terminal.
+ * 
+ * @param {string} terminalId - Identificador del terminal.
+ * @returns {Promise<string>} Contenido del documento XML como texto.
+ */
+export async function fetchContextXml(terminalId) {
+  const url = `${API_BASE}/api/chat/${encodeURIComponent(terminalId)}/context.xml`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Fallo recuperando contexto XML (${response.status})`);
+  }
+
+  return await response.text();
+}
+
+/**
  * Establece el canal de eventos Server-Sent Events (SSE) en tiempo real.
  * 
  * @param {string} terminalId - Identificador del terminal.

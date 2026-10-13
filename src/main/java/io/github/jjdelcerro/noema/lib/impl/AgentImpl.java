@@ -78,7 +78,7 @@ public class AgentImpl implements Agent {
   private static final String USER_SENSOR_LABEL = "USER";
   private static final String USER_SENSOR_DESCRIPTION = "USER";
 
-  private Map<String,AgentConsole> consoles;
+  private Map<String, AgentConsole> consoles;
   private final AgentSettings settings;
   private final AgentActions actions;
   private final EpisodicMemory episodicMemory;
@@ -94,24 +94,24 @@ public class AgentImpl implements Agent {
   private Thread shutdownHook;
   private boolean running;
   private TokenCountEstimator tokenEstimator;
-  private final Map<String,AgentService> sharedServices;
-  
+  private final Map<String, AgentService> sharedServices;
 
-/**
-   * Constructor reservado para entornos de pruebas y depuracion.
-   * Permite inyectar componentes simulados (Fakes) sin inicializar
-   * la infraestructura de base de datos ni accesos reales al disco.
-     * @param memoryDatabase
-     * @param servicesDatabase
-     * @param settings
-     * @param accessControl
-     * @param console
-     * @param episodicMemory
+  /**
+   * Constructor reservado para entornos de pruebas y depuracion. Permite
+   * inyectar componentes simulados (Fakes) sin inicializar la infraestructura
+   * de base de datos ni accesos reales al disco.
+   *
+   * @param memoryDatabase
+   * @param servicesDatabase
+   * @param settings
+   * @param accessControl
+   * @param console
+   * @param episodicMemory
    */
   public AgentImpl(
-          ConnectionSupplier memoryDatabase, 
-          ConnectionSupplier servicesDatabase, 
-          AgentSettings settings, 
+          ConnectionSupplier memoryDatabase,
+          ConnectionSupplier servicesDatabase,
+          AgentSettings settings,
           AgentConsole console,
           EpisodicMemory episodicMemory,
           AgentAccessControl accessControl
@@ -123,7 +123,7 @@ public class AgentImpl implements Agent {
     this.consoles.put(DEFAULT_SUBCHANNEL, console);
     this.services = new LinkedHashMap<>();
     this.sharedServices = new HashMap<>();
-    
+
     Path sandboxRoot = (this.getPaths() != null && this.getPaths().getWorkspaceFolder() != null)
             ? this.getPaths().getWorkspaceFolder()
             : Paths.get(".").toAbsolutePath().normalize();
@@ -133,12 +133,11 @@ public class AgentImpl implements Agent {
             this.actions,
             sandboxRoot,
             this::getCurrentConsole
-    );    
-    
-    
+    );
+
     this.servicesDatabase = servicesDatabase;
     this.memoryDatabase = memoryDatabase;
-    
+
     // Si se inyecta un episodicMemory (ej: en tests), lo usamos directamente.
     // Si no, instanciamos la implementación real conectada a la BBDD.
     if (episodicMemory != null) {
@@ -157,20 +156,20 @@ public class AgentImpl implements Agent {
       action.setAgent(this);
       this.actions.addAction(action);
     }
-  }  
-  
+  }
+
   public AgentImpl(ConnectionSupplier memoryDatabase, ConnectionSupplier servicesDatabase, AgentSettings settings, AgentConsole console) {
     this(memoryDatabase, servicesDatabase, settings, console, null, null);
-  }  
-  
+  }
+
   @Override
   public synchronized void setupServices() {
     SLMUtils.start(this);
-    if( this.services==null || this.services.isEmpty() ) {
+    if (this.services == null || this.services.isEmpty()) {
       AgentManager manager = AgentLocator.getAgentManager();
       for (AgentServiceFactory serviceFactory : manager.getServiceFactories()) {
         AgentService sharedService = this.sharedServices.get(serviceFactory.getName());
-        if( sharedService!=null ) {
+        if (sharedService != null) {
           this.services.put(serviceFactory.getName(), sharedService);
         } else {
           this.services.put(serviceFactory.getName(), serviceFactory.createService(this));
@@ -178,12 +177,12 @@ public class AgentImpl implements Agent {
       }
     }
   }
-  
+
   @Override
   public synchronized void start() {
     this.setupServices();
     SensorsService sensors = (SensorsService) this.getService(SensorsService.NAME);
-    if( sensors.isEnabled() ) {
+    if (sensors.isEnabled()) {
       SensorInformation sensor = sensors.createSensorInformation(
               USER_SENSOR_NAME,
               USER_SENSOR_LABEL,
@@ -194,7 +193,7 @@ public class AgentImpl implements Agent {
       sensors.registerSensor(sensor);
     }
     ReasoningService reasoning = (ReasoningService) this.getService(ReasoningService.NAME);
-    if( reasoning.isEnabled() ) {
+    if (reasoning.isEnabled()) {
       for (AgentService service : this.services.values()) {
         if (service.canStart()) {
           List<AgentTool> tools = service.getTools();
@@ -232,7 +231,7 @@ public class AgentImpl implements Agent {
       // Es normal, simplemente ignoramos la excepción.
     }
     for (AgentService service : this.services.values()) {
-      if (service.isRunning() && !this.sharedServices.containsKey(service.getName()) ) {
+      if (service.isRunning() && !this.sharedServices.containsKey(service.getName())) {
         service.stop();
       }
     }
@@ -256,17 +255,17 @@ public class AgentImpl implements Agent {
   @Override
   public AgentConsole getConsole(String subchannel) {
     AgentConsole console = this.consoles.get(subchannel);
-    if( console == null ) {
-        console = this.consoles.get(DEFAULT_SUBCHANNEL);
+    if (console == null) {
+      console = this.consoles.get(DEFAULT_SUBCHANNEL);
     }
     return console;
   }
 
   @Override
   public AgentConsole getCurrentConsole() {
-      return this.getConsole(this.getCurrentSubchannel());
+    return this.getConsole(this.getCurrentSubchannel());
   }
-  
+
   @Override
   public EpisodicMemory getEpisodicMemory() {
     return this.episodicMemory;
@@ -400,10 +399,10 @@ public class AgentImpl implements Agent {
   @Override
   public ModelParameters getModelParameters(String providerUrl, String providerApiKey, String modelId, double temperature) {
     return AgentLocator.getAgentManager().getModelParameters(
-            this.getPaths(), 
-            providerUrl, 
-            providerApiKey, 
-            modelId, 
+            this.getPaths(),
+            providerUrl,
+            providerApiKey,
+            modelId,
             temperature
     );
   }
@@ -453,12 +452,12 @@ public class AgentImpl implements Agent {
 
   private void startAllServices() {
     for (AgentService service : this.services.values()) {
-      if ( service.isEnabled() ) {
-        if ( !service.isRunning() && service.canStart()) {
+      if (service.isEnabled()) {
+        if (!service.isRunning() && service.canStart()) {
           service.start();
-          getConsole(DEFAULT_SUBCHANNEL).printSystemLog("Service '"+service.getName() + "' ok");
+          getConsole(DEFAULT_SUBCHANNEL).printSystemLog("Service '" + service.getName() + "' ok");
         } else {
-          getConsole(DEFAULT_SUBCHANNEL).printSystemLog("Service '"+service.getName() + "' can't start");
+          getConsole(DEFAULT_SUBCHANNEL).printSystemLog("Service '" + service.getName() + "' can't start");
         }
       }
     }
@@ -488,7 +487,7 @@ public class AgentImpl implements Agent {
     }
     return DEFAULT_SUBCHANNEL;
   }
-  
+
   private void updateContextSize(ModelParameters params) {
     if (!StringUtils.startsWith(params.providerUrl(), "https://openrouter.ai/api/v1")) {
       return;
@@ -552,7 +551,6 @@ public class AgentImpl implements Agent {
 //    SensorsService sensors = (SensorsService) this.getService(SensorsService.NAME);
 //    sensors.putEvent(USER_SENSOR_NAME, DEFAULT_SUBCHANNEL, text, PRIORITY_NORMAL, null, LocalDateTime.now(), callback);
 //  }
-
   @Override
   public SensorInformation registerSensor(String channel, String label, SensorNature nature, String description) {
     SensorsService sensors = (SensorsService) this.getService(SensorsService.NAME);
@@ -570,10 +568,10 @@ public class AgentImpl implements Agent {
       this.tokenEstimator = new OpenAiTokenCountEstimator("gpt-4o");
     }
     int n = 0;
-    if( messages!=null ) {
+    if (messages != null) {
       n += this.tokenEstimator.estimateTokenCountInMessages(messages);
     }
-    if( toolSpecifications!=null ) {    
+    if (toolSpecifications != null) {
       for (ToolSpecification toolSpecification : toolSpecifications) {
         String s = toolSpecification.toString();
         n += this.tokenEstimator.estimateTokenCountInText(s) + OVERHEAD_IN_ESTIMATE_TOOLS_TOKEN_COUNT;
@@ -582,7 +580,15 @@ public class AgentImpl implements Agent {
     return n;
   }
 
+  @Override
   public void addSharedService(AgentService service) {
     this.sharedServices.put(service.getName(), service);
   }
+
+  @Override
+  public String getProjectedMemoryAsJson(String subchannel) {
+    ReasoningService reasoning = (ReasoningService) getService(ReasoningService.NAME);
+    return reasoning != null ? reasoning.getProjectedMemoryAsJson(subchannel) : null;
+  }
+
 }

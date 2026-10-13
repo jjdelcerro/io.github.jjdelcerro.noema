@@ -122,7 +122,7 @@ public final class ConversationJsonToXml {
   private static void processConversationNode(XMLStreamWriter writer, JsonObject node, int index) throws XMLStreamException {
     // Case 1: Tool execution result
     if (node.has("toolName")) {
-      writeToolResultNode(writer, node);
+      writeToolResultNode(writer, node, index);
       return;
     }
 
@@ -140,15 +140,18 @@ public final class ConversationJsonToXml {
 
     // Case 4: System prompt or Context block (plain text object without interaction metadata)
     if (node.has("text")) {
-      writeSystemContextNode(writer, node);
+      writeSystemContextNode(writer, node, index);
     }
   }
 
-  private static void writeSystemContextNode(XMLStreamWriter writer, JsonObject node) throws XMLStreamException {
-    writeStartTag(writer, "system_context", 1);
+  private static void writeSystemContextNode(XMLStreamWriter writer, JsonObject node, int index) throws XMLStreamException {
+    indent(writer, 1);
+    writer.writeStartElement("turn");
+    writer.writeAttribute("index", String.valueOf(index));
+    writer.writeAttribute("role", "system");
     String text = node.get("text").getAsString();
     writeTextElementWithCData(writer, "content", text, 2);
-    writeEndTag(writer, "system_context", 1);
+    writeEndTag(writer, "turn", 1);
   }
 
   private static void writeUserTurnNode(XMLStreamWriter writer, JsonObject node, int index) throws XMLStreamException {
@@ -219,18 +222,22 @@ public final class ConversationJsonToXml {
     }
 
     if (req.has("arguments")) {
-      writeStartTag(writer, "arguments", depth + 1);
       String rawArgs = req.get("arguments").getAsString();
-      renderStructuredOrCData(writer, "payload", rawArgs, depth + 2);
-      writeEndTag(writer, "arguments", depth + 1);
+      if (!isEffectivelyEmptyJson(rawArgs)) {
+        writeStartTag(writer, "arguments", depth + 1);
+        renderStructuredOrCData(writer, "payload", rawArgs, depth + 2);
+        writeEndTag(writer, "arguments", depth + 1);
+      }
     }
 
     writeEndTag(writer, "tool_call", depth);
   }
 
-  private static void writeToolResultNode(XMLStreamWriter writer, JsonObject node) throws XMLStreamException {
+  private static void writeToolResultNode(XMLStreamWriter writer, JsonObject node, int index) throws XMLStreamException {
     indent(writer, 1);
-    writer.writeStartElement("tool_result");
+    writer.writeStartElement("turn");
+    writer.writeAttribute("index", String.valueOf(index));
+    writer.writeAttribute("role", "tool");
 
     if (node.has("id")) {
       writer.writeAttribute("id", node.get("id").getAsString());
@@ -252,7 +259,7 @@ public final class ConversationJsonToXml {
       }
     }
 
-    writeEndTag(writer, "tool_result", 1);
+    writeEndTag(writer, "turn", 1);
   }
 
   /**
@@ -341,7 +348,7 @@ public final class ConversationJsonToXml {
   private static void writeSimpleElement(XMLStreamWriter writer, String tagName, String text, int depth) throws XMLStreamException {
     indent(writer, depth);
     writer.writeStartElement(sanitizeXmlName(tagName));
-    writer.writeCharacters(text != null ? text : "");
+    writer.writeCharacters(text != null ? sanitizeXmlText(text) : "");
     writer.writeEndElement();
   }
 
@@ -366,13 +373,55 @@ public final class ConversationJsonToXml {
     if (text == null) {
       return;
     }
-    if (text.contains("]]>")) {
+    String sanitized = sanitizeXmlText(text);
+    if (sanitized.contains("]]>")) {
       // Split into safe chunks
-      String safe = text.replace("]]>", "]]]]><![CDATA[>");
+      String safe = sanitized.replace("]]>", "]]]]><![CDATA[>");
       writer.writeCData(safe);
     } else {
-      writer.writeCData(text);
+      writer.writeCData(sanitized);
     }
+  }
+
+  /**
+   * Replaces characters that are not legal in XML 1.0 with U+FFFD. This is
+   * required even inside CDATA sections, where control characters and lone
+   * surrogates would otherwise produce a malformed document. Iterates by code
+   * points so that valid surrogate pairs (outside the BMP) are preserved.
+   */
+  private static String sanitizeXmlText(String text) {
+    if (text == null) {
+      return null;
+    }
+    StringBuilder sb = new StringBuilder(text.length());
+    int i = 0;
+    while (i < text.length()) {
+      int cp = text.codePointAt(i);
+      boolean legal = (cp == 0x9 || cp == 0xA || cp == 0xD)
+              || (cp >= 0x20 && cp <= 0xD7FF)
+              || (cp >= 0xE000 && cp <= 0xFFFD)
+              || (cp >= 0x10000 && cp <= 0x10FFFF);
+      if (legal) {
+        sb.appendCodePoint(cp);
+      } else {
+        sb.append('\uFFFD');
+      }
+      i += Character.charCount(cp);
+    }
+    return sb.toString();
+  }
+
+  /**
+   * Returns true when the raw arguments string carries no usable content:
+   * null, blank, an empty JSON object ({}) or an empty JSON array ([]),
+   * with optional surrounding whitespace.
+   */
+  private static boolean isEffectivelyEmptyJson(String rawArgs) {
+    if (rawArgs == null || rawArgs.isBlank()) {
+      return true;
+    }
+    String trimmed = rawArgs.trim();
+    return "{}".equals(trimmed) || "[]".equals(trimmed);
   }
 
   /**
