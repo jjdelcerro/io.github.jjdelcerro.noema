@@ -29,3 +29,5 @@ replay_pid*
 /.classpath
 /.factorypath
 /.settings/
+/src/main/resources/webapp/vendor/ace/
+/src/main/resources/webapp/vendor/file-tree/

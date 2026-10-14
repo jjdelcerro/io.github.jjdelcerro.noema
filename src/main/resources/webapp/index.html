@@ -21,27 +21,60 @@
         <div class="sidebar-note"><span>◌</span><p>Una única línea de memoria, disponible desde cada terminal.</p></div>
         <div class="sidebar-footer"><div class="agent-state"><span class="state-orb"></span><span>Noema está disponible</span></div><button id="btn-export" class="sidebar-action"><span>↓</span><span>Descargar conversación</span></button><button id="btn-copy-conversation" class="sidebar-action"><span>▣</span><span>Copiar conversación</span></button><button id="btn-config" class="sidebar-action"><span>⚙</span><span>Configuración</span></button></div>
       </aside>
-      <main class="conversation-shell">
-        <header class="conversation-header">
+
+      <div class="main-column">
+        <header class="main-header">
           <div class="header-left">
             <div class="mobile-brand"><div class="brand-mark small"><i></i><i></i><i></i></div><span>Noema</span></div>
             <button id="btn-expand-sidebar" class="icon-button sidebar-toggle" aria-label="Mostrar panel lateral" aria-controls="app-sidebar" aria-expanded="false" title="Mostrar panel lateral"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3.5" /><line x1="9" y1="4.5" x2="9" y2="19.5" /></svg></button>
+            <button id="btn-toggle-workspace" class="icon-button workspace-toggle" aria-label="Mostrar panel de editor" aria-controls="workspace-panel" aria-expanded="false" title="Mostrar panel de editor"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3.5" /><line x1="15" y1="4.5" x2="15" y2="19.5" /></svg></button>
           </div>
           <div class="header-right">
             <div class="header-tools"><label class="terminal-input-wrap"><span>Terminal</span><input id="terminal-id" type="text" placeholder="ID del terminal" autocomplete="off"></label><div id="status-indicator" class="status-indicator"><span class="status-dot connecting"></span><span id="status-text">Conectando...</span></div><button id="btn-mobile-config" class="icon-button mobile-config-button">⚙</button></div>
           </div>
         </header>
-        <div class="conversation-tabbar" role="tablist">
-          <button id="tab-chat" class="tab-button active" role="tab" aria-selected="true">Conversación</button>
-          <button id="tab-context" class="tab-button" role="tab" aria-selected="false">Contexto proyectado</button>
-        </div>
-        <section id="chat-area" class="chat-area" aria-live="polite"><div class="welcome-card"><div class="welcome-symbol">✦</div><div><div class="eyebrow">Noema</div><h2>La conversación continúa.</h2><p>Este terminal es un canal hacia una única consciencia persistente. Puedes retomar el hilo cuando quieras.</p></div></div></section>
-        <section id="context-area" class="context-area" hidden aria-live="polite"></section>
-        <footer id="composer-area" class="composer-area"><div class="composer-shell"><textarea id="message-input" placeholder="Escribe a Noema…" rows="1"></textarea><button id="btn-send" class="send-button" aria-label="Enviar mensaje">↑</button></div><div class="composer-hint">Enter para enviar <span>·</span> Shift + Enter para nueva línea</div></footer>
-      </main>
+
+        <main class="main-panel">
+          <div id="workspace-panel" class="workspace-panel">
+            <div class="workspace-tree-pane">
+              <div id="workspace-tree" class="workspace-tree"></div>
+            </div>
+            <div id="splitter-tree" class="splitter" role="separator" aria-orientation="vertical" aria-label="Redimensionar panel del editor"></div>
+            <div class="workspace-editor-pane">
+              <div id="workspace-editor-tabs" class="workspace-editor-tabs" role="tablist"></div>
+              <div id="workspace-editor-toolbar" class="workspace-editor-toolbar"></div>
+              <div id="workspace-editor" class="workspace-editor"></div>
+            </div>            
+          </div>
+          <div id="splitter-workspace" class="splitter" role="separator" aria-orientation="vertical" aria-label="Redimensionar panel de trabajo"></div>
+          <div class="conversation-shell">
+            <div class="conversation-tabbar" role="tablist">
+              <button id="tab-chat" class="tab-button active" role="tab" aria-selected="true">Conversación</button>
+              <button id="tab-context" class="tab-button" role="tab" aria-selected="false">Contexto proyectado</button>
+            </div>
+            <section id="chat-area" class="chat-area" aria-live="polite"><div class="welcome-card"><div class="welcome-symbol">✦</div><div><div class="eyebrow">Noema</div><h2>La conversación continúa.</h2><p>Este terminal es un canal hacia una única consciencia persistente. Puedes retomar el hilo cuando quieras.</p></div></div></section>
+            <section id="context-area" class="context-area" hidden aria-live="polite"></section>
+            <footer id="composer-area" class="composer-area"><div class="composer-shell"><textarea id="message-input" placeholder="Escribe a Noema…" rows="1"></textarea><button id="btn-send" class="send-button" aria-label="Enviar mensaje">↑</button></div><div class="composer-hint">Enter para enviar <span>·</span> Shift + Enter para nueva línea</div></footer>
+          </div>
+        </main>
+      </div>
     </div>
     <div id="toast-container" class="toast-container"></div>
     <aside id="config-panel" class="config-panel hidden"><div class="config-header"><div><div class="eyebrow">Noema</div><h2>Configuración</h2></div><button id="btn-close-config" class="config-close-button" title="Cerrar configuración">Cerrar</button></div><div class="config-body"><nav id="config-tree" class="config-tree"></nav><section id="config-content" class="config-content"></section></div></aside>
+    <script src="vendor/ace/ace.js"></script>
+    <script src="vendor/ace/ext-searchbox.js"></script>
+    <script src="vendor/ace/mode-java.js"></script>
+    <script src="vendor/ace/mode-xml.js"></script>
+    <script src="vendor/ace/mode-json.js"></script>
+    <script src="vendor/ace/mode-markdown.js"></script>
+    <script src="vendor/ace/mode-sh.js"></script>
+    <script src="vendor/ace/mode-groovy.js"></script>
+    <script src="vendor/ace/mode-properties.js"></script>
+    <script src="vendor/ace/mode-yaml.js"></script>
+    <script src="vendor/ace/mode-html.js"></script>
+    <script src="vendor/ace/mode-css.js"></script>
+    <script src="vendor/ace/mode-javascript.js"></script>
+    <script src="vendor/ace/theme-dracula.js"></script>
     <script type="module" src="js/main.js"></script>
   </body>
 </html>

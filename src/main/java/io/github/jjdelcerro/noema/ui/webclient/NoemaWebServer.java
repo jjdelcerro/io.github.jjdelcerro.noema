@@ -6,6 +6,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.api.AgentConsole;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsCheckedList;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsGroup;
@@ -13,6 +14,7 @@ import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsItem;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsPaths;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsString;
 import io.github.jjdelcerro.noema.lib.api.memory.episodic.Turn;
+import io.github.jjdelcerro.noema.lib.impl.utils.AgentUtils;
 import io.github.jjdelcerro.noema.lib.impl.utils.ConversationJsonToXml;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
@@ -23,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -67,12 +70,16 @@ public class NoemaWebServer {
       LOGGER.info("El servidor web de Noema ya se encuentra en ejecución.");
       return;
     }
-
+    
+    URL webappResource = this.getClass().getResource("/webapp");
+    Path rootPath = this.agent.getPaths().getAgentFolder().resolve("var/webapp").toAbsolutePath();
+    AgentUtils.installResources(webappResource, rootPath, false);
+    
     this.app = Javalin.create(config -> {
       config.bundledPlugins.enableCors(cors -> cors.addRule(it -> it.anyHost()));
       config.staticFiles.add(staticFiles -> {
-        staticFiles.directory = "/webapp";
-        staticFiles.location = io.javalin.http.staticfiles.Location.CLASSPATH;
+        staticFiles.directory = rootPath.toString();
+        staticFiles.location = io.javalin.http.staticfiles.Location.EXTERNAL;
       });
     });
 
@@ -100,6 +107,7 @@ public class NoemaWebServer {
     // 5. Gestión de Contenido de Ficheros (var:/ y rutas absolutas)
     this.app.get("/api/files/content", this::handleGetFileContent);
     this.app.post("/api/files/content", this::handlePostFileContent);
+    this.app.get("/api/files/tree", this::handleGetFilesTree);
 
     this.app.start(this.address, this.port);
     LOGGER.info("Servidor web de Noema iniciado correctamente en http://{}:{}", this.address, this.port);
@@ -862,6 +870,117 @@ public class NoemaWebServer {
       LOGGER.error("Error transformando contexto a XML para el terminal '{}'", terminalId, e);
       ctx.status(500).json(Map.of("error", "Fallo al transformar contexto a XML: " + e.getMessage()));
     }
+  }
+
+  /**
+   * Devuelve la estructura del sistema de archivos por niveles para el
+   * explorador del editor web.
+   *
+   * Sin parametro 'path': lista de raices virtuales. Con parametro 'path':
+   * hijos directos de esa carpeta.
+   */
+  private void handleGetFilesTree(Context ctx) throws Exception {
+    String pathParam = ctx.queryParam("path");
+
+    // Caso raiz: raices virtuales
+    if (pathParam == null || pathParam.isBlank()) {
+      List<Map<String, String>> roots = new ArrayList<>();
+      Map<String, Path> virtualRoots = getFilesystemRootNodes(null);
+      for (Map.Entry<String, Path> entry : virtualRoots.entrySet()) {
+        roots.add(treeEntry(entry.getKey(), entry.getValue(), true));
+      }
+      ctx.json(roots);
+      return;
+    }
+
+    // Caso subcarpeta: hijos directos
+    Path target;
+    try {
+      target = Path.of(pathParam.trim()).toAbsolutePath().normalize();
+    } catch (Exception e) {
+      ctx.status(400).json(Map.of("error", "Ruta invalida: " + pathParam));
+      return;
+    }
+
+    if (!Files.exists(target) || !Files.isDirectory(target)) {
+      ctx.status(404).json(Map.of("error", "Directorio no encontrado: " + pathParam));
+      return;
+    }
+
+    List<Map<String, String>> children = new ArrayList<>();
+    try (var stream = Files.list(target)) {
+      List<Path> sorted = stream
+              .filter(p -> !isNoiseEntry(p))
+              .sorted(Comparator
+                      .comparing((Path p) -> !Files.isDirectory(p))
+                      .thenComparing(p -> p.getFileName().toString(), String.CASE_INSENSITIVE_ORDER))
+              .toList();
+      for (Path child : sorted) {
+        children.add(treeEntry(child.getFileName().toString(), child, Files.isDirectory(child)));
+      }
+    } catch (Exception e) {
+      LOGGER.warn("No se pudo listar el directorio: {}", target, e);
+    }
+
+    ctx.json(children);
+  }
+
+  /**
+   * Construye una entrada {name, path, type} para el arbol web.
+   */
+  private Map<String, String> treeEntry(String name, Path path, boolean isDirectory) {
+    Map<String, String> entry = new LinkedHashMap<>();
+    entry.put("name", name);
+    entry.put("path", path.toAbsolutePath().normalize().toString());
+    entry.put("type", isDirectory ? "directory" : "file");
+    return entry;
+  }
+
+  /**
+   * Filtro de higiene: oculta metadatos de Git, respaldos de JavaRCS y el
+   * almacen interno de Noema (.noema-agent/var).
+   */
+  private boolean isNoiseEntry(Path p) {
+    String name = p.getFileName().toString();
+    if (".git".equals(name) || name.endsWith(",jv")) {
+      return true;
+    }
+    String normalized = p.toString().replace('\\', '/');
+    return normalized.contains("/.noema-agent/var/") || normalized.endsWith("/.noema-agent/var");
+  }
+
+  /**
+   *
+   * Devuelve las raices virtuales del explorador. La clave del Map es el nombre
+   * visible en el arbol; el valor, la ruta real. Orden: primero el workspace,
+   * luego las rutas externas permitidas.
+   */
+  private Map<String, Path> getFilesystemRootNodes(String terminalId) {
+    Map<String, Path> roots = new LinkedHashMap<>();
+    Map<String,Integer>names = new HashMap<>();
+    AgentAccessControl accessControl = this.agent.getAccessControl();
+    
+    for (Path path : accessControl.getAllowedPaths()) {
+      String name = path.toFile().getName();      
+      Object x = names.get(name);
+      if( x == null ) {
+        names.put(name, 1);
+      } else {
+        names.put(name, (int)x + 1);
+      }
+    }
+    
+    for (Path path : accessControl.getAllowedPaths()) {
+      path = path.toAbsolutePath().normalize();
+      String name = path.toFile().getName();      
+      int n = (int) names.get(name);
+      if( n == 1 ) {
+        roots.put(name, path);
+      } else {
+        roots.put(path.toString(), path);      
+      }      
+    }
+    return roots;
   }
 
 }

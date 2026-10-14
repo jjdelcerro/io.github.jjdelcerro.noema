@@ -4,9 +4,13 @@
 
 import { initChatUI, switchTerminal } from './chat-ui.js';
 import { initConfigUI } from './config-ui.js';
+import { initWorkspaceUI } from './workspace-ui.js';
+import { initSplitters, refreshSplitters } from './splitters.js';
+import { initEditorUI, resizeEditor } from './editor-ui.js';
 
 const STORAGE_KEY = 'noema_terminal_id';
 const SIDEBAR_STORAGE_KEY = 'noema_sidebar_collapsed';
+const WORKSPACE_STORAGE_KEY = 'noema_workspace_collapsed';
 const DEFAULT_TERMINAL_ID = 'default';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -18,7 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (terminalInput) {
         terminalInput.value = savedTerminalId;
 
-        // Escuchar cambios en el campo terminalId
         terminalInput.addEventListener('change', () => {
             handleTerminalChange(terminalInput.value);
         });
@@ -26,22 +29,21 @@ document.addEventListener('DOMContentLoaded', () => {
         terminalInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                terminalInput.blur(); // Quita el foco y fuerza el evento change
+                terminalInput.blur();
             }
         });
     }
 
     // 2. Inicializar subsistemas
     initSidebarToggle();
+    initWorkspaceToggle();
     initChatUI(savedTerminalId);
     initConfigUI();
+    initWorkspaceUI();
+    initEditorUI();
+    initSplitters();
 });
 
-/**
- * Guarda el nuevo terminalId y notifica a la UI de chat para cambiar la sesión.
- * 
- * @param {string} rawId - Valor bruto introducido en el input.
- */
 function handleTerminalChange(rawId) {
     const cleanId = rawId.trim();
     if (!cleanId) return;
@@ -50,9 +52,6 @@ function handleTerminalChange(rawId) {
     switchTerminal(cleanId);
 }
 
-/**
- * Configura el plegado/desplegado del panel lateral (sidebar).
- */
 function initSidebarToggle() {
     const shell = document.querySelector('.app-shell');
     const btnCollapse = document.getElementById('btn-collapse-sidebar');
@@ -75,17 +74,48 @@ function initSidebarToggle() {
     });
 }
 
-/**
- * Aplica el estado de plegado del sidebar y sincroniza los atributos ARIA.
- * 
- * @param {HTMLElement} shell - Contenedor raíz .app-shell.
- * @param {HTMLElement} btnCollapse - Botón que pliega el sidebar.
- * @param {HTMLElement} btnExpand - Botón que lo despliega.
- * @param {boolean} collapsed - true si el sidebar debe quedar plegado.
- */
 function applySidebarState(shell, btnCollapse, btnExpand, collapsed) {
     shell.classList.toggle('sidebar-collapsed', collapsed);
     const expanded = String(!collapsed);
     btnCollapse.setAttribute('aria-expanded', expanded);
     btnExpand.setAttribute('aria-expanded', expanded);
+}
+
+function initWorkspaceToggle() {
+    const shell = document.querySelector('.app-shell');
+    const btnToggle = document.getElementById('btn-toggle-workspace');
+    if (!shell || !btnToggle) {
+        return;
+    }
+
+    const collapsed = localStorage.getItem(WORKSPACE_STORAGE_KEY) !== 'false';
+    applyWorkspaceState(shell, btnToggle, collapsed);
+
+    btnToggle.addEventListener('click', () => {
+        const nowCollapsed = !shell.classList.contains('workspace-collapsed');
+        applyWorkspaceState(shell, btnToggle, nowCollapsed);
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.altKey && (e.key === 'e' || e.key === 'E')) {
+            e.preventDefault();
+            btnToggle.click();
+        }
+    });
+}
+
+function applyWorkspaceState(shell, btnToggle, collapsed) {
+    shell.classList.toggle('workspace-collapsed', collapsed);
+    localStorage.setItem(WORKSPACE_STORAGE_KEY, String(collapsed));
+    const expanded = String(!collapsed);
+    const label = collapsed ? 'Mostrar panel de editor' : 'Ocultar panel de editor';
+    btnToggle.setAttribute('aria-expanded', expanded);
+    btnToggle.setAttribute('aria-label', label);
+    btnToggle.setAttribute('title', label);
+
+    if (!collapsed) {
+        requestAnimationFrame(() => {
+            refreshSplitters();
+        });
+    }
 }

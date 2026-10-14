@@ -138,7 +138,6 @@
       {
         "name": "aide",
         "type": "http",
-        "githuburl": "https://github.com/vysokyj/mcp-aide/tree/master",
         "url": "http://127.0.0.1:8000/mcp",
         "prefix": "aide.",
         "mode": "READ",
@@ -150,7 +149,9 @@
           "*"
         ],
         "env": {  
-        }
+        },
+        "github_url": "https://github.com/vysokyj/mcp-aide/tree/master",
+        "to_launch_server": "mcp-aide --http 127.0.0.1:8000"
       }      
     ]
   }  
