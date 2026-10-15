@@ -236,4 +236,19 @@ public class McpServiceImpl extends AbstractAgentService {
     return factory.canStart(agent.getSettings());
   }
 
+  public AgentTool getFirstTool(String server, String name) {
+    for (AgentTool tool : this.tools) {
+      if( StringUtils.isBlank(server) ) {
+        if( FilenameUtils.wildcardMatch(name, tool.getName(), IOCase.INSENSITIVE)) {
+          return tool;
+        }
+      } else {
+        if( FilenameUtils.wildcardMatch(server+"."+name, tool.getName(), IOCase.INSENSITIVE)) {
+          return tool;
+        }
+      }
+    }
+    return null;
+  }
+  
 }

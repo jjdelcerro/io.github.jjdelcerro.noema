@@ -350,3 +350,86 @@ export async function saveFileContent(filePath, content) {
 
   return await response.json();
 }
+
+/* --- Endpoints del Editor Web --- */
+
+/**
+ * Envía el estado actual del editor (push). Sin lógica en servidor: se
+ * almacena el último snapshot por terminalId.
+ *
+ * @param {Object} payload - Snapshot construido en editor-ui.js.
+ * @returns {Promise<Object>}
+ */
+export async function postEditorState(payload) {
+  const response = await fetch(`${API_BASE}/api/editor/state`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) {
+    throw new Error(`Error enviando estado del editor (${response.status})`);
+  }
+  return await response.json();
+}
+
+/**
+ * Solicita diagnósticos para un fichero Java concreto.
+ *
+ * @param {string} filePath - Ruta absoluta del fichero.
+ * @returns {Promise<{annotations: Array<{row: number, column: number, text: string, type: string}>}>}
+ */
+export async function postEditorDiagnostics(filePath) {
+  const response = await fetch(`${API_BASE}/api/editor/diagnostics`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({file: filePath})
+  });
+  if (!response.ok) {
+    throw new Error(`Error obteniendo diagnósticos (${response.status})`);
+  }
+  return await response.json();
+}
+
+/**
+ * Formatea el contenido de un fichero. El contenido va en el body como
+ * texto plano (sin JSON, sin escapes) y la respuesta es el contenido
+ * formateado también como texto plano.
+ *
+ * @param {string} filePath - Ruta del fichero (informativa).
+ * @param {string} ext - Extensión sin punto (ej: 'java').
+ * @param {string} content - Contenido crudo del buffer.
+ * @returns {Promise<string>} Contenido formateado.
+ */
+export async function postEditorFormat(filePath, ext, content) {
+  const url = new URL(`${API_BASE}/api/editor/format`);
+  if (ext) {
+    url.searchParams.set('ext', ext);
+  }
+  const response = await fetch(url.toString(), {
+    method: 'POST',
+    headers: {'Content-Type': 'text/plain; charset=UTF-8'},
+    body: content
+  });
+  if (!response.ok) {
+    throw new Error(`Error formateando (${response.status})`);
+  }
+  return await response.text();
+}
+
+/**
+ * Ajusta/organiza los imports de un fichero Java en disco.
+ *
+ * @param {string} filePath - Ruta absoluta del fichero.
+ * @returns {Promise<{status: string}>}
+ */
+export async function postEditorFiximports(filePath) {
+  const response = await fetch(`${API_BASE}/api/editor/fiximports`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({file: filePath})
+  });
+  if (!response.ok) {
+    throw new Error(`Error ajustando imports (${response.status})`);
+  }
+  return await response.json();
+}

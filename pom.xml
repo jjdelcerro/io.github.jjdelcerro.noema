@@ -388,6 +388,11 @@
       <artifactId>rsyntaxtextarea</artifactId>
       <version>3.6.1</version>
     </dependency>
+    <dependency>
+        <groupId>com.palantir.javaformat</groupId>
+        <artifactId>palantir-java-format</artifactId>
+        <version>2.102.0</version>
+    </dependency>    
     
     <!-- Di�logos de b�squeda y reemplazo prefabricados -->
     <dependency>

@@ -1,19 +1,26 @@
 package io.github.jjdelcerro.noema.ui.webclient;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Range;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.palantir.javaformat.java.Formatter;
+import com.palantir.javaformat.java.FormatterException;
+import com.palantir.javaformat.java.JavaFormatterOptions;
 import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.api.AgentConsole;
+import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsCheckedList;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsGroup;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsItem;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsPaths;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsString;
 import io.github.jjdelcerro.noema.lib.api.memory.episodic.Turn;
+import io.github.jjdelcerro.noema.lib.impl.services.mcp.McpServiceImpl;
 import io.github.jjdelcerro.noema.lib.impl.utils.AgentUtils;
 import io.github.jjdelcerro.noema.lib.impl.utils.ConversationJsonToXml;
 import io.javalin.Javalin;
@@ -29,8 +36,16 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
@@ -44,6 +59,7 @@ import org.apache.commons.lang3.StringUtils;
  * Servidor Web embebido para Noema. Organizado mediante referencias a métodos
  * para cada endpoint REST y SSE.
  */
+@SuppressWarnings("UseSpecificCatch")
 public class NoemaWebServer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(NoemaWebServer.class);
@@ -52,6 +68,7 @@ public class NoemaWebServer {
   private final int port;
   private final String address;
   private final Map<String, SseAgentConsole> activeConsoles;
+  private final Map<String, EditorState> editorStates;
   private Javalin app;
 
   public NoemaWebServer(Agent agent, String address, int port) {
@@ -59,6 +76,7 @@ public class NoemaWebServer {
     this.port = port;
     this.address = address;
     this.activeConsoles = new ConcurrentHashMap<>();
+    this.editorStates = new ConcurrentHashMap<>();
   }
 
   /**
@@ -70,11 +88,11 @@ public class NoemaWebServer {
       LOGGER.info("El servidor web de Noema ya se encuentra en ejecución.");
       return;
     }
-    
+
     URL webappResource = this.getClass().getResource("/webapp");
     Path rootPath = this.agent.getPaths().getAgentFolder().resolve("var/webapp").toAbsolutePath();
     AgentUtils.installResources(webappResource, rootPath, false);
-    
+
     this.app = Javalin.create(config -> {
       config.bundledPlugins.enableCors(cors -> cors.addRule(it -> it.anyHost()));
       config.staticFiles.add(staticFiles -> {
@@ -109,6 +127,12 @@ public class NoemaWebServer {
     this.app.post("/api/files/content", this::handlePostFileContent);
     this.app.get("/api/files/tree", this::handleGetFilesTree);
 
+    // 6. Editor Web: estado y acciones sobre ficheros
+    this.app.post("/api/editor/state", this::handlePostEditorState);
+    this.app.post("/api/editor/diagnostics", this::handlePostEditorDiagnostics);
+    this.app.post("/api/editor/format", this::handlePostEditorFormat);
+    this.app.post("/api/editor/fiximports", this::handlePostEditorFiximports);
+
     this.app.start(this.address, this.port);
     LOGGER.info("Servidor web de Noema iniciado correctamente en http://{}:{}", this.address, this.port);
   }
@@ -127,6 +151,11 @@ public class NoemaWebServer {
 
   /**
    * Método estático de conveniencia para arranque rápido.
+   *
+   * @param agent
+   * @param address
+   * @param port
+   * @return
    */
   public static NoemaWebServer startServer(Agent agent, String address, int port) {
     NoemaWebServer server = new NoemaWebServer(agent, address, port);
@@ -291,8 +320,9 @@ public class NoemaWebServer {
           }
         }
         Object val = this.agent.getSettings().eval(
-                q.get("enabledExpression").getAsString(), defaultVal, contextVars);
-        result.addProperty(qPath, Boolean.parseBoolean(val.toString()));
+                q.get("enabledExpression").getAsString(), defaultVal, contextVars
+        );
+        result.addProperty(qPath, Boolean.valueOf(val.toString()));
       } else if (qPath.endsWith("/enabled")) {
         String parentPath = qPath.substring(0, qPath.length() - "/enabled".length());
         String expression = findChildEnabledExpression(uiRoot, parentPath);
@@ -306,7 +336,7 @@ public class NoemaWebServer {
             }
           }
           Object val = this.agent.getSettings().eval(expression, defaultVal, contextVars);
-          result.addProperty(qPath, Boolean.parseBoolean(val.toString()));
+          result.addProperty(qPath, Boolean.valueOf(val.toString()));
         } else {
           result.addProperty(qPath, true);
         }
@@ -459,7 +489,7 @@ public class NoemaWebServer {
   // --- 4. Ejecución de Acciones del Agente ---
   private void handlePostAction(Context ctx) throws Exception {
     String actionName = ctx.pathParam("actionName");
-    if (actionName == null || actionName.isBlank()) {
+    if (StringUtils.isBlank(actionName)) {
       ctx.status(400).json(Map.of("status", "error", "message", "Nombre de acción no especificado"));
       return;
     }
@@ -662,15 +692,15 @@ public class NoemaWebServer {
 
     private final String subchannel;
     private final List<SseClient> clients = new CopyOnWriteArrayList<>();
-    private BufferedOutput bufferedResponse = new BufferedOutput(
+    private final BufferedOutput bufferedResponse = new BufferedOutput(
             (String t) -> {
-              broadcast("response", t);;
+              broadcast("response", t);
             },
             500
     );
-    private BufferedOutput bufferedReasoning = new BufferedOutput(
+    private final BufferedOutput bufferedReasoning = new BufferedOutput(
             (String t) -> {
-              broadcast("thinking", t);;
+              broadcast("thinking", t);
             },
             500
     );
@@ -955,32 +985,344 @@ public class NoemaWebServer {
    * visible en el arbol; el valor, la ruta real. Orden: primero el workspace,
    * luego las rutas externas permitidas.
    */
-  private Map<String, Path> getFilesystemRootNodes(String terminalId) {
+  private Map<String, Path> getFilesystemRootNodes(@SuppressWarnings("unused") String terminalId) {
     Map<String, Path> roots = new LinkedHashMap<>();
-    Map<String,Integer>names = new HashMap<>();
+    Map<String, Integer> names = new HashMap<>();
     AgentAccessControl accessControl = this.agent.getAccessControl();
-    
+
     for (Path path : accessControl.getAllowedPaths()) {
-      String name = path.toFile().getName();      
+      String name = path.toFile().getName();
       Object x = names.get(name);
-      if( x == null ) {
+      if (x == null) {
         names.put(name, 1);
       } else {
-        names.put(name, (int)x + 1);
+        names.put(name, (int) x + 1);
       }
     }
-    
+
     for (Path path : accessControl.getAllowedPaths()) {
       path = path.toAbsolutePath().normalize();
-      String name = path.toFile().getName();      
+      String name = path.toFile().getName();
       int n = (int) names.get(name);
-      if( n == 1 ) {
+      if (n == 1) {
         roots.put(name, path);
       } else {
-        roots.put(path.toString(), path);      
-      }      
+        roots.put(path.toString(), path);
+      }
     }
     return roots;
+  }
+
+  /**
+   * Recibe el estado del editor (push desde el cliente). El estado se mantiene
+   * por terminalId en una unica instancia que se va mutando en cada llamada:
+   * los campos presentes en el JSON se aplican, los ausentes quedan a null (o
+   * lista vacia en el caso de openFiles).
+   *
+   * Contrato del payload (lo genera editor-state.js en el cliente):
+   * <pre>
+   * {
+   *  "terminalId": "default",
+   *  "openFiles": [
+   *      {
+   *        "path": "/ruta/absoluta/A.java",
+   *        "dirty": true
+   *      },
+   *      ...
+   *  ],
+   *  "activeFile": "/ruta/absoluta/A.java",
+   *  "cursorLine": 45,
+   *  "selectionStartLine": 45,
+   *  "selectionEndLine": 58
+   * }
+   * </pre> Devuelve 200 {} siempre que el JSON sea valido.
+   */
+  private void handlePostEditorState(Context ctx) throws Exception {
+    JsonObject body;
+    try {
+      body = JsonParser.parseString(ctx.body()).getAsJsonObject();
+    } catch (Exception e) {
+      ctx.status(400).json(Map.of("error", "JSON invalido en el cuerpo de la peticion"));
+      return;
+    }
+
+    String terminalId = jsonStringOrDefault(body, "terminalId", "default");
+
+    EditorState state = this.editorStates.computeIfAbsent(terminalId, id -> {
+      EditorState s = new EditorState();
+      s.setTerminalId(id);
+      return s;
+    });
+
+    // Actualizacion completa: la instancia se reutiliza, todos los campos
+    // se sustituyen por lo que venga (o por null si no viene).
+    state.setActiveFile(jsonStringOrNull(body, "activeFile"));
+    state.setCursorLine(jsonIntegerOrNull(body, "cursorLine"));
+    state.setSelectionStartLine(jsonIntegerOrNull(body, "selectionStartLine"));
+    state.setSelectionEndLine(jsonIntegerOrNull(body, "selectionEndLine"));
+    state.setOpenFiles(parseOpenFiles(body));
+
+    ctx.json(Map.of());
+  }
+
+  /**
+   * Construye la lista de ficheros abiertos a partir del JSON. Devuelve lista
+   * vacia si el campo no existe, no es un array, o el array esta vacio.
+   */
+  private static List<EditorState.OpenFile> parseOpenFiles(JsonObject body) {
+    List<EditorState.OpenFile> openFiles = new ArrayList<>();
+    JsonElement arr = body.get("openFiles");
+    if (arr == null || !arr.isJsonArray()) {
+      return openFiles;
+    }
+    for (JsonElement el : arr.getAsJsonArray()) {
+      if (!el.isJsonObject()) {
+        continue;
+      }
+      JsonObject o = el.getAsJsonObject();
+      EditorState.OpenFile of = new EditorState.OpenFile();
+      of.setPath(jsonStringOrNull(o, "path"));
+      JsonElement dirty = o.get("dirty");
+      of.setDirty(dirty != null && !dirty.isJsonNull() && dirty.getAsBoolean());
+      openFiles.add(of);
+    }
+    return openFiles;
+  }
+
+  /**
+   * Devuelve el valor String de una clave del JsonObject, o null si el valor
+   * esta ausente o es JSON null.
+   */
+  private static String jsonStringOrNull(JsonObject obj, String key) {
+    JsonElement el = obj.get(key);
+    return (el == null || el.isJsonNull()) ? null : el.getAsString();
+  }
+
+  /**
+   * Devuelve el valor String de una clave del JsonObject, o el valor por
+   * defecto si el valor esta ausente, es JSON null o esta en blanco.
+   */
+  private static String jsonStringOrDefault(JsonObject obj, String key, String defaultValue) {
+    String value = jsonStringOrNull(obj, key);
+    return (value == null || value.isBlank()) ? defaultValue : value;
+  }
+
+  /**
+   * Devuelve el valor Integer de una clave del JsonObject, o null si el valor
+   * esta ausente o es JSON null.
+   */
+  private static Integer jsonIntegerOrNull(JsonObject obj, String key) {
+    JsonElement el = obj.get(key);
+    return (el == null || el.isJsonNull()) ? null : el.getAsInt();
+  }
+
+  /**
+   * Devuelve diagnosticos (errores, warnings) para un fichero concreto.
+   *
+   * Contrato de la respuesta (consumido por el frontend, alineado con
+   * session.setAnnotations de Ace; row y column son 0-indexados):
+   * <pre>
+   * {
+   *  "annotations": [
+   *    { "row": 12, "column": 8, "text": "...", "type": "error" },
+   *    { "row": 20, "column": 0, "text": "...", "type": "warning" }
+   *  ]
+   * }
+   * </pre>
+   *
+   * Parametros de entrada: { "file": "/ruta/absoluta/A.java" }
+   */
+  private void handlePostEditorDiagnostics(Context ctx) throws Exception {
+    JsonObject body;
+    try {
+      body = JsonParser.parseString(ctx.body()).getAsJsonObject();
+    } catch (Exception e) {
+      ctx.status(400).json(Map.of("error", "JSON invalido en el cuerpo de la peticion"));
+      return;
+    }
+    String file = body.has("file") ? body.get("file").getAsString() : null;
+    if (file == null || file.isBlank()) {
+      ctx.status(400).json(Map.of("error", "El campo 'file' es obligatorio"));
+      return;
+    }
+
+    McpServiceImpl serviceMCP = (McpServiceImpl) this.agent.getService(McpServiceImpl.NAME);
+    if (serviceMCP == null) {
+      ctx.status(400).json(Map.of("error", "Service MCP not found"));
+      return;
+    }
+    AgentTool tool = serviceMCP.getFirstTool("aide", "lsp_apply_code_action");
+    if (tool == null) {
+      ctx.status(400).json(Map.of("error", "Tool lsp_apply_code_action not found"));
+      return;
+    }
+    String projectRoot = findProjectFolder(file);
+    String toolArgs = String.format("""
+{
+  "root": "%s",
+  "file": "%s"
+}    
+""", projectRoot, file);
+    String resp = tool.execute(toolArgs);
+
+    // TODO: sustituir por procesar el resp y construir la respuesta
+    JsonArray annotations = new JsonArray();
+
+    JsonObject a1 = new JsonObject();
+    a1.addProperty("row", 12);
+    a1.addProperty("column", 8);
+    a1.addProperty("text", "Simbolo no encontrado (dummy)");
+    a1.addProperty("type", "error");
+    annotations.add(a1);
+
+    JsonObject a2 = new JsonObject();
+    a2.addProperty("row", 20);
+    a2.addProperty("column", 0);
+    a2.addProperty("text", "Variable no usada (dummy)");
+    a2.addProperty("type", "warning");
+    annotations.add(a2);
+
+    JsonObject result = new JsonObject();
+    result.add("annotations", annotations);
+    ctx.contentType("application/json").result(new Gson().toJson(result));
+  }
+
+  /**
+   * Formatea el contenido recibido en el cuerpo de la peticion.
+   *
+   * Request: POST /api/editor/format?ext=java Content-Type: text/plain;
+   * charset=UTF-8 Body: contenido crudo del buffer del editor. Response:
+   * Content-Type: text/plain; charset=UTF-8 Body: contenido formateado.
+   *
+   */
+  private void handlePostEditorFormat(Context ctx) throws Exception {
+    String content = ctx.body();
+    content = this.formatJavaCode(content);
+    ctx.contentType("text/plain; charset=UTF-8").result(content);
+  }
+
+  /**
+   * Ajusta/organiza los imports del fichero indicado, en disco.
+   *
+   * Parametros de entrada:
+   * <pre>
+   * {
+   *  "file": "/ruta/absoluta/A.java"
+   * }
+   * </pre>
+   *
+   * Respuesta:
+   * <pre>
+   * {
+   *  "status": "ok"
+   * }
+   * </pre>
+   *
+   */
+  private void handlePostEditorFiximports(Context ctx) throws Exception {
+    JsonObject body;
+    try {
+      body = JsonParser.parseString(ctx.body()).getAsJsonObject();
+    } catch (Exception e) {
+      ctx.status(400).json(Map.of("error", "JSON invalido en el cuerpo de la peticion"));
+      return;
+    }
+    String file = body.has("file") ? body.get("file").getAsString() : null;
+    if (file == null || file.isBlank()) {
+      ctx.status(400).json(Map.of("error", "El campo 'file' es obligatorio"));
+      return;
+    }
+
+    McpServiceImpl serviceMCP = (McpServiceImpl) this.agent.getService(McpServiceImpl.NAME);
+    if (serviceMCP == null) {
+      ctx.status(400).json(Map.of("error", "Service MCP not found"));
+      return;
+    }
+    AgentTool tool = serviceMCP.getFirstTool("aide", "lsp_apply_code_action");
+    if (tool == null) {
+      ctx.status(400).json(Map.of("error", "Tool lsp_apply_code_action not found"));
+      return;
+    }
+    String projectRoot = findProjectFolder(file);
+    String toolArgs = String.format("""
+{
+  "end_column": null,
+  "end_line": null,
+  "kind": "source.organizeImports",
+  "root": "%s",
+  "title": null,
+  "file": "%s",
+  "column": 0,
+  "line": 0
+}                      
+""", projectRoot, file);
+    String resp = tool.execute(toolArgs);
+
+    ctx.contentType("application/json").result(resp);
+  }
+
+  private String findProjectFolder(String filename) {
+    if (filename == null || filename.isBlank()) {
+      return null;
+    }
+
+    // Normalizamos la ruta para trabajar con una ruta absoluta y sin . o ..
+    Path path = Paths.get(filename).toAbsolutePath().normalize();
+
+    // Si es un directorio, empezamos por él mismo.
+    // Si es un archivo (o no existe), empezamos por su carpeta padre.
+    Path dir = Files.isDirectory(path) ? path : path.getParent();
+
+    // Subimos por el árbol de directorios
+    while (dir != null) {
+      Path pom = dir.resolve("pom.xml");
+      if (Files.isRegularFile(pom)) {
+        return dir.toString(); // Carpeta donde se encontró pom.xml
+      }
+      dir = dir.getParent();
+    }
+
+    return null; // No se encontró ningún pom.xml en los ancestros
+  }
+
+  /**
+   * Devuelve el ultimo estado conocido del editor para el terminal indicado, o
+   * null si no hay ninguno. Uso interno del agente.
+   * @param terminalId
+   * @return 
+   */
+  public EditorState getEditorState(String terminalId) {
+    return this.editorStates.get(terminalId);
+  }
+
+//   private String formatJavaCode(String sourceCode) throws FormatterException {
+//        // Cargar la implementación del servicio
+//        FormatterService formatterService = ServiceLoader.load(FormatterService.class)
+//          .findFirst()
+//          .orElseThrow(
+//              () -> new IllegalStateException(
+//                "No se encontró una implementación de FormatterService en el classpath."
+//              )
+//          );
+//
+//        return formatterService.formatSourceReflowStringsAndFixImports(sourceCode);
+//    }  
+  
+  private String formatJavaCode(String sourceCode) throws FormatterException {
+    // Crear el formateador con el estilo de Palantir
+    Formatter formatter = Formatter.createFormatter(
+            JavaFormatterOptions.builder()
+                    .style(JavaFormatterOptions.Style.PALANTIR)
+                    .build()
+    );
+
+    // Definir el rango a formatear: todo el String
+    ImmutableList<Range<Integer>> ranges = ImmutableList.of(
+            Range.closedOpen(0, sourceCode.length())
+    );
+
+    // Formatear y devolver el resultado
+    return formatter.formatSource(sourceCode, ranges);
   }
 
 }

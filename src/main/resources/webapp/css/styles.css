@@ -400,6 +400,13 @@ button {
   background: rgba(255, 255, 255, 0.08);
 }
 
+.editor-tab-dirty {
+  color: var(--accent);
+  font-size: 10px;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
 .workspace-editor {
   flex: 1;
   min-height: 0;
@@ -445,6 +452,17 @@ button {
 
 .editor-toolbar-btn svg {
   display: block;
+}
+
+.editor-toolbar-btn:disabled {
+  color: var(--faint);
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.editor-toolbar-btn:disabled:hover {
+  color: var(--faint);
+  background: transparent;
 }
 
 .workspace-editor-pane {
