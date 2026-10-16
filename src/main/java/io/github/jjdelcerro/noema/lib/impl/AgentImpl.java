@@ -95,6 +95,8 @@ public class AgentImpl implements Agent {
   private boolean running;
   private TokenCountEstimator tokenEstimator;
   private final Map<String, AgentService> sharedServices;
+  
+  private Map<String,Object> extraProperties;
 
   /**
    * Constructor reservado para entornos de pruebas y depuracion. Permite
@@ -123,6 +125,7 @@ public class AgentImpl implements Agent {
     this.consoles.put(DEFAULT_SUBCHANNEL, console);
     this.services = new LinkedHashMap<>();
     this.sharedServices = new HashMap<>();
+    this.extraProperties = new HashMap<>();
 
     Path sandboxRoot = (this.getPaths() != null && this.getPaths().getWorkspaceFolder() != null)
             ? this.getPaths().getWorkspaceFolder()
@@ -591,4 +594,13 @@ public class AgentImpl implements Agent {
     return reasoning != null ? reasoning.getProjectedMemoryAsJson(subchannel) : null;
   }
 
+  @Override
+  public void set(String name, Object value) {
+    this.extraProperties.put(name, value);
+  }
+  
+  @Override
+  public Object get(String name) {
+    return this.extraProperties.get(name);
+  }
 }

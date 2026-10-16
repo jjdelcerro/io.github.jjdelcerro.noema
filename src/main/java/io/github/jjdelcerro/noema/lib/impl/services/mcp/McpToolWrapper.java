@@ -7,6 +7,7 @@ import dev.langchain4j.service.tool.ToolExecutionResult;
 import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.impl.tools.AbstractAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
+import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 
@@ -62,7 +63,10 @@ public class McpToolWrapper extends AbstractAgentTool {
 
       // Delegamos la ejecución al cliente MCP de LangChain4j
       ToolExecutionResult result = mcpClient.executeTool(request);
-      return result.result().toString(); // FIXME Es correcto?
+      if( result == null ) {
+        return "null";  // FIXME Es correcto?
+      }
+      return Objects.toString(result.result()); // FIXME Es correcto?
     } catch (Exception e) {
       LOGGER.error("Error ejecutando herramienta MCP '{}'", toolSpecification.name(), e);
       return error("Error en servidor MCP: " + e.getMessage());

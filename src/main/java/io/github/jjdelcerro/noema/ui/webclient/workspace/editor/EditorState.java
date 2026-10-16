@@ -1,4 +1,4 @@
-package io.github.jjdelcerro.noema.ui.webclient;
+package io.github.jjdelcerro.noema.ui.webclient.workspace.editor;
 
 import java.util.List;
 
@@ -14,23 +14,24 @@ import java.util.List;
  */
 public class EditorState {
 
-  private String terminalId;
+  private String subchannel;
   private List<OpenFile> openFiles;
   private String activeFile;
   private Integer cursorLine;
   private Integer selectionStartLine;
   private Integer selectionEndLine;
+  private String selectionText;
 
   public EditorState() {
     // Constructor vacio requerido por Gson.
   }
 
-  public String getTerminalId() {
-    return terminalId;
+  public String getSubchannel() {
+    return subchannel;
   }
 
-  public void setTerminalId(String terminalId) {
-    this.terminalId = terminalId;
+  public void setSubchannel(String subchannel) {
+    this.subchannel = subchannel;
   }
 
   public List<OpenFile> getOpenFiles() {
@@ -73,6 +74,14 @@ public class EditorState {
     this.selectionEndLine = selectionEndLine;
   }
 
+  public String getSelectionText() {
+    return selectionText;
+  }
+
+  public void setSelectionText(String selectionText) {
+    this.selectionText = selectionText;
+  }
+
   /**
    * Entrada de un fichero abierto en el editor.
    */
@@ -99,6 +108,14 @@ public class EditorState {
 
     public void setDirty(boolean dirty) {
       this.dirty = dirty;
+    }
+
+    @Override
+    public String toString() {
+      if (this.dirty) {
+        return this.path + "[dirty]";
+      }
+      return this.path;
     }
   }
 }

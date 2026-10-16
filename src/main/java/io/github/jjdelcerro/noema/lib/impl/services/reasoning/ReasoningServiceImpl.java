@@ -829,6 +829,7 @@ public class ReasoningServiceImpl
     return this.getRecentMemory(subchannel).getTurnsCount();
   }
 
+  @Override
   public String getCurrentSubchannel() {
     return this.currentSubchannel;
   }

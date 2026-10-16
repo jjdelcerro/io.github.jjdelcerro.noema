@@ -140,4 +140,11 @@ public interface Agent {
   default String getProjectedMemoryAsJson(String subchannel) {
     return null;
   }
+  
+  default void set(String name, Object value) {
+  }
+  
+  default Object get(String name) {
+    return null;
+  }  
 }

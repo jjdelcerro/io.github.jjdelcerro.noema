@@ -113,6 +113,24 @@ export function connectSSE(terminalId, handlers = {}) {
       handlers.onStreamEnd();
     }
   });
+  
+  eventSource.addEventListener('editor_open', (event) => {
+    if (handlers.onEditorOpen) {
+      handlers.onEditorOpen(parseEventData(event.data).content);
+    }
+  });
+
+  eventSource.addEventListener('editor_apply', (event) => {
+    if (handlers.onEditorApply) {
+      handlers.onEditorApply(parseEventData(event.data).content);
+    }
+  });
+  
+  eventSource.addEventListener('editor_setup_done', (event) => {
+    if (handlers.onEditorSetupDone) {
+      handlers.onEditorSetupDone(parseEventData(event.data).content);
+    }
+  });
 
   return {
     close: () => eventSource.close(),
@@ -430,6 +448,23 @@ export async function postEditorFiximports(filePath) {
   });
   if (!response.ok) {
     throw new Error(`Error ajustando imports (${response.status})`);
+  }
+  return await response.json();
+}
+
+export async function postEditorSetupProject(terminalId, path) {
+  const response = await fetch(`${API_BASE}/api/editor/setupproject`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({terminalId, path})
+  });
+  if (!response.ok) {
+    let msg = `HTTP ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data.error) msg = data.error;
+    } catch (e) { /* respuesta sin JSON */ }
+    throw new Error(msg);
   }
   return await response.json();
 }

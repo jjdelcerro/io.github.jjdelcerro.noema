@@ -14,7 +14,7 @@ if [ ${args/*--debug*/--debug} == "--debug" ] ; then
 else
 	suspend=n
 fi
-set -x
+
 exec java \
   "-agentlib:jdwp=transport=dt_socket,address=8765,server=y,suspend=${suspend}" \
   --add-modules jdk.incubator.vector \

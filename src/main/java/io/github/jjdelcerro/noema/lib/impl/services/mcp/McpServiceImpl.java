@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.*;
-import org.apache.commons.compress.compressors.FileNameUtil;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOCase;
 
@@ -88,7 +87,10 @@ public class McpServiceImpl extends AbstractAgentService {
     String type = serverGroup.getPropertyAsString("type", "stdio").toLowerCase();
     int mode = parseToolMode(serverGroup.getPropertyAsString("mode", "READ"));
     AgentSettingsList include_tools = serverGroup.getPropertyAsList("include_tools");
-    
+    if( include_tools == null ) {
+      LOGGER.info("Servidor MCP '{}' omitido: 'include_tools' está vacío.", name);
+      return;
+    }
     try {
       McpTransport transport = null;
 
@@ -140,6 +142,7 @@ public class McpServiceImpl extends AbstractAgentService {
       // Descubrir herramientas expuestas por el servidor
       List<ToolSpecification> mcpTools = client.listTools();
 
+      List<String> toolNames = new ArrayList<>();
       // Envolver las herramientas en McpToolWrapper de Noema
       for (ToolSpecification spec : mcpTools) {
         for (AgentSettingsItem tool : include_tools) {
@@ -167,13 +170,14 @@ public class McpServiceImpl extends AbstractAgentService {
                       .build();
             }
             this.tools.add(new McpToolWrapper(agent, client, spec2, mode, prefix));
+            toolNames.add(spec2.name());
             break;
           }
         }
       }
 
       this.activeClients.add(client);
-      LOGGER.info("Servidor MCP '{}' conectado con éxito. {} herramientas registradas.", name, mcpTools.size());
+      LOGGER.info("Servidor MCP '{}' conectado con éxito. {} herramientas registradas ({}).", name, toolNames.size(),StringUtils.join(toolNames, ", "));
       agent.getCurrentConsole().printSystemLog("MCP [" + name + "]: " + mcpTools.size() + " herramientas cargadas.");
 
     } catch (Exception e) {

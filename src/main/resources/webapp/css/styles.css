@@ -465,6 +465,12 @@ button {
   background: transparent;
 }
 
+.editor-toolbar-btn.working {
+  color: var(--accent);
+  background: rgba(184, 160, 255, 0.12);
+  cursor: wait;
+}
+
 .workspace-editor-pane {
   display: flex;
   min-width: 0;

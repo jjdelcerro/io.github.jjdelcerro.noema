@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="ISO-8859-1"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <artifactId>io.github.jjdelcerro.noema.main</artifactId>
@@ -197,7 +197,7 @@
       <version>4.0.24</version>
     </dependency>
     
-    <!-- Soporte JSON idiomático en Groovy (JsonSlurper / JsonOutput) -->
+    <!-- Soporte JSON idiomatico en Groovy (JsonSlurper / JsonOutput) -->
     <dependency>
       <groupId>org.apache.groovy</groupId>
       <artifactId>groovy-json</artifactId>
@@ -394,7 +394,7 @@
         <version>2.102.0</version>
     </dependency>    
     
-    <!-- Diï¿½logos de bï¿½squeda y reemplazo prefabricados -->
+    <!-- Dialogos de busqueda y reemplazo prefabricados -->
     <dependency>
       <groupId>com.fifesoft</groupId>
       <artifactId>rstaui</artifactId>

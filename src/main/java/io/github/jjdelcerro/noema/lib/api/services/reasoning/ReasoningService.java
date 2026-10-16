@@ -48,4 +48,6 @@ public interface ReasoningService extends AgentService {
   public ProjectedMemory getProjectedMemory(String subchannel);
 
   public String getProjectedMemoryAsJson(String subchannel);
+  
+  public String getCurrentSubchannel();
 }

@@ -1,5 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.settings;
 
+import com.google.gson.JsonElement;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsCheckedList;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsGroup;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettingsItem;
@@ -12,6 +13,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.lang3.BooleanUtils;
 
@@ -177,6 +179,14 @@ public class AgentSettingsGroupImpl implements AgentSettingsGroup {
     AgentSettingsItem item = getProperty(path);
     if (item instanceof AgentSettingsList list) {
       return list;
+    }
+    if (item instanceof AgentSettingsPathsImpl paths) {
+      List<String> theValues = paths.getRawValues();
+      List<AgentSettingsItem> theItems = new ArrayList<>();
+      for (Object theValue : theValues) {
+        theItems.add(new AgentSettingsStringImpl(Objects.toString(theValue, null)));
+      }
+      return new AgentSettingsListImpl(theItems);
     }
     return null;
   }

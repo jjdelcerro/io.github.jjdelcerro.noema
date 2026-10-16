@@ -18,6 +18,7 @@ import {
     fixImports
 } from './editor-actions.js';
 import { pushState, initStateBeforeUnload } from './editor-state.js';
+import { postEditorSetupProject } from './api.js';
 
 const WRAP_STORAGE_KEY = 'noema_editor_wrap';
 const TERMINAL_STORAGE_KEY = 'noema_terminal_id';
@@ -57,6 +58,7 @@ const SVG_DIAGNOSTICS = '<svg xmlns="http://www.w3.org/2000/svg" width="16" heig
 const SVG_FORMAT = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="7" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
 const SVG_FIXIMPORTS = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>';
 const SVG_RELOAD = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>';
+const SVG_SETUP = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>';
 
 let editor = null;
 let tabsEl = null;
@@ -69,6 +71,7 @@ const tabElements = new Map();
 let activePath = null;
 let wrapEnabled = false;
 let suspendDirtyTracking = false;
+let setupInProgress = false;
 
 /**
  * Inicializa Ace sobre el contenedor del panel del editor. Idempotente y
@@ -257,9 +260,10 @@ function createToolbar() {
 
     toolbarEl.appendChild(makeToolbarButton('btn-editor-wrap', SVG_WRAP, 'Ajuste de línea', toggleWrap));
     toolbarEl.appendChild(makeToolbarButton('btn-editor-save', SVG_SAVE, 'Guardar', handleSave));
-    toolbarEl.appendChild(makeToolbarButton('btn-editor-diagnostics', SVG_DIAGNOSTICS, 'Diagnóstico', handleDiagnostics));
     toolbarEl.appendChild(makeToolbarButton('btn-editor-format', SVG_FORMAT, 'Formatear', handleFormat));
+    toolbarEl.appendChild(makeToolbarButton('btn-editor-diagnostics', SVG_DIAGNOSTICS, 'Diagnóstico', handleDiagnostics));
     toolbarEl.appendChild(makeToolbarButton('btn-editor-fiximports', SVG_FIXIMPORTS, 'Ajustar imports', handleFixImports));
+    toolbarEl.appendChild(makeToolbarButton('btn-editor-setup', SVG_SETUP, 'Preparar proyecto (LSP)', handleSetupProject));
     toolbarEl.appendChild(makeToolbarButton('btn-editor-reload', SVG_RELOAD, 'Recargar desde disco', handleReload));
     
     updateWrapButtonState();
@@ -295,6 +299,8 @@ function updateToolbarState() {
 
     setBtnEnabled('btn-editor-fiximports',
         !!entry && !dirty && matchesExtensions(ext, ACTION_EXTENSIONS.fiximports));
+        
+    setBtnEnabled('btn-editor-setup', !!entry && !setupInProgress);        
 }
 
 function setBtnEnabled(id, enabled) {
@@ -691,6 +697,7 @@ function buildStateSnapshot() {
     let cursorLine = null;
     let selectionStartLine = null;
     let selectionEndLine = null;
+    let selectionText = null;
 
     if (activePath && editor) {
         const cursor = editor.getCursorPosition();
@@ -698,6 +705,11 @@ function buildStateSnapshot() {
         cursorLine = cursor.row;
         selectionStartLine = selection.start.row;
         selectionEndLine = selection.end.row;
+        // Solo enviamos el texto si hay una seleccion real (no un simple cursor).
+        if (selection.start.row !== selection.end.row
+                || selection.start.column !== selection.end.column) {
+            selectionText = editor.getSelectedText();
+        }
     }
 
     return {
@@ -706,7 +718,8 @@ function buildStateSnapshot() {
         activeFile: activePath,
         cursorLine,
         selectionStartLine,
-        selectionEndLine
+        selectionEndLine,
+        selectionText
     };
 }
 
@@ -783,3 +796,131 @@ async function handleReload() {
         showToast(`No se pudo recargar: ${error.message}`, 'error');
     }
 }
+
+/**
+ * Maneja el evento SSE 'editor_open' emitido por el agente: abre el
+ * fichero indicado en el editor (o lo activa si ya estaba abierto) y,
+ * opcionalmente, posiciona el cursor en la linea indicada (1-based).
+ */
+export async function handleEditorOpen(payload) {
+    if (!payload || !payload.file) {
+        return;
+    }
+    await openFile(payload.file);
+    if (payload.line != null && editor) {
+        const entry = sessions.get(payload.file);
+        if (entry) {
+            editor.setSession(entry.session);
+            editor.gotoLine(payload.line, 0, true);
+            editor.focus();
+        }
+    }
+}
+
+/**
+ * Maneja el evento SSE 'editor_apply' emitido por el agente: aplica una
+ * mutacion al buffer del fichero ACTIVO. No guarda en disco.
+ *
+ * Contrato:
+ *   - lineEnd == null -> inserta 'text' en lineStart (como linea nueva,
+ *     desplazando el resto).
+ *   - lineEnd != null -> reemplaza el rango [lineStart, lineEnd] (1-based,
+ *     inclusive) con 'text'. Si 'text' es vacio o nulo, borra el rango.
+ *
+ * Si no hay fichero activo, descarta el evento y avisa con un toast.
+ */
+export function handleEditorApply(payload) {
+    if (!payload || payload.lineStart == null) {
+        return;
+    }
+    if (!activePath || !editor) {
+        showToast('El agente propuso un cambio pero no hay fichero activo en el editor', 'error');
+        return;
+    }
+    const entry = sessions.get(activePath);
+    if (!entry) {
+        return;
+    }
+
+    const session = entry.session;
+    const startRow = payload.lineStart - 1;
+    const text = payload.text != null ? payload.text : '';
+    const lastRow = session.getLength() - 1;
+
+    if (startRow < 0 || startRow > lastRow + 1) {
+        showToast(`Línea fuera de rango: ${payload.lineStart}`, 'error');
+        return;
+    }
+
+    try {
+        if (payload.lineEnd == null) {
+            // Insercion: nueva linea antes de startRow
+            session.insert({ row: startRow, column: 0 }, text + '\n');
+        } else {
+            const endRow = payload.lineEnd - 1;
+            if (endRow < startRow || endRow > lastRow) {
+                showToast('Rango de líneas inválido', 'error');
+                return;
+            }
+            const Range = window.ace.require('ace/range').Range;
+            // Si el rango no llega a la ultima linea, extendemos hasta el
+            // inicio de la siguiente para incluir tambien el salto de linea
+            // final (evita dejar una linea vacia residual al borrar).
+            const rangeEnd = endRow < lastRow
+                    ? { row: endRow + 1, column: 0 }
+                    : { row: endRow, column: session.getLine(endRow).length };
+            const range = new Range(startRow, 0, rangeEnd.row, rangeEnd.column);
+            const replacement = text === '' ? '' : text + '\n';
+            session.replace(range, replacement);
+        }
+        editor.focus();
+    } catch (error) {
+        console.error('Error aplicando editor_apply:', error);
+        showToast('No se pudo aplicar el cambio propuesto por el agente', 'error');
+    }
+}
+
+async function handleSetupProject() {
+    if (!activePath || setupInProgress) {
+        return;
+    }
+    setupInProgress = true;
+    updateToolbarState();
+    updateSetupButtonState();
+
+    const terminalId = localStorage.getItem(TERMINAL_STORAGE_KEY) || 'default';
+    try {
+        await postEditorSetupProject(terminalId, activePath);
+        // Éxito del envío (202). El resultado real llega por SSE.
+        // No quitamos el estado "working" aquí: lo hará onEditorSetupDone.
+    } catch (error) {
+        console.error('Error lanzando setup-project:', error);
+        showToast(`No se pudo lanzar el setup: ${error.message}`, 'error');
+        setupInProgress = false;
+        updateToolbarState();
+        updateSetupButtonState();
+    }
+}
+
+function updateSetupButtonState() {
+    const btn = document.getElementById('btn-editor-setup');
+    if (!btn) return;
+    btn.classList.toggle('working', setupInProgress);
+    const label = setupInProgress ? 'Preparando proyecto...' : 'Preparar proyecto (LSP)';
+    btn.title = label;
+    btn.setAttribute('aria-label', label);
+}
+
+export function handleEditorSetupDone(payload) {
+    setupInProgress = false;
+    updateToolbarState();
+    updateSetupButtonState();
+
+    if (!payload) return;
+    if (payload.status === 'ok') {
+        showToast('Proyecto preparado para el LSP', 'success', 3000);
+    } else {
+        showToast(`Setup del proyecto fallido: ${payload.message || 'error desconocido'}`, 'error', 5000);
+    }
+}
+

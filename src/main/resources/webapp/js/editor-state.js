@@ -75,6 +75,7 @@ function statesEqual(a, b) {
   if (a.cursorLine !== b.cursorLine) return false;
   if (a.selectionStartLine !== b.selectionStartLine) return false;
   if (a.selectionEndLine !== b.selectionEndLine) return false;
+  if (a.selectionText !== b.selectionText) return false;   
   if (!a.openFiles || !b.openFiles) return false;
   if (a.openFiles.length !== b.openFiles.length) return false;
   for (let i = 0; i < a.openFiles.length; i++) {
@@ -83,7 +84,6 @@ function statesEqual(a, b) {
   }
   return true;
 }
-
 /**
  * Registra el listener que envía el último snapshot pendiente al cerrar
  * la pestaña del navegador. Usa `sendBeacon`, que el navegador no cancela
