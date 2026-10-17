@@ -11,7 +11,6 @@ import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemory;
  * bajo el principio de la espiral de contexto, garantizando que el agente opere 
  * siempre sobre un conocimiento estructurado y dentro de su zona óptima de atención.
  *
- * TODO: Antes MemoryService, habria que actualizar la documentacion con este cambio 
  * @author jjdelcerro
  */
 public interface MemoryConsolidationService extends AgentService {

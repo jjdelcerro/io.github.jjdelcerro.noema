@@ -4,8 +4,6 @@ import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.AbstractPaginatedAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -23,9 +21,10 @@ import static io.github.jjdelcerro.noema.lib.api.AgentAccessControl.AccessMode.P
  * Results are paginated and written to a temporary file.
  * Output format: lastModified;type;size;mime;absolutePath
  */
+@SuppressWarnings("UseSpecificCatch")
 public class FileFindTool extends AbstractPaginatedAgentTool {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(FileFindTool.class);
+//    protected static final Logger LOGGER = LoggerFactory.getLogger(FileFindTool.class);
     public static final String TOOL_NAME = "file_find";
 
     // Maximum number of matching entries to write to the temporary file.
@@ -33,7 +32,7 @@ public class FileFindTool extends AbstractPaginatedAgentTool {
 
     // Directories that are skipped during traversal to improve performance
 //    private static final String[] SKIP_DIRS = { "target", ".git", ".idea", "node_modules" };
-    private static final String[] SKIP_DIRS = { };
+//    private static final String[] SKIP_DIRS = { };
 
     public FileFindTool(Agent agent) {
         super(agent);
@@ -118,7 +117,7 @@ public class FileFindTool extends AbstractPaginatedAgentTool {
                 // Single file: match its name against the pattern (relative to its parent)
                 Path parent = searchTarget.getParent();
                 Path toMatch = (parent != null) ? parent.relativize(searchTarget) : searchTarget.getFileName();
-                if (matcher.matches(toMatch)) {
+                if (matcher.matches(toMatch) && isReadable(searchTarget)) {
                     writeEntry(writer, searchTarget);
                 }
             } else if (Files.isDirectory(searchTarget)) {
@@ -132,32 +131,50 @@ public class FileFindTool extends AbstractPaginatedAgentTool {
     /**
      * Recursively walks a directory and writes entries that match the pattern.
      *
+     * Entries are checked against the access control before being written, so a
+     * file living under a forbidden path is never listed. The check is applied
+     * per entry rather than per subtree on purpose: a more specific allowed path
+     * can open a hole inside a forbidden folder, and pruning the whole subtree
+     * would close that hole too.
+     *
      * @param writer   the writer to write output lines
      * @param root     the root directory to start walking from
      * @param matcher  the glob matcher to test against relative paths
      * @throws IOException if an I/O error occurs
      */
     private void walkAndWrite(BufferedWriter writer, Path root, PathMatcher matcher) throws IOException {
-        long matches = 0;
-        try (var walk = Files.walk(root)) {
-            var iterator = walk.iterator();
-            while (iterator.hasNext() && matches < MAX_OUTPUT_LINES) {
-                Path path = iterator.next();
-                // Skip known large/unwanted directories
-                if (shouldSkipDirectory(path)) {
-                    continue;
-                }
-                Path relative = root.relativize(path);
-                if (matcher.matches(relative)) {
-                    writeEntry(writer, path);
-                    matches++;
-                }
-            }
+      long matches = 0;
+      try (var walk = Files.walk(root)) {
+        var iterator = walk.iterator();
+        while (iterator.hasNext() && matches < MAX_OUTPUT_LINES) {
+          Path path = iterator.next();
+//          // Skip known large/unwanted directories
+//          if (shouldSkipDirectory(path)) {
+//            continue;
+//          }
+          Path relative = root.relativize(path);
+          if (matcher.matches(relative) && isReadable(path)) {
+            writeEntry(writer, path);
+            matches++;
+          }
         }
-        // If we stopped due to the limit, append a warning line (optional)
-        if (matches >= MAX_OUTPUT_LINES) {
-            writer.write("\n# WARNING: maximum number of entries (" + MAX_OUTPUT_LINES + ") reached. Some results may be missing.\n");
-        }
+      }
+      // If we stopped due to the limit, append a warning line (optional)
+      if (matches >= MAX_OUTPUT_LINES) {
+        writer.write("\n# WARNING: maximum number of entries (" + MAX_OUTPUT_LINES + ") reached. Some results may be missing.\n");
+      }
+    }
+
+    /**
+     * Checks a single path against the access control.
+     *
+     * This is the same check the other file tools apply to their arguments, now
+     * applied to every entry that is about to be written. It covers the whole
+     * policy at once: sandbox boundaries, symlink resolution, non-readable paths
+     * and the invariant on the agent control folder.
+     */
+    private boolean isReadable(Path path) {
+      return agent.getAccessControl().isAccessible(path, PATH_ACCESS_READ);
     }
 
     /**
@@ -182,22 +199,22 @@ public class FileFindTool extends AbstractPaginatedAgentTool {
                 lastModified, type, size, mime, path.toAbsolutePath()));
     }
 
-    /**
-     * Determines if a directory should be skipped during traversal.
-     * This helps avoid walking into known large/unwanted folders like 'target' or '.git'.
-     */
-    private boolean shouldSkipDirectory(Path path) {
-        if (!Files.isDirectory(path)) {
-            return false;
-        }
-        String name = path.getFileName().toString();
-        for (String skip : SKIP_DIRS) {
-            if (name.equals(skip)) {
-                return true;
-            }
-        }
-        return false;
-    }
+//    /**
+//     * Determines if a directory should be skipped during traversal.
+//     * This helps avoid walking into known large/unwanted folders like 'target' or '.git'.
+//     */
+//    private boolean shouldSkipDirectory(Path path) {
+//        if (!Files.isDirectory(path)) {
+//            return false;
+//        }
+//        String name = path.getFileName().toString();
+//        for (String skip : SKIP_DIRS) {
+//            if (name.equals(skip)) {
+//                return true;
+//            }
+//        }
+//        return false;
+//    }
 
     // Simple argument holder for JSON deserialization
     private static class Args {

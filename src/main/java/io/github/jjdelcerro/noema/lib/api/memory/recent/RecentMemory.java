@@ -6,8 +6,6 @@ import java.util.List;
 
 /**
  *
- * TODO: Antes Session, habria que actualizar la documentacion con este cambio
- * 
  * @author jjdelcerro
  */
 public interface RecentMemory {

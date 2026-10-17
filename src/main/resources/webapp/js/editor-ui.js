@@ -168,7 +168,7 @@ export async function openFile(filePath) {
     const mode = modeForPath(filePath);
     const session = window.ace.createEditSession(content, mode);
     session.setUseWrapMode(wrapEnabled);
-    sessions.set(filePath, { session, originalContent: content, dirty: false });
+    sessions.set(filePath, { session, originalContent: content, dirty: false, diagAnnotations: [], agentAnnotations: [] });
 
     createTabElement(filePath);
     activateTab(filePath);
@@ -383,6 +383,22 @@ async function doSaveFile(path) {
     scheduleStatePush({ immediate: true });
 }
 
+/**
+ * Compone y aplica las anotaciones visibles de una sesión. Es el ÚNICO punto
+ * que llama a `setAnnotations`: mezcla las de diagnóstico (las escribe el
+ * cliente) con las que pinta el agente, para que ninguna sobrescriba a la
+ * otra. Si no se centraliza aquí, el diagnóstico borraría las marcas del
+ * agente y viceversa.
+ */
+function applyAnnotations(entry) {
+    if (!entry || !entry.session) {
+        return;
+    }
+    const diag = entry.diagAnnotations || [];
+    const agent = entry.agentAnnotations || [];
+    entry.session.setAnnotations(diag.concat(agent));
+}
+
 async function handleDiagnostics() {
     const path = activePath;
     if (!path) {
@@ -395,7 +411,8 @@ async function handleDiagnostics() {
     try {
         const result = await runDiagnostics({ filePath: path });
         const annotations = (result && result.annotations) || [];
-        entry.session.setAnnotations(annotations);
+        entry.diagAnnotations = annotations;
+        applyAnnotations(entry);
         const msg = annotations.length === 0
             ? 'Sin diagnósticos'
             : `${annotations.length} anotación${annotations.length === 1 ? '' : 'es'}`;
@@ -878,6 +895,77 @@ export function handleEditorApply(payload) {
         console.error('Error aplicando editor_apply:', error);
         showToast('No se pudo aplicar el cambio propuesto por el agente', 'error');
     }
+}
+
+/**
+ * Convierte una marca pedida por el agente ({line, lineEnd?, text, type?}) al
+ * formato de anotación de Ace. Es aquí donde se traduce de 1-based (contrato
+ * del agente) a 0-based (coordenadas de Ace).
+ */
+function toAceAnnotation(session, item) {
+    const row = Math.max(0, (item.line || 1) - 1);
+    const annotation = {
+        row: row,
+        column: 0,
+        text: item.text || '',
+        type: item.type || 'info'
+    };
+    if (item.lineEnd != null) {
+        const endRow = Math.max(row, item.lineEnd - 1);
+        annotation.startRow = row;
+        annotation.startColumn = 0;
+        annotation.endRow = endRow;
+        const lastLine = session.getLine(endRow);
+        annotation.endColumn = lastLine ? lastLine.length : 0;
+    }
+    return annotation;
+}
+
+/**
+ * Maneja el evento SSE 'editor_add_annotation': pinta una marca del agente
+ * sobre el fichero ACTIVO. No modifica el buffer ni el disco.
+ *
+ * Las marcas se acumulan en entry.agentAnnotations, separadas de las de
+ * diagnóstico (entry.diagAnnotations): applyAnnotations las mezcla al pintar.
+ */
+export function handleEditorAddAnnotation(payload) {
+    if (!payload || payload.line == null) {
+        return;
+    }
+    if (!activePath || !editor) {
+        showToast('El agente señaló una línea pero no hay fichero activo en el editor', 'error');
+        return;
+    }
+    const entry = sessions.get(activePath);
+    if (!entry) {
+        return;
+    }
+    if (!entry.agentAnnotations) {
+        entry.agentAnnotations = [];
+    }
+    entry.agentAnnotations.push(toAceAnnotation(entry.session, payload));
+    applyAnnotations(entry);
+
+    if (payload.scroll !== false) {
+        editor.scrollToLine(Math.max(0, payload.line - 1), true, true);
+    }
+}
+
+/**
+ * Maneja el evento SSE 'editor_clear_annotations': elimina todas las marcas
+ * pintadas por el agente en el fichero ACTIVO. Las de diagnóstico se
+ * conservan.
+ */
+export function handleEditorClearAnnotations() {
+    if (!activePath) {
+        return;
+    }
+    const entry = sessions.get(activePath);
+    if (!entry) {
+        return;
+    }
+    entry.agentAnnotations = [];
+    applyAnnotations(entry);
 }
 
 async function handleSetupProject() {

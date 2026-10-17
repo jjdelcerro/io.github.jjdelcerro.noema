@@ -64,9 +64,9 @@ public class McpToolWrapper extends AbstractAgentTool {
       // Delegamos la ejecución al cliente MCP de LangChain4j
       ToolExecutionResult result = mcpClient.executeTool(request);
       if( result == null ) {
-        return "null";  // FIXME Es correcto?
+        return error("El servidor devolvio null como resultado de llamar a la herramienta.");  
       }
-      return Objects.toString(result.result()); // FIXME Es correcto?
+      return result.resultText(); 
     } catch (Exception e) {
       LOGGER.error("Error ejecutando herramienta MCP '{}'", toolSpecification.name(), e);
       return error("Error en servidor MCP: " + e.getMessage());

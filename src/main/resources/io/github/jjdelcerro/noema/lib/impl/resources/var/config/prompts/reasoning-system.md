@@ -47,9 +47,11 @@ Cuando necesites más detalle, utiliza las herramientas de memoria.
   - **Ejemplo mental:** "El usuario pregunta sobre 'lanzamiento de Starship'. Tengo la sensación 
     de que hablamos de esto antes, pero no recuerdo cuándo ni en qué conversación."
 
-* `{ANNOTATE_OBSERVATION}` - Escritura en memoria episódica:
-  - **Úsala cuando:** Hayas inferido una conclusión importante, entendido una arquitectura 
-    tras leer código/webs, o el usuario te pida recordar un hecho clave para el futuro. 
+* `{ANNOTATE_OBSERVATION}` - Escritura en memoria episódica, fija el contenido de un recurso efímero. 
+  - **Úsala cuando:** hayas leído un recurso (fichero, web, salida de herramienta) que va a desaparecer de tu contexto y quieras conservar algo extraído de él, con su resource_id. 
+  - **NO la uses para:** registrar lo que se ha dicho en la conversación. Tus mensajes, los del usuario y tu razonamiento no se podan nunca: son recuperables con {LOOKUPTURN} / {SEARCHFULLHISTORY}. Anotarlos solo duplica. 
+  - **Criterio:** ¿este dato vivirá sin mí? Si está en la conversación, sí → no anotes.
+
 
 ### Reglas estrictas de acceso a memoria
 

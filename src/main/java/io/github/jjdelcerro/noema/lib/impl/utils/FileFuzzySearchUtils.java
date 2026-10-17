@@ -45,7 +45,7 @@ public final class FileFuzzySearchUtils {
   public static final int STEP_LINES = CHUNK_LINES - OVERLAP_LINES; // 25 líneas de avance
 
   private static final int MAX_FILES_TO_SCAN = 100;
-  private static final String[] SKIP_DIRS = {"target", ".git", ".idea", "node_modules"};
+//  private static final String[] SKIP_DIRS = {"target", ".git", ".idea", "node_modules"};
 
   private static final Tika TIKA = new Tika();
 
@@ -215,20 +215,15 @@ public final class FileFuzzySearchUtils {
       var it = walk.iterator();
       while (it.hasNext() && filesScanned < MAX_FILES_TO_SCAN) {
         Path p = it.next();
-        if (shouldSkipDirectory(p)) {
-          continue;
+        Path relative = rootDir.relativize(p);
+        if (!matcher.matches(relative)) {
+            continue;
         }
 
-        // Validación estricta en el sandbox para cada fichero hijo encontrado
         Path safePath = agent.getAccessControl().resolvePathOrNull(
                 p.toString(), AgentAccessControl.AccessMode.PATH_ACCESS_READ);
-        if (safePath == null || !Files.isRegularFile(safePath)) {
-          continue;
-        }
-
-        Path relative = rootDir.relativize(safePath);
-        if (!matcher.matches(relative) && !matcher.matches(safePath.getFileName())) {
-          continue;
+        if (safePath == null) {
+            continue;
         }
 
         scanSingleFile(agent, safePath, toDisplayPath(agent, safePath), filter, embeddingsService);
@@ -257,18 +252,18 @@ public final class FileFuzzySearchUtils {
     return displayPath.replace("\\", "/");
   }
 
-  public static boolean shouldSkipDirectory(Path path) {
-    if (!Files.isDirectory(path)) {
-      return false;
-    }
-    String name = path.getFileName() != null ? path.getFileName().toString() : "";
-    for (String skip : SKIP_DIRS) {
-      if (name.equals(skip)) {
-        return true;
-      }
-    }
-    return false;
-  }
+//  public static boolean shouldSkipDirectory(Path path) {
+//    if (!Files.isDirectory(path)) {
+//      return false;
+//    }
+//    String name = path.getFileName() != null ? path.getFileName().toString() : "";
+//    for (String skip : SKIP_DIRS) {
+//      if (name.equals(skip)) {
+//        return true;
+//      }
+//    }
+//    return false;
+//  }
 
   public static boolean isBinaryResource(Path path) {
     try {

@@ -32,8 +32,9 @@ Utilizala para guardar:
 * Conexiones que establezcas entre archivos
 * Comprensión del flujos que infieras
 
-Recuerda que la herramienta está pensada para retener valor cognitivo, no para duplicar datos,
-no la uses para duplicar contenido que puedes recuperar de nuevo con file_read o web_search.
+Recuerda que la herramienta está pensada para retener lo que vive en recursos efímeros.
+No la uses para registrar lo que se ha dicho en la conversación: tus mensajes, los del usuario
+y tu propio razonamiento no se podan nunca y son recuperables. Anotarlos solo duplica.
 
 **Parámetro opcional resource_id:**
 Si estás anotando información extraída de un recurso paginado (por ejemplo, tras una llamada a file_read o web_get_content),
@@ -44,9 +45,9 @@ Esto permite vincular la anotación al recurso original y evita que el sistema t
 Este campo está reservado para flujos especializados. Por defecto DEBES omitirlo. 
 Solo debes incluirlo cuando recibas una instrucción explícita que te indique bajo qué tipo clasificar la información.                    
 """)
-            .addStringParameter("source", false, "El origen de la información (ej: nombre del archivo, URL o 'instrucción del usuario').")
+            .addStringParameter("source", false, "El origen de la información (ej: nombre del archivo, URL, o 'instrucción del usuario' cuando te haya pedido explícitamente anotar o recordar algo).")
             .addStringParameter("note", false, "Los hechos clave que deseas fijar en tu memoria episódica.")
-            .addStringParameter("resource_id", true, "OBLIGATORIO si la información proviene de la lectura de un archivo o web. Debes copiar exactamente el RESOURCE_ID proporcionado por la herramienta de lectura. Dejar vacío ÚNICAMENTE si el dato proviene directamente de una instrucción del usuario en el chat.")
+            .addStringParameter("resource_id", true, "OBLIGATORIO si la información proviene de la lectura de un archivo o web. Debes copiar exactamente el RESOURCE_ID proporcionado por la herramienta de lectura.Dejar vacío ÚNICAMENTE cuando el usuario te haya pedido EXPLÍCITAMENTE que anotes o recuerdes algo.")
             .addStringParameter(
                 "type", 
                 true, 

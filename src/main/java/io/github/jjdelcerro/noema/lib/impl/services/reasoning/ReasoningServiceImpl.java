@@ -400,10 +400,10 @@ public class ReasoningServiceImpl
       this.console(subchannel).printSystemLog(msg);
       try {
         return tool.execute(args);
-      } catch (Exception e) {
+      } catch (Throwable e) {
         String msg1 = "Error ejecutando herramienta '" + toolName + "'.";
         LOGGER.info(msg1, e);
-        return msg1 + " " + e.getMessage();
+        return msg1 + "\nSé cauteloso a la hora de reintentar la llamada a esta herramienta, si el error es grave puede seguir repitiendose.\nError "+ e.getClass().getCanonicalName() + ": " + e.getMessage();
       }
     } else {
       String msg = "Herramienta '" + toolName + "' no encontrada.";
@@ -423,7 +423,7 @@ public class ReasoningServiceImpl
     this.performConsolidation(recentMemory, mark1, mark2);
   }
 
-  private void performConsolidation(RecentMemory recentMemory, RecentMemory.RecentMemoryMark mark1, RecentMemory.RecentMemoryMark mark2) throws SQLException {
+  private boolean performConsolidation(RecentMemory recentMemory, RecentMemory.RecentMemoryMark mark1, RecentMemory.RecentMemoryMark mark2) throws SQLException {
     String subchannel = recentMemory.getSubchannel();
     this.console(subchannel).printSystemLog("Iniciando proceso de consolidación de memoria...");
 
@@ -431,7 +431,7 @@ public class ReasoningServiceImpl
       String msg = "No hay suficientes turnos consolidados para consolidar la memoria reciente.";
       LOGGER.warn(msg);
       this.console(subchannel).printSystemLog(msg);
-      return;
+      return false;
     }
 
     // Recuperar turnos de la DB usando el rango de IDs de las marcas
@@ -441,12 +441,14 @@ public class ReasoningServiceImpl
       String msg = String.format("No se han podido recuperar los turnos a consolidar (turns[%s:%s]).", mark1.getTurnId(), mark2.getTurnId());
       LOGGER.warn(msg);
       this.console(subchannel).printSystemLog(msg);
-      return;
+      return false;
     }
 
     MemoryConsolidationService memoryConsolidationService = (MemoryConsolidationService) this.agent.getService(MemoryConsolidationService.NAME);
     ConsolidateMemory newConsolidateMemory = memoryConsolidationService.consolide(subchannel, this.getActiveConsolidateMemory(subchannel), consolideTurns);
-
+    if( newConsolidateMemory == null ) {
+      return false;
+    }
     episodicMemory.add(newConsolidateMemory);
 
     // Limpieza de la RecentMemory (Borrar mensajes ya consolidados)
@@ -456,6 +458,7 @@ public class ReasoningServiceImpl
     this.setActiveConsolidateMemory(subchannel, newConsolidateMemory);
 
     this.console(subchannel).printSystemLog("Memoria consolidada con éxito. Nuevo ConsolidateMemory ID: " + newConsolidateMemory.getId());
+    return true;
   }
 
   @Override

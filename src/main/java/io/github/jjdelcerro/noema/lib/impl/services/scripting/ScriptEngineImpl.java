@@ -21,6 +21,8 @@ import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext;
 import static io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext.CONTEXT_NAME;
+import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.FsModule;
+import io.github.jjdelcerro.noema.lib.impl.utils.FileFuzzySearchUtils;
 
 /**
  *
@@ -115,12 +117,13 @@ public class ScriptEngineImpl implements ScriptEngine {
       Map<String, Object> timeoutParams = Collections.singletonMap("value", EXECUTION_TIMEOUT_SECONDS);
       ASTTransformationCustomizer timedInterrupt = new ASTTransformationCustomizer(timeoutParams, TimedInterrupt.class);
 
-      config.addCompilationCustomizers(secureCustomizer, timedInterrupt);
 
       ImportCustomizer importCustomizer = new ImportCustomizer();
+      
+      // TODO: Hacer que a cada modulo se le puedan preguntar por los import que hay que añadir.
       importCustomizer.addImports(
-              "io.github.jjdelcerro.noema.lib.impl.scripting.modules.FsModule.GrepMatch",
-              "io.github.jjdelcerro.noema.lib.impl.FileFuzzySearchUtils.FuzzyMatch"
+              FsModule.GrepMatch.class.getCanonicalName(),
+              FileFuzzySearchUtils.FuzzyMatch.class.getCanonicalName()
       );
       config.addCompilationCustomizers(secureCustomizer, timedInterrupt, importCustomizer);
 

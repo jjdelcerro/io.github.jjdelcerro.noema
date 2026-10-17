@@ -103,11 +103,11 @@ public class FileGrepTool extends AbstractPaginatedAgentTool {
         filePattern = "{" + filePattern + "," + filePattern.substring(3) + "}";
       }
 
-      // 4. Resolve the search target using access control
-      Path target = resolvePathOrNull(args.path, PATH_ACCESS_READ);
-      if (target == null) {
-        return formatErrorResponse("Access denied or path does not exist: " + args.path);
-      }
+//      // 4. Resolve the search target using access control
+//      Path target = resolvePathOrNull(args.path, PATH_ACCESS_READ);
+//      if (target == null) {
+//        return formatErrorResponse("Access denied or path does not exist: " + args.path);
+//      }
 
       // 5. Create a temporary file for the grep output
       Path tempDir = agent.getPaths().getTempFolder();
@@ -115,7 +115,7 @@ public class FileGrepTool extends AbstractPaginatedAgentTool {
       Path tempFile = Files.createTempFile(tempDir, "grep_", ".tmp");
 
       // 6. Perform the grep search
-      performGrep(tempFile, target, searchPattern, filePattern);
+      performGrep(tempFile, Path.of(args.path), searchPattern, filePattern);
 
       // 7. Paginate the output
       String resourceId = getIdFromPath(tempFile);
@@ -139,9 +139,12 @@ public class FileGrepTool extends AbstractPaginatedAgentTool {
 
     try (BufferedWriter writer = Files.newBufferedWriter(outputFile, StandardCharsets.UTF_8)) {
       if (Files.isRegularFile(searchTarget)) {
-        lineCount = grepSingleFile(writer, searchTarget, searchPattern);
-        if (lineCount >= MAX_OUTPUT_LINES) {
-          limitReached = true;
+        searchTarget = resolvePathOrNull(searchTarget.toString(), PATH_ACCESS_READ);
+        if (searchTarget != null) {
+          lineCount = grepSingleFile(writer, searchTarget, searchPattern);
+          if (lineCount >= MAX_OUTPUT_LINES) {
+            limitReached = true;
+          }
         }
       } else if (Files.isDirectory(searchTarget)) {
         lineCount = grepDirectory(writer, searchTarget, searchPattern, matcher);
@@ -181,7 +184,7 @@ public class FileGrepTool extends AbstractPaginatedAgentTool {
       }
     } catch (Exception e) {
       // Ignoramos silenciosamente ficheros que no se puedan abrir o binarios no decodificables
-      LOGGER.debug("Skipping unreadable or binary file during grep: {}", file, e);
+      LOGGER.warn("Skipping unreadable or binary file during grep: {}", file, e);
     }
     return matches;
   }
@@ -192,20 +195,20 @@ public class FileGrepTool extends AbstractPaginatedAgentTool {
       var iterator = walk.iterator();
       while (iterator.hasNext() && matches < MAX_OUTPUT_LINES) {
         Path file = iterator.next();
-        file = resolvePathOrNull(file.toString(), PATH_ACCESS_READ);
-        if (file == null || !Files.isRegularFile(file)) {
+        Path relative = rootDir.relativize(file);       
+        if (!matcher.matches(relative) ) {
           continue;
         }
-
-        Path relative = rootDir.relativize(file);
-        if (!matcher.matches(relative) && !matcher.matches(file.getFileName())) {
+        
+        file = resolvePathOrNull(file.toString(), PATH_ACCESS_READ);
+        if (file == null || !Files.isRegularFile(file)) {
           continue;
         }
 
         matches += grepSingleFile(writer, file, searchPattern);
       }
     } catch (Exception e) {
-      LOGGER.debug("Error during directory walk: {}", rootDir, e);
+      LOGGER.warn("Error during directory walk: {}", rootDir, e);
     }
     return matches;
   }

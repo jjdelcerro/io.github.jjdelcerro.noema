@@ -11,7 +11,6 @@ import org.apache.commons.lang3.StringUtils;
 
 /**
  *
- * TODO: Antes MemoryServiceFactory, habria que actualizar la documentacion con este cambio 
  * @author jjdelcerro
  */
 public class MemoryConsolidationServiceFactory implements AgentServiceFactory {

@@ -67,7 +67,7 @@ Si hay conclusiones o decisiones que no puedas releer, usa {annotate_observation
         warning = """
 [PODA DE CONTEXTO] Datos crudos próximos a eliminarse: {resources_list}
 Las anotaciones sobreviven; los datos crudos no.
-Anota solo conclusiones/decisiones/conocimiento-deribado irrepetible (no dupliques lo que puedas releer).
+Anota solo conclusiones/decisiones/conocimiento-derivado irrepetible (no dupliques lo que puedas releer o que forme parte de la conversacion con el usuario).
 Herramienta: {annotate_observation}(resource_id, note)        
 """;
         warning = StringUtils.replace(

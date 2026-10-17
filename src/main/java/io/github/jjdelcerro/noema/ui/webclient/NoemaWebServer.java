@@ -31,6 +31,8 @@ import io.github.jjdelcerro.noema.ui.webclient.workspace.editor.EditorAwarenessO
 import io.github.jjdelcerro.noema.ui.webclient.workspace.editor.EditorSelection;
 import io.github.jjdelcerro.noema.ui.webclient.workspace.editor.tools.EditorGetCurrentSelectionTool;
 import io.github.jjdelcerro.noema.ui.webclient.workspace.editor.tools.EditorGetStateTool;
+import io.github.jjdelcerro.noema.ui.webclient.workspace.editor.tools.EditorAddAnnotationTool;
+import io.github.jjdelcerro.noema.ui.webclient.workspace.editor.tools.EditorClearAnnotationsTool;
 import io.github.jjdelcerro.noema.ui.webclient.workspace.editor.tools.EditorInsertOrReplaceTool;
 import io.javalin.Javalin;
 import io.javalin.http.sse.SseClient;
@@ -134,6 +136,8 @@ public class NoemaWebServer {
     reasoningService.addTool(new EditorGetCurrentSelectionTool(this.agent));
     reasoningService.addTool(new EditorGetStateTool(this.agent));
     reasoningService.addTool(new EditorInsertOrReplaceTool(this.agent));
+    reasoningService.addTool(new EditorAddAnnotationTool(this.agent));
+    reasoningService.addTool(new EditorClearAnnotationsTool(this.agent));
 
     LOGGER.info("Servidor web de Noema iniciado correctamente en http://{}:{}", this.address, this.port);
   }
@@ -267,6 +271,52 @@ public class NoemaWebServer {
       payload.addProperty("text", text);
     }
     console.sendEvent("editor_apply", payload);
+  }
+
+  /**
+   * Ordena al cliente pintar una anotacion (marca visual) sobre una linea o
+   * rango del fichero activo del editor. Emite un evento SSE
+   * 'editor_add_annotation' con {line, lineEnd, text, type, scroll}.
+   *
+   * La marca no modifica el buffer ni el disco: es solo una senal visual para
+   * el usuario. Las marcas se acumulan en el cliente; usa editorClearAnnotations
+   * para eliminarlas. Si el subcanal no tiene consola activa (no hay navegador
+   * conectado), se loguea un warning y no se hace nada.
+   */
+  public void editorAddAnnotation(String subchannel, Integer line, Integer lineEnd, String text, String type, Boolean scroll) {
+    SseAgentConsole console = this.activeConsoles.get(subchannel);
+    if (console == null) {
+      LOGGER.warn("editorAddAnnotation: no hay consola activa para el subcanal '{}'", subchannel);
+      return;
+    }
+    JsonObject payload = new JsonObject();
+    payload.addProperty("line", line);
+    if (lineEnd != null) {
+      payload.addProperty("lineEnd", lineEnd);
+    }
+    if (text != null) {
+      payload.addProperty("text", text);
+    }
+    if (type != null) {
+      payload.addProperty("type", type);
+    }
+    payload.addProperty("scroll", scroll == null || scroll);
+    console.sendEvent("editor_add_annotation", payload);
+  }
+
+  /**
+   * Ordena al cliente eliminar todas las anotaciones pintadas por el agente en
+   * el fichero activo del editor. Emite un evento SSE 'editor_clear_annotations'
+   * sin payload. No afecta a las anotaciones de diagnostico del cliente.
+   */
+  public void editorClearAnnotations(String subchannel) {
+    SseAgentConsole console = this.activeConsoles.get(subchannel);
+    if (console == null) {
+      LOGGER.warn("editorClearAnnotations: no hay consola activa para el subcanal '{}'", subchannel);
+      return;
+    }
+    JsonObject payload = new JsonObject();
+    console.sendEvent("editor_clear_annotations", payload);
   }
 
   /**

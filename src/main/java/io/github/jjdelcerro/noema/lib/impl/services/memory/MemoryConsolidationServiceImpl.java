@@ -29,20 +29,23 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.jjdelcerro.noema.lib.api.Agent.DEFAULT_SUBCHANNEL;
-import io.github.jjdelcerro.noema.lib.api.AgentLocator;
 import io.github.jjdelcerro.noema.lib.api.model.ChatModel;
 import io.github.jjdelcerro.noema.lib.api.memory.episodic.EpisodicMemory;
 import io.github.jjdelcerro.noema.lib.api.services.memory.MemoryConsolidationService;
 import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemory;
 import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.sql.Timestamp;
+import java.time.ZoneOffset;
 
 /**
  * Componente cognitivo encargado de la consolidación de la memoria. Ejecuta el
  * "Protocolo de Generación de Puntos de Guardado" utilizando un LLM.
  *
- * TODO: Antes MemoryServiceImpl, habria que actualizar la documentacion con
- * este cambio
  */
+@SuppressWarnings("UseSpecificCatch")
 public class MemoryConsolidationServiceImpl
         extends AbstractAgentService
         implements MemoryConsolidationService {
@@ -109,51 +112,62 @@ public class MemoryConsolidationServiceImpl
    */
   @Override
   public ConsolidateMemory consolide(String subchannel, ConsolidateMemory previous, List<Turn> newTurns) {
-    if (newTurns == null || newTurns.isEmpty()) {
-      throw new IllegalArgumentException("No hay turnos para consolidar.");
-    }
-    Set<Integer> validTurnIds = new HashSet<>();
-    if (previous != null) {
-      validTurnIds.addAll(extractCitationIds(previous.getText()));
-    }
-    for (Turn turn : newTurns) {
-      validTurnIds.add(turn.getId());
-      if ("lookup_turn".equals(turn.getContenttype())
-              || "tool_execution".equals(turn.getContenttype())
-              || "tool_execution_summarized".equals(turn.getContenttype())) {
-        validTurnIds.addAll(extractCitationIds(turn.getToolResult()));
+    try {
+      if (newTurns == null || newTurns.isEmpty()) {
+        throw new IllegalArgumentException("No hay turnos para consolidar.");
       }
-    }
-
-    String userPrompt = buildUserPrompt(previous, newTurns);
-
-    LOGGER.info("Iniciando consolidación de " + newTurns.size() + " turnos.");
-    this.console.printSystemLog("Iniciando consolidación de " + newTurns.size() + " turnos...");
-    AiMessage response = model.generate(
-            SystemMessage.from(this.systemPrompt),
-            UserMessage.from(userPrompt)
-    ).content();
-
-    String generatedText = response.text();
-
-    Collection<Integer> currentCitations = extractCitationIds(generatedText);
-    for (Integer turnId : currentCitations) {
-      if (!validTurnIds.contains(turnId)) {
-        LOGGER.warn("Encontrada cita " + turnId + " incorrecta.");
-        generatedText = generatedText.replace("{cite:" + turnId + "}", "{badcite:" + turnId + "}");
+      Set<Integer> validTurnIds = new HashSet<>();
+      if (previous != null) {
+        validTurnIds.addAll(extractCitationIds(previous.getText()));
       }
+      for (Turn turn : newTurns) {
+        validTurnIds.add(turn.getId());
+        if ("lookup_turn".equals(turn.getContenttype())
+                || "tool_execution".equals(turn.getContenttype())
+                || "tool_execution_summarized".equals(turn.getContenttype())) {
+          validTurnIds.addAll(extractCitationIds(turn.getToolResult()));
+        }
+      }
+
+      String userPrompt = buildUserPrompt(previous, newTurns);
+
+      LOGGER.info("Iniciando consolidación de " + newTurns.size() + " turnos.");
+      this.console.printSystemLog("Iniciando consolidación de " + newTurns.size() + " turnos...");
+      AiMessage response = model.generate(
+              SystemMessage.from(this.systemPrompt),
+              UserMessage.from(userPrompt)
+      ).content();
+
+      String generatedText = response.text(); 
+      if( StringUtils.isBlank(generatedText) ) {
+        this.console.printSystemError("Error grave creando la consolidacion");
+        dumpPrompts(this.systemPrompt, userPrompt);
+      }
+
+      Collection<Integer> currentCitations = extractCitationIds(generatedText);
+      for (Integer turnId : currentCitations) {
+        if (!validTurnIds.contains(turnId)) {
+          LOGGER.warn("Encontrada cita " + turnId + " incorrecta.");
+          this.console.printSystemLog("Encontrada cita " + turnId + " incorrecta.");
+          generatedText = generatedText.replace("{cite:" + turnId + "}", "{badcite:" + turnId + "}");
+        }
+      }
+
+      int firstId = newTurns.getFirst().getId();
+      int lastId = newTurns.getLast().getId();
+
+      if (previous != null) {
+        firstId = previous.getTurnFirst();
+      }
+
+      ConsolidateMemory cp = this.episodicMemory.createConsolidateMemory(subchannel, firstId, lastId, LocalDateTime.now(), generatedText);
+      LOGGER.info("Consolidación finalizada.");
+      return cp;
+    } catch(Throwable t) {
+      LOGGER.warn("Se ha producido un error realizando la consolidacion.",t);
+      this.console.printSystemLog("Se ha producido un error realizando la consolidacion. Error "+t.getLocalizedMessage());
+      return null;
     }
-
-    int firstId = newTurns.getFirst().getId();
-    int lastId = newTurns.getLast().getId();
-
-    if (previous != null) {
-      firstId = previous.getTurnFirst();
-    }
-
-    ConsolidateMemory cp = this.episodicMemory.createConsolidateMemory(subchannel, firstId, lastId, LocalDateTime.now(), generatedText);
-    LOGGER.info("Consolidación finalizada.");
-    return cp;
   }
 
   /**
@@ -167,7 +181,6 @@ public class MemoryConsolidationServiceImpl
     // Captura el grupo de contenido dentro de los corchetes
     Pattern pattern = Pattern.compile("\\{cite:\\s*([\\d,\\s]+)\\}");
     Matcher matcher = pattern.matcher(text);
-
     while (matcher.find()) {
       String match = matcher.group(1);
       String[] parts = StringUtils.split(match, ',');
@@ -271,4 +284,25 @@ public class MemoryConsolidationServiceImpl
     return theModel.getParameters().modelId();
   }
 
+  
+  private void dumpPrompts(String systemPrompt, String userPrompt) {
+    Timestamp tm = Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC));
+    Path path = agent.getPaths().getTempFolder().resolve("consolidate_prompt-" + tm.toString() + ".txt");
+    if (path == null) {
+      return;
+    }
+    try {
+      if (path.getParent() != null) {
+        Files.createDirectories(path.getParent());
+      }
+      Files.writeString(
+              path, 
+              "\n\n\n**System prompt**\n\n\n" + systemPrompt + "\n\n\n**User prompt**\n\n\n"+ userPrompt, 
+              StandardCharsets.UTF_8
+      );
+    } catch (Exception e) {
+      LOGGER.warn("Can't write consolidate prompts to "+path.toString(), e);
+    }
+  }
+  
 }

@@ -4,7 +4,7 @@
 
 import { sendMessage, fetchHistory, fetchContextXml, connectSSE } from './api.js';
 import { showToast } from './toast.js';
-import { handleEditorOpen, handleEditorApply, handleEditorSetupDone } from './editor-ui.js';
+import { handleEditorOpen, handleEditorApply, handleEditorSetupDone, handleEditorAddAnnotation, handleEditorClearAnnotations } from './editor-ui.js';
 
 let currentTerminalId = '';
 let activeSseControl = null;
@@ -234,7 +234,9 @@ export async function switchTerminal(newTerminalId) {
         onError: (data) => { finishStreaming(); addMessage('error', data.content); },
         onEditorOpen: (payload) => handleEditorOpen(payload),
         onEditorApply: (payload) => handleEditorApply(payload),
-        onEditorSetupDone: (payload) => handleEditorSetupDone(payload)
+        onEditorSetupDone: (payload) => handleEditorSetupDone(payload),
+        onEditorAddAnnotation: (payload) => handleEditorAddAnnotation(payload),
+        onEditorClearAnnotations: (payload) => handleEditorClearAnnotations(payload)
     });
 }
 

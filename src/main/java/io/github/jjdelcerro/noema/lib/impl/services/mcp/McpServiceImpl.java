@@ -247,7 +247,7 @@ public class McpServiceImpl extends AbstractAgentService {
           return tool;
         }
       } else {
-        if( FilenameUtils.wildcardMatch(server+"."+name, tool.getName(), IOCase.INSENSITIVE)) {
+        if( FilenameUtils.wildcardMatch(server+"__"+name, tool.getName(), IOCase.INSENSITIVE)) {
           return tool;
         }
       }

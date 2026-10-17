@@ -39,7 +39,7 @@ CARACTERISTICAS Y REGLAS DE USO:
 4. Auto-recuperacion: Si el bloque no se localiza, la herramienta te devolvera las lineas reales del archivo mas parecidas para que puedas corregir tu peticion.
 5. Seguridad: Todo cambio realiza una copia de seguridad automatica en el historial de JavaRCS antes de modificar el disco.
 """)
-            .addStringParameter("path", false, "Ruta relativa del archivo a editar.")
+            .addStringParameter("path", false, "Ruta absoluta del archivo a editar.")
             .addStringParameter("oldText", false, "Bloque de texto exacto a sustituir (debe ser unico en el archivo).")
             .addStringParameter("newText", false, "Nuevo texto que reemplazara a 'oldText'. Puede ser vacio para borrar.");
   }

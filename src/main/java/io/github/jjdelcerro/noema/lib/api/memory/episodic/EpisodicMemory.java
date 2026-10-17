@@ -7,8 +7,6 @@ import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemory;
 
 /**
  *
- * TODO: Antes SourceOfTruth, habria que actualizar la documentacion con este cambio 
- * 
  * @author jjdelcerro
  */
 public interface EpisodicMemory {

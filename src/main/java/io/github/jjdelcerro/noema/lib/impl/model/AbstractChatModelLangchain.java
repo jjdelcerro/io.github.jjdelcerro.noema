@@ -16,6 +16,7 @@ import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.model.output.Response;
 import io.github.jjdelcerro.noema.lib.api.model.ModelParameters;
 import io.github.jjdelcerro.noema.lib.api.model.ModelStreamCallback;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -39,6 +40,9 @@ public abstract class AbstractChatModelLangchain extends AbstractChatModel {
   protected static final long STALL_CHECK_INTERVAL_MILLIS = 20_000L;
   protected static final long STALL_REPORT_MILLIS = 90_000L;
   protected static final long MAX_STALL_TIMEOUT_MILLIS = 180_000L;
+  protected static final int MAX_TRANSPORT_RETRIES = 3;
+  protected static final long TRANSPORT_RETRY_BASE_MILLIS = 500L;
+  private static final int MAX_CAUSE_CHAIN_DEPTH = 16;
 
   public AbstractChatModelLangchain(ModelParameters parameters) {
     super(parameters);
@@ -97,8 +101,84 @@ public abstract class AbstractChatModelLangchain extends AbstractChatModel {
           MutableBoolean abort,
           ModelStreamCallback streamCallback
   ) throws Throwable {
+    ChatRequest request = createChatRequest(messages, toolSpecifications);
+    return this.generateWithRetries(request, abort, streamCallback);
+  }
+
+  /**
+   * Retry loop around a single streaming invocation. A transport failure
+   * (connection reset, broken pipe, read timeout) leaves no state behind, so
+   * issuing the request again is safe. Two cases are never retried: a user
+   * abort, which is control flow rather than an error, and a failure raised
+   * after partial output has already reached the user, because a second
+   * attempt would duplicate the text already streamed.
+   */
+  private Response<AiMessage> generateWithRetries(ChatRequest request, MutableBoolean abort,
+          ModelStreamCallback streamCallback) throws Throwable {
+    for (int attempt = 1; ; attempt++) {
+      AtomicBoolean outputEmitted = new AtomicBoolean(false);
+      try {
+        ChatResponse response = this.generateStreamingAttempt(request, abort, streamCallback, outputEmitted);
+        if (response == null) {
+          return null;
+        }
+        return Response.from(response.aiMessage(), response.tokenUsage(), response.finishReason());
+      } catch (InterruptedModelGenerateException abortException) {
+        LOGGER.warn("generate abortado por peticion del usuario");
+        return null;
+      } catch (InterruptedException ie) {
+        Thread.currentThread().interrupt();
+        LOGGER.warn("generate interrumpido", ie);
+        return null;
+      } catch (Throwable failure) {
+        if (!this.isRetryableTransportFailure(failure) || outputEmitted.get()) {
+          throw failure;
+        }
+        if (attempt > MAX_TRANSPORT_RETRIES) {
+          LOGGER.error("Fallo transitorio del proveedor persistente tras {} intentos", attempt);
+          throw failure;
+        }
+        long delay = TRANSPORT_RETRY_BASE_MILLIS * attempt;
+        LOGGER.warn("Fallo transitorio del proveedor (intento {} de {}): {}. Reintentando en {} ms",
+                attempt, MAX_TRANSPORT_RETRIES, failure.getMessage(), delay);
+        try {
+          Thread.sleep(delay);
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+          LOGGER.warn("generate interrumpido durante la espera de reintento", ie);
+          return null;
+        }
+      }
+    }
+  }
+
+  /**
+   * A transport failure surfaces as an IOException somewhere in the cause chain
+   * (SocketException, HttpTimeoutException and friends are all IOException).
+   * Protocol-level failures -- bad request, authentication, context length --
+   * are not, and therefore are never retried.
+   */
+  private boolean isRetryableTransportFailure(Throwable failure) {
+    Throwable current = failure;
+    int depth = 0;
+    while (current != null && depth < MAX_CAUSE_CHAIN_DEPTH) {
+      if (current instanceof IOException) {
+        return true;
+      }
+      current = current.getCause();
+      depth++;
+    }
+    return false;
+  }
+
+  /**
+   * Runs one streaming invocation and returns its response, or null when the user
+   * aborted it. Transport failures are propagated untouched so that the retry
+   * loop above can classify them.
+   */
+  private ChatResponse generateStreamingAttempt(ChatRequest request, MutableBoolean abort,
+          ModelStreamCallback streamCallback, AtomicBoolean outputEmitted) throws Throwable {
     try {
-      ChatRequest request = createChatRequest(messages, toolSpecifications);
       CompletableFuture<ChatResponse> future = new CompletableFuture<>();
       AtomicLong lastEventTime = new AtomicLong(System.currentTimeMillis());
       AtomicBoolean stallReported = new AtomicBoolean(false);
@@ -122,6 +202,7 @@ public abstract class AbstractChatModelLangchain extends AbstractChatModel {
             streamCallback.StreamResponse(partialResponse);
             streamCallback.setStreamingUsed(true);
           }
+          outputEmitted.set(true);
           lastEventTime.set(System.currentTimeMillis());
           if (abort != null && abort.isTrue()) {
             future.completeExceptionally(new InterruptedModelGenerateException());
@@ -134,6 +215,7 @@ public abstract class AbstractChatModelLangchain extends AbstractChatModel {
             streamCallback.StreamReasoning(partialThinking.text());
             streamCallback.setStreamingUsed(true);
           }
+          outputEmitted.set(true);
           lastEventTime.set(System.currentTimeMillis());
           if (abort != null && abort.isTrue()) {
             future.completeExceptionally(new InterruptedModelGenerateException());
@@ -202,8 +284,9 @@ public abstract class AbstractChatModelLangchain extends AbstractChatModel {
         return null;
       }
 
-      return Response.from(r.aiMessage(), r.tokenUsage(), r.finishReason());
+      return r;
     } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
       LOGGER.warn("generate interrumpido", ex);
       return null;
     }

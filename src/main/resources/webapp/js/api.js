@@ -132,6 +132,18 @@ export function connectSSE(terminalId, handlers = {}) {
     }
   });
 
+  eventSource.addEventListener('editor_add_annotation', (event) => {
+    if (handlers.onEditorAddAnnotation) {
+      handlers.onEditorAddAnnotation(parseEventData(event.data).content);
+    }
+  });
+
+  eventSource.addEventListener('editor_clear_annotations', (event) => {
+    if (handlers.onEditorClearAnnotations) {
+      handlers.onEditorClearAnnotations(parseEventData(event.data).content);
+    }
+  });
+
   return {
     close: () => eventSource.close(),
     getReadyState: () => eventSource.readyState
