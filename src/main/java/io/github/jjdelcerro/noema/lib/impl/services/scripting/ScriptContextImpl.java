@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext;
+import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.GitModule;
 
 /**
  * Root context object ('agent') exposed to the embedded Groovy environment.
@@ -55,6 +56,7 @@ public class ScriptContextImpl extends GroovyObjectSupport implements ScriptCont
     registerModule(new WebModule(this, this.agent));
     registerModule(new AnnotationModule(this, this.agent, this.subchannel));
     registerModule(new SubagentsModule(this, this.agent));
+    registerModule(new GitModule(this, this.agent));
     // registerModule(new MCPModule(this, this.agent)); // TODO: implementar el puenete con MCP.
   }
 
