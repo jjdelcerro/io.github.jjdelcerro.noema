@@ -50,9 +50,11 @@ public class WebModule extends AbstractScriptModule {
 [agent.web API]
 • lines(url): Iterable<String> (lazy stream, HTML/PDF extraído limpio vía Tika)
   -> agent.web.lines('https://example.org/doc.pdf').take(20).each { println it }
-• search(query): Iterable<Map[title, url, content]> (búsqueda Tavily)
+• search(query): Iterable<Map[title, url, content]> (búsqueda web)
   -> agent.web.search('langchain4j').each { println "${it.title}: ${it.url}" }
-"""; // FIXME: añadir los metodos con el timeout
+
+Todos los metodos aceptan un segundo parametro opcional con el timeout en segundos.
+""";
   }
 
   public Iterable<String> lines(String url) {
@@ -95,10 +97,21 @@ public class WebModule extends AbstractScriptModule {
   }
 
   /**
-   * Performs web search and returns an Iterable of result maps (title, url,
-   * content).
+   * Performs a web search using the default provider (DeepSeek).
    */
   public Iterable<Map<String, String>> search(String query, int timeoutsecs) {
+    return this.search_deepseek(query, timeoutsecs);
+  }
+
+  public Iterable<Map<String, String>> search_tavily(String query) {
+    return this.search_tavily(query, DEFAULT_TIMEOUT_IN_SECS);
+  }
+
+  /**
+   * Performs web search against Tavily and returns an Iterable of result maps
+   * (title, url, content).
+   */
+  public Iterable<Map<String, String>> search_tavily(String query, int timeoutsecs) {
     String apiKey = agent.getSettings().getPropertyAsString("websearch/tavily_api_key");
     if (StringUtils.isBlank(apiKey)) {
       throw new IllegalStateException("Tavily API Key is not configured.");
@@ -135,6 +148,74 @@ public class WebModule extends AbstractScriptModule {
       LOGGER.warn("Web search failed for query: {}", query, e);
       return Collections.emptyList();
     }
+  }
+
+  public Iterable<Map<String, String>> search_deepseek(String query) {
+    return this.search_deepseek(query, DEFAULT_TIMEOUT_IN_SECS);
+  }
+
+  /**
+   * Performs web search against DeepSeek and returns an Iterable of result maps
+   * (title, url, content). The content field is filled with the summary
+   * supplied by the API, which is the extended text intended to be read by a
+   * model (the snippet is UI oriented and too short).
+   */
+  public Iterable<Map<String, String>> search_deepseek(String query, int timeoutsecs) {
+    String apiKey = agent.getSettings().getPropertyAsString("websearch/deepseek_api_key");
+    if (StringUtils.isBlank(apiKey)) {
+      throw new IllegalStateException("DeepSeek API Key is not configured.");
+    }
+    try {
+      JsonObject body = new JsonObject();
+      body.addProperty("query", query);
+      body.addProperty("need_content", false);
+      HttpRequest request = HttpRequest.newBuilder()
+              .uri(URI.create("https://api.deepseek.com/v1/tools/search"))
+              .timeout(Duration.ofSeconds(timeoutsecs))
+              .header("Content-Type", "application/json")
+              .header("Authorization", "Bearer " + apiKey)
+              .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
+              .build();
+      HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      if (response.statusCode() != 200) {
+        throw new IOException("HTTP Error " + response.statusCode() + ": " + response.body());
+      }
+      JsonObject fullRes = JsonParser.parseString(response.body()).getAsJsonObject();
+      List<Map<String, String>> list = new ArrayList<>();
+      if (fullRes.has("results")) {
+        fullRes.getAsJsonArray("results").forEach(el -> {
+          JsonObject item = el.getAsJsonObject();
+          Map<String, String> entry = new LinkedHashMap<>();
+          entry.put("title", deepseekString(item, "title"));
+          entry.put("url", deepseekString(item, "url"));
+          entry.put("content", deepseekContent(item));
+          list.add(entry);
+        });
+      }
+      return list;
+    } catch (Exception e) {
+      LOGGER.warn("Web search (DeepSeek) failed for query: {}", query, e);
+      throw new RuntimeException("DeepSeek web search failed for query: " + query + " (" + e.getMessage() + ")", e);
+    }
+  }
+
+  private static String deepseekString(JsonObject item, String name) {
+    if (!item.has(name) || item.get(name).isJsonNull()) {
+      return "";
+    }
+    return item.get(name).getAsString();
+  }
+
+  private static String deepseekContent(JsonObject item) {
+    String summary = deepseekString(item, "summary");
+    if (StringUtils.isNotBlank(summary)) {
+      return summary;
+    }
+    String snippet = deepseekString(item, "snippet");
+    if (StringUtils.isNotBlank(snippet)) {
+      return snippet;
+    }
+    return deepseekString(item, "content");
   }
 
 }

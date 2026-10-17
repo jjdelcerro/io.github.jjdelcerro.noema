@@ -114,6 +114,12 @@
             "label": "Web search, Tavily API Key",
             "variableName": "websearch/tavily_api_key",
             "childs": "APIKEYS"
+          },
+          {
+            "type": "combo",
+            "label": "Web search, DeepSeek Key",
+            "variableName": "websearch/deepseek_api_key",
+            "childs": "APIKEYS"
           }
         ]
     },
