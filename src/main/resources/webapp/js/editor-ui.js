@@ -22,6 +22,10 @@ import { postEditorSetupProject } from './api.js';
 
 const WRAP_STORAGE_KEY = 'noema_editor_wrap';
 const TERMINAL_STORAGE_KEY = 'noema_terminal_id';
+// Open tabs per terminal. Persisted in the browser, not on the server:
+// the backend EditorState is a live snapshot and dies with the agent, so
+// remembering what the user had open is the browser's job.
+const TABS_STORAGE_KEY_PREFIX = 'noema_editor_tabs_';
 
 const MODE_BY_EXTENSION = {
     java: 'ace/mode/java',
@@ -72,6 +76,12 @@ let activePath = null;
 let wrapEnabled = false;
 let suspendDirtyTracking = false;
 let setupInProgress = false;
+// Set while restoreTabs() re-opens tabs, so the intermediate pushes do not
+// overwrite the stored list with a partial one.
+let restoringTabs = false;
+// Last tab state written to localStorage. Avoids touching storage on every
+// cursor move.
+let lastPersistedTabs = null;
 
 /**
  * Inicializa Ace sobre el contenedor del panel del editor. Idempotente y
@@ -125,13 +135,15 @@ export function initEditorUI() {
     }
 
     updateToolbarState();
+    restoreTabs();
 }
 
 /**
  * Abre un fichero en el editor: lo activa si ya estaba abierto, o lo carga
  * desde el endpoint y crea pestaña + sesión nuevas.
  */
-export async function openFile(filePath) {
+export async function openFile(filePath, options = {}) {
+    const silent = options.silent === true;
     if (!editor || !filePath) {
         return;
     }
@@ -161,7 +173,9 @@ export async function openFile(filePath) {
         content = data.content ?? '';
     } catch (error) {
         console.error('Error cargando archivo:', filePath, error);
-        showToast(`No se pudo abrir: ${error.message}`, 'error');
+        if (!silent) {
+            showToast(`No se pudo abrir: ${error.message}`, 'error');
+        }
         return;
     }
 
@@ -702,6 +716,7 @@ function confirmCloseDirty(filePath) {
 
 function scheduleStatePush(options = {}) {
     const snapshot = buildStateSnapshot();
+    persistTabs(snapshot);
     pushState(snapshot, options);
 }
 
@@ -738,6 +753,85 @@ function buildStateSnapshot() {
         selectionEndLine,
         selectionText
     };
+}
+
+// --- Persistencia de pestanas (localStorage) ---
+
+/**
+ * Guarda en localStorage la lista de pestanas abiertas y cual esta activa
+ * para el terminal actual. Solo se persisten rutas: el contenido sin
+ * guardar vive en el buffer del navegador y no sobrevive a una recarga,
+ * asi que el flag dirty se descarta a proposito. Escribe unicamente
+ * cuando cambia la lista o la pestana activa.
+ */
+function persistTabs(snapshot) {
+    if (restoringTabs) {
+        return;
+    }
+    const tabs = {
+        openFiles: snapshot.openFiles.map((entry) => entry.path),
+        activeFile: snapshot.activeFile
+    };
+    let serialized;
+    try {
+        serialized = JSON.stringify(tabs);
+    } catch (error) {
+        return;
+    }
+    if (serialized === lastPersistedTabs) {
+        return;
+    }
+    lastPersistedTabs = serialized;
+    try {
+        localStorage.setItem(TABS_STORAGE_KEY_PREFIX + snapshot.terminalId, serialized);
+    } catch (error) {
+        // Cuota agotada o almacenamiento no disponible: no es critico.
+    }
+}
+
+/**
+ * Reabre las pestanas guardadas para el terminal actual. Los ficheros que
+ * ya no existen se ignoran en silencio: es una restauracion automatica,
+ * no una accion del usuario, y no debe llenar la pantalla de errores.
+ */
+async function restoreTabs() {
+    if (!editor) {
+        return;
+    }
+    const terminalId = localStorage.getItem(TERMINAL_STORAGE_KEY) || 'default';
+    let stored;
+    try {
+        stored = JSON.parse(localStorage.getItem(TABS_STORAGE_KEY_PREFIX + terminalId) || 'null');
+    } catch (error) {
+        return;
+    }
+    if (!stored || !Array.isArray(stored.openFiles)) {
+        return;
+    }
+
+    restoringTabs = true;
+    try {
+        for (const path of stored.openFiles) {
+            if (typeof path !== 'string' || !path) {
+                continue;
+            }
+            try {
+                await openFile(path, { silent: true });
+            } catch (error) {
+                // Un fallo aislado no debe abortar el resto de la restauracion.
+            }
+        }
+        if (stored.activeFile && sessions.has(stored.activeFile)) {
+            activateTab(stored.activeFile);
+        }
+    } finally {
+        restoringTabs = false;
+    }
+
+    // Reescribe con la lista que realmente se ha abierto, para que las
+    // pestanas cuyo fichero ya no existe dejen de reintentarse.
+    lastPersistedTabs = null;
+    scheduleStatePush({ immediate: true });
 }
 
 // --- Utilidades ---
