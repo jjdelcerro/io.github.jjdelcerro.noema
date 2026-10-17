@@ -79,7 +79,7 @@ Si quieres acceder a todos los artículos que he ido publicando los puedes encon
 ## Inicio rápido
 
 ### Requisitos
-*   JDK 21 o superior.
+*   JDK 21 o superior para ejecución.
 *   Maven 3.8+.
 
 ### Construcción

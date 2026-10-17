@@ -10,7 +10,7 @@ El pilar fundamental del proyecto es la eliminación del concepto de "sesiones".
 
 El ecosistema tecnológico ha sido seleccionado para priorizar la ejecución local, la autonomía y la mínima dependencia de servicios gestionados:
 
-*   **Plataforma Base:** Java (preparado para JDK 25), utilizando características avanzadas como `--add-modules jdk.incubator.vector` y `--enable-native-access=ALL-UNNAMED` para acelerar el procesamiento matemático local.
+*   **Plataforma Base:** Java JDK 25 para compilación, utilizando características avanzadas como `--add-modules jdk.incubator.vector` y `--enable-native-access=ALL-UNNAMED` para acelerar el procesamiento matemático local.
 *   **Orquestación de IA:** LangChain4j como abstracción principal para la comunicación con proveedores de modelos de lenguaje (OpenAI, DeepSeek, Groq, OpenRouter).
 *   **Inferencia y Embeddings Locales:** ONNX Runtime (`onnxruntime-genai`) y Jlama para la ejecución de Modelos de Lenguaje Pequeños (SLM) y el cálculo de vectores semánticos en el mismo proceso de la JVM.
 *   **Persistencia:** Base de datos relacional embebida H2 para el almacenamiento transaccional de eventos, memoria a largo plazo y persistencia vectorial.
