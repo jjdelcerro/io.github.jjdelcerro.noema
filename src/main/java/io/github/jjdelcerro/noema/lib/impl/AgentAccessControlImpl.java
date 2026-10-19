@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -174,7 +175,7 @@ public class AgentAccessControlImpl implements AgentAccessControl {
 
     // Invariante inmutable: la carpeta interna del agente nunca es accesible por el modelo
     if (targetPathString.contains("/." + AgentPaths.AGENT_FOLDER_NAME + "/var/")
-            || targetPathString.endsWith("/." + AgentPaths.AGENT_FOLDER_NAME+"/var")) {
+            || targetPathString.endsWith("/." + AgentPaths.AGENT_FOLDER_NAME + "/var")) {
       throw new SecurityException("ACCESO DENEGADO: La carpeta de control interno del agente no es accesible.");
     }
 
@@ -433,4 +434,39 @@ public class AgentAccessControlImpl implements AgentAccessControl {
   public boolean isFirejailEnabled() {
     return enableFirejail;
   }
+
+  @Override
+  public List<Path> resolveRoots(Path scope, AccessMode mode) {
+    Path request;
+    if (scope == null) {
+      request = Path.of("/");
+    } else if (scope.isAbsolute()) {
+      request = scope;
+    } else {
+      request = rootPath.resolve(scope);
+    }
+    request = request.toAbsolutePath().normalize();
+
+    List<Path> roots = new ArrayList<>();
+    for (Path candidate : getAllowedPaths()) {
+      Path zone = candidate.toAbsolutePath().normalize();
+      if (zone.startsWith(request)) {
+        addRoot(roots, zone);
+      } else if (request.startsWith(zone)) {
+        addRoot(roots, request);
+      }
+    }
+    return roots;
+  }
+
+  private static void addRoot(List<Path> roots, Path root) {
+    for (Path existing : roots) {
+      if (root.startsWith(existing)) {
+        return;
+      }
+    }
+    roots.removeIf(existing -> existing.startsWith(root));
+    roots.add(root);
+  }
+
 }

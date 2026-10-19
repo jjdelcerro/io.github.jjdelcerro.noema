@@ -36,7 +36,7 @@ public class ReadPaginatedResourceTool extends AbstractPaginatedAgentTool {
 
   @Override
   @SuppressWarnings("UseSpecificCatch")
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       ReadArgs args = gson.fromJson(jsonArguments, ReadArgs.class);
 

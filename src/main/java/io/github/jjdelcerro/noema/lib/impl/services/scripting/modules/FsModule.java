@@ -7,12 +7,15 @@ import io.github.jjdelcerro.javarcs.lib.RCSManager;
 import io.github.jjdelcerro.javarcs.lib.commands.CheckinOptions;
 import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.AgentAccessControl;
+import static io.github.jjdelcerro.noema.lib.api.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
 import io.github.jjdelcerro.noema.lib.impl.utils.FileFuzzySearchUtils;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.AutoClosingLineIterator;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.AbstractScriptModule;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptContextImpl;
+import io.github.jjdelcerro.noema.lib.impl.utils.CloseableIterable;
 import io.github.jjdelcerro.noema.lib.impl.utils.FileSearchAndReplaceUtils;
 import io.github.jjdelcerro.noema.lib.impl.utils.FileSearchAndReplaceUtils.SearchAndReplaceResult;
+import io.github.jjdelcerro.noema.lib.impl.utils.FsUtils;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -20,16 +23,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.PathMatcher;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 import org.apache.tika.Tika;
 import org.apache.tika.detect.AutoDetectReader;
 import org.apache.tika.metadata.Metadata;
@@ -59,8 +58,9 @@ public class FsModule extends AbstractScriptModule {
   -> agent.fs.lines('f.txt').each { println it }
 • forEachLine(path, {line, num -> ..}): void (num: 1-based)
   -> agent.fs.forEachLine('f.log') { line, num -> if (line.contains('ERR')) println "$num: $line" }
-• find(globPattern): Iterable<String> (rutas relativas)
+• find([path], globPattern): Iterable<String> (rutas relativas al workspace o absolutas; incluye carpetas)
   -> agent.fs.find('**/*.java')
+  -> agent.fs.find('/home/user/proyecto', '**/*.md')
 • grep(regex, path): Iterable<GrepMatch(file, line, content)>
   -> agent.fs.grep('(?i)timeout', 'src/').each { println "${it.file}:${it.line} ${it.content}" }
 • fuzzygrep(query, path, [glob='**', limit=5, minSim=0.25]): Iterable<FuzzyMatch(file, startLine, endLine, similarity, content)>
@@ -73,23 +73,41 @@ public class FsModule extends AbstractScriptModule {
   }
 
   /**
-   * Finds files matching a glob pattern and returns an Iterable of relative
-   * path strings.
+   * Finds entries matching a glob pattern inside the workspace.
+   *
+   * @param globPattern glob applied to the path relative to each root
+   * @return display paths, workspace relative when possible
    */
   public Iterable<String> find(String globPattern) {
-    Path root = agent.getPaths().getWorkspaceFolder();
-    if (root == null) {
-      return Collections.emptyList();
-    }
-    PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + globPattern);
+    return find(".", globPattern);
+  }
+
+  /**
+   * Finds entries matching a glob pattern, starting at the given scope.
+   *
+   * <p>
+   * The scope is intersected with the zones the agent can see, so a scope
+   * wider than the sandbox still yields its accessible part. When the scope
+   * does not exist, or lies outside every accessible zone, the result is
+   * empty: for the model those paths simply do not exist.
+   *
+   * <p>
+   * Both files and folders are returned. Each entry is checked against the
+   * access control on its own, because permissions do not inherit: a denied
+   * folder may contain an explicitly allowed file.
+   *
+   * @param rawPath scope of the search
+   * @param globPattern glob applied to the path relative to each root
+   * @return display paths, workspace relative when possible
+   */
+  public Iterable<String> find(String rawPath, String globPattern) {
+    Path scope = toScope(rawPath);
     List<String> matches = new ArrayList<>();
-    try (Stream<Path> stream = Files.walk(root)) {
-      stream.filter(Files::isRegularFile).forEach(p -> {
-        Path relative = root.relativize(p);
-        if (matcher.matches(relative)) {
-          matches.add(relative.toString().replace("\\", "/"));
-        }
-      });
+    try (CloseableIterable<Path> entries = FsUtils.walk(agent.getAccessControl(), scope,
+            FsUtils.normalizeGlob(globPattern), PATH_ACCESS_READ)) {
+      for (Path entry : entries) {
+        matches.add(FsUtils.toDisplayPath(agent, entry));
+      }
     } catch (IOException e) {
       LOGGER.warn("Error scanning files with pattern: {}", globPattern, e);
     }
@@ -99,39 +117,45 @@ public class FsModule extends AbstractScriptModule {
   /**
    * Searches for a regex pattern across a file or directory, returning an
    * Iterable of matches.
+   *
+   * <p>
+   * The scope is intersected with the zones the agent can see. Folders come
+   * out of the walk as well, so they are skipped here: grep only reads files.
+   *
+   * @param regex regular expression to look for, case insensitive
+   * @param rawPath scope of the search
+   * @return matches with their display path, line number and content
    */
   public Iterable<GrepMatch> grep(String regex, String rawPath) {
-    Path path = validatePath(rawPath, AgentAccessControl.AccessMode.PATH_ACCESS_READ);
+    Path scope = toScope(rawPath);
     Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
     List<GrepMatch> results = new ArrayList<>();
-    if (Files.isRegularFile(path)) {
-      grepSingleFile(path, pattern, results);
-    } else if (Files.isDirectory(path)) {
-      try (Stream<Path> stream = Files.walk(path)) {
-        stream.filter(Files::isRegularFile).forEach(file -> {
-          grepSingleFile(file, pattern, results);
-        });
-      } catch (IOException e) {
-        LOGGER.warn("Error walking directory for grep: {}", path, e);
+    try (CloseableIterable<Path> entries = FsUtils.walk(agent.getAccessControl(), scope, null, PATH_ACCESS_READ)) {
+      for (Path entry : entries) {
+        if (!Files.isRegularFile(entry)) {
+          continue;
+        }
+        grepSingleFile(entry, pattern, results);
       }
+    } catch (IOException e) {
+      LOGGER.warn("Error walking directory for grep: {}", scope, e);
     }
     return results;
   }
 
   private void grepSingleFile(Path file, Pattern pattern, List<GrepMatch> results) {
+    String displayPath = FsUtils.toDisplayPath(agent, file);
     try (BufferedReader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
       String line;
       int lineNum = 1;
-      Path root = agent.getPaths().getWorkspaceFolder();
-      String displayPath = root != null ? root.relativize(file).toString() : file.toString();
       while ((line = reader.readLine()) != null) {
         if (pattern.matcher(line).find()) {
-          results.add(new GrepMatch(displayPath.replace("\\", "/"), lineNum, line));
+          results.add(new GrepMatch(displayPath, lineNum, line));
         }
         lineNum++;
       }
     } catch (Exception ignored) {
-      // Ignore binary or unreadable files during recursive grep
+      // Files that cannot be decoded as UTF-8 are skipped, like unreadable ones.
     }
   }
 
@@ -167,6 +191,22 @@ public class FsModule extends AbstractScriptModule {
     }
   }
 
+  /**
+   * Turns a raw scope into an absolute path. Relative scopes are anchored to
+   * the workspace, never to the process working directory.
+   */
+  private Path toScope(String rawPath) {
+    Path workspace = agent.getPaths().getWorkspaceFolder();
+    if (rawPath == null || rawPath.trim().isEmpty()) {
+      return workspace != null ? workspace : Path.of(".");
+    }
+    Path scope = Path.of(rawPath.trim());
+    if (workspace != null && !scope.isAbsolute()) {
+      scope = workspace.resolve(scope);
+    }
+    return scope;
+  }
+  
   private Path validatePath(String rawPath, AgentAccessControl.AccessMode mode) {
     Path resolved = agent.getAccessControl().resolvePathOrNull(rawPath, mode);
     if (resolved == null) {
@@ -311,7 +351,7 @@ public class FsModule extends AbstractScriptModule {
   }
 
   public Iterable<FileFuzzySearchUtils.FuzzyMatch> fuzzygrep(String query, String rawPath, String filePattern, int limit, double minSimilarity) {
-    Path path = validatePath(rawPath, AgentAccessControl.AccessMode.PATH_ACCESS_READ);
+    Path path = toScope(rawPath);
     return FileFuzzySearchUtils.search(agent, path, query, filePattern, limit, minSimilarity);
   }
 

@@ -50,7 +50,7 @@ Archivo activo: %s
 Cursor en linea: %s
 """, StringUtils.join(state.getOpenFiles(), ", "), state.getActiveFile(), state.getCursorLine()+1);
       if( state.getSelectionStartLine() != null && state.getSelectionEndLine() != null) {
-        notice += String.format("Líneas seleccionadas: %d-%d\n", state.getSelectionStartLine()+1, state.getSelectionEndLine()+1);
+        notice += String.format("Líneas seleccionadas: %d-%d\nTexto seleccionado:\n%s", state.getSelectionStartLine()+1, state.getSelectionEndLine()+1, state.getSelectionText());
       }
       notifications.add(notice);
     }

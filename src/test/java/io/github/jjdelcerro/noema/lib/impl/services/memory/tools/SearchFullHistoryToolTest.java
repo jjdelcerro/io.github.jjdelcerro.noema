@@ -135,7 +135,7 @@ public class SearchFullHistoryToolTest {
     addChat("Receta tradicional para preparar paella valenciana con verduras", "Se recomienda usar arroz bomba.");
 
     String jsonArgs = "{\"query\": \"copias de seguridad restauracion\", \"limit\": 2}";
-    String rawResponse = tool.execute(jsonArgs);
+    String rawResponse = tool.execute(jsonArgs).text();
 
     JsonObject response = gson.fromJson(rawResponse, JsonObject.class);
     assertEquals("success", response.get("status").getAsString());
@@ -157,7 +157,7 @@ public class SearchFullHistoryToolTest {
     addChat("Charla general sobre rendimiento en bases de datos", "Explicacion sobre indices y transacciones.");
 
     String jsonArgs = "{\"query\": \"base de datos\", \"type\": \"arquitectura\"}";
-    String rawResponse = tool.execute(jsonArgs);
+    String rawResponse = tool.execute(jsonArgs).text();
 
     JsonObject response = gson.fromJson(rawResponse, JsonObject.class);
     assertEquals("success", response.get("status").getAsString());
@@ -178,7 +178,7 @@ public class SearchFullHistoryToolTest {
     }
 
     String jsonArgs = "{\"query\": \"configuracion servidor puerto\", \"limit\": 2}";
-    String rawResponse = tool.execute(jsonArgs);
+    String rawResponse = tool.execute(jsonArgs).text();
 
     JsonObject response = gson.fromJson(rawResponse, JsonObject.class);
     JsonArray results = response.getAsJsonArray("results");
@@ -193,7 +193,7 @@ public class SearchFullHistoryToolTest {
 
     // Con umbral estricto (0.9), una consulta vagamente relacionada no debe devolver nada
     String jsonArgs = "{\"query\": \"copias de seguridad\", \"similarity\": 0.9}";
-    String rawResponse = tool.execute(jsonArgs);
+    String rawResponse = tool.execute(jsonArgs).text();
 
     JsonObject response = gson.fromJson(rawResponse, JsonObject.class);
     assertEquals("success", response.get("status").getAsString());
@@ -205,11 +205,11 @@ public class SearchFullHistoryToolTest {
   @Test
   @DisplayName("Debe manejar errores de argumentos sin lanzar excepciones no controladas")
   public void testErrorHandlingInvalidArguments() {
-    String resEmpty = tool.execute("{}");
+    String resEmpty = tool.execute("{}").text();
     JsonObject jsonEmpty = gson.fromJson(resEmpty, JsonObject.class);
     assertEquals("error", jsonEmpty.get("status").getAsString());
 
-    String resBlank = tool.execute("{\"query\": \"   \"}");
+    String resBlank = tool.execute("{\"query\": \"   \"}").text();
     JsonObject jsonBlank = gson.fromJson(resBlank, JsonObject.class);
     assertEquals("error", jsonBlank.get("status").getAsString());
   }

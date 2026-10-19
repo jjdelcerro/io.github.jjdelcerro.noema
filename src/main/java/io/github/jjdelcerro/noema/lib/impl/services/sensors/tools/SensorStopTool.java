@@ -26,7 +26,7 @@ public class SensorStopTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       SensorsService service = (SensorsService) agent.getService("SensorsService");
       Map<String, Object> args = gson.fromJson(jsonArguments, Map.class);
@@ -40,7 +40,7 @@ public class SensorStopTool extends AbstractAgentTool {
         service.setSilenced(channel, true);
       }
 
-      return gson.toJson(Map.of("status", "success", "silenced_channels", channels));
+      return result(gson.toJson(Map.of("status", "success", "silenced_channels", channels)));
     } catch (Exception e) {
       return error("Error al detener sensores: " + e.getMessage());
     }

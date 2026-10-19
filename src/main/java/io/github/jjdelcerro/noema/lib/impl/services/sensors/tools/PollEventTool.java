@@ -32,7 +32,7 @@ public class PollEventTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
-    return "{\"status\": \"success\", \"events\": [], \"message\": \"No hay eventos pendientes de procesar.\"}";
+  public ToolResult execute(String jsonArguments) {
+    return result("{\"status\": \"success\", \"events\": [], \"message\": \"No hay eventos pendientes de procesar.\"}");
   }
 }

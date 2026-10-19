@@ -17,7 +17,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import static io.github.jjdelcerro.noema.lib.api.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
 import io.github.jjdelcerro.noema.lib.impl.utils.FileFuzzySearchUtils;
 
 /**
@@ -36,15 +35,15 @@ public class FileFuzzyGrepTool extends AbstractPaginatedAgentTool {
   private static final int MAX_LIMIT = 20;
   private static final double DEFAULT_MIN_SIMILARITY = 0.25;
 
-  // Tamaño de la ventana deslizante para no saturar memoria RAM
-  private static final int CHUNK_LINES = 35;
-  private static final int OVERLAP_LINES = 10;
-  private static final int STEP_LINES = CHUNK_LINES - OVERLAP_LINES; // 25 líneas de avance
-
-  private static final int MAX_FILES_TO_SCAN = 100;
-  private static final String[] SKIP_DIRS = {"target", ".git", ".idea", "node_modules"};
-
-  private final Tika tika = new Tika();
+//  // Tamaño de la ventana deslizante para no saturar memoria RAM
+//  private static final int CHUNK_LINES = 35;
+//  private static final int OVERLAP_LINES = 10;
+//  private static final int STEP_LINES = CHUNK_LINES - OVERLAP_LINES; // 25 líneas de avance
+//
+//  private static final int MAX_FILES_TO_SCAN = 100;
+//  private static final String[] SKIP_DIRS = {"target", ".git", ".idea", "node_modules"};
+//
+//  private final Tika tika = new Tika();
 
   public record ChunkInfo(Path file, int startLine, int endLine, String content) {
 
@@ -76,17 +75,17 @@ public class FileFuzzyGrepTool extends AbstractPaginatedAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       Args args = gson.fromJson(jsonArguments, Args.class);
       if (args == null || StringUtils.isBlank(args.path) || StringUtils.isBlank(args.query)) {
         return formatErrorResponse("Los parámetros 'path' y 'query' son obligatorios.");
       }
 
-      Path target = resolvePathOrNull(args.path, PATH_ACCESS_READ);
-      if (target == null) {
-        return formatErrorResponse("Acceso denegado o ruta inexistente: " + args.path);
-      }
+      // The scope is not resolved here: the walk intersects it with the zones
+      // the agent can see, so a scope wider than the sandbox still yields the
+      // accessible part.
+      Path target = Path.of(args.path.trim());
 
       int limit = args.limit != null ? args.limit : FileFuzzySearchUtils.DEFAULT_LIMIT;
       double minSim = args.minSimilarity != null ? args.minSimilarity : FileFuzzySearchUtils.DEFAULT_MIN_SIMILARITY;

@@ -132,7 +132,7 @@ public class LookupTurnToolTest {
 
     // Consultamos el turno central 3 con ventana de 1 (debe devolver turnos 2, 3 y 4)
     String jsonArgs = "{\"code\": \"3\", \"context_window\": 1}";
-    String rawResponse = tool.execute(jsonArgs);
+    String rawResponse = tool.execute(jsonArgs).text();
 
     JsonObject response = gson.fromJson(rawResponse, JsonObject.class);
     assertEquals("success", response.get("status").getAsString());
@@ -157,7 +157,7 @@ public class LookupTurnToolTest {
     int targetId = target.getId();
 
     // 1. Formato numerico directo (ej: "2")
-    String res1 = tool.execute(String.format("{\"code\": \"%d\"}", targetId));
+    String res1 = tool.execute(String.format("{\"code\": \"%d\"}", targetId)).text();
     JsonObject json1 = gson.fromJson(res1, JsonObject.class);
     assertEquals("success", json1.get("status").getAsString());
 
@@ -166,7 +166,7 @@ public class LookupTurnToolTest {
     assertEquals(String.valueOf(targetId), array1.get(1).getAsJsonObject().get("code").getAsString(), "El turno central debe ser el solicitado");
 
     // 2. Formato con prefijo "ID-" (ej: "ID-2")
-    String res2 = tool.execute(String.format("{\"code\": \"ID-%d\"}", targetId));
+    String res2 = tool.execute(String.format("{\"code\": \"ID-%d\"}", targetId)).text();
     JsonObject json2 = gson.fromJson(res2, JsonObject.class);
     assertEquals("success", json2.get("status").getAsString());
 
@@ -185,7 +185,7 @@ public class LookupTurnToolTest {
 
     // Solicitamos el turno 8 con una ventana desmedida (20)
     String jsonArgs = "{\"code\": \"8\", \"context_window\": 20}";
-    String rawResponse = tool.execute(jsonArgs);
+    String rawResponse = tool.execute(jsonArgs).text();
 
     JsonObject response = gson.fromJson(rawResponse, JsonObject.class);
     JsonArray results = response.getAsJsonArray("retrieved_turns");
@@ -206,7 +206,7 @@ public class LookupTurnToolTest {
 
     // Consultamos el turno 1 con ventana de 2 (rango teorico: -1 a 3)
     String jsonArgs = "{\"code\": \"1\", \"context_window\": 2}";
-    String rawResponse = tool.execute(jsonArgs);
+    String rawResponse = tool.execute(jsonArgs).text();
 
     JsonObject response = gson.fromJson(rawResponse, JsonObject.class);
     assertEquals("success", response.get("status").getAsString());
@@ -230,7 +230,7 @@ public class LookupTurnToolTest {
     Turn tAnnotation = addAnnotation("doc.md", "Nota de arquitectura", "arquitectura");
 
     String jsonArgs = String.format("{\"code\": \"%d\", \"context_window\": 2}", tAssistant.getId());
-    String rawResponse = tool.execute(jsonArgs);
+    String rawResponse = tool.execute(jsonArgs).text();
 
     JsonObject response = gson.fromJson(rawResponse, JsonObject.class);
     JsonArray results = response.getAsJsonArray("retrieved_turns");
@@ -248,12 +248,12 @@ public class LookupTurnToolTest {
   @DisplayName("Debe devolver status de error ante argumentos invalidos o malformados")
   public void testInvalidArgumentsErrorHandling() {
     // 1. Sin argumentos
-    String resEmpty = tool.execute("{}");
+    String resEmpty = tool.execute("{}").text();
     JsonObject jsonEmpty = gson.fromJson(resEmpty, JsonObject.class);
     assertEquals("error", jsonEmpty.get("status").getAsString());
 
     // 2. Formato no numerico
-    String resInvalid = tool.execute("{\"code\": \"no_es_un_numero\"}");
+    String resInvalid = tool.execute("{\"code\": \"no_es_un_numero\"}").text();
     JsonObject jsonInvalid = gson.fromJson(resInvalid, JsonObject.class);
     assertEquals("error", jsonInvalid.get("status").getAsString());
   }

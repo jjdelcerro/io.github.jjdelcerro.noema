@@ -47,7 +47,7 @@ public class RunSkillScriptTool extends AbstractPaginatedAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       SkillsService service = (SkillsService) this.agent.getService(SkillsService.NAME);
 

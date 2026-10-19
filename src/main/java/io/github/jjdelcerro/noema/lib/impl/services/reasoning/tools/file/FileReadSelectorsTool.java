@@ -60,7 +60,7 @@ public class FileReadSelectorsTool extends AbstractPaginatedAgentTool {
 
   @Override
   @SuppressWarnings("UseSpecificCatch")
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     String selectorLog = "unknown";
     try {
       ReadArgs args = gson.fromJson(jsonArguments, ReadArgs.class);

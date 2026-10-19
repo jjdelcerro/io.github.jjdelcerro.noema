@@ -105,7 +105,7 @@ que finalices la tarea sobre el proyecto y decidas liberarlo invocando
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       Args args = gson.fromJson(jsonArguments, Args.class);
       if (args == null || StringUtils.isBlank(args.path)) {
@@ -153,7 +153,7 @@ que finalices la tarea sobre el proyecto y decidas liberarlo invocando
       sb.append("---\n");
       sb.append(content);
 
-      return sb.toString();
+      return result(sb.toString());
 
     } catch (IOException e) {
       LOGGER.warn("Error de E/S leyendo project-map.md: {}", e.getMessage(), e);
@@ -164,8 +164,8 @@ que finalices la tarea sobre el proyecto y decidas liberarlo invocando
     }
   }
 
-  private String formatError(String message) {
-    return "STATUS: ERROR\nERROR: " + message + "\n---\n";
+  private ToolResult formatError(String message) {
+    return result("STATUS: ERROR\nERROR: " + message + "\n---\n");
   }
 
   /**

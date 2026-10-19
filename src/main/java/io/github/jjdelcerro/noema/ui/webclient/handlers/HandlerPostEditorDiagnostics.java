@@ -90,7 +90,7 @@ public class HandlerPostEditorDiagnostics extends AbstractHandler {
 }
 """, file, projectRoot);
 
-    String resp = tool.execute(toolArgs);
+    String resp = tool.execute(toolArgs).text();
 
     JsonArray annotations = new JsonArray();
     if (resp == null || resp.isBlank()) {

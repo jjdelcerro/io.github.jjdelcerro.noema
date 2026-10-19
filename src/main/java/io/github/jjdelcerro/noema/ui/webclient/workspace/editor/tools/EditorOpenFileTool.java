@@ -40,7 +40,7 @@ must be absolute. The line, if provided, is 1-based.""")
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       Args args = gson.fromJson(jsonArguments, Args.class);
       if (args.path == null || args.path.trim().isEmpty()) {
@@ -52,7 +52,7 @@ must be absolute. The line, if provided, is 1-based.""")
       }
       ReasoningService reasoningService = (ReasoningService) this.agent.getService(ReasoningService.NAME);
       webserver.editorOpenFile(reasoningService.getCurrentSubchannel(), args.path, args.line);
-      return gson.toJson(Map.of("status", "ok"));
+      return result(gson.toJson(Map.of("status", "ok")));
     } catch (Throwable t) {
       return error("Error invoking the editor_open_file tool.");
     }

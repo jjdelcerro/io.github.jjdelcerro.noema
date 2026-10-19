@@ -49,7 +49,7 @@ invoca {LOOKUPTURN}(code=42) para recuperar los argumentos de esa decisión.
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       LookupArgs args = gson.fromJson(jsonArguments, LookupArgs.class);
       int safeWindow = Math.min(args.context_window > 0 ? args.context_window : 1, 5);
@@ -58,7 +58,7 @@ invoca {LOOKUPTURN}(code=42) para recuperar los argumentos de esa decisión.
       int centerId = parseId(args.code);
 
       if (centerId < 0) {
-        return gson.toJson(Map.of("status", "error", "message", "Formato de ID inválido. Use 'ID-Numero'"));
+        return error("Formato de ID inválido. Use 'ID-Numero'");
       }
 
       // Calculamos rango
@@ -82,14 +82,14 @@ invoca {LOOKUPTURN}(code=42) para recuperar los argumentos de esa decisión.
         results.add(map);
       }
 
-      return gson.toJson(Map.of(
+      return result(gson.toJson(Map.of(
               "status", "success",
               "target_code", args.code,
               "retrieved_turns", results
-      ));
+      )));
 
     } catch (Exception e) {
-      return gson.toJson(Map.of("status", "error", "message", e.getMessage()));
+      return error(e.getMessage());
     }
   }
 

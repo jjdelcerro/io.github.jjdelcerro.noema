@@ -125,11 +125,11 @@ public abstract class AbstractPaginatedAgentTool extends AbstractAgentTool {
     return null;
   }
 
-  protected String servePaginatedResource(String resourceId) {
+  protected ToolResult servePaginatedResource(String resourceId) {
     return servePaginatedResource(resourceId, 0, getDefaultMaxLines());
   }
 
-  protected String servePaginatedResource(String resourceId, int offset, int limit) {
+  protected ToolResult servePaginatedResource(String resourceId, int offset, int limit) {
     if (StringUtils.isBlank(resourceId)) {
       return formatErrorResponse("Resource ID is null or empty");
     }
@@ -167,7 +167,7 @@ public abstract class AbstractPaginatedAgentTool extends AbstractAgentTool {
     }
   }
 
-  private String executePaginatedRead(Stream<String> lines, String resourceId, long totalLines, int theOffset, int theLimit) throws IOException {
+  private ToolResult executePaginatedRead(Stream<String> lines, String resourceId, long totalLines, int theOffset, int theLimit) throws IOException {
     int offset = theOffset > 0 ? theOffset : 0;
     int limit = theLimit > 0 ? theLimit : getDefaultMaxLines();
 
@@ -226,7 +226,7 @@ public abstract class AbstractPaginatedAgentTool extends AbstractAgentTool {
     return count;
   }
 
-  private String formatResponse(String resourceId, boolean empty, int offset, int limit, long total, String hint, String content) {
+  private ToolResult formatResponse(String resourceId, boolean empty, int offset, int limit, long total, String hint, String content) {
     StringBuilder sb = new StringBuilder();
 
     sb.append("STATUS: OK\n");
@@ -235,7 +235,7 @@ public abstract class AbstractPaginatedAgentTool extends AbstractAgentTool {
     if (empty) {
       sb.append("EMPTY: true\n");
       sb.append("---\n");
-      return sb.toString();
+      return result(sb.toString());
     }
 
     sb.append("EMPTY: false\n");
@@ -259,15 +259,15 @@ public abstract class AbstractPaginatedAgentTool extends AbstractAgentTool {
     }
 
     sb.append(content);
-    return sb.toString();
+    return result(sb.toString());
   }
 
-  protected String formatErrorResponse(String error) {
+  protected ToolResult formatErrorResponse(String error) {
     StringBuilder sb = new StringBuilder();
     sb.append("STATUS: ERROR\n");
     sb.append("ERROR: ").append(error).append("\n");
     sb.append("---\n");
-    return sb.toString();
+    return result(sb.toString());
   }
 
   private String buildPaginationHint(String resourceId, int nextOffset, int limit) {
@@ -336,23 +336,31 @@ EMPTY: [true|false]
   private static final String CONTENT_TRIMMED = "\nCONTENT_TRIMMED: true";
 
   @Override
-  public String trimResult(String result, AgentTool.TrimResultType trimResultType) {
-    if (result == null) {
+  public ToolResult trimResult(ToolResult toolResult, AgentTool.TrimResultType trimResultType) {
+    if (toolResult == null ) {
       return null;
     }
+    if( toolResult.getType() != ToolResultType.Text ) {
+      return toolResult;
+    }
+    
+    if( StringUtils.isBlank(toolResult.text()) ) {
+      return toolResult;
+    }
+    String result = toolResult.text();
 
     String separator = "\n---\n";
     int separatorIndex = result.indexOf(separator);
 
     if (separatorIndex == -1) {
-      return super.trimResult(result, trimResultType);
+      return super.trimResult(toolResult, trimResultType);
     }
     String header = result.substring(0, separatorIndex);
     String body = result.substring(separatorIndex);
     switch (trimResultType) {
       case Trim:
 //        LOGGER.info("TRIM RESULTS OF "+this.getClass().getSimpleName());
-        return header + CONTENT_TRIMMED + separator;
+        return result(header + CONTENT_TRIMMED + separator);
       case None:
       default:
         return null;

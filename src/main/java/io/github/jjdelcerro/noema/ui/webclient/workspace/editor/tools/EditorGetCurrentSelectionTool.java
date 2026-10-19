@@ -37,7 +37,7 @@ parameters.""");
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       NoemaWebServer webserver = (NoemaWebServer) this.agent.get("webserver");
       if (webserver == null) {
@@ -48,12 +48,12 @@ parameters.""");
       if (selection == null) {
         return error("There is no active selection in the current terminal.");
       }
-      return gson.toJson(Map.of(
+      return result(gson.toJson(Map.of(
               "file", selection.getFile() != null ? selection.getFile() : "",
               "linestart", selection.getSelectionStartLine() != null ? selection.getSelectionStartLine() : 0,
               "lineend", selection.getSelectionEndLine() != null ? selection.getSelectionEndLine() : 0,
               "text", selection.getText() != null ? selection.getText() : ""
-      ));
+      )));
     } catch (Throwable t) {
       return error("Error invoking the editor_get_current_selection tool.");
     }

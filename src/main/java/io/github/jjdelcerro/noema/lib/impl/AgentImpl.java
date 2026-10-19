@@ -2,7 +2,6 @@ package io.github.jjdelcerro.noema.lib.impl;
 
 import io.github.jjdelcerro.noema.lib.impl.utils.AgentUtils;
 import io.github.jjdelcerro.noema.lib.impl.utils.SLMUtils;
-import io.github.jjdelcerro.noema.lib.impl.model.AbstractChatModel;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.ReasoningServiceImpl;
@@ -27,14 +26,12 @@ import io.github.jjdelcerro.noema.lib.api.AgentPaths;
 import io.github.jjdelcerro.noema.lib.api.AgentService;
 import io.github.jjdelcerro.noema.lib.api.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.api.AgentTool;
+import io.github.jjdelcerro.noema.lib.api.AgentTool.ToolResult;
 import io.github.jjdelcerro.noema.lib.api.model.ChatModel;
 import io.github.jjdelcerro.noema.lib.api.ConnectionSupplier;
 import io.github.jjdelcerro.noema.lib.api.model.ModelParameters;
-import io.github.jjdelcerro.noema.lib.impl.model.ModelParametersImpl;
-import io.github.jjdelcerro.noema.lib.impl.model.ModelUtils;
 import io.github.jjdelcerro.noema.lib.impl.model.langchainopenai.ChatModelLangchainOpenAI;
 import io.github.jjdelcerro.noema.lib.impl.model.onnx_embedded.ChatModelOnnxEmbedded;
-import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsService;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettings;
 import io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService;
 import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorInformation;
@@ -60,6 +57,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.github.jjdelcerro.noema.lib.api.memory.episodic.EpisodicMemory;
+import io.github.jjdelcerro.noema.lib.impl.tools.ToolResultImpl;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -603,4 +601,15 @@ public class AgentImpl implements Agent {
   public Object get(String name) {
     return this.extraProperties.get(name);
   }
+
+  @Override
+  public ToolResult createToolResult(String text) {
+    return new ToolResultImpl(text);
+  }
+
+  @Override
+  public ToolResult createResultImage(Path pathname) {
+    return new ToolResultImpl(pathname, AgentTool.ToolResultType.Image);
+  }
+  
 }

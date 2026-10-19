@@ -94,7 +94,7 @@ MUESTRA DE MÉTODOS PRINCIPALES (Catálogo parcial; consulta help() para funcion
   }
 
   @Override
-  public String execute(String jsonArguments) {  // TODO: Habria que lanzar la ejecucion en un hilo aparte y enviar una notificacion al terminar, de forma similar a como hace subagent.
+  public ToolResult execute(String jsonArguments) {  // TODO: Habria que lanzar la ejecucion en un hilo aparte y enviar una notificacion al terminar, de forma similar a como hace subagent.
     String subchannel = this.agent.getCurrentSubchannel();
     ScriptingService service = (ScriptingService) this.agent.getService(ScriptingService.NAME);
 
@@ -154,7 +154,7 @@ MUESTRA DE MÉTODOS PRINCIPALES (Catálogo parcial; consulta help() para funcion
     return sb.toString();
   }
 
-  private String saveAndPaginateOutput(String fullContent) {
+  private ToolResult saveAndPaginateOutput(String fullContent) {
     String executionId = "script_" + UUID.randomUUID().toString().substring(0, 8);
     Path outputFile = agent.getPaths().getTempFolder().resolve(executionId + ".out");
 

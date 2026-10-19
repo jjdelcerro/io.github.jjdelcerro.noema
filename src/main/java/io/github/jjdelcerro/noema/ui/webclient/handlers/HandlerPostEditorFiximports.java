@@ -74,7 +74,7 @@ public class HandlerPostEditorFiximports extends AbstractHandler {
   "line": 0
 }                      
 """, projectRoot, file);
-    String resp = tool.execute(toolArgs);
+    String resp = tool.execute(toolArgs).text();
 
     ctx.contentType("application/json").result(resp);
   }

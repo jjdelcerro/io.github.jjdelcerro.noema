@@ -40,7 +40,7 @@ public class ListSkillsTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       SkillsService service = (SkillsService) this.agent.getService(SkillsService.NAME);
 
@@ -55,7 +55,7 @@ public class ListSkillsTool extends AbstractAgentTool {
         catalog.add(item);
       }
 
-      return gson.toJson(catalog);
+      return result(gson.toJson(catalog));
     } catch (Exception e) {
       LOGGER.warn("Error al listar skills disponibles", e);
       return error("Error interno al listar skills: " + e.getMessage());

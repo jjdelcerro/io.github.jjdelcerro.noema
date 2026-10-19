@@ -62,7 +62,7 @@ public class WebGetTikaTool extends AbstractPaginatedAgentTool {
 
   @Override
   @SuppressWarnings("UseSpecificCatch")
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     String urlForLog = "unknown";
     try {
       ReadArgs args = gson.fromJson(jsonArguments, ReadArgs.class);
@@ -154,12 +154,12 @@ public class WebGetTikaTool extends AbstractPaginatedAgentTool {
             .toLowerCase();
   }
 
-  private String formatHttpResponseError(int statusCode, String message, String url) {
+  private ToolResult formatHttpResponseError(int statusCode, String message, String url) {
     String errorDescription = getHttpStatusMessage(statusCode);
     return formatErrorResponse("HTTP Error " + statusCode + ": " + errorDescription + " (" + url + ")");
   }
 
-  private String formatNetworkError(IOException e, String url) {
+  private ToolResult formatNetworkError(IOException e, String url) {
     String message = e.getMessage().toLowerCase();
 
     if (message.contains("timeout") || message.contains("timed out")) {

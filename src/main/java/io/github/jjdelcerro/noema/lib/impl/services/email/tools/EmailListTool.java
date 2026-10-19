@@ -26,8 +26,8 @@ public class EmailListTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String args) {
+  public ToolResult execute(String args) {
     EmailService service = (EmailService) this.agent.getService(EmailService.NAME);
-    return service.listHeaders();
+    return result(service.listHeaders());
   }
 }

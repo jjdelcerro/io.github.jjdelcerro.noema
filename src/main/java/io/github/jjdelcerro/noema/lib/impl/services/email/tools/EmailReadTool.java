@@ -28,9 +28,9 @@ public class EmailReadTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String args) {
+  public ToolResult execute(String args) {
     EmailService service = (EmailService) this.agent.getService(EmailService.NAME);
     Map<String, Double> map = gson.fromJson(args, Map.class);
-    return service.read(map.get("uid").longValue());
+    return result(service.read(map.get("uid").longValue()));
   }
 }

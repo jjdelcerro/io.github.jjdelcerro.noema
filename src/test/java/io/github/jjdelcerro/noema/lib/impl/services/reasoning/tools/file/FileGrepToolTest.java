@@ -65,7 +65,7 @@ public class FileGrepToolTest {
   @DisplayName("Debe encontrar coincidencias dentro de un único archivo")
   public void testGrepSingleFile() throws IOException {
     String jsonArgs = String.format("{\"path\": \"%s\", \"query\": \"1.16.3-beta26\", \"filePattern\": \"pom.xml\"}", this.projectRoot.toString());
-    String response = fileGrepTool.execute(jsonArgs);
+    String response = fileGrepTool.execute(jsonArgs).text();
 
     assertTrue(response.contains("STATUS: OK"));
     assertTrue(response.contains("<version>1.16.3-beta26</version>"));
@@ -75,7 +75,7 @@ public class FileGrepToolTest {
   @DisplayName("Debe buscar recursivamente en directorios y subdirectorios")
   public void testGrepDirectoryRecursive() throws IOException {
     String jsonArgs = String.format("{\"path\": \"%s\", \"query\": \"eventDispatcher\", \"filePattern\": \"**/*\"}", this.projectRoot.toString());
-    String response = fileGrepTool.execute(jsonArgs);
+    String response = fileGrepTool.execute(jsonArgs).text();
 
     assertTrue(response.contains("STATUS: OK"));
     assertTrue(response.contains("ReasoningServiceImpl.java"));
@@ -88,7 +88,7 @@ public class FileGrepToolTest {
             "{\"path\": \"%s\", \"query\": \"artifactId\", \"filePattern\": \"**/pom.xml\"}",
             this.projectRoot.toString().replace("\\", "/")
     );
-    String response = fileGrepTool.execute(jsonArgs);
+    String response = fileGrepTool.execute(jsonArgs).text();
 
     assertTrue(response.contains("STATUS: OK"));
     assertTrue(response.contains("pom.xml"));
@@ -102,7 +102,7 @@ public class FileGrepToolTest {
             "{\"path\": \"%s\", \"query\": \"public interface Agent\", \"filePattern\": \"**/*.java\"}",
             this.projectRoot.toString().replace("\\", "/")
     );
-    String response = fileGrepTool.execute(jsonArgs);
+    String response = fileGrepTool.execute(jsonArgs).text();
 
     assertTrue(response.contains("STATUS: OK"));
     assertTrue(response.contains("Agent.java"));
@@ -117,7 +117,7 @@ public class FileGrepToolTest {
             "{\"path\": \"%s\", \"query\": \"public class AgentManagerImpl\", \"filePattern\": \"**/*.java\"}",
             this.projectRoot.toString().replace("\\", "/")
     );
-    String response = fileGrepTool.execute(jsonArgs);
+    String response = fileGrepTool.execute(jsonArgs).text();
 
     assertTrue(response.contains("STATUS: OK"));
     assertTrue(response.contains("AgentManagerImpl.java"));
@@ -130,7 +130,7 @@ public class FileGrepToolTest {
             "{\"path\": \"%s\", \"query\": \".\", \"filePattern\": \"**/*.java\"}",
             this.projectRoot.toString().replace("\\", "/")
     );
-    String response = fileGrepTool.execute(jsonArgs);
+    String response = fileGrepTool.execute(jsonArgs).text();
 
     assertTrue(response.contains("STATUS: OK"));
     assertTrue(response.contains("TOTAL_LINES:"));
@@ -145,7 +145,7 @@ public class FileGrepToolTest {
             "{\"path\": \"%s\", \"query\": \"class\"}",
             targetDir.toString().replace("\\", "/")
     );
-    String response = fileGrepTool.execute(jsonArgs);
+    String response = fileGrepTool.execute(jsonArgs).text();
 
     assertTrue(response.contains("STATUS: ERROR"));
     assertTrue(response.contains("Access denied or path does not exist"));
@@ -158,7 +158,7 @@ public class FileGrepToolTest {
             "{\"path\": \"%s\", \"query\": \"^package \", \"filePattern\": \"**/*.java\"}",
             this.projectRoot.toString().replace("\\", "/")
     );
-    String response = fileGrepTool.execute(jsonArgs);
+    String response = fileGrepTool.execute(jsonArgs).text();
 
     assertTrue(response.contains("STATUS: OK"));
     assertTrue(response.contains("EMPTY: false"));
@@ -172,7 +172,7 @@ public class FileGrepToolTest {
             "{\"path\": \"%s\", \"query\": \"class .*ServiceFactory\", \"filePattern\": \"**/*.java\"}",
             this.projectRoot.toString().replace("\\", "/")
     );
-    String response = fileGrepTool.execute(jsonArgs);
+    String response = fileGrepTool.execute(jsonArgs).text();
 
     assertTrue(response.contains("STATUS: OK"));
     assertTrue(response.contains("EMPTY: false"));
@@ -187,7 +187,7 @@ public class FileGrepToolTest {
             "{\"path\": \"%s\", \"query\": \"class (.*ServiceFactory\", \"mode\": \"regexp\"}",
             this.projectRoot.toString().replace("\\", "/")
     );
-    String response = fileGrepTool.execute(jsonArgs);
+    String response = fileGrepTool.execute(jsonArgs).text();
 
     assertTrue(response.contains("STATUS: ERROR"));
     assertTrue(response.contains("Invalid regular expression"));
@@ -201,7 +201,7 @@ public class FileGrepToolTest {
             "{\"path\": \"%s\", \"query\": \"^package \", \"filePattern\": \"**/*.java\", \"mode\": \"plaintext\"}",
             this.projectRoot.toString().replace("\\", "/")
     );
-    String response = fileGrepTool.execute(jsonArgs);
+    String response = fileGrepTool.execute(jsonArgs).text();
 
     assertTrue(response.contains("STATUS: OK"));
     assertTrue(response.contains("EMPTY: true"));

@@ -35,42 +35,42 @@ public class FileMkdirTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
       String relativePath = args.get("path");
 
       if (relativePath == null || relativePath.isBlank()) {
-        return gson.toJson(Map.of("status", "error", "message", "El parámetro 'path' es obligatorio."));
+        return error("El parámetro 'path' es obligatorio.");
       }
 
       Path dirPath = this.agent.getAccessControl().resolvePathOrNull(relativePath, PATH_ACCESS_WRITE);
       if (dirPath == null) {
         LOGGER.info("Acceso denagado a '" + relativePath + "'");
-        return gson.toJson(Map.of("status", "error", "message", "Acceso denegado: No se puede crear directorios fuera de la raíz del proyecto."));
+        return error("Acceso denegado: No se puede crear directorios fuera de la raíz del proyecto.");
       }
 
       if (Files.exists(dirPath)) {
         if (Files.isDirectory(dirPath)) {
           LOGGER.info("El directorio ya existe '" + dirPath + "'");
-          return gson.toJson(Map.of("status", "success", "message", "El directorio ya existe."));
+          return error("El directorio ya existe.");
         } else {
           LOGGER.info("El archivo ya existe '" + dirPath + "'");
-          return gson.toJson(Map.of("status", "error", "message", "Ya existe un archivo con ese nombre."));
+          return error("Ya existe un archivo con ese nombre.");
         }
       }
 
       Files.createDirectories(dirPath);
 
-      return gson.toJson(Map.of(
+      return result(gson.toJson(Map.of(
               "status", "success",
               "path", relativePath,
               "message", "Directorio creado correctamente."
-      ));
+      )));
 
     } catch (Exception e) {
       LOGGER.warn("No se ha podido crear el directorio, args=" + jsonArguments);
-      return gson.toJson(Map.of("status", "error", "message", e.getMessage()));
+      return error(e.getMessage());
     }
   }
 }

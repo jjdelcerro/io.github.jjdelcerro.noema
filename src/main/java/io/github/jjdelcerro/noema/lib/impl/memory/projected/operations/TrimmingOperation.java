@@ -4,9 +4,11 @@ import com.google.gson.JsonObject;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import io.github.jjdelcerro.noema.lib.api.AgentTool;
+import io.github.jjdelcerro.noema.lib.api.AgentTool.ToolResult;
 import io.github.jjdelcerro.noema.lib.api.AgentTool.TrimResultType;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemory;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperation;
+import io.github.jjdelcerro.noema.lib.impl.tools.ToolResultImpl;
 import java.util.List;
 
 public class TrimmingOperation implements ProjectedMemoryOperation {
@@ -54,14 +56,14 @@ public class TrimmingOperation implements ProjectedMemoryOperation {
                 if (tool != null) {
                     String text = toolResult.text();
                     if (text != null && text.length() > this.minimumSizeForTrim) {
-                        String trimmedText = tool.trimResult(text, TrimResultType.Trim);
+                        ToolResult trimmedText = tool.trimResult(text, TrimResultType.Trim);
                         if (trimmedText != null) {
-                            ToolExecutionResultMessage trimmedMessage = ToolExecutionResultMessage.from(
-                                    toolResult.id(),
-                                    toolResult.toolName(),
-                                    trimmedText
-                            );
-                            projectedMessages.set(i, trimmedMessage);
+                          ToolExecutionResultMessage trimmedMessage = ToolResultImpl.toToolExecutionResultMessage(
+                                  toolResult.id(),
+                                  toolResult.toolName(),
+                                  trimmedText
+                          );
+                          projectedMessages.set(i, trimmedMessage);
                         }
                     }
                 }

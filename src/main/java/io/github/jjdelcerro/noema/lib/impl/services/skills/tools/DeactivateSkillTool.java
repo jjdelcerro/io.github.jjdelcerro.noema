@@ -38,7 +38,7 @@ public class DeactivateSkillTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       SkillsService service = (SkillsService) this.agent.getService(SkillsService.NAME);
 
@@ -55,10 +55,10 @@ public class DeactivateSkillTool extends AbstractAgentTool {
       }
 
       LOGGER.info("Desactivando skill: {}", name);
-      return gson.toJson(Map.of(
+      return result(gson.toJson(Map.of(
               "status", "success",
               "message", "Skill '" + name + "' desactivado correctamente."
-      ));
+      )));
 
     } catch (Exception e) {
       LOGGER.error("Error desactivando skill", e);

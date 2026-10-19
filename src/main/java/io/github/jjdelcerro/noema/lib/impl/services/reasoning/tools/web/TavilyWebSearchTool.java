@@ -44,7 +44,7 @@ public class TavilyWebSearchTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     // Recuperamos la clave dinámicamente en cada ejecución
     String apiKey = agent.getSettings().getPropertyAsString(TAVILY_API_KEY);
     if (apiKey == null || apiKey.isBlank()) {
@@ -81,7 +81,7 @@ public class TavilyWebSearchTool extends AbstractAgentTool {
         return error("HTTP " + response.statusCode() + ": " + response.body());
       }
 
-      return parseTavilyResponse(response.body());
+      return result(parseTavilyResponse(response.body()));
 
     } catch (Exception e) {
       LOGGER.error("Error en TavilyWebSearchTool", e);

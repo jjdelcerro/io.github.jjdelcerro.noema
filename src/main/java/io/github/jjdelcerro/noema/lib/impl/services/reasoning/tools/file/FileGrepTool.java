@@ -4,6 +4,8 @@ import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.AbstractPaginatedAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
+import io.github.jjdelcerro.noema.lib.impl.utils.CloseableIterable;
+import io.github.jjdelcerro.noema.lib.impl.utils.FsUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tika.detect.AutoDetectReader;
 import org.slf4j.Logger;
@@ -16,13 +18,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.PathMatcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-import java.util.stream.Stream;
 
 import static io.github.jjdelcerro.noema.lib.api.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
 
@@ -68,7 +67,7 @@ public class FileGrepTool extends AbstractPaginatedAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       // 1. Parse arguments
       Args args = gson.fromJson(jsonArguments, Args.class);
@@ -96,18 +95,12 @@ public class FileGrepTool extends AbstractPaginatedAgentTool {
       }
 
       // 3. Normalize glob pattern
-      String filePattern = StringUtils.isBlank(args.filePattern) ? "**" : args.filePattern.trim();
-      if (filePattern.equals("**/*") || filePattern.equals("*")) {
-        filePattern = "**";
-      } else if (filePattern.startsWith("**/")) {
-        filePattern = "{" + filePattern + "," + filePattern.substring(3) + "}";
-      }
+      String filePattern = FsUtils.normalizeGlob(args.filePattern);
 
-//      // 4. Resolve the search target using access control
-//      Path target = resolvePathOrNull(args.path, PATH_ACCESS_READ);
-//      if (target == null) {
-//        return formatErrorResponse("Access denied or path does not exist: " + args.path);
-//      }
+      // 4. Build the search scope. It is not resolved here: the walk
+      //    intersects it with the zones the agent can see, so a scope
+      //    wider than the sandbox still yields the accessible part.
+      Path target = Path.of(args.path.trim());
 
       // 5. Create a temporary file for the grep output
       Path tempDir = agent.getPaths().getTempFolder();
@@ -115,7 +108,7 @@ public class FileGrepTool extends AbstractPaginatedAgentTool {
       Path tempFile = Files.createTempFile(tempDir, "grep_", ".tmp");
 
       // 6. Perform the grep search
-      performGrep(tempFile, Path.of(args.path), searchPattern, filePattern);
+      performGrep(tempFile, target, searchPattern, filePattern);
 
       // 7. Paginate the output
       String resourceId = getIdFromPath(tempFile);
@@ -131,33 +124,37 @@ public class FileGrepTool extends AbstractPaginatedAgentTool {
     }
   }
 
+  /**
+   * Searches every visible file under the scope and writes the matching lines
+   * to the output file.
+   *
+   * <p>
+   * The traversal, the glob filtering and the per-entry policy check all live
+   * in {@link FsUtils#walk}. This method only drains the result, skips the
+   * folders the walk also yields and keeps the global line budget.
+   *
+   * @param outputFile the temporary file to write results into
+   * @param searchTarget the file or directory to search in
+   * @param searchPattern compiled pattern to look for
+   * @param filePattern glob applied to the path relative to each root
+   * @throws IOException if an I/O error occurs
+   */
   private void performGrep(Path outputFile, Path searchTarget, Pattern searchPattern, String filePattern) throws IOException {
-    PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + filePattern);
-
     long lineCount = 0;
-    boolean limitReached = false;
 
-    try (BufferedWriter writer = Files.newBufferedWriter(outputFile, StandardCharsets.UTF_8)) {
-      if (Files.isRegularFile(searchTarget)) {
-        searchTarget = resolvePathOrNull(searchTarget.toString(), PATH_ACCESS_READ);
-        if (searchTarget != null) {
-          lineCount = grepSingleFile(writer, searchTarget, searchPattern);
-          if (lineCount >= MAX_OUTPUT_LINES) {
-            limitReached = true;
-          }
-        }
-      } else if (Files.isDirectory(searchTarget)) {
-        lineCount = grepDirectory(writer, searchTarget, searchPattern, matcher);
+    try (BufferedWriter writer = Files.newBufferedWriter(outputFile, StandardCharsets.UTF_8); CloseableIterable<Path> files = FsUtils.walk(
+            agent.getAccessControl(), searchTarget, filePattern, PATH_ACCESS_READ)) {
+
+      for (Path file : files) {
         if (lineCount >= MAX_OUTPUT_LINES) {
-          limitReached = true;
+          writer.write("\n# WARNING: search stopped because the maximum number of matching lines ("
+                  + MAX_OUTPUT_LINES + ") was reached. Some results may be missing.\n");
+          break;
         }
-      } else {
-        throw new IOException("Path is neither a regular file nor a directory: " + searchTarget);
-      }
-
-      if (limitReached) {
-        writer.write("\n# WARNING: search stopped because the maximum number of matching lines ("
-                + MAX_OUTPUT_LINES + ") was reached. Some results may be missing.\n");
+        if (!Files.isRegularFile(file)) {
+          continue;
+        }
+        lineCount += grepSingleFile(writer, file, searchPattern, (int) (MAX_OUTPUT_LINES - lineCount));
       }
     }
   }
@@ -166,16 +163,18 @@ public class FileGrepTool extends AbstractPaginatedAgentTool {
    * Searches inside a single file detecting its encoding automatically via
    * Apache Tika.
    *
+   * @param limit maximum number of matching lines still allowed by the global
+   * budget
    * @return number of matching lines written
    */
-  private long grepSingleFile(BufferedWriter writer, Path file, Pattern searchPattern) {
+  private long grepSingleFile(BufferedWriter writer, Path file, Pattern searchPattern, int limit) {
     long matches = 0;
 
     try (InputStream in = new BufferedInputStream(new FileInputStream(file.toFile())); BufferedReader reader = new BufferedReader(new AutoDetectReader(in))) {
 
       String line;
       int lineNum = 1;
-      while ((line = reader.readLine()) != null && matches < MAX_OUTPUT_LINES) {
+      while ((line = reader.readLine()) != null && matches < limit) {
         if (searchPattern.matcher(line).find()) {
           writer.write(file.toAbsolutePath() + ";" + lineNum + ";" + line + "\n");
           matches++;
@@ -183,32 +182,8 @@ public class FileGrepTool extends AbstractPaginatedAgentTool {
         lineNum++;
       }
     } catch (Exception e) {
-      // Ignoramos silenciosamente ficheros que no se puedan abrir o binarios no decodificables
+      // Binary or undecodable files are skipped silently
       LOGGER.warn("Skipping unreadable or binary file during grep: {}", file, e);
-    }
-    return matches;
-  }
-
-  private long grepDirectory(BufferedWriter writer, Path rootDir, Pattern searchPattern, PathMatcher matcher) throws IOException {
-    long matches = 0;
-    try (Stream<Path> walk = Files.walk(rootDir)) {
-      var iterator = walk.iterator();
-      while (iterator.hasNext() && matches < MAX_OUTPUT_LINES) {
-        Path file = iterator.next();
-        Path relative = rootDir.relativize(file);       
-        if (!matcher.matches(relative) ) {
-          continue;
-        }
-        
-        file = resolvePathOrNull(file.toString(), PATH_ACCESS_READ);
-        if (file == null || !Files.isRegularFile(file)) {
-          continue;
-        }
-
-        matches += grepSingleFile(writer, file, searchPattern);
-      }
-    } catch (Exception e) {
-      LOGGER.warn("Error during directory walk: {}", rootDir, e);
     }
     return matches;
   }

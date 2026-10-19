@@ -45,7 +45,7 @@ public class ConsultEnvironTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       // 1. Parsear argumentos
       Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
@@ -69,7 +69,7 @@ public class ConsultEnvironTool extends AbstractAgentTool {
 
       // 4. Leer y devolver el contenido íntegro
       LOGGER.info("Cargando conocimiento denso del módulo: {}", moduleName);
-      return Files.readString(modulePath, StandardCharsets.UTF_8);
+      return result(Files.readString(modulePath, StandardCharsets.UTF_8));
 
     } catch (Exception e) {
       LOGGER.error("Error consultando módulo de entorno", e);

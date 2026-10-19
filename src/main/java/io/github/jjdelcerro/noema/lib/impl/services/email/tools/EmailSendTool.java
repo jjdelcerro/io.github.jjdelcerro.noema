@@ -36,9 +36,9 @@ public class EmailSendTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String args) {
+  public ToolResult execute(String args) {
     EmailService service = (EmailService) this.agent.getService(EmailService.NAME);
     Map<String, String> map = gson.fromJson(args, Map.class);
-    return service.send(map.get("to"), map.get("subject"), map.get("body"));
+    return result(service.send(map.get("to"), map.get("subject"), map.get("body")));
   }
 }

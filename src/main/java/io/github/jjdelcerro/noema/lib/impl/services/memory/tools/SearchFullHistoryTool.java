@@ -20,7 +20,7 @@ public class SearchFullHistoryTool extends AbstractAgentTool {
 
   private static final int DEFAULT_LIMIT = 10;
   private static final int MAX_LIMIT = 50;
-  private static final double DEFAULT_SIMILARITY = 0.2;
+  private static final double DEFAULT_SIMILARITY = 0.5;
 
   public SearchFullHistoryTool(Agent agent) {
     super(agent);
@@ -39,12 +39,13 @@ Usalo cuando:
 
 **Instrucciones de uso:**
 - Cada turno devuelto incluye su contenido completo y su marca temporal.
-- No es necesario llamar a '{LOOKUPTURN}' para los turnos devueltos por esta herramienta, ya que su contenido viene completo.
+- Si el resultado se ha podado por antiguedad, solo conservara las citas de los turnos encontrados:
+  usa '{LOOKUPTURN}' con el codigo indicado para recuperar el turno completo.
 - El parametro 'type' esta reservado para filtrar por categoria de anotacion; omitelo a menos que tengas una instruccion explicita.
 """, "{LOOKUPTURN}", LookupTurnTool.NAME))
             .addStringParameter("query", false, "El concepto, pregunta o tema a buscar por significado.")
             .addIntegerParameter("limit", true, "Maximo de resultados a devolver (Default: 10, Max: 50).")
-            .addNumberParameter("minsimilarity", true, "Umbral minimo de similitud coseno (Default: 0.2, Rango: 0.0 a 1.0). Valores mas altos hacen la busqueda mas estricta.")
+            .addNumberParameter("minsimilarity", true, "Umbral minimo de similitud coseno (Default: 0.5, Rango: 0.0 a 1.0). Valores mas altos hacen la busqueda mas estricta.")
             .addStringParameter("type", true, "USO RESTRINGIDO. Omitir o dejar vacio por defecto. Rellenar UNICAMENTE si necesitas filtrar exclusivamente anotaciones registradas bajo un tipo concreto.");
   }
 
@@ -54,7 +55,7 @@ Usalo cuando:
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       SearchArgs args = gson.fromJson(jsonArguments, SearchArgs.class);
 
@@ -97,11 +98,82 @@ Usalo cuando:
       response.put("count", results.size());
       response.put("results", results);
 
-      return gson.toJson(response);
+      return result(gson.toJson(response));
 
     } catch (Exception e) {
       LOGGER.warn("Error ejecutando search_full_history sobre: " + jsonArguments, e);
       return error("Error en busqueda historica: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Degrada el resultado de la busqueda a un indice de citas cuando el turno
+   * sale de la zona segura de la memoria proyectada. Se conservan los metadatos
+   * de cada turno para poder elegir cual recuperar y el campo 'text' se sustituye
+   * por su cita. El contenido completo sigue siendo recuperable con
+   * 'fetch_citation' a partir del codigo.
+   */
+  @Override
+  public ToolResult trimResult(ToolResult toolResult, TrimResultType trimResultType) {
+    if (trimResultType != TrimResultType.Trim) {
+      return null;
+    }
+    if (toolResult == null || toolResult.getType() != ToolResultType.Text) {
+      return null;
+    }
+    String text = toolResult.text();
+    if (StringUtils.isBlank(text)) {
+      return null;
+    }
+    try {
+      Map<String, Object> source = gson.fromJson(text, Map.class);
+      if (source == null || !"success".equals(source.get("status"))) {
+        return null;
+      }
+      Object rawResults = source.get("results");
+      if (!(rawResults instanceof List)) {
+        return null;
+      }
+      List<?> sourceResults = (List<?>) rawResults;
+      if (sourceResults.isEmpty()) {
+        return null;
+      }
+
+      List<Map<String, Object>> trimmedResults = new ArrayList<>();
+      for (Object item : sourceResults) {
+        if (!(item instanceof Map)) {
+          continue;
+        }
+        Map<?, ?> sourceEntry = (Map<?, ?>) item;
+        Object code = sourceEntry.get("code");
+        if (code == null) {
+          continue;
+        }
+        Map<String, Object> entry = new LinkedHashMap<>();
+        entry.put("code", code);
+        entry.put("timestamp", sourceEntry.get("timestamp"));
+        entry.put("role", sourceEntry.get("role"));
+        entry.put("subchannel", sourceEntry.get("subchannel"));
+        entry.put("citation", "{cite:" + code + "}");
+        trimmedResults.add(entry);
+      }
+
+      if (trimmedResults.isEmpty()) {
+        return null;
+      }
+
+      Map<String, Object> trimmed = new LinkedHashMap<>();
+      trimmed.put("status", "success");
+      trimmed.put("query", source.get("query"));
+      trimmed.put("count", trimmedResults.size());
+      trimmed.put("trimmed", true);
+      trimmed.put("results", trimmedResults);
+
+      return result(gson.toJson(trimmed));
+
+    } catch (Exception e) {
+      LOGGER.debug("No se pudo recortar el resultado de " + NAME, e);
+      return null;
     }
   }
 

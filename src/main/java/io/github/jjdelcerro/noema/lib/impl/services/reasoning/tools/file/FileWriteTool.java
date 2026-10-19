@@ -40,18 +40,18 @@ public class FileWriteTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
       String relativePath = args.get("path");
       String content = args.get("content");
 
       if (relativePath == null || content == null) {
-        return gson.toJson(Map.of("status", "error", "message", "Faltan parámetros: path o content"));
+        return error("Faltan parámetros: path o content");
       }
       Path filePath = this.agent.getAccessControl().resolvePathOrNull(relativePath, PATH_ACCESS_WRITE);
       if (filePath == null) {
-        return gson.toJson(Map.of("status", "error", "message", "Acceso denegado: No se permite escribir fuera del directorio del proyecto."));
+        return error("Acceso denegado: No se permite escribir fuera del directorio del proyecto.");
       }
 
       // Crear directorios padre si no existen (comportamiento mkdir -p)
@@ -70,16 +70,16 @@ public class FileWriteTool extends AbstractAgentTool {
       // Escritura atómica (opcionalmente podrías usar StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
       Files.writeString(filePath, content, StandardCharsets.UTF_8);
 
-      return gson.toJson(Map.of(
+      return result(gson.toJson(Map.of(
               "status", "success",
               "path", relativePath,
               "bytes_written", content.getBytes(StandardCharsets.UTF_8).length
-      ));
+      )));
 
     } catch (AccessDeniedException e) {
-      return gson.toJson(Map.of("status", "error", "message", "Permiso denegado por el Sistema Operativo."));
+      return error("Permiso denegado por el Sistema Operativo.");
     } catch (Exception e) {
-      return gson.toJson(Map.of("status", "error", "message", e.getClass().getSimpleName() + ": " + e.getMessage()));
+      return error(e.getClass().getSimpleName() + ": " + e.getMessage());
     }
   }
 

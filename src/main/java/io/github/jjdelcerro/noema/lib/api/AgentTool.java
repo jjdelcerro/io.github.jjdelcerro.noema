@@ -3,6 +3,7 @@ package io.github.jjdelcerro.noema.lib.api;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
+import java.nio.file.Path;
 
 public interface AgentTool {
 
@@ -21,6 +22,17 @@ public interface AgentTool {
     Trim
   }
 
+  public enum ToolResultType {
+    Text,
+    Image
+  }
+  
+  public interface ToolResult {
+    public ToolResultType getType();
+    public String text();
+    public Path path();
+  }
+  
   ToolSpecificationBuilder getSpecification();
 
   default String getName() {
@@ -57,7 +69,13 @@ public interface AgentTool {
   }
 
   // Ejecución de la lógica (recibe JSON args, devuelve String result)
-  String execute(String jsonArguments);
+  ToolResult execute(String jsonArguments);
 
-  String trimResult(String result, TrimResultType trimResultType);
+  ToolResult trimResult(ToolResult result, TrimResultType trimResultType);
+  
+  ToolResult trimResult(String result, TrimResultType trimResultType);
+  
+  ToolResult result(String text);
+  
+  ToolResult resultImage(Path pathname);
 }

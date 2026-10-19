@@ -53,7 +53,7 @@ public class FileRecoveryTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
       String relativePath = args.get("path");
@@ -84,12 +84,12 @@ public class FileRecoveryTool extends AbstractAgentTool {
         RCSCommand<CheckoutOptions> checkoutCommand = rcsManager.create(options);
         checkoutCommand.execute(options);
 
-        return gson.toJson(Map.of(
+        return result(gson.toJson(Map.of(
                 "status", "success",
                 "message", "Archivo recuperado exitosamente.",
                 "revision", revision,
                 "rcs_output", baos.toString(StandardCharsets.UTF_8).trim()
-        ));
+        )));
       }
 
     } catch (Exception e) {

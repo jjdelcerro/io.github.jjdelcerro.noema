@@ -50,7 +50,7 @@ public class McpToolWrapper extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       String name = this.toolSpecification.name();
       if( StringUtils.isNotBlank(this.prefix) ) {
@@ -66,7 +66,7 @@ public class McpToolWrapper extends AbstractAgentTool {
       if( result == null ) {
         return error("El servidor devolvio null como resultado de llamar a la herramienta.");  
       }
-      return result.resultText(); 
+      return result(result.resultText()); 
     } catch (Exception e) {
       LOGGER.error("Error ejecutando herramienta MCP '{}'", toolSpecification.name(), e);
       return error("Error en servidor MCP: " + e.getMessage());

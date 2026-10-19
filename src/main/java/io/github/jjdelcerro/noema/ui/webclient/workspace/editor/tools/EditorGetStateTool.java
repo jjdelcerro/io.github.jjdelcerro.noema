@@ -34,7 +34,7 @@ example to confirm a reference before acting on it. Takes no parameters.""");
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       NoemaWebServer webserver = (NoemaWebServer) this.agent.get("webserver");
       if (webserver == null) {
@@ -43,9 +43,9 @@ example to confirm a reference before acting on it. Takes no parameters.""");
       ReasoningService reasoningService = (ReasoningService) this.agent.getService(ReasoningService.NAME);
       EditorState state = webserver.getEditorState(reasoningService.getCurrentSubchannel());
       if (state == null) {
-        return gson.toJson(new EditorState()); // TODO: +1 en los numeros de linea?
+        return result(gson.toJson(new EditorState())); // TODO: +1 en los numeros de linea?
       }
-      return gson.toJson(state);
+      return result(gson.toJson(state));
     } catch (Throwable t) {
       return error("Error invoking the editor_get_state tool.");
     }

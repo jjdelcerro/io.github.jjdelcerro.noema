@@ -109,7 +109,7 @@ public class ShellExecuteTool extends AbstractPaginatedAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     String executionId = "out_" + UUID.randomUUID().toString().substring(0, 8);
     Path outputFile = agent.getPaths().getTempFolder().resolve(executionId + ".out");
 

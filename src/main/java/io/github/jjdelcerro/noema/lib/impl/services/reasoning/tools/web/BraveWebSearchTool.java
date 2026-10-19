@@ -51,13 +51,13 @@ public class BraveWebSearchTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
       String query = args.get("query");
 
       if (query == null || query.isBlank()) {
-        return "{\"status\": \"error\", \"message\": \"Query vacía.\"}";
+        return error("Query vacía");
       }
 
       // Construir la URL (Brave usa el parámetro 'q')
@@ -76,13 +76,13 @@ public class BraveWebSearchTool extends AbstractAgentTool {
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() != 200) {
-        return "{\"status\": \"error\", \"code\": " + response.statusCode() + "}";
+        return error("code: " + response.statusCode());
       }
 
-      return parseBraveResponse(response.body());
+      return result(parseBraveResponse(response.body()));
 
     } catch (Exception e) {
-      return "{\"status\": \"error\", \"message\": \"" + e.getMessage() + "\"}";
+      return error("e.getMessage()");
     }
   }
 

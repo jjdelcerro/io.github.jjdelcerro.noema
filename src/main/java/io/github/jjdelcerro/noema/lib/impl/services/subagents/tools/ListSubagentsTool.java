@@ -44,7 +44,7 @@ public class ListSubagentsTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       SubagentsService service = (SubagentsService) this.agent.getService(SubagentsService.NAME);
       List<Map<String, Object>> catalog = new ArrayList<>();
@@ -68,7 +68,7 @@ public class ListSubagentsTool extends AbstractAgentTool {
 
         catalog.add(entry);
       }
-      return gson.toJson(catalog);
+      return result(gson.toJson(catalog));
     } catch (Exception e) {
       LOGGER.error("Error executing list_subagents", e);
       return error("Error al listar el catálogo de subagentes: " + e.getMessage());

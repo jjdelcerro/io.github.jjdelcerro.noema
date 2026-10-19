@@ -65,7 +65,7 @@ public class FileSearchAndReplaceToolTest {
             "oldText", oldText != null ? oldText : "",
             "newText", newText != null ? newText : ""
     );
-    return tool.execute(gson.toJson(args)); 
+    return tool.execute(gson.toJson(args)).text(); 
   }
 
   // =========================================================================
@@ -74,11 +74,11 @@ public class FileSearchAndReplaceToolTest {
   @Test
   @DisplayName("Debe fallar si los parámetros requeridos están vacíos")
   public void testMissingParameters() {
-    String resNoPath = tool.execute("{\"oldText\": \"foo\", \"newText\": \"bar\"}");
+    String resNoPath = tool.execute("{\"oldText\": \"foo\", \"newText\": \"bar\"}").text();
     JsonObject jsonNoPath = gson.fromJson(resNoPath, JsonObject.class);
     assertEquals("error", jsonNoPath.get("status").getAsString());
 
-    String resNoOldText = tool.execute("{\"path\": \"test.txt\", \"oldText\": \"\"}");
+    String resNoOldText = tool.execute("{\"path\": \"test.txt\", \"oldText\": \"\"}").text();
     JsonObject jsonNoOldText = gson.fromJson(resNoOldText, JsonObject.class);
     assertEquals("error", jsonNoOldText.get("status").getAsString());
   }

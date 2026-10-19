@@ -24,7 +24,7 @@ public abstract class AbstractAgentTool implements AgentTool {
 
   protected final Agent agent;
   protected final Gson gson;
-
+  
   public AbstractAgentTool(Agent agent) {
     this(agent, new Gson());
   }
@@ -39,8 +39,8 @@ public abstract class AbstractAgentTool implements AgentTool {
   }
   
 
-  protected String error(String m) {
-    return gson.toJson(Map.of("status", "error", "message", m));
+  protected ToolResult error(String m) {
+    return result(gson.toJson(Map.of("status", "error", "message", m)));
   }
 
   protected Path resolvePathOrNull(String path) {
@@ -58,10 +58,22 @@ public abstract class AbstractAgentTool implements AgentTool {
   }
 
   @Override
-  public String trimResult(String result, TrimResultType trimResultType) {
+  public ToolResult trimResult(ToolResult result, TrimResultType trimResultType) {
     return null;
   }
 
-  
+  @Override
+  public ToolResult trimResult(String result, TrimResultType trimResultType) {
+    return this.trimResult(this.agent.createToolResult(result), trimResultType);
+  }
+
+  public ToolResult result(String text) {
+    return this.agent.createToolResult(text);
+  }
+
+  @Override
+  public ToolResult resultImage(Path pathname) {
+    return this.agent.createResultImage(pathname);
+  }
  
 }

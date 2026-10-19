@@ -4,20 +4,17 @@ import io.github.jjdelcerro.noema.lib.api.model.ModelParameters;
 import io.github.jjdelcerro.noema.lib.api.model.ChatModel;
 import com.google.gson.JsonObject;
 import dev.langchain4j.agent.tool.ToolSpecification;
-import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
-import dev.langchain4j.model.output.Response;
+import io.github.jjdelcerro.noema.lib.api.AgentTool.ToolResult;
 import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorInformation;
 import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorNature;
 import io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService.SensorEventCallback;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettings;
 import java.nio.file.Path;
 import java.util.List;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import io.github.jjdelcerro.noema.lib.api.memory.episodic.EpisodicMemory;
 import java.util.Collection;
-import java.util.Map;
 
 /**
  *
@@ -147,4 +144,12 @@ public interface Agent {
   default Object get(String name) {
     return null;
   }  
+  
+  default ToolResult createToolResult(String text) {
+    return null;
+  }
+  
+  default ToolResult createResultImage(Path pathname) {
+    return null;
+  }
 }

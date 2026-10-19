@@ -37,7 +37,7 @@ public class SensorStatusTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       SensorsService sensorsService = (SensorsService) agent.getService("SensorsService");
       if (sensorsService == null) {
@@ -55,7 +55,7 @@ public class SensorStatusTool extends AbstractAgentTool {
         statusReport.add(report);
       }
 
-      return gson.toJson(statusReport);
+      return result(gson.toJson(statusReport));
     } catch (Exception e) {
       LOGGER.error("Error executing sensor_status tool", e);
       return error("Internal error while retrieving sensor status: " + e.getMessage());

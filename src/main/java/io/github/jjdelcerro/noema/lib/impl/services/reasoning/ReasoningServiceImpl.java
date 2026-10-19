@@ -71,6 +71,7 @@ import static io.github.jjdelcerro.noema.lib.api.Agent.DEFAULT_SUBCHANNEL;
 import static io.github.jjdelcerro.noema.lib.api.AgentActions.COMPACT_REASONING_FULL_MEMORY;
 import static io.github.jjdelcerro.noema.lib.api.AgentActions.COMPACT_REASONING_MEMORY;
 import io.github.jjdelcerro.noema.lib.api.AgentLocator;
+import io.github.jjdelcerro.noema.lib.api.AgentTool.ToolResult;
 import io.github.jjdelcerro.noema.lib.api.model.ChatModel;
 import io.github.jjdelcerro.noema.lib.api.model.ModelParameters;
 import io.github.jjdelcerro.noema.lib.impl.memory.projected.ProjectedMemoryImpl;
@@ -82,6 +83,7 @@ import io.github.jjdelcerro.noema.lib.impl.services.scripting.tools.ScriptExecut
 import io.github.jjdelcerro.noema.lib.api.memory.episodic.EpisodicMemory;
 import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemory;
 import io.github.jjdelcerro.noema.lib.api.services.memory.MemoryConsolidationService;
+import io.github.jjdelcerro.noema.lib.impl.tools.ToolResultImpl;
 import io.github.jjdelcerro.noema.lib.spi.AbstractAgentService;
 
 /**
@@ -375,7 +377,7 @@ public class ReasoningServiceImpl
     return this.agent.getConsole(subchannel);
   }
 
-  private String executeTool(RecentMemory recentMemory, ToolExecutionRequest request) {
+  private AgentTool.ToolResult executeTool(RecentMemory recentMemory, ToolExecutionRequest request) {
     String toolName = request.name();
     String args = request.arguments();
 
@@ -392,7 +394,7 @@ public class ReasoningServiceImpl
           String msg = String.format("Ejecucion de herramienta '%s' denegada por el usuario.", toolName);
           LOGGER.info(msg);
           this.console(subchannel).printSystemLog(msg);
-          return msg;
+          return tool.result(msg);
         }
       }
       String msg = String.format("Ejecutando herramienta: %s\n    Argumentos: %s", toolName, args);
@@ -403,12 +405,12 @@ public class ReasoningServiceImpl
       } catch (Throwable e) {
         String msg1 = "Error ejecutando herramienta '" + toolName + "'.";
         LOGGER.info(msg1, e);
-        return msg1 + "\nSé cauteloso a la hora de reintentar la llamada a esta herramienta, si el error es grave puede seguir repitiendose.\nError "+ e.getClass().getCanonicalName() + ": " + e.getMessage();
+        return tool.result(msg1 + "\nSé cauteloso a la hora de reintentar la llamada a esta herramienta, si el error es grave puede seguir repitiendose.\nError "+ e.getClass().getCanonicalName() + ": " + e.getMessage());
       }
     } else {
       String msg = "Herramienta '" + toolName + "' no encontrada.";
       LOGGER.info(msg);
-      return msg;
+      return this.agent.createToolResult(msg);
     }
   }
 
@@ -733,7 +735,7 @@ public class ReasoningServiceImpl
 //            finalLlmResponse.append(intermediateText).append("\n\n"); 
           }
           for (ToolExecutionRequest request : aiMessage.toolExecutionRequests()) {
-            String result = executeTool(recentMemory, request);
+            ToolResult result = executeTool(recentMemory, request);
 
             String contentType;
             switch (this.getToolType(request.name())) {
@@ -759,11 +761,11 @@ public class ReasoningServiceImpl
                     aiThinking,
                     null,
                     request.toString(),
-                    result,
+                    result.toString(),
                     null
             );
             this.episodicMemory.add(toolTurn);
-            recentMemory.add(ToolExecutionResultMessage.from(request, result));
+            recentMemory.add( ToolResultImpl.toToolExecutionResultMessage(request, result));
             recentMemory.consolideTurn(toolTurn);
           }
           toolExecutionRetries = 0;

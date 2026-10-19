@@ -4,7 +4,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.jjdelcerro.noema.lib.api.Agent;
-import io.github.jjdelcerro.noema.lib.api.AgentLocator;
 import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.api.services.subagents.Subagent;
 import io.github.jjdelcerro.noema.lib.api.services.subagents.SubagentDefinition;
@@ -13,12 +12,9 @@ import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 import io.github.jjdelcerro.noema.lib.api.services.subagents.SubagentsService;
 import org.apache.commons.lang3.StringUtils;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Tool that launches a specialized worker subagent asynchronously in the
@@ -53,7 +49,7 @@ public class LaunchSubagentTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       SubagentsService service = (SubagentsService) this.agent.getService(SubagentsService.NAME);
 
@@ -91,7 +87,7 @@ public class LaunchSubagentTool extends AbstractAgentTool {
               subagentName, subagentId
       ));
 
-      return gson.toJson(result);
+      return this.result(gson.toJson(result));
 
     } catch (Exception e) {
       LOGGER.error("Error launching subagent from arguments: " + jsonArguments, e);

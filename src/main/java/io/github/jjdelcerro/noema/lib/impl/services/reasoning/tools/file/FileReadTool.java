@@ -4,10 +4,10 @@ import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.AbstractPaginatedAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
+import io.github.jjdelcerro.noema.lib.impl.utils.FsUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tika.Tika;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -46,7 +46,7 @@ public class FileReadTool extends AbstractPaginatedAgentTool {
 
   @Override
   @SuppressWarnings("UseSpecificCatch")
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       ReadArgs args = gson.fromJson(jsonArguments, ReadArgs.class);
 
@@ -71,7 +71,7 @@ public class FileReadTool extends AbstractPaginatedAgentTool {
         return formatErrorResponse("El archivo no es un regular-file: " + args.path);
       }
 
-      if (isBinaryResource(filePath)) {
+      if (FsUtils.isBinaryResource(filePath)) {
         String mime = tika.detect(filePath);
         return formatErrorResponse("El archivo parece binario (" + mime + "). Para archivos binarios usa 'file_extract_text' o verifica con 'file_find'.");
       }
@@ -93,31 +93,6 @@ public class FileReadTool extends AbstractPaginatedAgentTool {
     } catch (Exception e) {
       LOGGER.warn("Error leyendo archivo, args=" + StringUtils.replace(jsonArguments, "\n", " "), e);
       return formatErrorResponse("Error I/O: " + e.getMessage());
-    }
-  }
-
-  private boolean isBinaryResource(Path path) {
-    try {
-      String mimeType = tika.detect(path);
-
-      if (mimeType.startsWith("text/")) {
-        return false;
-      }
-
-      if (mimeType.contains("json")
-              || mimeType.contains("xml")
-              || mimeType.contains("javascript")
-              || mimeType.contains("properties")
-              || mimeType.contains("yaml")
-              || mimeType.equals("application/x-sh")
-              || mimeType.equals("application/x-bat")) {
-        return false;
-      }
-
-      return true;
-
-    } catch (IOException e) {
-      return true;
     }
   }
 

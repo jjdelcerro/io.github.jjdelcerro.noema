@@ -52,7 +52,7 @@ file_write (which goes through the project's version control).""")
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       Args args = gson.fromJson(jsonArguments, Args.class);
       if (args.line_start == null) {
@@ -69,7 +69,7 @@ file_write (which goes through the project's version control).""")
               args.line_end,
               args.text
       );
-      return gson.toJson(Map.of("status", "ok"));
+      return result(gson.toJson(Map.of("status", "ok")));
     } catch (Throwable t) {
       return error("Error invoking the editor_insert_or_replace tool.");
     }

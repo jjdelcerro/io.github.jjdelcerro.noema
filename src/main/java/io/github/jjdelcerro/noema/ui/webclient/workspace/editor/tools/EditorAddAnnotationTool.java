@@ -51,7 +51,7 @@ is not.""")
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       Args args = gson.fromJson(jsonArguments, Args.class);
       if (args.line == null) {
@@ -73,7 +73,7 @@ is not.""")
               args.type,
               args.scroll
       );
-      return gson.toJson(Map.of("status", "ok"));
+      return result(gson.toJson(Map.of("status", "ok")));
     } catch (Throwable t) {
       return error("Error invoking the editor_add_annotation tool.");
     }

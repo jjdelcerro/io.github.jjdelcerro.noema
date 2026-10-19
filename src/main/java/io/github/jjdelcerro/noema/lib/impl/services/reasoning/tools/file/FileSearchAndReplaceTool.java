@@ -50,7 +50,7 @@ CARACTERISTICAS Y REGLAS DE USO:
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       Args args = gson.fromJson(jsonArguments, Args.class);
       if (args == null) {
@@ -64,7 +64,7 @@ CARACTERISTICAS Y REGLAS DE USO:
               args.newText
       );
 
-      return result.toJson();
+      return this.result(result.toJson());
 
     } catch (Exception e) {
       LOGGER.warn("Error ejecutando file_search_and_replace sobre: " + jsonArguments, e);

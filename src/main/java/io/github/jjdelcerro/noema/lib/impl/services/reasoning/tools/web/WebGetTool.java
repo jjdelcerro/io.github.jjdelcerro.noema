@@ -41,13 +41,13 @@ public class WebGetTool extends AbstractAgentTool { // NO USAR, usar WebGetTikaT
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
       URI url = URI.create(args.get("url"));
 
       if (!this.agent.getAccessControl().isAccessible(url)) {
-        return "{\"status\": \"error\", \"code\": 403, \"message\": \"Acceso denegado.\"}";
+        return error("Acceso denegado");
       }
       HttpRequest request = HttpRequest.newBuilder()
               .uri(url)
@@ -58,7 +58,7 @@ public class WebGetTool extends AbstractAgentTool { // NO USAR, usar WebGetTikaT
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() != 200) {
-        return "{\"status\": \"error\", \"code\": " + response.statusCode() + "}";
+        return error("Code: "+ response.statusCode());
       }
 
       String cleanText = cleanHtml(response.body());
@@ -70,14 +70,14 @@ public class WebGetTool extends AbstractAgentTool { // NO USAR, usar WebGetTikaT
         truncated = true;
       }
 
-      return gson.toJson(Map.of(
+      return result(gson.toJson(Map.of(
               "status", "success",
               "content", cleanText,
               "truncated", truncated
-      ));
+      )));
 
     } catch (Exception e) {
-      return "{\"status\": \"error\", \"message\": \"" + e.getMessage() + "\"}";
+      return error(e.getMessage());
     }
   }
 

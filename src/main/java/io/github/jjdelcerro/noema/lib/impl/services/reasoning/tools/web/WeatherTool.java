@@ -13,6 +13,7 @@ import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.AbstractAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 import java.util.Locale;
+import java.util.Objects;
 
 /**
  * Herramienta para consultar el clima actual utilizando Open-Meteo. No requiere
@@ -55,19 +56,19 @@ public class WeatherTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
       String location = args.get("location");
 
       if (location == null || location.isBlank()) {
-        return "{\"status\": \"error\", \"message\": \"Ubicación no proporcionada.\"}";
+        return error("Ubicación no proporcionada");
       }
 
       // 1. Geocodificación: Ciudad -> Lat/Lon
       JsonObject geo = geocode(location);
       if (geo == null) {
-        return "{\"status\": \"error\", \"message\": \"No se pudo encontrar la ubicación.\"}";
+        return error("No se pudo encontrar la ubicación.");
       }
 
       double lat = geo.get("latitude").getAsDouble();
@@ -87,16 +88,16 @@ public class WeatherTool extends AbstractAgentTool {
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() != 200) {
-        return "{\"status\": \"error\", \"code\": " + response.statusCode() + "}";
+        return error(Objects.toString(response.statusCode()));
       }
 
       JsonObject weatherRes = gson.fromJson(response.body(), JsonObject.class);
       weatherRes.addProperty("location_name", name);
 
-      return gson.toJson(weatherRes);
+      return result(gson.toJson(weatherRes));
 
     } catch (Exception e) {
-      return "{\"status\": \"error\", \"message\": \"" + e.getMessage() + "\"}";
+      return error(e.getMessage());
     }
   }
 

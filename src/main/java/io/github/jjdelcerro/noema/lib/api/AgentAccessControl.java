@@ -86,5 +86,7 @@ public interface AgentAccessControl {
   Path resolvePathOrNull(Path path, AccessMode mode);
 
   boolean isFirejailEnabled();
+
+  public List<Path> resolveRoots(Path scope, AccessMode mode);
   
 }

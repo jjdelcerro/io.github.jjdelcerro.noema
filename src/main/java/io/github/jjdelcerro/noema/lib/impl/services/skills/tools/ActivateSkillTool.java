@@ -90,7 +90,7 @@ public class ActivateSkillTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       SkillsService service = (SkillsService) this.agent.getService(SkillsService.NAME);
 
@@ -107,7 +107,7 @@ public class ActivateSkillTool extends AbstractAgentTool {
       }
 
       LOGGER.info("Activando skill procedimental: {}", name);
-      return skill.getContents();
+      return result(skill.getContents());
 
     } catch (Exception e) {
       LOGGER.error("Error activando skill", e);

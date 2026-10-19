@@ -36,7 +36,7 @@ pointing at something else, or when you are done discussing that code).""");
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       NoemaWebServer webserver = (NoemaWebServer) this.agent.get("webserver");
       if (webserver == null) {
@@ -44,7 +44,7 @@ pointing at something else, or when you are done discussing that code).""");
       }
       ReasoningService reasoningService = (ReasoningService) this.agent.getService(ReasoningService.NAME);
       webserver.editorClearAnnotations(reasoningService.getCurrentSubchannel());
-      return gson.toJson(Map.of("status", "ok"));
+      return result(gson.toJson(Map.of("status", "ok")));
     } catch (Throwable t) {
       return error("Error invoking the editor_clear_annotations tool.");
     }

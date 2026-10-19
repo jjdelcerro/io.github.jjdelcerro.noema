@@ -65,7 +65,7 @@ Pero por ahora, prueba así; los modelos de 2025 suelen ser bastante buenos sigu
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
       String relativePath = args.get("path");
@@ -74,7 +74,7 @@ Pero por ahora, prueba así; los modelos de 2025 suelen ser bastante buenos sigu
       Path filePath = this.agent.getAccessControl().resolvePathOrNull(relativePath, PATH_ACCESS_WRITE);
       if (filePath == null) {
         LOGGER.info("Archivo no encontrado a acceso deneagado '" + relativePath + "'");
-        return gson.toJson(Map.of("status", "error", "message", "Archivo no encontrado o acceso denegado."));
+        return error("Archivo no encontrado o acceso denegado.");
       }
 
       // 1. Leer archivo original
@@ -98,14 +98,15 @@ Pero por ahora, prueba así; los modelos de 2025 suelen ser bastante buenos sigu
       // 4. Guardar resultado
       Files.write(filePath, patchedLines);
 
-      return gson.toJson(Map.of("status", "success", "message", "Parche aplicado correctamente en " + relativePath));
+      String s = gson.toJson(Map.of("status", "success", "message", "Parche aplicado correctamente en " + relativePath));
+      return result(s);
 
     } catch (PatchFailedException e) {
       LOGGER.warn("El parche no encaja con el contenido actual del archivo. Revisa el contexto.", e);
-      return gson.toJson(Map.of("status", "error", "message", "El parche no encaja con el contenido actual del archivo. Revisa el contexto."));
+      return error("El parche no encaja con el contenido actual del archivo. Revisa el contexto.");
     } catch (Exception e) {
       LOGGER.warn("Error aplicando parche, args=" + jsonArguments, e);
-      return gson.toJson(Map.of("status", "error", "message", e.getMessage()));
+      return error(e.getMessage());
     }
   }
 }

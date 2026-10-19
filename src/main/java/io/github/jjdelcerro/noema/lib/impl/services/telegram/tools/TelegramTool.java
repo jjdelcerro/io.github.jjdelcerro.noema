@@ -70,7 +70,7 @@ public class TelegramTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     TelegramService service = (TelegramService) this.agent.getService(TelegramService.NAME);
 
     TelegramBot bot = service.getBot();
@@ -79,7 +79,7 @@ public class TelegramTool extends AbstractAgentTool {
     Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
     SendMessage request = new SendMessage(chatId, args.get("message"));
     SendResponse sr = bot.execute(request);
-    return sr.isOk() ? "{\"status\":\"sent\"}" : "{\"status\":\"error\",\"msg\":\"" + sr.description() + "\"}";
+    return sr.isOk() ? result("{\"status\":\"sent\"}") : error(sr.description());
   }
 
 }

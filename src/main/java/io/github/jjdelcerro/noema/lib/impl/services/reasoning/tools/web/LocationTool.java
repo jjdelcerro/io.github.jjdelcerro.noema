@@ -11,6 +11,7 @@ import java.util.Map;
 import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.AbstractAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
+import java.util.Objects;
 
 /**
  * Herramienta para determinar la ubicación geográfica aproximada basada en la
@@ -43,7 +44,7 @@ public class LocationTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       // El servicio por defecto usa la IP desde la que recibe la petición
       HttpRequest request = HttpRequest.newBuilder()
@@ -54,19 +55,19 @@ public class LocationTool extends AbstractAgentTool {
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() != 200) {
-        return "{\"status\": \"error\", \"code\": " + response.statusCode() + "}";
+        return error("code: " + response.statusCode());
       }
 
       // Validar que el servicio devolvió éxito (ip-api devuelve 200 pero con status: "fail" si hay error)
       Map<String, Object> res = gson.fromJson(response.body(), Map.class);
       if ("fail".equals(res.get("status"))) {
-        return "{\"status\": \"error\", \"message\": \"" + res.get("message") + "\"}";
+        return error(Objects.toString(res.get("message")));
       }
 
-      return response.body();
+      return result(response.body());
 
     } catch (Exception e) {
-      return "{\"status\": \"error\", \"message\": \"" + e.getMessage() + "\"}";
+      return error(e.getMessage());
     }
   }
 }

@@ -70,7 +70,7 @@ Solo debes incluirlo cuando recibas una instrucción explícita que te indique b
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     // La herramienta en sí no hace nada funcional, el valor real 
     // está en que el LLM formula los argumentos y el EpisodicMemory los guarda.
 
@@ -86,7 +86,7 @@ Solo debes incluirlo cuando recibas una instrucción explícita que te indique b
       result.put("resource_id", resourceId);
     }
 
-    return gson.toJson(result);
+    return result(gson.toJson(result));
   }
 
   public String getResourceIdFromResultMessage(ToolExecutionResultMessage message) {

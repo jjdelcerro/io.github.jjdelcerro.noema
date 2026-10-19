@@ -68,7 +68,7 @@ public class FileReadToolTest {
         Files.writeString(file, contenido, StandardCharsets.UTF_8);
 
         String jsonArgs = "{\"path\": \"" + file.toString().replace("\\", "/") + "\"}";
-        String response = fileReadTool.execute(jsonArgs);
+        String response = fileReadTool.execute(jsonArgs).text();
 
         assertTrue(response.contains("STATUS: OK"), "La respuesta debe indicar STATUS: OK");
         assertTrue(response.contains("Hola Noema"), "La respuesta debe contener el texto del archivo");
@@ -78,7 +78,7 @@ public class FileReadToolTest {
     @DisplayName("Debe devolver ERROR cuando el archivo solicitado no existe")
     public void testReadNonExistentFile() {
         String jsonArgs = "{\"path\": \"no_existo.txt\"}";
-        String response = fileReadTool.execute(jsonArgs);
+        String response = fileReadTool.execute(jsonArgs).text();
 
         assertTrue(response.contains("STATUS: ERROR"), "Debe devolver STATUS: ERROR");
     }
@@ -90,7 +90,7 @@ public class FileReadToolTest {
         Files.writeString(extFile, "Contenido secreto", StandardCharsets.UTF_8);
 
         String jsonArgs = "{\"path\": \"" + extFile.toString().replace("\\", "/") + "\"}";
-        String response = fileReadTool.execute(jsonArgs);
+        String response = fileReadTool.execute(jsonArgs).text();
 
         assertTrue(response.contains("STATUS: ERROR"), "Debe denegar la lectura externa por defecto");
         assertTrue(response.contains("Acceso denegado o ruta fuera del sandbox"));
@@ -108,7 +108,7 @@ public class FileReadToolTest {
         reloadConfig();
 
         String jsonArgs = "{\"path\": \"" + extFile.toString().replace("\\", "/") + "\"}";
-        String response = fileReadTool.execute(jsonArgs);
+        String response = fileReadTool.execute(jsonArgs).text();
 
         assertTrue(response.contains("STATUS: OK"), "Debe permitir la lectura tras actualizar la configuración");
         assertTrue(response.contains("Contenido externo autorizado"));
@@ -123,7 +123,7 @@ public class FileReadToolTest {
         Files.write(pngFile, pngHeader);
 
         String jsonArgs = "{\"path\": \"imagen.png\"}";
-        String response = fileReadTool.execute(jsonArgs);
+        String response = fileReadTool.execute(jsonArgs).text();
 
         assertTrue(response.contains("STATUS: ERROR"), "Debe rechazar archivos binarios");
         assertTrue(response.contains("El archivo parece binario"),

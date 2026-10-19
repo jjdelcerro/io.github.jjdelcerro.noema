@@ -5,7 +5,6 @@ import io.github.jjdelcerro.noema.lib.api.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingFilter;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsService;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.tika.Tika;
 import org.apache.tika.detect.AutoDetectReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,14 +14,11 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.PathMatcher;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Stream;
 import org.apache.commons.lang3.mutable.MutableDouble;
 
 /**
@@ -45,9 +41,6 @@ public final class FileFuzzySearchUtils {
   public static final int STEP_LINES = CHUNK_LINES - OVERLAP_LINES; // 25 líneas de avance
 
   private static final int MAX_FILES_TO_SCAN = 100;
-//  private static final String[] SKIP_DIRS = {"target", ".git", ".idea", "node_modules"};
-
-  private static final Tika TIKA = new Tika();
 
   private FileFuzzySearchUtils() {
     // Utility class
@@ -89,10 +82,16 @@ public final class FileFuzzySearchUtils {
   /**
    * Ejecuta la búsqueda semántica sobre un archivo o directorio.
    *
+   * <p>
+   * El recorrido, el filtrado por glob y la comprobación de política por
+   * entrada los resuelve {@link FsUtils#walk}. Por eso {@code target} no
+   * necesita venir validado: un ámbito más amplio que las zonas visibles para
+   * el agente se intersecta con ellas.
+   *
    * @param agent Instancia del agente contenedor.
-   * @param target Ruta ya validada en el sandbox.
+   * @param target Ámbito de búsqueda (archivo o directorio).
    * @param query Texto o concepto a buscar por similitud semántica.
-   * @param filePattern Patrón glob si target es un directorio (ej:
+   * @param filePattern Patrón glob aplicado al path relativo a cada raíz (ej:
    * "**\/*.java").
    * @param limit Número máximo de coincidencias a retornar.
    * @param minSimilarity Umbral mínimo de similitud coseno (0.0 a 1.0).
@@ -107,7 +106,7 @@ public final class FileFuzzySearchUtils {
           int limit,
           double minSimilarity
   ) {
-    if (agent == null || target == null || StringUtils.isBlank(query) || !Files.exists(target)) {
+    if (agent == null || target == null || StringUtils.isBlank(query)) {
       return Collections.emptyList();
     }
 
@@ -125,11 +124,22 @@ public final class FileFuzzySearchUtils {
     EmbeddingFilter<FuzzyMatch> filter = embeddingsService.createEmbeddingFilter(
             query.trim(), safeLimit, safeSimilarity);
 
-    try {
-      if (Files.isRegularFile(target)) {
-        scanSingleFile(agent, target, toDisplayPath(agent, target), filter, embeddingsService);
-      } else if (Files.isDirectory(target)) {
-        scanDirectory(agent, target, normalizeGlob(filePattern), filter, embeddingsService);
+    int filesScanned = 0;
+
+    try (CloseableIterable<Path> files = FsUtils.walk(
+            agent.getAccessControl(), target, FsUtils.normalizeGlob(filePattern),
+            AgentAccessControl.AccessMode.PATH_ACCESS_READ)) {
+
+      for (Path file : files) {
+        if (filesScanned >= MAX_FILES_TO_SCAN) {
+          break;
+        }
+        // The walk yields folders too; only files are worth scanning.
+        if (!Files.isRegularFile(file)) {
+          continue;
+        }
+        scanSingleFile(agent, file, FsUtils.toDisplayPath(agent, file), filter, embeddingsService);
+        filesScanned++;
       }
     } catch (IOException e) {
       LOGGER.warn("Error durante el escaneo de búsqueda semántica en: {}", target, e);
@@ -145,7 +155,7 @@ public final class FileFuzzySearchUtils {
           EmbeddingFilter<FuzzyMatch> filter,
           EmbeddingsService embeddingsService
   ) {
-    if (isBinaryResource(file)) {
+    if (FsUtils.isBinaryResource(file)) {
       return;
     }
 
@@ -196,89 +206,8 @@ public final class FileFuzzySearchUtils {
       if (chunkVec != null) {
         MutableDouble similarity = new MutableDouble(1);
         similarity.setValue(filter.add(chunkVec, new FuzzyMatch(displayPath, file, startLine, endLine, similarity, chunkText)));
-        
+
       }
-    }
-  }
-
-  private static void scanDirectory(
-          Agent agent,
-          Path rootDir,
-          String normalizedPattern,
-          EmbeddingFilter<FuzzyMatch> filter,
-          EmbeddingsService embeddingsService
-  ) throws IOException {
-    PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + normalizedPattern);
-    int filesScanned = 0;
-
-    try (Stream<Path> walk = Files.walk(rootDir)) {
-      var it = walk.iterator();
-      while (it.hasNext() && filesScanned < MAX_FILES_TO_SCAN) {
-        Path p = it.next();
-        Path relative = rootDir.relativize(p);
-        if (!matcher.matches(relative)) {
-            continue;
-        }
-
-        Path safePath = agent.getAccessControl().resolvePathOrNull(
-                p.toString(), AgentAccessControl.AccessMode.PATH_ACCESS_READ);
-        if (safePath == null) {
-            continue;
-        }
-
-        scanSingleFile(agent, safePath, toDisplayPath(agent, safePath), filter, embeddingsService);
-        filesScanned++;
-      }
-    }
-  }
-
-  public static String normalizeGlob(String filePattern) {
-    if (StringUtils.isBlank(filePattern) || filePattern.equals("**/*") || filePattern.equals("*")) {
-      return "**";
-    }
-    String trimmed = filePattern.trim();
-    if (trimmed.startsWith("**/")) {
-      return "{" + trimmed + "," + trimmed.substring(3) + "}";
-    }
-    return trimmed;
-  }
-
-  public static String toDisplayPath(Agent agent, Path file) {
-    if (agent == null || agent.getPaths() == null || agent.getPaths().getWorkspaceFolder() == null) {
-      return file.toString().replace("\\", "/");
-    }
-    Path root = agent.getPaths().getWorkspaceFolder();
-    String displayPath = file.startsWith(root) ? root.relativize(file).toString() : file.toString();
-    return displayPath.replace("\\", "/");
-  }
-
-//  public static boolean shouldSkipDirectory(Path path) {
-//    if (!Files.isDirectory(path)) {
-//      return false;
-//    }
-//    String name = path.getFileName() != null ? path.getFileName().toString() : "";
-//    for (String skip : SKIP_DIRS) {
-//      if (name.equals(skip)) {
-//        return true;
-//      }
-//    }
-//    return false;
-//  }
-
-  public static boolean isBinaryResource(Path path) {
-    try {
-      String mimeType = TIKA.detect(path);
-      if (mimeType.startsWith("text/")) {
-        return false;
-      }
-      return !(mimeType.contains("json")
-              || mimeType.contains("xml")
-              || mimeType.contains("javascript")
-              || mimeType.contains("properties")
-              || mimeType.contains("yaml")
-              || mimeType.equals("application/x-sh"));
-    } catch (IOException e) {
-      return true;
     }
   }
 }

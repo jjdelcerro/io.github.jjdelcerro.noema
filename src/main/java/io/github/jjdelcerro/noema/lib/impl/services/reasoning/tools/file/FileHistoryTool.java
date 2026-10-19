@@ -51,7 +51,7 @@ public class FileHistoryTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
       String relativePath = args.get("path");
@@ -78,7 +78,7 @@ public class FileHistoryTool extends AbstractAgentTool {
         options.setOutputStream(newOut);
         RCSCommand<LogOptions> logCommand = rcsManager.create(options);
         logCommand.execute(options);
-        return baos.toString(StandardCharsets.UTF_8);
+        return result(baos.toString(StandardCharsets.UTF_8));
       }
 
     } catch (Exception e) {

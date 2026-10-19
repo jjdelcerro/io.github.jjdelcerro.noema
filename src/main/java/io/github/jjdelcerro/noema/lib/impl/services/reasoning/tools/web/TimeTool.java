@@ -38,7 +38,7 @@ public class TimeTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       Map<String, String> args = gson.fromJson(jsonArguments, Map.class);
       ZoneId zoneId;
@@ -47,7 +47,7 @@ public class TimeTool extends AbstractAgentTool {
         try {
           zoneId = ZoneId.of(args.get("timezone"));
         } catch (Exception e) {
-          return "{\"status\": \"error\", \"message\": \"Zona horaria invalida.\"}";
+          return error("Zona horaria invalida.");
         }
       } else {
         zoneId = ZoneId.systemDefault();
@@ -59,16 +59,16 @@ public class TimeTool extends AbstractAgentTool {
       DateTimeFormatter iso = DateTimeFormatter.ISO_ZONED_DATE_TIME;
       DateTimeFormatter human = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, HH:mm:ss");
 
-      return gson.toJson(Map.of(
+      return result(gson.toJson(Map.of(
               "status", "success",
               "iso_8601", now.format(iso),
               "readable", now.format(human),
               "timezone", zoneId.getId(),
               "offset", now.getOffset().toString()
-      ));
+      )));
 
     } catch (Exception e) {
-      return "{\"status\": \"error\", \"message\": \"" + e.getMessage() + "\"}";
+      return error(e.getMessage());
     }
   }
 }

@@ -107,7 +107,7 @@ public class HandlerPostSetupProject extends AbstractHandler {
           throw new IllegalStateException("No se encontró pom.xml subiendo desde " + path);
       }
       String toolArgs = String.format("{  \"path\": \"%s\" }", projectRoot);      
-      String resp = tool.execute(toolArgs);
+      String resp = tool.execute(toolArgs).text();
 
       status = "ok";
       message = resp != null ? resp : "";

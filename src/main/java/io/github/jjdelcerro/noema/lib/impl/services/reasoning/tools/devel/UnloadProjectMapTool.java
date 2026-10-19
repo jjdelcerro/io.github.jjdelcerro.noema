@@ -44,7 +44,7 @@ public class UnloadProjectMapTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       ReasoningService reasoning = (ReasoningService) agent.getService(ReasoningService.NAME);
       if (reasoning == null) {
@@ -70,15 +70,15 @@ public class UnloadProjectMapTool extends AbstractAgentTool {
 
       if (removed) {
         LOGGER.info("Mapa de proyecto liberado de la memoria proyectada en subcanal '{}'", subchannel);
-        return gson.toJson(Map.of(
+        return result(gson.toJson(Map.of(
                 "status", "success",
                 "message", "El mapa de proyecto ha sido retirado de tu memoria proyectada con exito."
-        ));
+        )));
       } else {
-        return gson.toJson(Map.of(
+        return result(gson.toJson(Map.of(
                 "status", "success",
                 "message", "No habia ningun mapa de proyecto activo fijado en la memoria proyectada."
-        ));
+        )));
       }
 
     } catch (Exception e) {

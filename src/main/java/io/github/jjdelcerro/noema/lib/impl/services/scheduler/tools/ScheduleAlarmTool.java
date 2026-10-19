@@ -50,7 +50,7 @@ public class ScheduleAlarmTool extends AbstractAgentTool {
   }
 
   @Override
-  public String execute(String jsonArguments) {
+  public ToolResult execute(String jsonArguments) {
     try {
       SchedulerService service = (SchedulerService) this.agent.getService(SchedulerService.NAME);
 
@@ -59,13 +59,13 @@ public class ScheduleAlarmTool extends AbstractAgentTool {
       String reason = args.getOrDefault("reason", "Sin motivo");
 
       if (when == null || when.isBlank()) {
-        return "{\"status\": \"error\", \"message\": \"Falta el parámetro 'when'\"}";
+        return error("Falta el parámetro 'when'");
       }
 
       // Parsear la fecha usando Natty
       List<DateGroup> groups = dateParser.parse(when);
       if (groups.isEmpty() || groups.get(0).getDates().isEmpty()) {
-        return "{\"status\": \"error\", \"message\": \"No se pudo entender la fecha: " + when + "\"}";
+        return error("No se pudo entender la fecha: " + when);
       }
 
       // Obtenemos la primera fecha detectada
@@ -75,16 +75,16 @@ public class ScheduleAlarmTool extends AbstractAgentTool {
       // Llama al servicio de planificacion para registrar la alarma.
       String alarmId = service.schedule(alarmLDT, reason);
 
-      return gson.toJson(Map.of(
+      return result(gson.toJson(Map.of(
               "status", "scheduled",
               "id", alarmId,
               "reason", reason,
               "alarm_time", alarmLDT.toString(),
               "note", "Alarma programada en el sistema."
-      ));
+      )));
 
     } catch (Exception e) {
-      return "{\"status\": \"error\", \"message\": \"" + e.getMessage() + "\"}";
+      return error(e.getMessage());
     }
   }
 }
