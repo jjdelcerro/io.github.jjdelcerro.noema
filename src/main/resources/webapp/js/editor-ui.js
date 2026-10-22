@@ -19,6 +19,7 @@ import {
 } from './editor-actions.js';
 import { pushState, initStateBeforeUnload } from './editor-state.js';
 import { postEditorSetupProject } from './api.js';
+import { confirmDiscardDialog } from './discard-dialog.js';
 
 const WRAP_STORAGE_KEY = 'noema_editor_wrap';
 const TERMINAL_STORAGE_KEY = 'noema_terminal_id';
@@ -55,14 +56,13 @@ const ACTION_EXTENSIONS = {
     fiximports:  ['java']
 };
 
-// Iconos (SVG inline, mismo patrón que el resto de la UI).
-const SVG_WRAP = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><path d="M3 12h15a3 3 0 1 1 0 6h-3"/><polyline points="18 15 15 18 18 21"/><line x1="3" y1="18" x2="9" y2="18"/></svg>';
-const SVG_SAVE = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
-const SVG_DIAGNOSTICS = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
-const SVG_FORMAT = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="7" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
-const SVG_FIXIMPORTS = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>';
-const SVG_RELOAD = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>';
-const SVG_SETUP = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>';
+// Iconos: SVG en disco bajo images/current/.
+const ICON_FOLDER = 'images/current/';
+
+function iconHtml(name, size) {
+    const px = size || 18;
+    return '<img class="icon" src="' + ICON_FOLDER + name + '.svg" width="' + px + '" height="' + px + '" alt="">';
+}
 
 let editor = null;
 let tabsEl = null;
@@ -139,7 +139,80 @@ export function initEditorUI() {
 }
 
 /**
- * Abre un fichero en el editor: lo activa si ya estaba abierto, o lo carga
+ * Lee del endpoint el contenido de un fichero. Lanza un Error con el mensaje
+ * que devuelva el servidor si la respuesta no es correcta, de modo que los
+ * llamantes solo tengan que capturar y decidir que hacer.
+ */
+async function fetchFileContent(filePath) {
+    const url = `/api/files/content?file=${encodeURIComponent(filePath)}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+        let message = `HTTP ${response.status}`;
+        try {
+            const data = await response.json();
+            if (data.error) {
+                message = data.error;
+            }
+        } catch (parseError) {
+            // respuesta sin JSON; conservamos el mensaje generico
+        }
+        throw new Error(message);
+    }
+    const data = await response.json();
+    return data.content ?? '';
+}
+
+/**
+ * Recarga desde disco el contenido de una sesion ya abierta.
+ *
+ * No decide nada por su cuenta sobre cambios sin guardar: el llamante es quien
+ * debe haber comprobado entry.dirty o haber preguntado al usuario. Cuando esta
+ * funcion se invoca, el buffer se sobrescribe sin preguntar.
+ *
+ * Ace conserva la posicion del cursor al usar setValue(-1), asi que quien
+ * estaba mirando una linea concreta seguira ahi, salvo que el fichero haya
+ * encogido por encima de esa linea.
+ */
+async function reloadSessionFromDisk(filePath, options = {}) {
+    const entry = sessions.get(filePath);
+    if (!entry) {
+        return false;
+    }
+    const silent = options.silent === true;
+
+    let content;
+    try {
+        content = await fetchFileContent(filePath);
+    } catch (error) {
+        console.error('Error recargando:', filePath, error);
+        if (!silent) {
+            showToast(`No se pudo recargar: ${error.message}`, 'error');
+        }
+        return false;
+    }
+
+    suspendDirtyTracking = true;
+    try {
+        entry.session.setValue(content, -1);
+        entry.originalContent = content;
+        entry.dirty = false;
+    } finally {
+        suspendDirtyTracking = false;
+    }
+
+    updateTabDirty(filePath, false);
+    updateToolbarState();
+    scheduleStatePush({ immediate: true });
+    if (!silent) {
+        showToast('Recargado desde disco', 'success', 2000);
+    }
+    return true;
+}
+
+/**
+ * Abre un fichero en el editor. Si ya estaba abierto lo activa y lo recarga
+ * desde disco, salvo que tenga cambios sin guardar: en ese caso respeta el
+ * buffer y se limita a activar la pestaña. Si no estaba abierto, lo carga
  * desde el endpoint y crea pestaña + sesión nuevas.
  */
 export async function openFile(filePath, options = {}) {
@@ -150,27 +223,16 @@ export async function openFile(filePath, options = {}) {
 
     if (sessions.has(filePath)) {
         activateTab(filePath);
+        const entry = sessions.get(filePath);
+        if (entry && !entry.dirty) {
+            await reloadSessionFromDisk(filePath, { silent });
+        }
         return;
     }
 
     let content = '';
     try {
-        const url = `/api/files/content?file=${encodeURIComponent(filePath)}`;
-        const response = await fetch(url);
-        if (!response.ok) {
-            let message = `HTTP ${response.status}`;
-            try {
-                const data = await response.json();
-                if (data.error) {
-                    message = data.error;
-                }
-            } catch (parseError) {
-                // respuesta sin JSON; conservamos el mensaje genérico
-            }
-            throw new Error(message);
-        }
-        const data = await response.json();
-        content = data.content ?? '';
+        content = await fetchFileContent(filePath);
     } catch (error) {
         console.error('Error cargando archivo:', filePath, error);
         if (!silent) {
@@ -250,6 +312,38 @@ export async function closeFile(filePath) {
 /**
  * Devuelve la ruta del fichero activo, o null si no hay ninguno.
  */
+/**
+ * Indica si alguna pestaña del editor tiene cambios sin guardar. La
+ * tabbar de area lo consulta antes de abandonar la vista.
+ *
+ * @returns {boolean}
+ */
+export function hasDirtySessions() {
+    for (const entry of sessions.values()) {
+        if (entry.dirty) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Confirmacion de salida de la vista de edicion. No cierra pestañas: solo
+ * advierte de que hay cambios sin guardar. Si el usuario cancela, la
+ * tabbar de area aborta el cambio de vista.
+ *
+ * @returns {boolean} true si se puede abandonar la vista
+ */
+export function confirmLeaveWorkspace() {
+    if (!hasDirtySessions()) {
+        return true;
+    }
+    return window.confirm(
+        'Hay ficheros con cambios sin guardar en el editor. ' +
+        'Si cambias de pestaña no se perderán, pero seguirán sin guardarse. ¿Continuar?'
+    );
+}
+
 export function getActivePath() {
     return activePath;
 }
@@ -272,24 +366,24 @@ function createToolbar() {
     }
     toolbarEl.replaceChildren();
 
-    toolbarEl.appendChild(makeToolbarButton('btn-editor-wrap', SVG_WRAP, 'Ajuste de línea', toggleWrap));
-    toolbarEl.appendChild(makeToolbarButton('btn-editor-save', SVG_SAVE, 'Guardar', handleSave));
-    toolbarEl.appendChild(makeToolbarButton('btn-editor-format', SVG_FORMAT, 'Formatear', handleFormat));
-    toolbarEl.appendChild(makeToolbarButton('btn-editor-diagnostics', SVG_DIAGNOSTICS, 'Diagnóstico', handleDiagnostics));
-    toolbarEl.appendChild(makeToolbarButton('btn-editor-fiximports', SVG_FIXIMPORTS, 'Ajustar imports', handleFixImports));
-    toolbarEl.appendChild(makeToolbarButton('btn-editor-setup', SVG_SETUP, 'Preparar proyecto (LSP)', handleSetupProject));
-    toolbarEl.appendChild(makeToolbarButton('btn-editor-reload', SVG_RELOAD, 'Recargar desde disco', handleReload));
-    
-    updateWrapButtonState();
+    toolbarEl.appendChild(makeToolbarButton('btn-editor-wrap', 'wrap', 'Ajuste de línea', toggleWrap));
+    toolbarEl.appendChild(makeToolbarButton('btn-editor-save', 'save', 'Guardar', handleSave));
+    toolbarEl.appendChild(makeToolbarButton('btn-editor-format', 'format', 'Formatear', handleFormat));
+    toolbarEl.appendChild(makeToolbarButton('btn-editor-diagnostics', 'diagnostics', 'Diagnóstico', handleDiagnostics));
+    toolbarEl.appendChild(makeToolbarButton('btn-editor-fiximports', 'fix-imports', 'Ajustar imports', handleFixImports));
+    toolbarEl.appendChild(makeToolbarButton('btn-editor-setup', 'setup-project', 'Preparar proyecto (LSP)', handleSetupProject));
+    toolbarEl.appendChild(makeToolbarButton('btn-editor-reload', 'reload', 'Recargar desde disco', handleReload));
+
+    // updateToolbarState() ya refresca el toggle de wrap al final.
     updateToolbarState();
 }
 
-function makeToolbarButton(id, svg, label, handler) {
+function makeToolbarButton(id, icon, label, handler) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.id = id;
     btn.className = 'editor-toolbar-btn';
-    btn.innerHTML = svg;
+    btn.innerHTML = iconHtml(icon);
     btn.title = label;
     btn.setAttribute('aria-label', label);
     btn.addEventListener('click', handler);
@@ -314,7 +408,11 @@ function updateToolbarState() {
     setBtnEnabled('btn-editor-fiximports',
         !!entry && !dirty && matchesExtensions(ext, ACTION_EXTENSIONS.fiximports));
         
-    setBtnEnabled('btn-editor-setup', !!entry && !setupInProgress);        
+    setBtnEnabled('btn-editor-setup', !!entry && !setupInProgress);
+
+    // El ajuste de linea es por fichero, asi que el boton debe releerse cada
+    // vez que cambia el fichero activo.
+    updateWrapButtonState();
 }
 
 function setBtnEnabled(id, enabled) {
@@ -348,17 +446,29 @@ function updateWrapButtonState() {
     if (!btn) {
         return;
     }
-    btn.classList.toggle('active', wrapEnabled);
-    const label = wrapEnabled ? 'Desactivar ajuste de línea' : 'Activar ajuste de línea';
+    // El ajuste de linea vive en la EditSession, no en el modulo: cada
+    // fichero conserva el suyo. wrapEnabled solo aporta el valor inicial.
+    const entry = activePath ? sessions.get(activePath) : null;
+    const session = entry ? entry.session : null;
+    const enabled = session ? session.getUseWrapMode() : wrapEnabled;
+    btn.classList.toggle('active', enabled);
+    const label = enabled ? 'Desactivar ajuste de línea' : 'Activar ajuste de línea';
     btn.title = label;
     btn.setAttribute('aria-label', label);
-    btn.setAttribute('aria-pressed', String(wrapEnabled));
+    btn.setAttribute('aria-pressed', String(enabled));
 }
 
 function toggleWrap() {
-    wrapEnabled = !wrapEnabled;
+    const entry = activePath ? sessions.get(activePath) : null;
+    if (!entry) {
+        return;
+    }
+    const enabled = !entry.session.getUseWrapMode();
+    entry.session.setUseWrapMode(enabled);
+    // Se recuerda como valor por defecto de las sesiones que se abran
+    // despues, pero no se propaga a las que ya estan abiertas.
+    wrapEnabled = enabled;
     localStorage.setItem(WRAP_STORAGE_KEY, String(wrapEnabled));
-    sessions.forEach((entry) => entry.session.setUseWrapMode(wrapEnabled));
     updateWrapButtonState();
 }
 
@@ -639,76 +749,9 @@ function updateTabDirty(filePath, dirty) {
 // --- Diálogo de cierre sucio ---
 
 function confirmCloseDirty(filePath) {
-    return new Promise((resolve) => {
-        const backdrop = document.createElement('div');
-        backdrop.className = 'dir-modal-backdrop';
-
-        const dialog = document.createElement('div');
-        dialog.className = 'editor-modal-dialog';
-        dialog.style.width = 'min(440px, calc(100vw - 32px))';
-        dialog.style.height = 'auto';
-
-        const header = document.createElement('div');
-        header.className = 'editor-modal-header';
-        header.innerHTML = '<h3>Cambios sin guardar</h3>';
-
-        const body = document.createElement('div');
-        body.className = 'editor-modal-body';
-        body.style.padding = '18px';
-        body.style.display = 'block';
-        body.innerHTML = `<p style="margin:0;">El fichero <strong>${escapeHtml(basename(filePath))}</strong> tiene cambios sin guardar. ¿Qué quieres hacer?</p>`;
-
-        const footer = document.createElement('div');
-        footer.className = 'editor-modal-footer';
-
-        const btnCancel = document.createElement('button');
-        btnCancel.type = 'button';
-        btnCancel.className = 'config-paths-btn secondary-button';
-        btnCancel.textContent = 'Cancelar';
-
-        const btnDiscard = document.createElement('button');
-        btnDiscard.type = 'button';
-        btnDiscard.className = 'config-paths-btn secondary-button';
-        btnDiscard.textContent = 'Descartar';
-
-        const btnSave = document.createElement('button');
-        btnSave.type = 'button';
-        btnSave.className = 'config-paths-btn primary-button';
-        btnSave.textContent = 'Guardar';
-
-        footer.appendChild(btnCancel);
-        footer.appendChild(btnDiscard);
-        footer.appendChild(btnSave);
-
-        dialog.appendChild(header);
-        dialog.appendChild(body);
-        dialog.appendChild(footer);
-        backdrop.appendChild(dialog);
-        document.body.appendChild(backdrop);
-
-        const close = (result) => {
-            document.removeEventListener('keydown', onEsc);
-            if (backdrop.parentNode) {
-                backdrop.parentNode.removeChild(backdrop);
-            }
-            resolve(result);
-        };
-
-        const onEsc = (e) => {
-            if (e.key === 'Escape') {
-                close('cancel');
-            }
-        };
-
-        btnCancel.addEventListener('click', () => close('cancel'));
-        btnDiscard.addEventListener('click', () => close('discard'));
-        btnSave.addEventListener('click', () => close('save'));
-        backdrop.addEventListener('click', (e) => {
-            if (e.target === backdrop) {
-                close('cancel');
-            }
-        });
-        document.addEventListener('keydown', onEsc);
+    return confirmDiscardDialog({
+        title: 'Cambios sin guardar',
+        message: `El fichero ${basename(filePath)} tiene cambios sin guardar. ¿Qué quieres hacer?`
     });
 }
 
@@ -858,12 +901,6 @@ function modeForPath(filePath) {
     return MODE_BY_EXTENSION[ext] || 'ace/mode/text';
 }
 
-function escapeHtml(str) {
-    const temp = document.createElement('div');
-    temp.textContent = str;
-    return temp.innerHTML;
-}
-
 async function handleReload() {
     const path = activePath;
     if (!path) {
@@ -878,34 +915,18 @@ async function handleReload() {
         if (result === 'cancel') {
             return;
         }
-        // 'save' o 'discard': en ambos casos vamos a sobrescribir el buffer.
-    }
-    try {
-        const url = `/api/files/content?file=${encodeURIComponent(path)}`;
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+        if (result === 'save') {
+            try {
+                await doSaveFile(path);
+                showToast('Fichero guardado', 'success', 2200);
+            } catch (error) {
+                console.error('Error guardando antes de recargar:', error);
+                showToast(`No se pudo guardar: ${error.message}`, 'error');
+                return;
+            }
         }
-        const data = await response.json();
-        const newContent = data.content ?? '';
-
-        suspendDirtyTracking = true;
-        try {
-            entry.session.setValue(newContent, -1);
-            entry.originalContent = newContent;
-            entry.dirty = false;
-        } finally {
-            suspendDirtyTracking = false;
-        }
-
-        updateTabDirty(path, false);
-        updateToolbarState();
-        scheduleStatePush({ immediate: true });
-        showToast('Recargado desde disco', 'success', 2000);
-    } catch (error) {
-        console.error('Error recargando:', error);
-        showToast(`No se pudo recargar: ${error.message}`, 'error');
     }
+    await reloadSessionFromDisk(path);
 }
 
 /**

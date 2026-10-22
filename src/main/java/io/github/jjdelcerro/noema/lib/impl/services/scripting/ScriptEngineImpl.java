@@ -23,6 +23,7 @@ import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext;
 import static io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext.CONTEXT_NAME;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.FsModule;
 import io.github.jjdelcerro.noema.lib.impl.utils.FileFuzzySearchUtils;
+import io.github.jjdelcerro.noema.lib.impl.utils.GrepUtils;
 
 /**
  *
@@ -122,7 +123,7 @@ public class ScriptEngineImpl implements ScriptEngine {
       
       // TODO: Hacer que a cada modulo se le puedan preguntar por los import que hay que añadir.
       importCustomizer.addImports(
-              FsModule.GrepMatch.class.getCanonicalName(),
+              GrepUtils.GrepMatch.class.getCanonicalName(),
               FileFuzzySearchUtils.FuzzyMatch.class.getCanonicalName()
       );
       config.addCompilationCustomizers(secureCustomizer, timedInterrupt, importCustomizer);

@@ -14,7 +14,7 @@
       <aside id="app-sidebar" class="terminal-sidebar">
         <div class="sidebar-top">
           <div class="brand-lockup"><div class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></div><div><div class="brand-name">Noema</div><div class="brand-caption">consciencia persistente</div></div></div>
-          <button id="btn-collapse-sidebar" class="icon-button sidebar-toggle" aria-label="Ocultar panel lateral" aria-controls="app-sidebar" aria-expanded="true" title="Ocultar panel lateral"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3.5" /><line x1="9" y1="4.5" x2="9" y2="19.5" /></svg></button>
+          <button id="btn-collapse-sidebar" class="icon-button sidebar-toggle" aria-label="Ocultar panel lateral" aria-controls="app-sidebar" aria-expanded="true" title="Ocultar panel lateral"><img class="icon" src="images/current/sidebar.svg" width="18" height="18" alt=""></button>
         </div>
         <div class="sidebar-section-label">Terminal activo</div>
         <div class="terminal-card"><div class="terminal-avatar">⌁</div><div class="terminal-card-copy"><strong id="sidebar-terminal-name">Terminal</strong><span id="sidebar-terminal-id">default</span></div><span class="live-dot"></span></div>
@@ -26,8 +26,8 @@
         <header class="main-header">
           <div class="header-left">
             <div class="mobile-brand"><div class="brand-mark small"><i></i><i></i><i></i></div><span>Noema</span></div>
-            <button id="btn-expand-sidebar" class="icon-button sidebar-toggle" aria-label="Mostrar panel lateral" aria-controls="app-sidebar" aria-expanded="false" title="Mostrar panel lateral"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3.5" /><line x1="9" y1="4.5" x2="9" y2="19.5" /></svg></button>
-            <button id="btn-toggle-workspace" class="icon-button workspace-toggle" aria-label="Mostrar panel de editor" aria-controls="workspace-panel" aria-expanded="false" title="Mostrar panel de editor"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3.5" /><line x1="15" y1="4.5" x2="15" y2="19.5" /></svg></button>
+            <button id="btn-expand-sidebar" class="icon-button sidebar-toggle" aria-label="Mostrar panel lateral" aria-controls="app-sidebar" aria-expanded="false" title="Mostrar panel lateral"><img class="icon" src="images/current/sidebar.svg" width="18" height="18" alt=""></button>
+            <button id="btn-toggle-workspace" class="icon-button workspace-toggle" aria-label="Mostrar panel de editor" aria-controls="work-area" aria-expanded="false" title="Mostrar panel de editor"><img class="icon" src="images/current/workspace.svg" width="18" height="18" alt=""></button>
           </div>
           <div class="header-right">
             <div class="header-tools"><label class="terminal-input-wrap"><span>Terminal</span><input id="terminal-id" type="text" placeholder="ID del terminal" autocomplete="off"></label><div id="status-indicator" class="status-indicator"><span class="status-dot connecting"></span><span id="status-text">Conectando...</span></div><button id="btn-mobile-config" class="icon-button mobile-config-button">⚙</button></div>
@@ -35,16 +35,70 @@
         </header>
 
         <main class="main-panel">
-          <div id="workspace-panel" class="workspace-panel">
-            <div class="workspace-tree-pane">
-              <div id="workspace-tree" class="workspace-tree"></div>
+          <div id="work-area" class="work-area">
+            <div class="area-tabbar" role="tablist">
+              <button id="tab-area-workspace" class="tab-button active" role="tab" data-area="workspace" aria-selected="true" aria-controls="workspace-panel">Editor</button>
+              <button id="tab-area-notes" class="tab-button" role="tab" data-area="notes" aria-selected="false" aria-controls="notes-panel">Notas</button>
             </div>
-            <div id="splitter-tree" class="splitter" role="separator" aria-orientation="vertical" aria-label="Redimensionar panel del editor"></div>
-            <div class="workspace-editor-pane">
-              <div id="workspace-editor-tabs" class="workspace-editor-tabs" role="tablist"></div>
-              <div id="workspace-editor-toolbar" class="workspace-editor-toolbar"></div>
-              <div id="workspace-editor" class="workspace-editor"></div>
-            </div>            
+            <div class="area-body">
+              <div id="workspace-panel" class="workspace-panel" data-area-view="workspace">
+                <div class="workspace-tree-pane">
+                  <div id="workspace-tree" class="workspace-tree"></div>
+                </div>
+                <div id="splitter-tree" class="splitter" role="separator" aria-orientation="vertical" aria-label="Redimensionar panel del editor"></div>
+                <div class="workspace-editor-pane">
+                  <div id="workspace-editor-tabs" class="workspace-editor-tabs" role="tablist"></div>
+                  <div id="workspace-editor-toolbar" class="workspace-editor-toolbar"></div>
+                  <div id="workspace-editor" class="workspace-editor"></div>
+                </div>
+              </div>
+              <div id="notes-panel" class="notes-panel" data-area-view="notes" hidden>
+                <div class="notes-left-pane">
+                  <div class="notes-tree-pane">
+                    <div class="notes-tree-header">
+                      <button id="btn-new-note" class="notes-new-button" type="button" title="Crear una nota nueva" aria-label="Crear una nota nueva"><img class="icon" src="images/current/new.svg" width="18" height="18" alt=""></button>
+                    </div>
+                    <div id="notes-tree" class="notes-tree"></div>
+                  </div>
+                  <div id="splitter-notes-h" class="splitter splitter-horizontal" role="separator" aria-orientation="horizontal" aria-label="Redimensionar panel de busqueda"></div>
+                  <div class="notes-search-pane">
+                    <div class="notes-search-scope">
+                      <span class="notes-search-scope-label">Ámbito:</span>
+                      <span id="notes-search-scope" class="notes-search-scope-value">Todo</span>
+                      <button id="notes-search-scope-reset" class="notes-search-scope-reset" type="button" title="Buscar en todas las notas" hidden>Todo</button>
+                    </div>
+                    <div class="notes-search">
+                      <input id="notes-search-input" class="notes-search-input" type="search" placeholder="Buscar en las notas..." autocomplete="off">
+                      <button id="notes-search-go" class="notes-search-go" type="button" title="Buscar (Enter)" aria-label="Buscar"><img class="icon" src="images/current/search.svg" width="18" height="18" alt=""></button>
+                      <select id="notes-search-mode" class="notes-search-mode" title="Modo de busqueda">
+                        <option value="fuzzy">Difusa</option>
+                        <option value="exact">Exacta</option>
+                        <option value="tags">Etiquetas</option>
+                      </select>
+                    </div>
+                    <div id="notes-search-results" class="notes-search-results" hidden></div>
+                    <div id="notes-search-pager" class="notes-search-pager" hidden>
+                      <button id="notes-search-prev" class="notes-search-page-button" type="button" disabled>Anterior</button>
+                      <span id="notes-search-count" class="notes-search-count"></span>
+                      <button id="notes-search-next" class="notes-search-page-button" type="button" disabled>Siguiente</button>
+                    </div>
+                  </div>
+                </div>
+                <div id="splitter-notes" class="splitter" role="separator" aria-orientation="vertical" aria-label="Redimensionar lista de notas"></div>
+                <div class="notes-main-pane">
+                  <div class="notes-editor-meta" hidden>
+                    <input id="note-title" class="note-title-input" type="text" placeholder="Titulo" autocomplete="off">
+                    <input id="note-tags" class="note-tags-input" type="text" placeholder="tags, separados, por comas" autocomplete="off">
+                    <button id="btn-save-note" class="editor-toolbar-btn notes-meta-button" type="button" title="Guardar nota (Ctrl+S)" aria-label="Guardar nota" disabled><img class="icon" src="images/current/save.svg" width="18" height="18" alt=""></button>
+                    <button id="btn-reload-note" class="editor-toolbar-btn notes-meta-button" type="button" title="Recargar nota desde el disco" aria-label="Recargar nota"><img class="icon" src="images/current/reload.svg" width="18" height="18" alt=""></button>
+                    <button id="btn-toggle-note-wrap" class="editor-toolbar-btn notes-meta-button active" type="button" title="Desactivar ajuste de línea" aria-label="Desactivar ajuste de línea" aria-pressed="true"><img class="icon" src="images/current/wrap-active.svg" width="18" height="18" alt=""></button>
+                    <button id="btn-close-note" class="editor-toolbar-btn notes-meta-button" type="button" title="Cerrar nota" aria-label="Cerrar nota"><img class="icon" src="images/current/close.svg" width="18" height="18" alt=""></button>
+                  </div>
+                  <div id="note-status" class="note-status" hidden></div>
+                  <div id="notes-editor" class="notes-editor" hidden></div>
+                </div>
+              </div>
+            </div>
           </div>
           <div id="splitter-workspace" class="splitter" role="separator" aria-orientation="vertical" aria-label="Redimensionar panel de trabajo"></div>
           <div class="conversation-shell">
@@ -54,7 +108,7 @@
             </div>
             <section id="chat-area" class="chat-area" aria-live="polite"><div class="welcome-card"><div class="welcome-symbol">✦</div><div><div class="eyebrow">Noema</div><h2>La conversación continúa.</h2><p>Este terminal es un canal hacia una única consciencia persistente. Puedes retomar el hilo cuando quieras.</p></div></div></section>
             <section id="context-area" class="context-area" hidden aria-live="polite"></section>
-            <footer id="composer-area" class="composer-area"><div class="composer-shell"><textarea id="message-input" placeholder="Escribe a Noema…" rows="1"></textarea><button id="btn-send" class="send-button" aria-label="Enviar mensaje">↑</button></div><div class="composer-hint">Enter para enviar <span>·</span> Shift + Enter para nueva línea</div></footer>
+            <footer id="composer-area" class="composer-area"><div class="composer-shell"><textarea id="message-input" placeholder="Escribe a Noema…" rows="1"></textarea><button id="btn-send" class="icon-btn" aria-label="Enviar mensaje"><img class="icon" src="images/current/send.svg" width="18" height="18" alt=""></button></div><div class="composer-hint">Enter para nueva línea <span>·</span> Ctrl + Enter para enviar</div></footer>
           </div>
         </main>
       </div>

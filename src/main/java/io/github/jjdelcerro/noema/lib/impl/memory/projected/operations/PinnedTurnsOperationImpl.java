@@ -174,9 +174,27 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
           if (!alreadyPinned) {
             AiMessage requestMsg = findPrecedingAiMessage(messages, i, resultMsg.id());
             if (requestMsg != null) {
-              this.pinnedTurns.add(new PinnedTurnStateImpl(tool, requestMsg, resultMsg));
+              // Filtrar para conservar exclusivamente la ToolExecutionRequest de esta herramienta
+              // Esto previene que el historial quede dañado cuando en el mismo turno que se
+              // ancla la llamada a una herramienta se hacen llamadas a mas herramientas,
+              // quedandose solo con la herramienta que hay que anclar y con su respuesta.
+              ToolExecutionRequest targetReq = requestMsg.toolExecutionRequests().stream()
+                  .filter(req -> req.id().equals(resultMsg.id()))
+                  .findFirst()
+                  .orElse(null);
+
+              if (targetReq != null) {
+                AiMessage isolatedRequestMsg = AiMessage.builder()
+                    .text(requestMsg.text())
+                    .thinking(requestMsg.thinking())
+                    .toolExecutionRequests(List.of(targetReq))
+                    .build();
+
+                this.pinnedTurns.add(new PinnedTurnStateImpl(tool, isolatedRequestMsg, resultMsg));
+              }
             }
-          }
+          }          
+          
         }
       }
     }

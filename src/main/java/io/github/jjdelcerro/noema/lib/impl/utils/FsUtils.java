@@ -4,6 +4,7 @@ import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.api.AgentAccessControl.AccessMode;
 import static io.github.jjdelcerro.noema.lib.api.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
+import io.github.jjdelcerro.noema.lib.api.AgentPaths;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
@@ -12,6 +13,7 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
@@ -96,14 +98,15 @@ public class FsUtils {
    * @return visible files, lazy
    */
   public static CloseableIterable<Path> walk(AgentAccessControl accessControl, Path scope, String globPattern, AccessMode mode) {
-    Objects.requireNonNull(accessControl, "accessControl");
-
     AccessMode accessMode = (mode == null) ? PATH_ACCESS_READ : mode;
     PathMatcher matcher = (globPattern == null || globPattern.isBlank())
             ? null
             : FileSystems.getDefault().getPathMatcher("glob:" + globPattern);
 
-    List<Path> scopes = accessControl.resolveRoots(scope, accessMode);
+    List<Path> scopes = accessControl==null? 
+            Collections.singletonList(scope) : 
+            accessControl.resolveRoots(scope, accessMode)
+            ;
     CloseableIterator[] scopesIterators = new CloseableIterator[scopes.size()];
     for (int i = 0; i < scopes.size(); i++) {
       Path singleScope = scopes.get(i);
@@ -158,10 +161,19 @@ public class FsUtils {
    * @return path with forward slashes
    */
   public static String toDisplayPath(Agent agent, Path file) {
-    if (agent == null || agent.getPaths() == null || agent.getPaths().getWorkspaceFolder() == null) {
+    AgentPaths paths = agent.getPaths();
+    return toDisplayPath(paths, file);
+  }
+  
+  public static String toDisplayPath(Path file) {
+    return toDisplayPath((AgentPaths)null, file);
+  }
+  
+  public static String toDisplayPath(AgentPaths paths, Path file) {
+    if (paths == null || paths.getWorkspaceFolder() == null) {
       return file.toString().replace("\\", "/");
     }
-    Path root = agent.getPaths().getWorkspaceFolder();
+    Path root = paths.getWorkspaceFolder();
     String displayPath = file.startsWith(root) ? root.relativize(file).toString() : file.toString();
     return displayPath.replace("\\", "/");
   }
@@ -218,7 +230,7 @@ public class FsUtils {
     private record Folder(DirectoryStream<Path> stream, Iterator<Path> entries) {
     }
 
-    private final AgentAccessControl accessControl;
+    private final AgentAccessControl accessControl; // Puede ser null
     private final AccessMode mode;
     private final PathMatcher matcher;
     private final Path root;
@@ -286,7 +298,7 @@ public class FsUtils {
           continue;
         }
 
-        Path resolved = this.accessControl.resolvePathOrNull(entry, this.mode);
+        Path resolved =  this.accessControl==null? entry : this.accessControl.resolvePathOrNull(entry, this.mode);
         if (resolved == null) {
           continue;
         }

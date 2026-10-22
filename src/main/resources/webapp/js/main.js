@@ -6,7 +6,11 @@ import { initChatUI, switchTerminal } from './chat-ui.js';
 import { initConfigUI } from './config-ui.js';
 import { initWorkspaceUI } from './workspace-ui.js';
 import { initSplitters, refreshSplitters } from './splitters.js';
-import { initEditorUI, resizeEditor } from './editor-ui.js';
+import { initEditorUI, resizeEditor, hasDirtySessions, confirmLeaveWorkspace } from './editor-ui.js';
+import { initAreaTabs, registerAreaView } from './area-tabs.js';
+import { initNotesUI } from './notes-ui.js';
+import { initNoteEditor } from './note-editor.js';
+import { initNotesSearch } from './notes-search.js';
 
 const STORAGE_KEY = 'noema_terminal_id';
 const SIDEBAR_STORAGE_KEY = 'noema_sidebar_collapsed';
@@ -42,6 +46,14 @@ document.addEventListener('DOMContentLoaded', () => {
     initWorkspaceUI();
     initEditorUI();
     initSplitters();
+    initAreaTabs();
+    registerAreaView('workspace', {
+        isDirty: hasDirtySessions,
+        confirmLeave: confirmLeaveWorkspace
+    });
+    initNoteEditor();
+    initNotesUI();
+    initNotesSearch();
 });
 
 function handleTerminalChange(rawId) {

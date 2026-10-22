@@ -16,6 +16,13 @@ import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerGetDomain;
 import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerGetFileContent;
 import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerGetFilesTree;
 import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerGetHistory;
+import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerGetLatestNote;
+import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerGetNote;
+import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerGetNoteSearch;
+import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerGetNotesTree;
+import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerDeleteNote;
+import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerPutNote;
+import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerPostNote;
 import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerPostAction;
 import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerPostChatMessage;
 import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerPostConfigList;
@@ -128,6 +135,15 @@ public class NoemaWebServer {
     this.app.post("/api/editor/fiximports", new HandlerPostEditorFiximports(agent));
 
     this.app.post("/api/editor/setupproject", new HandlerPostSetupProject(agent));
+
+    // 7. Notas: arbol, busqueda y CRUD (rutas literales antes que las de <id>)
+    this.app.get("/api/notes/tree", new HandlerGetNotesTree(agent));
+    this.app.get("/api/notes/latest", new HandlerGetLatestNote(agent));
+    this.app.get("/api/notes/search", new HandlerGetNoteSearch(agent));
+    this.app.get("/api/notes/<id>", new HandlerGetNote(agent));
+    this.app.post("/api/notes", new HandlerPostNote(agent));
+    this.app.put("/api/notes/<id>", new HandlerPutNote(agent));
+    this.app.delete("/api/notes/<id>", new HandlerDeleteNote(agent));
 
     this.app.start(this.address, this.port);
 

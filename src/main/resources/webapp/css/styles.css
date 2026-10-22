@@ -86,11 +86,6 @@ button {
   background: rgba(255, 255, 255, 0.06);
 }
 
-.sidebar-toggle svg,
-.workspace-toggle svg {
-  display: block;
-}
-
 .main-column {
   display: flex;
   flex-direction: column;
@@ -298,14 +293,416 @@ button {
 /* ==========================================================================
    2.bis Panel de Trabajo (Workspace: Árbol + Editor)
    ========================================================================== */
-.workspace-panel {
+/* Contenedor del area: tabs arriba, vistas debajo. Hereda el ancho fijo que
+   antes tenia .workspace-panel. */
+.work-area {
   display: flex;
   flex: 0 0 720px;
   width: 720px;
   min-width: 0;
-  min-height: 0; 
+  min-height: 0;
+  flex-direction: column;
   background: var(--sidebar);
   border-right: 1px solid var(--line);
+}
+
+/* Barra de pestañas del area: mismo lenguaje visual que .conversation-tabbar. */
+.area-tabbar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  gap: 6px;
+  padding: 0 10px;
+  min-height: 34px;
+  border-bottom: 1px solid var(--line);
+}
+
+.area-tabbar .tab-button {
+  position: relative;
+  padding: 8px 14px;
+  color: var(--muted);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.area-tabbar .tab-button:hover {
+  color: var(--ink);
+}
+
+.area-tabbar .tab-button.active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.area-tabbar .tab-button.active::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+}
+
+/* Cuerpo del area: solo una vista visible a la vez. */
+.area-body {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.area-body > [data-area-view][hidden] {
+  display: none;
+}
+
+.workspace-panel {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background: var(--sidebar);
+}
+
+/* Panel de notas: replica la estructura del workspace. */
+.notes-panel {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background: var(--sidebar);
+}
+
+/* Columna izquierda del panel de notas: arbol arriba, busqueda abajo.
+   El ancho lo fija este contenedor; el reparto vertical lo gobierna el
+   divisor horizontal. */
+.notes-left-pane {
+  display: flex;
+  flex: 0 0 260px;
+  width: 260px;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  border-right: 1px solid var(--line);
+}
+
+.notes-tree-pane {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+  padding: 10px;
+}
+
+.notes-tree {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface2) transparent;
+}
+
+/* Panel de busqueda: ocupa la mitad inferior de la columna izquierda y
+   convive con el arbol, que sigue visible arriba. */
+.notes-search-pane {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+  padding: 8px 10px 10px;
+  overflow: hidden;
+}
+
+.notes-main-pane {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+}
+
+/*
+ * El panel derecho nunca se oculta: cuando no hay nota abierta se quedan sus
+ * hijos en hidden y el contenedor hace de area vacia. Cada hijo trae su
+ * propio display (flex la cabecera, block el resto), que gana sobre el
+ * display:none que el navegador aplica a [hidden], de ahi esta regla.
+ */
+.notes-main-pane > [hidden] {
+  display: none;
+}
+
+/* Cabecera del editor de notas: titulo, tags y boton de guardado. */
+.notes-editor-meta {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.note-title-input,
+.note-tags-input {
+  min-width: 0;
+  padding: 6px 8px;
+  color: var(--ink);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.note-title-input {
+  flex: 1 1 auto;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.note-tags-input {
+  flex: 0 1 220px;
+  font-size: 12px;
+}
+
+.note-title-input:focus,
+.note-tags-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Los botones de esta barra toman el aspecto de .editor-toolbar-btn, definido
+   mas arriba; aqui solo se protege su geometria frente a los inputs flexibles. */
+.notes-meta-button {
+  flex: 0 0 auto;
+}
+
+/* Linea de metadatos gestionados: id, ruta y fecha de actualizacion. */
+.note-status {
+  flex: 0 0 auto;
+  min-height: 16px;
+  padding: 4px 10px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.notes-editor {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Cabecera de la lista de notas con el boton de alta. */
+.notes-tree-header {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 8px;
+}
+
+.notes-new-button {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.notes-new-button:not(:disabled):hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.notes-new-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Selector de ambito: refleja el nodo seleccionado en el arbol. */
+.notes-search-scope {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.notes-search-scope-label {
+  flex: 0 0 auto;
+}
+
+.notes-search-scope-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notes-search-scope-reset {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.notes-search-scope-reset:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+/* Caja de busqueda, boton de busqueda y selector de modo. */
+.notes-search {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  padding-bottom: 8px;
+}
+
+.notes-search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 5px 8px;
+  color: var(--ink);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.notes-search-mode {
+  flex: 0 0 auto;
+  padding: 5px 6px;
+  color: var(--ink);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+.notes-search-go {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.notes-search-go:hover {
+  border-color: var(--accent);
+}
+
+.notes-search-input:focus,
+.notes-search-mode:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Resultados de busqueda: sustituyen al arbol mientras hay consulta. */
+.notes-search-results {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface2) transparent;
+}
+
+.notes-search-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 6px 8px;
+  margin-bottom: 2px;
+  color: var(--ink);
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.notes-search-item:hover {
+  background: var(--surface2);
+  border-color: var(--line);
+}
+
+.notes-search-item.active {
+  border-color: var(--accent);
+}
+
+.notes-search-item-title {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notes-search-item-meta {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notes-search-empty {
+  padding: 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.notes-search-pager {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0 8px;
+}
+
+.notes-search-count {
+  flex: 1 1 auto;
+  color: var(--muted);
+  font-size: 10px;
+  text-align: center;
+}
+
+.notes-search-page-button {
+  padding: 4px 8px;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.notes-search-page-button:not(:disabled):hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.notes-search-page-button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .workspace-tree-pane {
@@ -426,6 +823,56 @@ button {
   border-bottom: 1px solid var(--line);
 }
 
+/* Iconos como imagen: el color va fijado dentro del SVG (images/current). */
+.icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+/*
+ * Caja comun de boton con icono. Toda la app la usa (24x24, radio 5) para que
+ * cualquier icono de accion mida y responda igual, venga del topbar, del
+ * editor, del chat o de notas: normal sin fondo, hover con velo claro y el
+ * icono aclarado, deshabilitado atenuado.
+ */
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  padding: 0;
+  color: var(--muted);
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.icon-btn:hover .icon {
+  filter: brightness(1.45);
+}
+
+.icon-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.icon-btn:disabled:hover {
+  background: transparent;
+}
+
+.icon-btn:disabled:hover .icon {
+  filter: none;
+}
+
 .editor-toolbar-btn {
   display: inline-grid;
   place-items: center;
@@ -450,8 +897,27 @@ button {
   background: rgba(184, 160, 255, 0.12);
 }
 
-.editor-toolbar-btn svg {
+.editor-toolbar-btn .icon {
   display: block;
+}
+
+.editor-toolbar-btn:hover .icon {
+  filter: brightness(1.45);
+}
+
+/* El icono de un toggle encendido ya trae su propio color en el fichero
+   (wrap-active.svg). Aclararlo aqui lo quemaria, asi que no se filtra. */
+.editor-toolbar-btn.active .icon {
+  filter: none;
+}
+
+.editor-toolbar-btn.working .icon {
+  filter: brightness(1.6);
+}
+
+.editor-toolbar-btn:disabled .icon,
+.editor-toolbar-btn:disabled:hover .icon {
+  filter: none;
 }
 
 .editor-toolbar-btn:disabled {
@@ -489,6 +955,12 @@ button {
   transition: background 0.15s ease;
 }
 
+/* Divisor horizontal: separa filas y se arrastra en vertical. */
+.splitter-horizontal {
+  flex: 0 0 5px;
+  cursor: row-resize;
+}
+
 .splitter:hover,
 .splitter.dragging {
   background: var(--accent);
@@ -499,7 +971,7 @@ body.no-select,
 body.no-select * {
   user-select: none !important;
 }
-.app-shell.workspace-collapsed .workspace-panel {
+.app-shell.workspace-collapsed .work-area {
   display: none;
 }
 
@@ -943,26 +1415,6 @@ body.no-select * {
   color: var(--faint);
 }
 
-.send-button {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
-  color: #111318;
-  border: 0;
-  border-radius: 10px;
-  background: var(--accent);
-  cursor: pointer;
-  font-size: 22px;
-  line-height: 1;
-}
-
-.send-button:hover {
-  background: #c6b3ff;
-  transform: translateY(-1px);
-}
-
 .composer-hint {
   display: flex;
   justify-content: center;
@@ -1026,59 +1478,15 @@ body.no-select * {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.copy-message-button {
-  display: inline-grid;
-  place-items: center;
-  width: 22px;
-  height: 20px;
-  padding: 2px;
-  color: var(--faint);
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  font-size: 10px;
-  opacity: 0.8;
-}
-
-.copy-message-button:hover {
-  color: var(--accent);
-  opacity: 1;
-}
-
-.copy-message-button svg {
-  width: 14px;
-  height: 14px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
+/*
+ * Los botones de accion de los mensajes (copiar y colapsar) se apoyan en la clase
+ * comun .icon-btn: caja 24x24, icono de 18 px, fondo transparente y hover con
+ * brightness. Aqui solo queda lo especifico del feedback de copiado.
+ */
 .copy-message-button .copy-confirmation {
   color: #70d39a;
   font-size: 14px;
   line-height: 1;
-}
-
-.collapse-message-button {
-  display: inline-grid;
-  place-items: center;
-  width: 22px;
-  height: 20px;
-  padding: 0;
-  color: var(--muted);
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  cursor: pointer;
-  font-size: 20px;
-  line-height: 1;
-}
-
-.collapse-message-button:hover {
-  color: var(--ink);
-  background: rgba(255, 255, 255, 0.06);
 }
 
 .message-block-label {

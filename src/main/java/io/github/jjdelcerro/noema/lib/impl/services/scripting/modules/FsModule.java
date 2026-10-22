@@ -16,6 +16,10 @@ import io.github.jjdelcerro.noema.lib.impl.utils.CloseableIterable;
 import io.github.jjdelcerro.noema.lib.impl.utils.FileSearchAndReplaceUtils;
 import io.github.jjdelcerro.noema.lib.impl.utils.FileSearchAndReplaceUtils.SearchAndReplaceResult;
 import io.github.jjdelcerro.noema.lib.impl.utils.FsUtils;
+import io.github.jjdelcerro.noema.lib.impl.utils.GrepUtils;
+import io.github.jjdelcerro.noema.lib.impl.utils.GrepUtils.GrepMatch;
+import io.github.jjdelcerro.noema.lib.impl.utils.GrepUtils.GrepMatcher;
+import io.github.jjdelcerro.noema.lib.impl.utils.GrepUtils.GrepMatchers;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -35,13 +39,13 @@ import org.apache.tika.metadata.Metadata;
 
 public class FsModule extends AbstractScriptModule {
 
-  public static record GrepMatch(String file, int line, String content) {
-
-    @Override
-    public String toString() {
-      return String.format("%s:%d: %s", file, line, content);
-    }
-  }
+//  public static record GrepMatch(String file, int line, String content) {
+//
+//    @Override
+//    public String toString() {
+//      return String.format("%s:%d: %s", file, line, content);
+//    }
+//  }
 
   final Tika tika;
 
@@ -128,39 +132,19 @@ public class FsModule extends AbstractScriptModule {
    */
   public Iterable<GrepMatch> grep(String regex, String rawPath) {
     Path scope = toScope(rawPath);
-    Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
-    List<GrepMatch> results = new ArrayList<>();
-    try (CloseableIterable<Path> entries = FsUtils.walk(agent.getAccessControl(), scope, null, PATH_ACCESS_READ)) {
-      for (Path entry : entries) {
-        if (!Files.isRegularFile(entry)) {
-          continue;
-        }
-        grepSingleFile(entry, pattern, results);
-      }
-    } catch (IOException e) {
-      LOGGER.warn("Error walking directory for grep: {}", scope, e);
-    }
+    GrepMatcher matcher = GrepUtils.matcherOf(GrepMatchers.REGEXP, regex, true);
+    Iterable<GrepMatch> results = GrepUtils.grep(
+            this.agent.getAccessControl(), 
+            matcher, 
+            scope
+    );
     return results;
   }
-
-  private void grepSingleFile(Path file, Pattern pattern, List<GrepMatch> results) {
-    String displayPath = FsUtils.toDisplayPath(agent, file);
-    try (BufferedReader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
-      String line;
-      int lineNum = 1;
-      while ((line = reader.readLine()) != null) {
-        if (pattern.matcher(line).find()) {
-          results.add(new GrepMatch(displayPath, lineNum, line));
-        }
-        lineNum++;
-      }
-    } catch (Exception ignored) {
-      // Files that cannot be decoded as UTF-8 are skipped, like unreadable ones.
-    }
-  }
-
+  
   /**
    * Writes text content or lines to a file with automatic RCS version control.
+   * @param rawPath
+   * @param content
    */
   public void write(String rawPath, Object content) {
     Path path = validatePath(rawPath, AgentAccessControl.AccessMode.PATH_ACCESS_WRITE);

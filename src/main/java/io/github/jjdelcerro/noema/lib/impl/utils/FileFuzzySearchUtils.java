@@ -2,6 +2,7 @@ package io.github.jjdelcerro.noema.lib.impl.utils;
 
 import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.AgentAccessControl;
+import io.github.jjdelcerro.noema.lib.api.AgentPaths;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingFilter;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsService;
 import org.apache.commons.lang3.StringUtils;
@@ -14,6 +15,7 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -47,6 +49,19 @@ public final class FileFuzzySearchUtils {
   }
 
   /**
+   * Transforma el flujo de lectura de un fichero antes de trocearlo.
+   *
+   * Permite que el llamador sustituya el texto crudo del fichero por otro
+   * derivado de el, por ejemplo el titulo mas el contenido de una nota
+   * obtenidos al deserializar su XML. Si el transformador devuelve null, el
+   * fichero se descarta.
+   */
+  @FunctionalInterface
+  public interface ReaderTransformer {
+    Reader apply(Reader reader) throws IOException;
+  }
+
+  /**
    * Representa una coincidencia semántica en un fragmento de archivo.
    *
    * @param file Ruta relativa normalizada para visualización y scripts (ej:
@@ -67,18 +82,29 @@ public final class FileFuzzySearchUtils {
 
     @Override
     public String toString() {
-      return String.format("file=%s;startline=%d;endline=%d;similarity=%f;content=\n%s\n----------\n", file, startLine, endLine, similarity.getValue(), content);
+      return String.format("file=%s;startline=%d;endline=%d;similarity=%f;content=\n%s\n----------\n", file, startLine, endLine, similarity.doubleValue(), content);
     }
   }
 
   public static List<FuzzyMatch> search(Agent agent, Path target, String query) {
-    return search(agent, target, query, "**", DEFAULT_LIMIT, DEFAULT_MIN_SIMILARITY);
+    return search(agent, target, query, "**", DEFAULT_LIMIT, DEFAULT_MIN_SIMILARITY, null);
   }
 
   public static List<FuzzyMatch> search(Agent agent, Path target, String query, String filePattern) {
-    return search(agent, target, query, filePattern, DEFAULT_LIMIT, DEFAULT_MIN_SIMILARITY);
+    return search(agent, target, query, filePattern, DEFAULT_LIMIT, DEFAULT_MIN_SIMILARITY, null);
   }
 
+  public static List<FuzzyMatch> search(
+          Agent agent,
+          Path target,
+          String query,
+          String filePattern,
+          int limit,
+          double minSimilarity
+  ) {
+    return search(agent, target, query, filePattern, limit, minSimilarity, null);
+  }
+  
   /**
    * Ejecuta la búsqueda semántica sobre un archivo o directorio.
    *
@@ -95,6 +121,9 @@ public final class FileFuzzySearchUtils {
    * "**\/*.java").
    * @param limit Número máximo de coincidencias a retornar.
    * @param minSimilarity Umbral mínimo de similitud coseno (0.0 a 1.0).
+   * @param readerTransformer Transformador opcional del flujo de lectura. Si
+   * es null se usa el texto crudo del fichero. Cuando se aplica, las líneas
+   * de {@link FuzzyMatch} se refieren al texto transformado, no al fichero.
    * @return Lista clasificada de fragmentos ordenados de mayor a menor
    * relevancia.
    */
@@ -104,15 +133,32 @@ public final class FileFuzzySearchUtils {
           String query,
           String filePattern,
           int limit,
-          double minSimilarity
+          double minSimilarity,
+          ReaderTransformer readerTransformer
   ) {
-    if (agent == null || target == null || StringUtils.isBlank(query)) {
-      return Collections.emptyList();
-    }
-
+    AgentAccessControl accessControl = agent.getAccessControl();
+    AgentPaths paths = agent.getPaths();
     EmbeddingsService embeddingsService = (EmbeddingsService) agent.getService(EmbeddingsService.NAME);
+    return search(embeddingsService, accessControl, paths, target, query, filePattern, limit, minSimilarity, readerTransformer);
+  }
+  
+  public static List<FuzzyMatch> search(
+          EmbeddingsService embeddingsService,
+          AgentAccessControl accessControl,
+          AgentPaths paths,
+          Path target,
+          String query,
+          String filePattern,
+          int limit,
+          double minSimilarity,
+          ReaderTransformer readerTransformer
+  ) {
+  
     if (embeddingsService == null) {
       LOGGER.warn("EmbeddingsService no disponible para búsqueda semántica.");
+      return Collections.emptyList();
+    }
+    if ( target == null || StringUtils.isBlank(query)) {
       return Collections.emptyList();
     }
 
@@ -124,11 +170,14 @@ public final class FileFuzzySearchUtils {
     EmbeddingFilter<FuzzyMatch> filter = embeddingsService.createEmbeddingFilter(
             query.trim(), safeLimit, safeSimilarity);
 
+    ReaderTransformer transformer = (readerTransformer != null) ? readerTransformer : (reader) -> reader;
     int filesScanned = 0;
 
     try (CloseableIterable<Path> files = FsUtils.walk(
-            agent.getAccessControl(), target, FsUtils.normalizeGlob(filePattern),
-            AgentAccessControl.AccessMode.PATH_ACCESS_READ)) {
+            accessControl, target, 
+            FsUtils.normalizeGlob(filePattern),
+            AgentAccessControl.AccessMode.PATH_ACCESS_READ
+        )) {
 
       for (Path file : files) {
         if (filesScanned >= MAX_FILES_TO_SCAN) {
@@ -138,7 +187,7 @@ public final class FileFuzzySearchUtils {
         if (!Files.isRegularFile(file)) {
           continue;
         }
-        scanSingleFile(agent, file, FsUtils.toDisplayPath(agent, file), filter, embeddingsService);
+        scanSingleFile(file, FsUtils.toDisplayPath(paths, file), filter, embeddingsService, transformer);
         filesScanned++;
       }
     } catch (IOException e) {
@@ -149,40 +198,51 @@ public final class FileFuzzySearchUtils {
   }
 
   private static void scanSingleFile(
-          Agent agent,
           Path file,
           String displayPath,
           EmbeddingFilter<FuzzyMatch> filter,
-          EmbeddingsService embeddingsService
+          EmbeddingsService embeddingsService,
+          ReaderTransformer readerTransformer
   ) {
     if (FsUtils.isBinaryResource(file)) {
       return;
     }
 
-    try (InputStream in = new BufferedInputStream(new FileInputStream(file.toFile())); BufferedReader reader = new BufferedReader(new AutoDetectReader(in))) {
+    try (InputStream in = new BufferedInputStream(new FileInputStream(file.toFile()));
+            Reader detected = new AutoDetectReader(in)) {
 
-      List<String> window = new ArrayList<>(CHUNK_LINES);
-      int windowStartLine = 1;
-      int currentLine = 0;
-      boolean newLinesAdded = false;
-
-      String line;
-      while ((line = reader.readLine()) != null) {
-        currentLine++;
-        window.add(line);
-        newLinesAdded = true;
-
-        if (window.size() >= CHUNK_LINES) {
-          processChunk(file, displayPath, window, windowStartLine, currentLine, filter, embeddingsService);
-          int toRemove = Math.min(STEP_LINES, window.size());
-          window.subList(0, toRemove).clear();
-          windowStartLine += toRemove;
-          newLinesAdded = false;
-        }
+      // El transformador trabaja sobre el reader crudo, sin buffer: lo que se
+      // consume por lineas es su salida, asi que el buffer se pone despues.
+      Reader transformed = readerTransformer.apply(detected);
+      if (transformed == null) {
+        return;
       }
 
-      if (newLinesAdded && !window.isEmpty()) {
-        processChunk(file, displayPath, window, windowStartLine, currentLine, filter, embeddingsService);
+      try (BufferedReader reader = new BufferedReader(transformed)) {
+
+        List<String> window = new ArrayList<>(CHUNK_LINES);
+        int windowStartLine = 1;
+        int currentLine = 0;
+        boolean newLinesAdded = false;
+
+        String line;
+        while ((line = reader.readLine()) != null) {
+          currentLine++;
+          window.add(line);
+          newLinesAdded = true;
+
+          if (window.size() >= CHUNK_LINES) {
+            processChunk(file, displayPath, window, windowStartLine, currentLine, filter, embeddingsService);
+            int toRemove = Math.min(STEP_LINES, window.size());
+            window.subList(0, toRemove).clear();
+            windowStartLine += toRemove;
+            newLinesAdded = false;
+          }
+        }
+
+        if (newLinesAdded && !window.isEmpty()) {
+          processChunk(file, displayPath, window, windowStartLine, currentLine, filter, embeddingsService);
+        }
       }
 
     } catch (Exception e) {

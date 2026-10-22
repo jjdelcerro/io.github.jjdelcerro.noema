@@ -79,4 +79,13 @@
 19. [ ] hay que repasar las especificaciones de las herramientas y las funciones de fsModule para comprobar
     que se indica que las rutas tienen que ser absolutas.
 
+20. [ ] Poder interrumpirt la cadena de pensamiento/ejecucion de herramientas. Digo algo, se pone ha hacer cosas y no tengo claro como interrumpirlo.
+
+ 
+21. [ ] Sobre la implementacion de GrepUtils y su uso en las notas.
+    Sin límites. GrepUtils acumula todos los matches en un ArrayList y no limita ni ficheros ni líneas. Se perdieron MAX_FILES_TO_SCAN=100 y MAX_LIMIT=20. Devuelves Iterable pero materializas la lista entera: la interfaz miente, y un patrón amplio puede llevarse por delante la memoria y volcar miles de líneas al modelo.
+
+22. [ ] Introducir el contexto de chunker en el GrepUtils, podrian ser de 
+    lineas, bloques, o ventana deslizante (como el del FileFuzzySearchUtils)
+    Probablemente con esto el FileFuzzySearchUtils ya quede obsoleto.
 

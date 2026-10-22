@@ -151,7 +151,7 @@ public class ProjectedMemoryImpl implements ProjectedMemory {
 
     // 5. Volcado de depuracion en disco
     Timestamp tm = Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC));
-    Path debugPath = agent.getPaths().getTempFolder().resolve("context-" + this.subchannel + "-" + tm.toString() + ".json");
+    Path debugPath = agent.getPaths().getTempFolder().resolve("projected-memory/context-" + this.subchannel + "-" + tm.toString() + ".json");
     dump(debugPath, projectedMessages);
 
     this.setLastInteractionTime(LocalDateTime.now());
@@ -188,7 +188,7 @@ public class ProjectedMemoryImpl implements ProjectedMemory {
         contentsBuilder.append("\n\n");
       }
     }
-
+    this.agent.getConsole(subchannel).printSystemLog(contentsBuilder.toString());
     Map<String, Object> responseMap = Map.of(
             "event_time", DateUtils.now(),
             "current_time", DateUtils.now(),

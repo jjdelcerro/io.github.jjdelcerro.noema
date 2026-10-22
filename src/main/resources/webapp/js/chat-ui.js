@@ -6,6 +6,23 @@ import { sendMessage, fetchHistory, fetchContextXml, connectSSE } from './api.js
 import { showToast } from './toast.js';
 import { handleEditorOpen, handleEditorApply, handleEditorSetupDone, handleEditorAddAnnotation, handleEditorClearAnnotations } from './editor-ui.js';
 
+const ICON_FOLDER = 'images/current/';
+
+/**
+ * Devuelve el marcado de un icono de la carpeta activa.
+ * El color va fijado dentro del SVG, asi que aqui solo se controla el tamano.
+ */
+function iconHtml(name) {
+    return '<img class="icon" src="' + ICON_FOLDER + name + '.svg" width="18" height="18" alt="">';
+}
+
+/**
+ * Icono del boton de colapsar: abajo si el bloque esta expandido, derecha si esta contraido.
+ */
+function chevronIcon(expanded) {
+    return iconHtml(expanded ? 'chevron-down' : 'chevron-right');
+}
+
 let currentTerminalId = '';
 let activeSseControl = null;
 
@@ -85,7 +102,7 @@ export function initChatUI(initialTerminalId) {
     messageInput.addEventListener('input', adjustTextareaHeight);
 
     messageInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
             handleSend();
         }
@@ -303,9 +320,9 @@ export function appendStreamChunk(type, chunk) {
                 block.classList.add('collapsed');
             }
             const collapseButton = document.createElement('button');
-            collapseButton.className = 'collapse-message-button';
+            collapseButton.className = 'icon-btn collapse-message-button';
             collapseButton.type = 'button';
-            collapseButton.textContent = isThinking ? '⌄' : '›';
+            collapseButton.innerHTML = chevronIcon(isThinking);
             collapseButton.title = isThinking ? 'Contraer mensaje' : 'Expandir mensaje';
             collapseButton.setAttribute('aria-label', isThinking ? 'Contraer mensaje' : 'Expandir mensaje');
             collapseButton.setAttribute('aria-expanded', isThinking ? 'true' : 'false');
@@ -314,9 +331,9 @@ export function appendStreamChunk(type, chunk) {
         }
 
         const copyButton = document.createElement('button');
-        copyButton.className = 'copy-message-button';
+        copyButton.className = 'icon-btn copy-message-button';
         copyButton.type = 'button';
-        copyButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="5" width="10" height="13" rx="2"></rect><path d="M15 5V4a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h2"></path></svg>';
+        copyButton.innerHTML = '<img class="icon" src="images/current/copy.svg" width="18" height="18" alt="">';
         copyButton.title = 'Copiar';
         copyButton.setAttribute('aria-label', 'Copiar mensaje como Markdown');
         copyButton.addEventListener('click', () => copyBlockAsMarkdown(block, copyButton));
@@ -359,7 +376,7 @@ export function finishStreaming() {
         activeStreamingBlock.classList.add('collapsed');
         const collapseButton = activeStreamingBlock.querySelector('.collapse-message-button');
         if (collapseButton) {
-            collapseButton.textContent = '›';
+            collapseButton.innerHTML = chevronIcon(false);
             collapseButton.title = 'Expandir mensaje';
             collapseButton.setAttribute('aria-expanded', 'false');
         }
@@ -405,9 +422,9 @@ export function addMessage(type, content) {
         if (type === 'log' || type === 'error' || type === 'thinking') {
             block.classList.add('collapsed');
             const collapseButton = document.createElement('button');
-            collapseButton.className = 'collapse-message-button';
+            collapseButton.className = 'icon-btn collapse-message-button';
             collapseButton.type = 'button';
-            collapseButton.textContent = '›';
+            collapseButton.innerHTML = chevronIcon(false);
             collapseButton.title = 'Expandir mensaje';
             collapseButton.setAttribute('aria-label', 'Expandir mensaje');
             collapseButton.setAttribute('aria-expanded', 'false');
@@ -417,9 +434,9 @@ export function addMessage(type, content) {
 
         // Botón de copiar como Markdown
         const copyButton = document.createElement('button');
-        copyButton.className = 'copy-message-button';
+        copyButton.className = 'icon-btn copy-message-button';
         copyButton.type = 'button';
-        copyButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="5" width="10" height="13" rx="2"></rect><path d="M15 5V4a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h2"></path></svg>';
+        copyButton.innerHTML = '<img class="icon" src="images/current/copy.svg" width="18" height="18" alt="">';
         copyButton.title = 'Copiar';
         copyButton.setAttribute('aria-label', 'Copiar mensaje como Markdown');
         copyButton.addEventListener('click', () => copyBlockAsMarkdown(block, copyButton));
@@ -495,7 +512,7 @@ async function copyText(text) {
 
 function toggleMessageBlock(block, button) {
     const collapsed = block.classList.toggle('collapsed');
-    button.textContent = collapsed ? '›' : '⌄';
+    button.innerHTML = chevronIcon(!collapsed);
     button.title = collapsed ? 'Expandir mensaje' : 'Contraer mensaje';
     button.setAttribute('aria-label', collapsed ? 'Expandir mensaje' : 'Contraer mensaje');
     button.setAttribute('aria-expanded', String(!collapsed));
