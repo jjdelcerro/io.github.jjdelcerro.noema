@@ -8,7 +8,6 @@ import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperat
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 
 public class TemporalPerceptionOperation implements ProjectedMemoryOperation {

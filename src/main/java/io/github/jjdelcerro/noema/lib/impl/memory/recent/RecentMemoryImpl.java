@@ -405,4 +405,8 @@ public class RecentMemoryImpl implements RecentMemory {
     return this.lastTurnId;
   }
   
+  @Override
+  public int getMaxTurns() {
+    return this.getConsolidationThreshold();
+  }
 }

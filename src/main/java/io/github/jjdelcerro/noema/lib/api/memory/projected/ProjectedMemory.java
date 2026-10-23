@@ -48,4 +48,7 @@ public interface ProjectedMemory {
           ConsolidateMemory consolidateMemory,
           String systemPrompt
   );
+  
+  public ContextZoning getContextZoning();
+
 }

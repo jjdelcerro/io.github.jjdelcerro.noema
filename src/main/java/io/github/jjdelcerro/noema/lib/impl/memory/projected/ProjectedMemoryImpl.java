@@ -44,11 +44,12 @@ import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperat
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperationFactory;
 import static io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService.PRIORITY_HIGH;
 import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.ContextZoning;
 
 public class ProjectedMemoryImpl implements ProjectedMemory {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ProjectedMemoryImpl.class);
-
+  
   private final Agent agent;
   private final Function<String, AgentTool> toolSupplier;
   private final String subchannel;
@@ -56,17 +57,22 @@ public class ProjectedMemoryImpl implements ProjectedMemory {
 
   private LocalDateTime lastInteractionTime;
   private long lastInteractionTurn;
+  
+  private ContextZoning contextZoning;
 
   public ProjectedMemoryImpl(
           Agent agent,
           Function<String, AgentTool> toolSupplier,
-          String subchannel
+          String subchannel,
+          int maxTurns
   ) {
     this.agent = agent;
     this.toolSupplier = toolSupplier;
     this.subchannel = subchannel;
     this.operations = new ArrayList<>();
     this.lastInteractionTurn = 0L;
+    
+    this.contextZoning = new ContextZoningImpl((int) (maxTurns*1.5));
 
     this.initOperations();
     this.load();
@@ -371,4 +377,10 @@ public class ProjectedMemoryImpl implements ProjectedMemory {
 
     return gson.toJson(projectedMessages);
   }  
+
+  @Override
+  public ContextZoning getContextZoning() {
+    return this.contextZoning;
+  }
+  
 }

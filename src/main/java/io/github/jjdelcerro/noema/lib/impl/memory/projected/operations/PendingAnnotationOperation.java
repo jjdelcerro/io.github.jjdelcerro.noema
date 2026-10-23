@@ -4,6 +4,8 @@ import com.google.gson.JsonObject;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import io.github.jjdelcerro.noema.lib.api.AgentTool;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.ContextZoning;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.ContextZoning.ContextZoneType;
 import io.github.jjdelcerro.noema.lib.impl.tools.AbstractPaginatedAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.AnnotateObservationTool;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemory;
@@ -20,19 +22,16 @@ import java.util.Set;
 
 public class PendingAnnotationOperation implements ProjectedMemoryOperation {
 
-    private static final int DEFAULT_MESSAGES_TO_KEEP = 20;
     private static final int MINIMUM_SIZE_FOR_TRIM = 1024;
     private static final int PRIORITY = 20;
 
-    private final int messagesToKeep;
     private final int minimumSizeForTrim;
 
     public PendingAnnotationOperation() {
-        this(DEFAULT_MESSAGES_TO_KEEP, MINIMUM_SIZE_FOR_TRIM);
+        this(MINIMUM_SIZE_FOR_TRIM);
     }
 
-    public PendingAnnotationOperation(int messagesToKeep, int minimumSizeForTrim) {
-        this.messagesToKeep = messagesToKeep;
+    public PendingAnnotationOperation(int minimumSizeForTrim) {
         this.minimumSizeForTrim = minimumSizeForTrim;
     }
 
@@ -84,14 +83,64 @@ Herramienta: {annotate_observation}(resource_id, note)
         notifications.add(warning);
     }
 
+//    private List<String> detectPendingAnnotationResources(ProjectedMemory memory, List<ChatMessage> projectedMessages) {
+//        int total = projectedMessages.size();
+//        if (total < this.messagesToKeep) {
+//            return Collections.emptyList();
+//        }
+//
+//        int riskStartIdx = total - this.messagesToKeep;
+//        int riskEndIdx = total - (this.messagesToKeep / 2);
+//
+//        // 1. Localizar el indice de la ultima nota registrada para cada recurso
+//        Map<String, Integer> lastAnnotatedIdx = new HashMap<>();
+//        for (int i = 0; i < total; i++) {
+//            ChatMessage msg = projectedMessages.get(i);
+//            if (msg instanceof ToolExecutionResultMessage toolMsg) {
+//                AgentTool tool = memory.getTool(toolMsg.toolName());
+//                if (tool instanceof AnnotateObservationTool annotateTool) {
+//                    String resourceId = annotateTool.getResourceIdFromResultMessage(toolMsg);
+//                    if (StringUtils.isNotBlank(resourceId)) {
+//                        lastAnnotatedIdx.put(resourceId, i);
+//                    }
+//                }
+//            }
+//        }
+//
+//        // 2. Detectar lecturas de recursos pesados sin anotar en la zona de riesgo
+//        Set<String> pending = new LinkedHashSet<>();
+//        for (int i = riskStartIdx; i < riskEndIdx; i++) {
+//            ChatMessage msg = projectedMessages.get(i);
+//            if (msg instanceof ToolExecutionResultMessage toolMsg) {
+//                AgentTool tool = memory.getTool(toolMsg.toolName());
+//                if (tool instanceof AbstractPaginatedAgentTool paginatedTool) {
+//                    String text = toolMsg.text();
+//                    if (text != null && text.length() > this.minimumSizeForTrim) {
+//                        String resourceId = paginatedTool.getResourceIdFromResultMessage(toolMsg);
+//                        if (StringUtils.isNotBlank(resourceId)) {
+//                            int lastAnnotated = lastAnnotatedIdx.getOrDefault(resourceId, -1);
+//                            if (i > lastAnnotated) {
+//                                pending.add(resourceId);
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+//        return new ArrayList<>(pending);
+//    }
+
     private List<String> detectPendingAnnotationResources(ProjectedMemory memory, List<ChatMessage> projectedMessages) {
         int total = projectedMessages.size();
-        if (total < this.messagesToKeep) {
+        
+        ContextZoning zoning = memory.getContextZoning();
+        ContextZoning.ContextZone riskZone = zoning.getZone(ContextZoneType.RISK, total);
+
+        // Si no hay zona de riesgo, todo el contexto cae en la zona segura.
+        if (riskZone.isEmpty()) {
             return Collections.emptyList();
         }
-
-        int riskStartIdx = total - this.messagesToKeep;
-        int riskEndIdx = total - (this.messagesToKeep / 2);
 
         // 1. Localizar el indice de la ultima nota registrada para cada recurso
         Map<String, Integer> lastAnnotatedIdx = new HashMap<>();
@@ -110,7 +159,7 @@ Herramienta: {annotate_observation}(resource_id, note)
 
         // 2. Detectar lecturas de recursos pesados sin anotar en la zona de riesgo
         Set<String> pending = new LinkedHashSet<>();
-        for (int i = riskStartIdx; i < riskEndIdx; i++) {
+        for (int i = riskZone.min(); i <= riskZone.max(); i++) {
             ChatMessage msg = projectedMessages.get(i);
             if (msg instanceof ToolExecutionResultMessage toolMsg) {
                 AgentTool tool = memory.getTool(toolMsg.toolName());

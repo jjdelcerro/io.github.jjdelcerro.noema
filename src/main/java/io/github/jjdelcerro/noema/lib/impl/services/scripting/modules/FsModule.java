@@ -27,10 +27,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import org.apache.tika.Tika;
@@ -72,7 +75,9 @@ public class FsModule extends AbstractScriptModule {
 • write(path, String|Iterable): void (auto-mkdir, copia de seguridad automática en RCS)
   -> agent.fs.write('out.txt', ['línea 1', 'línea 2'])
 • searchAndReplace(path, oldText, newText): SearchAndReplaceResult(status, path, strategy, message, preview, startLine, replacedLineCount)
-  -> def res = agent.fs.searchAndReplace('f.txt', old, new); println res.status == 'success' ? res.preview : res.messag         
+  -> def res = agent.fs.searchAndReplace('f.txt', old, new); println res.status == 'success' ? res.preview : res.messag
+• delete(path): Map(status, message) (ficheros y carpetas VACIAS; nunca recursivo; copia previa en RCS si esta activo)
+  -> println agent.fs.delete('out.txt').status         
 """;
   }
 
@@ -153,14 +158,7 @@ public class FsModule extends AbstractScriptModule {
         Files.createDirectories(path.getParent());
       }
       // Automatic RCS backup before overwrite
-      if (Files.exists(path) && agent.getAccessControl().isEnabledRCSBackup()) {
-        RCSManager rcsManager = RCSLocator.getRCSManager();
-        CheckinOptions options = rcsManager.createCheckinOptions(path);
-        options.setAuthor("ScriptExecution");
-        options.setInit(true);
-        RCSCommand<CheckinOptions> ci = rcsManager.create(options);
-        ci.execute(options);
-      }
+      backupInRcs(path);
       if (content instanceof Iterable<?> iterable) {
         List<String> lines = new ArrayList<>();
         for (Object item : iterable) {
@@ -358,6 +356,94 @@ public class FsModule extends AbstractScriptModule {
             oldText,
             newText
     );
+  }
+
+  /**
+   * Deletes a regular file, after checking it against the sandbox policy and
+   * registering its content in JavaRCS when the backup is enabled.
+   *
+   * <p>
+   * Only regular files are deleted on purpose: a recursive directory removal
+   * triggered from a script is a footgun, not a feature. Empty directories are
+   * not removed either; the caller can ask for a file and the directory stays.
+   *
+   * @param rawPath path of the file to delete
+   * @return map with status (success|not_found|denied|error), path and message
+   */
+  public Map<String, Object> delete(String rawPath) {
+    Map<String, Object> result = new LinkedHashMap<>();
+    result.put("path", rawPath);
+    Path path;
+    try {
+      path = validatePath(rawPath, AgentAccessControl.AccessMode.PATH_ACCESS_WRITE);
+    } catch (SecurityException e) {
+      return deleteResult(result, "denied", e.getMessage());
+    }
+    if (!Files.exists(path)) {
+      return deleteResult(result, "not_found", "File does not exist: " + rawPath);
+    }
+    boolean directory = Files.isDirectory(path);
+    if (directory) {
+      long entries = countDirectoryEntries(path);
+      if (entries < 0) {
+        return deleteResult(result, "error", "Cannot inspect directory: " + rawPath);
+      }
+      if (entries > 0) {
+        return deleteResult(result, "denied",
+                "Refusing to delete a non-empty directory (" + entries + " entries): " + rawPath);
+      }
+    }
+    try {
+      if (!directory) {
+        backupInRcs(path);
+      }
+      Files.delete(path);
+      return deleteResult(result, "success", (directory ? "Directory" : "File") + " deleted: " + rawPath);
+    } catch (IOException e) {
+      return deleteResult(result, "error", "Error deleting " + rawPath + " (" + e.getMessage() + ")");
+    }
+  }
+
+  /**
+   * Counts the entries of a directory without following symbolic links.
+   *
+   * @param path directory to inspect
+   * @return number of entries, or -1 if the directory cannot be read
+   */
+  private long countDirectoryEntries(Path path) {
+    long count = 0;
+    try (DirectoryStream<Path> children = Files.newDirectoryStream(path)) {
+      for (Path ignored : children) {
+        count++;
+      }
+      return count;
+    } catch (IOException e) {
+      return -1;
+    }
+  }
+
+  /**
+   * Registers the current content of a file in JavaRCS, when the backup is
+   * enabled. Does nothing if the file does not exist.
+   *
+   * @param path file to back up
+   */
+  private void backupInRcs(Path path) {
+    if (!Files.exists(path) || !agent.getAccessControl().isEnabledRCSBackup()) {
+      return;
+    }
+    RCSManager rcsManager = RCSLocator.getRCSManager();
+    CheckinOptions options = rcsManager.createCheckinOptions(path);
+    options.setAuthor("ScriptExecution");
+    options.setInit(true);
+    RCSCommand<CheckinOptions> ci = rcsManager.create(options);
+    ci.execute(options);
+  }
+
+  private Map<String, Object> deleteResult(Map<String, Object> result, String status, String message) {
+    result.put("status", status);
+    result.put("message", message);
+    return result;
   }
 
 }

@@ -102,6 +102,10 @@ public class EmbeddingsService extends AbstractAgentService {
         this.embeddingModel.getModel(); // Fuerza que se carge el modelo de embedding.
         this.running = true;
     }
+    
+    public EmbeddingModel getDefaultModel() {
+      return this.embeddingModel;
+    }
 
     public synchronized float[] embed(String text) {
         if (StringUtils.isBlank(text)) {
@@ -265,7 +269,7 @@ public class EmbeddingsService extends AbstractAgentService {
      */
     public static class Embedding {
 
-        private static final int TEXT_CHUNK_SIZE = 1024;
+        private static final int TEXT_CHUNK_SIZE = 300;
 
         private float[] data; // contiene todos los floats concatenados + metadatos al final
         private int dimension;
@@ -442,6 +446,10 @@ public class EmbeddingsService extends AbstractAgentService {
         public float[] getFloats() {
             return this.data;
         }
-    }
 
+        public double cosineSimilarity(Embedding other) {
+            // 1.0 - distancia = similitud real (donde 1.0 es coincidencia exacta)
+            return 1.0 - this.cosineDistance(other);
+        }
+    }    
 }

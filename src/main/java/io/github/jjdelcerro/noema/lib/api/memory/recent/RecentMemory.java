@@ -54,4 +54,6 @@ public interface RecentMemory {
     void save();
 
     long getLastTurnId();
+    
+    int getMaxTurns();
 }

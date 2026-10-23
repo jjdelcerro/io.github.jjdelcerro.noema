@@ -153,7 +153,8 @@ public class ReasoningServiceImpl
     ProjectedMemory projectedMemory = new ProjectedMemoryImpl(
             agent,
             this::getAvailableTool,
-            subchannel
+            subchannel,
+            this.getRecentMemory(subchannel).getMaxTurns()
     );
     return projectedMemory;
   }
@@ -849,7 +850,8 @@ public class ReasoningServiceImpl
     ProjectedMemory ephemeral = new ProjectedMemoryImpl(
             this.agent,
             this::getAvailableTool,
-            subchannel
+            subchannel,
+            recentMemory.getMaxTurns()
     );
 
     return ephemeral.getMessagesAsJson(recentMemory, consolidateMemory, systemPrompt);
