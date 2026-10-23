@@ -32,7 +32,7 @@ are 1-based.
 
 Use this when the user refers to "this", "the selected code" or similar
 deictic expressions, and you need the exact text rather than only the
-line range. For the range alone, editor_get_state is enough. Takes no
+line range. For the range alone, ui_get_state is enough. Takes no
 parameters.""");
   }
 

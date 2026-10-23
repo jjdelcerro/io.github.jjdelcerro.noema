@@ -13,6 +13,7 @@
 import { showToast } from './toast.js';
 import { registerAreaView } from './area-tabs.js';
 import { confirmDiscardDialog } from './discard-dialog.js';
+import { pushComponentState } from './ui-state.js';
 
 const NOTES_ENDPOINT = '/api/notes';
 
@@ -41,7 +42,10 @@ export function initNoteEditor() {
     const saveButton = document.getElementById('btn-save-note');
 
     if (titleInput) {
-        titleInput.addEventListener('input', refreshDirtyState);
+        titleInput.addEventListener('input', () => {
+            refreshDirtyState();
+            pushNoteState();
+        });
     }
     if (tagsInput) {
         tagsInput.addEventListener('input', refreshDirtyState);
@@ -180,6 +184,7 @@ function applyNote(note, highlight) {
 
     updateStatus();
     refreshDirtyState();
+    pushNoteState({ immediate: true });
     revealHighlight(highlight);
 }
 
@@ -392,6 +397,7 @@ async function closeNote() {
     updateStatus();
     refreshDirtyState();
     setNotePanelVisible(false);
+    pushNoteState({ immediate: true });
     return true;
 }
 
@@ -428,6 +434,45 @@ function updateNoteWrapButton() {
 }
 
 /**
+ * Construye el estado de la nota abierta que se envia al servidor.
+ *
+ * Las lineas van 0-based, tal como las da Ace: el servidor las normaliza a
+ * 1-based en el unico borde de entrada (HandlerPostUIState).
+ *
+ * @returns {Object|null} snapshot del componente o null si no hay nota abierta
+ */
+function buildNoteSnapshot() {
+    if (!current) {
+        return null;
+    }
+    const snapshot = {
+        title: readTitle() || current.title || '',
+        path: current.path || relativePathOf(current),
+        cursorLine: null,
+        selectionStartLine: null,
+        selectionEndLine: null
+    };
+    if (aceEditor) {
+        const range = aceEditor.getSelectionRange();
+        snapshot.cursorLine = range.start.row;
+        if (!range.isEmpty()) {
+            snapshot.selectionStartLine = range.start.row;
+            snapshot.selectionEndLine = range.end.row;
+        }
+    }
+    return snapshot;
+}
+
+/**
+ * Encola el estado de la nota abierta para el push al servidor.
+ *
+ * @param {{immediate?: boolean}} [options] immediate salta el debounce
+ */
+function pushNoteState(options = {}) {
+    pushComponentState('notes', buildNoteSnapshot(), options);
+}
+
+/**
  * Crea la instancia de Ace la primera vez que hace falta.
  */
 function ensureEditor() {
@@ -449,6 +494,9 @@ function ensureEditor() {
         highlightActiveLine: true
     });
     aceEditor.session.on('change', refreshDirtyState);
+    // El cursor y la seleccion cambian a cada tecla o clic: el push agrupa
+    // los eventos con debounce y descarta los snapshots repetidos.
+    aceEditor.selection.on('changeSelection', () => pushNoteState());
 }
 
 function refreshDirtyState() {

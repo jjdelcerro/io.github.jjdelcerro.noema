@@ -2,7 +2,7 @@
  * Módulo de gestión del editor Ace: fachada pública del editor.
  *
  * Toda la app que necesite algo del editor importa de aquí. Los módulos
- * internos (editor-actions.js, editor-state.js) no se importan desde
+ * internos (editor-actions.js, ui-state.js) no se importan desde
  * fuera de esta fachada.
  *
  * Un único `ace.edit()` en el DOM, N `EditSession` en memoria, una por
@@ -17,7 +17,7 @@ import {
     formatActiveFile,
     fixImports
 } from './editor-actions.js';
-import { pushState, initStateBeforeUnload } from './editor-state.js';
+import { pushComponentState, initUIStateEvents } from './ui-state.js';
 import { postEditorSetupProject } from './api.js';
 import { confirmDiscardDialog } from './discard-dialog.js';
 
@@ -123,7 +123,7 @@ export function initEditorUI() {
     createToolbar();
     registerKeyboardShortcuts();
     registerEditorListeners();
-    initStateBeforeUnload();
+    initUIStateEvents();
 
     if (typeof ResizeObserver !== 'undefined' && !resizeObserver) {
         resizeObserver = new ResizeObserver(() => {
@@ -760,7 +760,14 @@ function confirmCloseDirty(filePath) {
 function scheduleStatePush(options = {}) {
     const snapshot = buildStateSnapshot();
     persistTabs(snapshot);
-    pushState(snapshot, options);
+    pushComponentState('editor', {
+        openFiles: snapshot.openFiles,
+        activeFile: snapshot.activeFile,
+        cursorLine: snapshot.cursorLine,
+        selectionStartLine: snapshot.selectionStartLine,
+        selectionEndLine: snapshot.selectionEndLine,
+        selectionText: snapshot.selectionText
+    }, options);
 }
 
 function buildStateSnapshot() {
@@ -778,11 +785,12 @@ function buildStateSnapshot() {
         const cursor = editor.getCursorPosition();
         const selection = editor.getSelectionRange();
         cursorLine = cursor.row;
-        selectionStartLine = selection.start.row;
-        selectionEndLine = selection.end.row;
-        // Solo enviamos el texto si hay una seleccion real (no un simple cursor).
+        // Un cursor sin seleccion es un rango colapsado: no debe viajar como
+        // seleccion, o el prompt anuncia lineas seleccionadas que no existen.
         if (selection.start.row !== selection.end.row
                 || selection.start.column !== selection.end.column) {
+            selectionStartLine = selection.start.row;
+            selectionEndLine = selection.end.row;
             selectionText = editor.getSelectedText();
         }
     }

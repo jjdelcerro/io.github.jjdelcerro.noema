@@ -390,8 +390,8 @@ export async function saveFileContent(filePath, content) {
  * @param {Object} payload - Snapshot construido en editor-ui.js.
  * @returns {Promise<Object>}
  */
-export async function postEditorState(payload) {
-  const response = await fetch(`${API_BASE}/api/editor/state`, {
+export async function postUIState(payload) {
+  const response = await fetch(`${API_BASE}/api/ui/state`, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(payload)

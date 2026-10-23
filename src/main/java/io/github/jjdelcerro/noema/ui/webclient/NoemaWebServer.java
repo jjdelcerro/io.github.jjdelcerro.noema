@@ -2,7 +2,7 @@ package io.github.jjdelcerro.noema.ui.webclient;
 
 import com.google.gson.JsonObject;
 import io.github.jjdelcerro.noema.ui.webclient.workspace.editor.tools.EditorOpenFileTool;
-import io.github.jjdelcerro.noema.ui.webclient.workspace.editor.EditorState;
+import io.github.jjdelcerro.noema.ui.webclient.state.UIState;
 import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.AgentLocator;
 import io.github.jjdelcerro.noema.lib.api.AgentManager;
@@ -31,13 +31,13 @@ import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerPostConfigPath;
 import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerPostEditorDiagnostics;
 import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerPostEditorFiximports;
 import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerPostEditorFormat;
-import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerPostEditorState;
+import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerPostUIState;
 import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerPostFileContent;
 import io.github.jjdelcerro.noema.ui.webclient.handlers.HandlerPostSetupProject;
-import io.github.jjdelcerro.noema.ui.webclient.workspace.editor.EditorAwarenessOperationFactory;
+import io.github.jjdelcerro.noema.ui.webclient.state.UIAwarenessOperationFactory;
+import io.github.jjdelcerro.noema.ui.webclient.state.tools.UIGetStateTool;
 import io.github.jjdelcerro.noema.ui.webclient.workspace.editor.EditorSelection;
 import io.github.jjdelcerro.noema.ui.webclient.workspace.editor.tools.EditorGetCurrentSelectionTool;
-import io.github.jjdelcerro.noema.ui.webclient.workspace.editor.tools.EditorGetStateTool;
 import io.github.jjdelcerro.noema.ui.webclient.workspace.editor.tools.EditorAddAnnotationTool;
 import io.github.jjdelcerro.noema.ui.webclient.workspace.editor.tools.EditorClearAnnotationsTool;
 import io.github.jjdelcerro.noema.ui.webclient.workspace.editor.tools.EditorInsertOrReplaceTool;
@@ -64,7 +64,7 @@ public class NoemaWebServer {
   private final int port;
   private final String address;
   private final Map<String, SseAgentConsole> activeConsoles;
-  private final Map<String, EditorState> editorStates;
+  private final Map<String, UIState> uiStates;
   private Javalin app;
 
   public NoemaWebServer(Agent agent, String address, int port) {
@@ -72,7 +72,7 @@ public class NoemaWebServer {
     this.port = port;
     this.address = address;
     this.activeConsoles = new ConcurrentHashMap<>();
-    this.editorStates = new ConcurrentHashMap<>();
+    this.uiStates = new ConcurrentHashMap<>();
   }
 
   /**
@@ -88,7 +88,7 @@ public class NoemaWebServer {
     this.agent.set("webserver", this);
 
     AgentManager manager = AgentLocator.getAgentManager();
-    manager.registerProjectedMemoryOperation(new EditorAwarenessOperationFactory());
+    manager.registerProjectedMemoryOperation(new UIAwarenessOperationFactory());
 
     URL webappResource = this.getClass().getResource("/webapp");
     Path rootPath = this.agent.getPaths().getAgentFolder().resolve("var/webapp").toAbsolutePath();
@@ -129,7 +129,7 @@ public class NoemaWebServer {
     this.app.get("/api/files/tree", new HandlerGetFilesTree(agent));
 
     // 6. Editor Web: estado y acciones sobre ficheros
-    this.app.post("/api/editor/state", new HandlerPostEditorState(agent));
+    this.app.post("/api/ui/state", new HandlerPostUIState(agent));
     this.app.post("/api/editor/diagnostics", new HandlerPostEditorDiagnostics(agent));
     this.app.post("/api/editor/format", new HandlerPostEditorFormat(agent));
     this.app.post("/api/editor/fiximports", new HandlerPostEditorFiximports(agent));
@@ -150,7 +150,7 @@ public class NoemaWebServer {
     ReasoningService reasoningService = (ReasoningService) this.agent.getService(ReasoningService.NAME);
     reasoningService.addTool(new EditorOpenFileTool(this.agent));
     reasoningService.addTool(new EditorGetCurrentSelectionTool(this.agent));
-    reasoningService.addTool(new EditorGetStateTool(this.agent));
+    reasoningService.addTool(new UIGetStateTool(this.agent));
     reasoningService.addTool(new EditorInsertOrReplaceTool(this.agent));
     reasoningService.addTool(new EditorAddAnnotationTool(this.agent));
     reasoningService.addTool(new EditorClearAnnotationsTool(this.agent));
@@ -206,38 +206,39 @@ public class NoemaWebServer {
     client.keepAlive();
   }
 
-  public Map<String, EditorState> getEditorStates() {
-    return this.editorStates;
+  public Map<String, UIState> getUIStates() {
+    return this.uiStates;
   }
 
   /**
-   * Devuelve el ultimo estado conocido del editor para el terminal indicado, o
+   * Devuelve el ultimo estado conocido de la UI para el terminal indicado, o
    * null si no hay ninguno. Uso interno del agente.
    *
    * @param terminalId
    * @return
    */
-  public EditorState getEditorState(String terminalId) {
-    return this.editorStates.get(terminalId);
+  public UIState getUIState(String terminalId) {
+    return this.uiStates.get(terminalId);
   }
 
   /**
-   * Devuelve la seleccion activa del usuario para un subcanal, o null si no hay
-   * estado, no hay fichero activo o no hay seleccion.
+   * Devuelve la seleccion activa del usuario en el editor de ficheros para un
+   * subcanal, o null si no hay estado, no hay fichero activo o no hay seleccion.
    */
   public EditorSelection getCurrentSelection(String subchannel) {
-    EditorState state = this.editorStates.get(subchannel);
+    UIState state = this.uiStates.get(subchannel);
     if (state == null) {
       return null;
     }
-    if (state.getSelectionStartLine() == null || state.getSelectionEndLine() == null) {
+    UIState.Editor editor = state.getEditor();
+    if (editor == null || !editor.hasSelection()) {
       return null;
     }
     EditorSelection selection = new EditorSelection();
-    selection.setFile(state.getActiveFile());
-    selection.setSelectionStartLine(state.getSelectionStartLine());
-    selection.setSelectionEndLine(state.getSelectionEndLine());
-    selection.setText(state.getSelectionText());
+    selection.setFile(editor.getActiveFile());
+    selection.setSelectionStartLine(editor.getSelectionStartLine());
+    selection.setSelectionEndLine(editor.getSelectionEndLine());
+    selection.setText(editor.getSelectionText());
     return selection;
   }
 
