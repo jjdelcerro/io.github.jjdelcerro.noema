@@ -22,7 +22,7 @@ const PAGE_SIZE = 50;
 
 const state = {
     query: '',
-    mode: 'fuzzy',
+    mode: 'glob',
     root: '',
     page: 0,
     result: null
@@ -66,8 +66,13 @@ export function initNotesSearch() {
 
     const mode = document.getElementById('notes-search-mode');
     if (mode) {
+        // El DOM manda. Si el select muestra "Patron", el estado no puede
+        // quedarse en su valor de arranque: sin esta linea, la primera
+        // busqueda tras recargar sale con otro modo y el backend ejecuta un
+        // matcher distinto del que anuncia la interfaz.
+        state.mode = mode.value || state.mode;
         mode.addEventListener('change', () => {
-            state.mode = mode.value || 'fuzzy';
+            state.mode = mode.value || state.mode;
             resetResults();
         });
     }

@@ -4,7 +4,9 @@
  *
  * El arbol se construye de forma diferida, igual que el del workspace: las
  * raices al inicializar y los hijos de cada carpeta cuando el usuario la
- * expande por primera vez.
+ * expande por primera vez. Tras cada reconstruccion se despliegan el ultimo
+ * año y el ultimo mes con notas, de modo que el panel no quede colapsado
+ * cuando la lista se repinta al guardar o al recargar.
  *
  * La apertura de una nota se delega al editor mediante import dinamico, de
  * modo que este modulo no depende de que el editor este cargado todavia.
@@ -80,6 +82,7 @@ async function rebuildTree() {
         }
         host.replaceChildren(instance);
         treeInstance = instance;
+        await expandLatestMonth(instance);
     } catch (error) {
         console.error('Error construyendo el arbol de notas:', error);
         showToast('No se pudo cargar la lista de notas', 'error');
@@ -173,6 +176,66 @@ async function loadChildren(folder) {
     } finally {
         folder.__loaded = true;
     }
+}
+
+/**
+ * Despliega el ultimo año y, dentro de el, el ultimo mes con notas.
+ *
+ * El arbol se reconstruye entero cada vez que cambia el conjunto de notas
+ * (alta, guardado con cambio de carpeta o borrado), y al hacerlo pierde
+ * cualquier expansion previa. Desplegar aqui la rama mas reciente evita que
+ * el panel quede colapsado tras guardar.
+ *
+ * No se fija el ambito de busqueda: eso sigue dependiendo de lo que
+ * seleccione el usuario en el arbol.
+ */
+async function expandLatestMonth(instance) {
+    try {
+        const year = lastFolder(instance.items);
+        if (!year) {
+            return;
+        }
+        await loadChildren(year);
+        const month = lastFolder(year.items);
+        if (!month) {
+            return;
+        }
+        await loadChildren(month);
+        openFolder(year);
+        openFolder(month);
+    } catch (error) {
+        // El auto-despliegue es una comodidad: si falla, el arbol sigue
+        // siendo util con las raices visibles.
+        console.warn('No se pudo desplegar la rama mas reciente:', error);
+    }
+}
+
+/**
+ * Ultima carpeta de una lista de hijos. El componente ordena por nombre
+ * ascendente, asi que el año y el mes mas recientes son los ultimos.
+ */
+function lastFolder(items) {
+    const folders = items.filter((item) => item.type === 'folder');
+    if (!folders.length) {
+        return null;
+    }
+    folders.sort((a, b) => a.name.localeCompare(b.name));
+    return folders[folders.length - 1];
+}
+
+/**
+ * Marca una carpeta como abierta. El componente no expone una API de
+ * expansion: el estado abierto es la clase `opened` del <li>, y ese <li> es
+ * el padre de la lista de la carpeta. La altura se fija en linea porque la
+ * animacion del componente solo se ejecuta en la interaccion del usuario.
+ */
+function openFolder(folder) {
+    const item = folder.list.parentElement;
+    if (!item) {
+        return;
+    }
+    item.classList.add('opened');
+    folder.list.style.height = 'auto';
 }
 
 /**

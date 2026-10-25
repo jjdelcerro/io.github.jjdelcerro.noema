@@ -39,7 +39,7 @@ export function renderNotes(panel) {
         + '        <img class="icon" src="images/current/search.svg" width="18" height="18" alt="">'
         + '      </button>'
         + '      <select id="notes-search-mode" class="notes-search-mode" title="Modo de busqueda">'
-        + '        <option value="glob">Patron</option>'
+        + '        <option value="glob" selected>Patron</option>'
         + '        <option value="exact">Exacta</option>'
         + '        <option value="fuzzy">Difusa</option>'
         + '        <option value="regexp">Exp.regular</option>'
