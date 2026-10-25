@@ -383,22 +383,21 @@
 
 .composer-expand-btn {
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
   height: 24px;
-  padding: 0 8px;
+  padding: 0;
   border: 1px solid var(--line);
   border-radius: 5px;
   background: transparent;
-  color: var(--muted);
-  font: inherit;
-  font-size: 11px;
-  line-height: 1;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease;
 }
 
 .composer-expand-btn:hover {
   background: rgba(255, 255, 255, 0.06);
-  color: var(--ink);
 }
 
 .composer-expand-btn:disabled {
