@@ -1,0 +1,432 @@
+/*
+ * 02. Chrome
+ *
+ * Estructura de la aplicacion: shell, area lateral, cabecera, indicador de estado, toasts y layout del area de trabajo (barra, cuerpo y splitters).
+ * Las areas lateral y superior estan congeladas (seccion 13 del documento de arquitectura).
+ *
+ * Origen: styles.css (2361 lineas), separado por pertenencia en la tarea 19.
+ * Las reglas conservan su orden relativo original. Ningun selector aparece en dos
+ * ficheros, verificado tras el reparto.
+ */
+.app-shell {
+  display: flex;
+  height: 100vh;
+}
+
+.terminal-sidebar {
+  width: 260px;
+  flex: 0 0 260px;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 18px 18px;
+  background: var(--sidebar);
+  border-right: 1px solid var(--line);
+}
+
+.sidebar-top {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.sidebar-toggle {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+}
+
+.sidebar-top > .sidebar-toggle {
+  align-self: flex-end;
+}
+
+.workspace-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--muted);
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.workspace-toggle:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.main-column {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0; 
+}
+
+.main-panel {
+  display: flex;
+  min-width: 0;
+  min-height: 0; 
+  flex: 1;
+}
+
+.app-shell.sidebar-collapsed .terminal-sidebar {
+  display: none;
+}
+
+.app-shell.sidebar-collapsed #btn-collapse-sidebar {
+  display: none;
+}
+
+.app-shell:not(.sidebar-collapsed) #btn-expand-sidebar {
+  display: none;
+}
+
+.mobile-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.brand-mark {
+  width: 31px;
+  height: 31px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 1px solid rgba(184, 160, 255, 0.45);
+  border-radius: 10px;
+  background: rgba(184, 160, 255, 0.1);
+}
+
+.brand-mark i {
+  width: 3px;
+  height: 11px;
+  border-radius: 4px;
+  background: var(--accent);
+  transform: rotate(28deg);
+}
+
+.brand-mark i:nth-child(2) {
+  height: 17px;
+  opacity: 0.75;
+}
+
+.brand-mark i:nth-child(3) {
+  height: 8px;
+  opacity: 0.5;
+}
+
+.brand-mark.small {
+  width: 25px;
+  height: 25px;
+  border-radius: 8px;
+}
+
+.brand-mark.small i {
+  height: 9px;
+}
+
+.brand-mark.small i:nth-child(2) {
+  height: 14px;
+}
+
+.brand-name {
+  font-weight: 700;
+}
+
+.brand-caption {
+  color: var(--faint);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.state-orb {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: #70d39a;
+  box-shadow: 0 0 0 4px rgba(112, 211, 154, 0.1);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+}
+
+.agent-state {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.sidebar-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 8px;
+  color: var(--muted);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sidebar-action:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.work-area {
+  display: flex;
+  flex: 0 0 720px;
+  width: 720px;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  background: var(--sidebar);
+  border-right: 1px solid var(--line);
+}
+
+.area-tabbar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  gap: 6px;
+  padding: 0 10px;
+  min-height: 34px;
+  border-bottom: 1px solid var(--line);
+}
+
+.area-tabbar .tab-button {
+  position: relative;
+  padding: 8px 14px;
+  color: var(--muted);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.area-tabbar .tab-button:hover {
+  color: var(--ink);
+}
+
+.area-tabbar .tab-button.active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.area-tabbar .tab-button.active::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+}
+
+.area-body {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/*
+ * La visibilidad de los paneles la declara workspace.css: el workspace crea un
+ * .workspace-panel por addon y los oculta con hidden. Aqui solo queda el marco.
+ */
+
+.splitter {
+  flex: 0 0 5px;
+  align-self: stretch;
+  cursor: col-resize;
+  background: var(--line);
+  touch-action: none;
+  transition: background 0.15s ease;
+}
+
+.splitter-horizontal {
+  flex: 0 0 5px;
+  cursor: row-resize;
+}
+
+.splitter.dragging {
+  background: var(--accent);
+}
+
+body.no-select * {
+  user-select: none !important;
+}
+
+.app-shell.workspace-collapsed .work-area {
+  display: none;
+}
+
+.app-shell.workspace-collapsed #splitter-workspace {
+  display: none;
+}
+
+.main-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 40px;
+  padding: 0 34px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.mobile-brand {
+  display: none;
+}
+
+.header-tools {
+  display: flex;
+  align-items: center;
+  gap: 19px;
+}
+
+.terminal-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.terminal-input-wrap input {
+  width: 150px;
+  padding: 6px 8px;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  outline: 0;
+  background: var(--surface);
+  font: 11px var(--mono);
+}
+
+.terminal-input-wrap input:focus {
+  border-color: var(--accent2);
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #da6575;
+}
+
+.status-dot.connected {
+  background: #70d39a;
+  box-shadow: 0 0 0 4px rgba(112, 211, 154, 0.1);
+}
+
+.status-dot.connecting {
+  background: #e7bd6c;
+  animation: blink 1.2s infinite;
+}
+
+.status-dot.disconnected {
+  background: #da6575;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.mobile-config-button {
+  display: none;
+}
+
+.toast-container {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 250px;
+  max-width: 400px;
+  padding: 11px 14px;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #242832;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  pointer-events: auto;
+  font-size: 12px;
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.toast.error {
+  background: #48232c;
+}
+
+.toast.info {
+  background: #263052;
+}
+
+.toast.fade-out {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+body:has(.config-panel:not(.hidden))::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 450;
+  background: rgba(4, 5, 8, 0.68);
+  backdrop-filter: blur(3px);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+

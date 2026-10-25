@@ -1,7 +1,10 @@
 /**
- * Modulo de gestion del panel de trabajo (workspace): explorador de
- * archivos (Web Component @webreflection/file-tree) y delegacion al
- * editor para la apertura de ficheros.
+ * Arbol de archivos del explorador (Web Component @webreflection/file-tree).
+ *
+ * Este modulo NO conoce al editor. Cuando el usuario pulsa un fichero avisa
+ * al propietario del arbol mediante el callback onOpenFile que recibe en
+ * initWorkspaceUI; quien decide si eso abre un fichero es el addon del
+ * explorador, que compone arbol y editor. Ver la seccion 11.2.
  *
  * El arbol se construye de forma diferida: las raices al inicializar y al
  * pulsar refrescar, y los hijos de cada carpeta cuando el usuario la
@@ -13,12 +16,10 @@
  * pierde el estado de expansion.
  */
 
-import { showToast } from './toast.js';
-import { openFile as openEditorFile } from './editor-ui.js';
-import { injectTreeStyles } from './tree-styles.js';
-import { treeLabel } from './tree-label.js';
-
-const TREE_ENDPOINT = '/api/files/tree';
+import { showToast } from '../../../../toast.js';
+import { injectTreeStyles } from '../../../../common/tree-styles.js';
+import { treeLabel } from '../../../../common/tree-label.js';
+import { fetchTreeEntries } from '../fsexplorer-api.js';
 
 let TreeClass = null;
 let FolderClass = null;
@@ -26,12 +27,19 @@ let FileClass = null;
 let treeInstance = null;
 let treeHost = null;
 let pathLabel = null;
+let openFileHandler = null;
 
 /**
- * Inicializa el panel del workspace. Es idempotente y silencioso si los
+ * Inicializa el arbol de archivos. Es idempotente y silencioso si los
  * elementos del DOM no existen (por ejemplo en paginas de prueba).
+ *
+ * @param {{onOpenFile?: function({path: string, name: string}): any}} [options]
+ *        onOpenFile recibe la seleccion de un fichero; el arbol no decide
+ *        que hacer con ella
+ * @returns {Promise<void>}
  */
-export async function initWorkspaceUI() {
+export async function initWorkspaceUI(options = {}) {
+    openFileHandler = (typeof options.onOpenFile === 'function') ? options.onOpenFile : null;
     treeHost = document.getElementById('workspace-tree');
     if (!treeHost) {
         return;
@@ -39,7 +47,7 @@ export async function initWorkspaceUI() {
     pathLabel = document.getElementById('workspace-tree-path');
 
     try {
-        const mod = await import('../vendor/file-tree/prod.js');
+        const mod = await import('../../../../../vendor/file-tree/prod.js');
         TreeClass = mod.Tree;
         FolderClass = mod.Folder;
         FileClass = mod.File;
@@ -119,7 +127,29 @@ async function handleTreeClick(event) {
     }
 
     if (action === 'click' && target.type !== 'folder') {
-        event.waitUntil(openEditorFile(target.absolutePath));
+        event.waitUntil(notifySelection(target));
+    }
+}
+
+/**
+ * Avisa al propietario del arbol de que se ha seleccionado un fichero. El
+ * arbol no abre nada: emite la seleccion y quien la recibe decide.
+ *
+ * @param {Object} node nodo del componente con absolutePath y displayName
+ * @returns {Promise<void>}
+ */
+async function notifySelection(node) {
+    if (!openFileHandler) {
+        return;
+    }
+    try {
+        await openFileHandler({
+            path: node.absolutePath,
+            name: node.displayName
+        });
+    } catch (error) {
+        console.error('Error abriendo el fichero seleccionado:', node.absolutePath, error);
+        showToast('No se pudo abrir el fichero', 'error');
     }
 }
 
@@ -184,17 +214,3 @@ function createNode(item) {
     return node;
 }
 
-/**
- * Llama al endpoint del arbol. Sin path devuelve raices virtuales; con
- * path, los hijos directos de esa carpeta.
- */
-async function fetchTreeEntries(path) {
-    const url = path
-        ? `${TREE_ENDPOINT}?path=${encodeURIComponent(path)}`
-        : TREE_ENDPOINT;
-    const response = await fetch(url);
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-    }
-    return await response.json();
-}

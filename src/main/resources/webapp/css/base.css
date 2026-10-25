@@ -1,0 +1,98 @@
+/*
+ * 01. Base
+ *
+ * Variables, reset, tipografia y utilidades de boton. No pertenece a ningun componente.
+ * Ningun componente puede cambiar este fichero para ajustar su aspecto: si necesita algo propio, va en su fichero.
+ *
+ * Origen: styles.css (2361 lineas), separado por pertenencia en la tarea 19.
+ * Las reglas conservan su orden relativo original. Ningun selector aparece en dos
+ * ficheros, verificado tras el reparto.
+ */
+:root {
+  --ink: #e9eaf0;
+  --muted: #9296a5;
+  --faint: #676b7a;
+  --bg: #0d0f13;
+  --sidebar: #111318;
+  --surface: #171a21;
+  --surface2: #1d2029;
+  --line: rgba(255, 255, 255, 0.08);
+  --accent: #b8a0ff;
+  --accent2: #8f71f5;
+  --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: "SFMono-Regular", Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  overflow: hidden;
+  color: var(--ink);
+  background: radial-gradient(circle at 54% -20%, rgba(143, 113, 245, 0.1), transparent 38%), var(--bg);
+  font: 14px/1.5 var(--font);
+}
+
+textarea {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+.icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  padding: 0;
+  color: var(--muted);
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.icon-btn:hover .icon {
+  filter: brightness(1.45);
+}
+
+.icon-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.icon-btn:disabled:hover {
+  background: transparent;
+}
+
+.icon-btn:disabled:hover .icon {
+  filter: none;
+}
+
+.eyebrow {
+  color: var(--faint);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+

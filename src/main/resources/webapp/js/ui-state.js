@@ -10,9 +10,9 @@
  */
 
 import { postUIState } from './api.js';
+import * as storage from './storage.js';
 
 const DEBOUNCE_MS = 350;
-const TERMINAL_STORAGE_KEY = 'noema_terminal_id';
 const ENDPOINT = '/api/ui/state';
 
 /** Componentes pendientes de enviar, indexados por nombre. */
@@ -29,7 +29,7 @@ let flushTimer = null;
  * @returns {string} Identificador del terminal.
  */
 export function getTerminalId() {
-  return localStorage.getItem(TERMINAL_STORAGE_KEY) || 'default';
+  return (storage.read('app') || {}).terminalId || 'default';
 }
 
 /**

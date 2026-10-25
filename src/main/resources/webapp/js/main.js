@@ -1,27 +1,32 @@
 /**
  * Punto de entrada principal de la SPA Noema Web.
+ *
+ * Composition root: junta las piezas y les da el pistoletazo de salida. No
+ * contiene logica de ningun componente.
+ *
+ * El area de trabajo ya no la monta nadie a mano: main crea el workspace,
+ * registra los addons y lo monta. Es el unico sitio que conoce la lista de
+ * addons existentes. Cada addon arranca sus propias piezas.
  */
 
-import { initChatUI, switchTerminal } from './chat-ui.js';
-import { initConfigUI } from './config-ui.js';
-import { initWorkspaceUI } from './workspace-ui.js';
-import { initSplitters, refreshSplitters } from './splitters.js';
-import { initEditorUI, resizeEditor, hasDirtySessions, confirmLeaveWorkspace } from './editor-ui.js';
-import { initAreaTabs, registerAreaView } from './area-tabs.js';
-import { initNotesUI } from './notes-ui.js';
-import { initNoteEditor } from './note-editor.js';
-import { initNotesSearch } from './notes-search.js';
+import { initChatUI, switchTerminal } from './chat/chat-ui.js';
+import { initConfigUI } from './config/config-ui.js';
+import { initSplitters } from './splitters.js';
+import { initUIChrome } from './ui-chrome.js';
+import { initUIStateEvents } from './ui-state.js';
+import { createWorkspace } from './workspace/workspace.js';
+import { createFsExplorerAddon } from './workspace/addons/fsexplorer/fsexplorer-addon.js';
+import { createNotesAddon } from './workspace/addons/notes/notes-addon.js';
+import * as storage from './storage.js';
 
-const STORAGE_KEY = 'noema_terminal_id';
-const SIDEBAR_STORAGE_KEY = 'noema_sidebar_collapsed';
-const WORKSPACE_STORAGE_KEY = 'noema_workspace_collapsed';
 const DEFAULT_TERMINAL_ID = 'default';
 
 document.addEventListener('DOMContentLoaded', () => {
     const terminalInput = document.getElementById('terminal-id');
 
     // 1. Recuperar terminalId guardado o usar valor por defecto
-    const savedTerminalId = localStorage.getItem(STORAGE_KEY) || DEFAULT_TERMINAL_ID;
+    const appState = storage.read('app') || {};
+    const savedTerminalId = appState.terminalId || DEFAULT_TERMINAL_ID;
 
     if (terminalInput) {
         terminalInput.value = savedTerminalId;
@@ -38,96 +43,44 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 2. Inicializar subsistemas
-    initSidebarToggle();
-    initWorkspaceToggle();
+    // 2. Inicializar subsistemas.
+    // El orden importa: los splitters se buscan por id en el documento y
+    // setupSplitter no reintenta, asi que solo se enganchan los que ya existen
+    // cuando corre initSplitters. Los paneles de los addons se construyen en
+    // mount(), de modo que initWorkspace() tiene que ir antes.
+    initUIChrome();
+    initUIStateEvents();
     initChatUI(savedTerminalId);
     initConfigUI();
-    initWorkspaceUI();
-    initEditorUI();
+    initWorkspace();
     initSplitters();
-    initAreaTabs();
-    registerAreaView('workspace', {
-        isDirty: hasDirtySessions,
-        confirmLeave: confirmLeaveWorkspace
+
+    // 3. Liberar el estado pendiente al cerrar o recargar
+    window.addEventListener('pagehide', () => {
+        storage.flush();
     });
-    initNoteEditor();
-    initNotesUI();
-    initNotesSearch();
 });
+
+/**
+ * Crea el workspace sobre el area de trabajo, registra los addons y lo monta.
+ *
+ * @returns {void}
+ */
+function initWorkspace() {
+    const workArea = document.getElementById('work-area');
+    if (!workArea) {
+        return;
+    }
+    const workspace = createWorkspace({ container: workArea });
+    workspace.register(createFsExplorerAddon());
+    workspace.register(createNotesAddon());
+    workspace.mount();
+}
 
 function handleTerminalChange(rawId) {
     const cleanId = rawId.trim();
     if (!cleanId) return;
 
-    localStorage.setItem(STORAGE_KEY, cleanId);
+    storage.update('app', { terminalId: cleanId });
     switchTerminal(cleanId);
-}
-
-function initSidebarToggle() {
-    const shell = document.querySelector('.app-shell');
-    const btnCollapse = document.getElementById('btn-collapse-sidebar');
-    const btnExpand = document.getElementById('btn-expand-sidebar');
-    if (!shell || !btnCollapse || !btnExpand) {
-        return;
-    }
-
-    const collapsed = localStorage.getItem(SIDEBAR_STORAGE_KEY) === 'true';
-    applySidebarState(shell, btnCollapse, btnExpand, collapsed);
-
-    btnCollapse.addEventListener('click', () => {
-        localStorage.setItem(SIDEBAR_STORAGE_KEY, 'true');
-        applySidebarState(shell, btnCollapse, btnExpand, true);
-    });
-
-    btnExpand.addEventListener('click', () => {
-        localStorage.setItem(SIDEBAR_STORAGE_KEY, 'false');
-        applySidebarState(shell, btnCollapse, btnExpand, false);
-    });
-}
-
-function applySidebarState(shell, btnCollapse, btnExpand, collapsed) {
-    shell.classList.toggle('sidebar-collapsed', collapsed);
-    const expanded = String(!collapsed);
-    btnCollapse.setAttribute('aria-expanded', expanded);
-    btnExpand.setAttribute('aria-expanded', expanded);
-}
-
-function initWorkspaceToggle() {
-    const shell = document.querySelector('.app-shell');
-    const btnToggle = document.getElementById('btn-toggle-workspace');
-    if (!shell || !btnToggle) {
-        return;
-    }
-
-    const collapsed = localStorage.getItem(WORKSPACE_STORAGE_KEY) !== 'false';
-    applyWorkspaceState(shell, btnToggle, collapsed);
-
-    btnToggle.addEventListener('click', () => {
-        const nowCollapsed = !shell.classList.contains('workspace-collapsed');
-        applyWorkspaceState(shell, btnToggle, nowCollapsed);
-    });
-
-    document.addEventListener('keydown', (e) => {
-        if (e.altKey && (e.key === 'e' || e.key === 'E')) {
-            e.preventDefault();
-            btnToggle.click();
-        }
-    });
-}
-
-function applyWorkspaceState(shell, btnToggle, collapsed) {
-    shell.classList.toggle('workspace-collapsed', collapsed);
-    localStorage.setItem(WORKSPACE_STORAGE_KEY, String(collapsed));
-    const expanded = String(!collapsed);
-    const label = collapsed ? 'Mostrar panel de editor' : 'Ocultar panel de editor';
-    btnToggle.setAttribute('aria-expanded', expanded);
-    btnToggle.setAttribute('aria-label', label);
-    btnToggle.setAttribute('title', label);
-
-    if (!collapsed) {
-        requestAnimationFrame(() => {
-            refreshSplitters();
-        });
-    }
 }

@@ -9,14 +9,12 @@
  *   - vertical (por defecto): separa columnas, arrastra en X, ajusta ancho.
  *   - horizontal: separa filas, arrastra en Y, ajusta alto.
  *
- * Persistencia por splitter en localStorage. Al redimensionar la ventana,
- * se reaplica el clamp para no romper los mínimos.
+ * Persistencia por splitter en storage.js: cada uno declara la seccion y el
+ * campo donde guarda su tamano. Al redimensionar la ventana, se reaplica el
+ * clamp para no romper los minimos.
  */
 
-const STORAGE_WORKSPACE = 'noema_workspace_width';
-const STORAGE_TREE = 'noema_tree_width';
-const STORAGE_NOTES_TREE = 'noema_notes_tree_width';
-const STORAGE_NOTES_SEARCH = 'noema_notes_search_height';
+import { read as readSection, update as updateSection } from './storage.js';
 
 // Mínimos (px). Ajustables en un solo sitio.
 const MIN_WORKSPACE = 200;
@@ -48,7 +46,8 @@ export function initSplitters() {
         minBefore: MIN_WORKSPACE,
         minAfter: MIN_CONVERSATION,
         defaultBefore: DEFAULT_WORKSPACE,
-        storageKey: STORAGE_WORKSPACE
+        storageSection: 'app',
+        storageField: 'workspaceWidth'
     });
 
     setupSplitter({
@@ -58,7 +57,8 @@ export function initSplitters() {
         minBefore: MIN_TREE,
         minAfter: MIN_EDITOR,
         defaultBefore: DEFAULT_TREE,
-        storageKey: STORAGE_TREE
+        storageSection: 'fsexplorer',
+        storageField: 'treeWidth'
     });
 
     setupSplitter({
@@ -68,7 +68,8 @@ export function initSplitters() {
         minBefore: MIN_NOTES_TREE,
         minAfter: MIN_NOTES_MAIN,
         defaultBefore: DEFAULT_NOTES_TREE,
-        storageKey: STORAGE_NOTES_TREE
+        storageSection: 'notes',
+        storageField: 'treeWidth'
     });
 
     setupSplitter({
@@ -79,12 +80,13 @@ export function initSplitters() {
         minBefore: MIN_NOTES_TREE,
         minAfter: MIN_NOTES_SEARCH,
         defaultBefore: DEFAULT_NOTES_TREE_HEIGHT,
-        storageKey: STORAGE_NOTES_SEARCH
+        storageSection: 'notes',
+        storageField: 'searchHeight'
     });
 
     // Al cambiar de vista del area, los paneles ocultos pasan a tener
     // dimensiones reales: se reaplica el clamp y el tamaño guardado.
-    window.addEventListener('noema:area-changed', () => {
+    window.addEventListener('noema:addon-activated', () => {
         requestAnimationFrame(() => refreshSplitters());
     });
 }
@@ -110,7 +112,7 @@ function setupSplitter(config) {
     // Si está oculto (panel de notas sin activar), el clamp se pospone a
     // refreshSplitters(), que se dispara al activar la vista.
     if (measure(beforeEl, horizontal) > 0) {
-        const stored = parseFloat(localStorage.getItem(config.storageKey));
+        const stored = readSize(config);
         const initial = Number.isFinite(stored) && stored > 0 ? stored : config.defaultBefore;
         applySize(beforeEl, clampSize(initial, beforeEl, afterEl, config, horizontal), horizontal);
     }
@@ -148,7 +150,7 @@ function setupSplitter(config) {
         handle.classList.remove('dragging');
         document.body.classList.remove('no-select');
         const finalSize = measure(beforeEl, horizontal);
-        localStorage.setItem(config.storageKey, String(Math.round(finalSize)));
+        writeSize(config, finalSize);
     };
 
     handle.addEventListener('pointerup', endDrag);
@@ -157,7 +159,7 @@ function setupSplitter(config) {
     handle.addEventListener('dblclick', () => {
         const clamped = clampSize(config.defaultBefore, beforeEl, afterEl, config, horizontal);
         applySize(beforeEl, clamped, horizontal);
-        localStorage.setItem(config.storageKey, String(Math.round(clamped)));
+        writeSize(config, clamped);
     });
 
     window.addEventListener('resize', () => {
@@ -167,6 +169,30 @@ function setupSplitter(config) {
             applySize(beforeEl, clamped, horizontal);
         }
     });
+}
+
+/**
+ * Lee el tamano guardado de un splitter.
+ *
+ * @param {Object} config Configuracion del splitter.
+ * @returns {number} Tamano en px, o NaN si no hay valor guardado.
+ */
+function readSize(config) {
+    const section = readSection(config.storageSection) || {};
+    return parseFloat(section[config.storageField]);
+}
+
+/**
+ * Guarda el tamano de un splitter.
+ *
+ * @param {Object} config Configuracion del splitter.
+ * @param {number} size Tamano en px.
+ * @returns {void}
+ */
+function writeSize(config, size) {
+    const patch = {};
+    patch[config.storageField] = Math.round(size);
+    updateSection(config.storageSection, patch);
 }
 
 /**
@@ -217,7 +243,7 @@ export function refreshSplitters() {
         if (measure(beforeEl, horizontal) === 0) {
             continue;
         }
-        const stored = parseFloat(localStorage.getItem(config.storageKey));
+        const stored = readSize(config);
         const target = Number.isFinite(stored) && stored > 0 ? stored : config.defaultBefore;
         const clamped = clampSize(target, beforeEl, afterEl, config, horizontal);
         applySize(beforeEl, clamped, horizontal);

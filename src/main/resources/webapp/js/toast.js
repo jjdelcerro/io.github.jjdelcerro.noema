@@ -26,7 +26,7 @@ export function showToast(message, type = 'error', duration = DEFAULT_DURATION) 
     textSpan.textContent = message;
 
     const closeBtn = document.createElement('button');
-    closeBtn.className = 'icon-button';
+    closeBtn.className = 'icon-btn';
     closeBtn.style.padding = '2px';
     closeBtn.style.color = 'inherit';
     closeBtn.textContent = '✕';

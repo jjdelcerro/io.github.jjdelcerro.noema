@@ -3,19 +3,22 @@
  */
 
 import {
-fetchConfigUI,
+        fetchDirectories,
+        fetchFileContent,
+        saveFileContent
+        } from '../workspace/addons/fsexplorer/fsexplorer-api.js';
+import {
+        fetchConfigUI,
         fetchConfigDomain,
         fetchConfigValue,
         setConfigValue,
         setConfigList,
         setConfigChecked,
-        postConfigMultivalue,
-        fetchDirectories,
-        callBackendAction,
-        fetchFileContent,
-        saveFileContent
-        } from './api.js';
-import { showToast } from './toast.js';
+        postConfigMultivalue
+        } from './config-api.js';
+import { callBackendAction } from '../chat/chat-api.js';
+import { showToast } from '../toast.js';
+import { ensureConfigPanel } from './config-markup.js';
 
 let configPanel = null;
 let configTree = null;
@@ -82,6 +85,7 @@ function isActionSupported(node) {
 // =============================================================================
 
 export function initConfigUI() {
+  ensureConfigPanel();
   configPanel = document.getElementById('config-panel');
   configTree = document.getElementById('config-tree');
   configContent = document.getElementById('config-content');

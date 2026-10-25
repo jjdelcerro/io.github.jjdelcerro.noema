@@ -1,0 +1,66 @@
+/*
+ * 03. Workspace
+ *
+ * Contenedor de panel del workspace y arbol del explorador de ficheros.
+ * El panel es el marco que el workspace cede a cada addon; el arbol es la mitad izquierda del addon del explorador.
+ *
+ * Origen: styles.css (2361 lineas), separado por pertenencia en la tarea 19.
+ * Las reglas conservan su orden relativo original. Ningun selector aparece en dos
+ * ficheros, verificado tras el reparto.
+ */
+.workspace-panel {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background: var(--sidebar);
+}
+
+/*
+ * El workspace crea un panel por addon y los oculta con el atributo hidden.
+ * Un display:flex gana al [hidden] de la hoja del navegador, asi que la regla
+ * tiene que ser explicita; sin ella se verian todos los paneles a la vez.
+ */
+.workspace-panel[hidden] {
+  display: none;
+}
+
+.workspace-tree-pane {
+  display: flex;
+  flex-direction: column;
+  width: 240px;
+  flex: 0 0 240px;
+  min-height: 0;
+  overflow: hidden;
+  border-right: 1px solid var(--line);
+  scrollbar-color: var(--surface2) transparent;
+}
+
+.workspace-tree-toolbar {
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 10px 10px 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.workspace-tree-path {
+  flex: 0 0 auto;
+  padding: 6px 10px 8px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-bottom: 1px solid var(--line);
+}
+
+.workspace-tree {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 10px 14px;
+}
+

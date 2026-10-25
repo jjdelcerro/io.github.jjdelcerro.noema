@@ -1,0 +1,85 @@
+/*
+ * 08. Responsive
+ *
+ * Ajustes de composicion para pantallas estrechas.
+ * Se carga el ultimo para poder reescribir lo anterior.
+ *
+ * Origen: styles.css (2361 lineas), separado por pertenencia en la tarea 19.
+ * Las reglas conservan su orden relativo original. Ningun selector aparece en dos
+ * ficheros, verificado tras el reparto.
+ */
+@media (max-width: 760px) {
+  .terminal-sidebar {
+    display: none;
+  }
+  .main-header {
+    justify-content: space-between;
+    padding: 0 16px;
+  }
+
+  .mobile-brand {
+    display: flex;
+    font-weight: 700;
+  }
+
+  .header-tools {
+    gap: 9px;
+  }
+  .terminal-input-wrap span,
+  .status-indicator span:last-child {
+    display: none;
+  }
+  .terminal-input-wrap input {
+    width: 115px;
+  }
+  .mobile-config-button {
+    display: grid;
+  }
+  .chat-area,
+  .composer-area {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .welcome-card {
+    margin-top: 0;
+  }
+  .message-block {
+    max-width: 94%;
+  }
+  .composer-hint {
+    display: none;
+  }
+  .config-panel {
+    width: calc(100vw - 20px);
+    height: calc(100vh - 20px);
+    border-radius: 12px;
+  }
+  .config-body {
+    flex-direction: column;
+  }
+  .config-tree {
+    width: 100%;
+    max-height: 30vh;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .context-area {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .header-left #btn-expand-sidebar {
+    display: none;
+  }
+  
+  .workspace-panel {
+    display: none;
+  }
+  .header-left .workspace-toggle {
+    display: none;
+  }  
+  .splitter {
+    display: none;
+  }  
+}
+

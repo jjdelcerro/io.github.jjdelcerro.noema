@@ -1,0 +1,323 @@
+/*
+ * 05. Notas
+ *
+ * Addon de notas: arbol, buscador, metadatos, estado y editor.
+ * Todo el markup de notas lo genera notes-markup.js.
+ *
+ * Origen: styles.css (2361 lineas), separado por pertenencia en la tarea 19.
+ * Las reglas conservan su orden relativo original. Ningun selector aparece en dos
+ * ficheros, verificado tras el reparto.
+ */
+.notes-panel {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background: var(--sidebar);
+}
+
+.notes-left-pane {
+  display: flex;
+  flex: 0 0 260px;
+  width: 260px;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  border-right: 1px solid var(--line);
+}
+
+.notes-tree-pane {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+  padding: 10px;
+}
+
+.notes-tree {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface2) transparent;
+}
+
+.notes-search-pane {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+  padding: 8px 10px 10px;
+  overflow: hidden;
+}
+
+.notes-main-pane {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.notes-main-pane > [hidden] {
+  display: none;
+}
+
+.notes-editor-meta {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.note-tags-input {
+  min-width: 0;
+  padding: 6px 8px;
+  color: var(--ink);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.note-title-input {
+  flex: 1 1 auto;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.note-tags-input {
+  flex: 0 1 220px;
+  font-size: 12px;
+}
+
+.note-tags-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.notes-meta-button {
+  flex: 0 0 auto;
+}
+
+.note-status {
+  flex: 0 0 auto;
+  min-height: 16px;
+  padding: 4px 10px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.notes-editor {
+  flex: 1;
+  min-height: 0;
+}
+
+.notes-tree-header {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 8px;
+}
+
+.notes-new-button {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.notes-new-button:not(:disabled):hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.notes-new-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.notes-search-scope {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.notes-search-scope-label {
+  flex: 0 0 auto;
+}
+
+.notes-search-scope-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notes-search-scope-reset {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.notes-search-scope-reset:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.notes-search {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  padding-bottom: 8px;
+}
+
+.notes-search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 5px 8px;
+  color: var(--ink);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.notes-search-mode {
+  flex: 0 0 auto;
+  padding: 5px 6px;
+  color: var(--ink);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+.notes-search-go {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.notes-search-go:hover {
+  border-color: var(--accent);
+}
+
+.notes-search-mode:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.notes-search-results {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface2) transparent;
+}
+
+.notes-search-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 6px 8px;
+  margin-bottom: 2px;
+  color: var(--ink);
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.notes-search-item:hover {
+  background: var(--surface2);
+  border-color: var(--line);
+}
+
+.notes-search-item.active {
+  border-color: var(--accent);
+}
+
+.notes-search-item-title {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notes-search-item-meta {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notes-search-empty {
+  padding: 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.notes-search-pager {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0 8px;
+}
+
+.notes-search-count {
+  flex: 1 1 auto;
+  color: var(--muted);
+  font-size: 10px;
+  text-align: center;
+}
+
+.notes-search-page-button {
+  padding: 4px 8px;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.notes-search-page-button:not(:disabled):hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.notes-search-page-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+

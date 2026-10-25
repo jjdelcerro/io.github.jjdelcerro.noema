@@ -2,9 +2,12 @@
  * Módulo de gestión de la interfaz de chat, historial y conexión SSE.
  */
 
-import { sendMessage, fetchHistory, fetchContextXml, connectSSE } from './api.js';
-import { showToast } from './toast.js';
-import { handleEditorOpen, handleEditorApply, handleEditorSetupDone, handleEditorAddAnnotation, handleEditorClearAnnotations } from './editor-ui.js';
+import { connectSSE, on } from '../api.js';
+import { sendMessage, fetchHistory, fetchContextXml } from './chat-api.js';
+import { renderChatShell } from './chat-markup.js';
+import { showToast } from '../toast.js';
+import { initChatEditor, openChatEditor } from './chat-editor.js';
+import { createTabs } from '../ui-tabs.js';
 
 const ICON_FOLDER = 'images/current/';
 
@@ -26,6 +29,9 @@ function chevronIcon(expanded) {
 let currentTerminalId = '';
 let activeSseControl = null;
 
+// Funciones de baja de los handlers SSE, en el orden en que se registraron.
+const sseOffHandlers = [];
+
 // Estado para agrupación consecutiva de mensajes
 let lastBlockType = null;
 let lastBlockElement = null;
@@ -42,12 +48,9 @@ let cachedXslDoc = null;
 let chatArea = null;
 let contextArea = null;
 let composerArea = null;
-let tabChat = null;
-let tabContext = null;
+let chatTabs = null;
 let messageInput = null;
 let btnSend = null;
-let statusDot = null;
-let statusText = null;
 let btnExport = null;
 let btnCopyConversation = null;
 
@@ -67,28 +70,41 @@ function adjustTextareaHeight() {
  * @param {string} initialTerminalId - Identificador de terminal a activar.
  */
 export function initChatUI(initialTerminalId) {
+    renderChatShell();
+    registerSseHandlers();
+
     chatArea = document.getElementById('chat-area');
     contextArea = document.getElementById('context-area');
     composerArea = document.getElementById('composer-area');
-    tabChat = document.getElementById('tab-chat');
-    tabContext = document.getElementById('tab-context');
     messageInput = document.getElementById('message-input');
     btnSend = document.getElementById('btn-send');
     btnExport = document.getElementById('btn-export');
     btnCopyConversation = document.getElementById('btn-copy-conversation');
 
-    const statusIndicator = document.getElementById('status-indicator');
-    if (statusIndicator) {
-        statusDot = statusIndicator.querySelector('.status-dot');
-        statusText = document.getElementById('status-text');
+    const btnExpandInput = document.getElementById('btn-expand-input');
+    if (btnExpandInput) {
+        initChatEditor(messageInput);
+        btnExpandInput.addEventListener('click', openChatEditor);
+        // El boton sigue el estado del input, sin tocar los puntos que lo bloquean.
+        new MutationObserver(() => {
+            btnExpandInput.disabled = messageInput.disabled;
+        }).observe(messageInput, { attributes: true, attributeFilter: ['disabled'] });
     }
 
-    // Listeners de pestañas
-    if (tabChat) {
-        tabChat.addEventListener('click', () => switchTab('chat'));
-    }
-    if (tabContext) {
-        tabContext.addEventListener('click', () => switchTab('context'));
+    // Pestañas: la barra la construye el componente generico. Aqui solo queda
+    // el efecto lateral de cada activacion (composer y carga del contexto).
+    const tabbar = document.querySelector('.conversation-tabbar');
+    if (tabbar) {
+        chatTabs = createTabs({
+            container: tabbar,
+            panelContainer: tabbar.parentElement,
+            items: [
+                { id: 'chat', title: 'Conversación' },
+                { id: 'context', title: 'Contexto proyectado' }
+            ],
+            onActivate: handleTabActivate
+        });
+        chatTabs.setActive('chat');
     }
 
     // Listeners de envío
@@ -114,39 +130,20 @@ export function initChatUI(initialTerminalId) {
 }
 
 /**
- * Alterna entre la pestaña de conversación y la de inspección de contexto proyectado.
+ * Aplica los efectos de la pestana recien activada. Las clases de los botones y
+ * la visibilidad de los paneles las gestiona `ui-tabs`; aqui queda solo lo que no
+ * es presentacion de la barra: el composer y la carga diferida del contexto.
  *
- * @param {'chat' | 'context'} tab
+ * @param {'chat' | 'context'} tab Pestana activa.
+ * @returns {void}
  */
-async function switchTab(tab) {
-    if (tab === currentTab) return;
-    currentTab = tab;
-
-    if (tab === 'chat') {
-        if (tabChat) {
-            tabChat.classList.add('active');
-            tabChat.setAttribute('aria-selected', 'true');
-        }
-        if (tabContext) {
-            tabContext.classList.remove('active');
-            tabContext.setAttribute('aria-selected', 'false');
-        }
-        if (chatArea) chatArea.hidden = false;
-        if (contextArea) contextArea.hidden = true;
-        if (composerArea) composerArea.classList.remove('hidden');
-    } else if (tab === 'context') {
-        if (tabContext) {
-            tabContext.classList.add('active');
-            tabContext.setAttribute('aria-selected', 'true');
-        }
-        if (tabChat) {
-            tabChat.classList.remove('active');
-            tabChat.setAttribute('aria-selected', 'false');
-        }
-        if (chatArea) chatArea.hidden = true;
-        if (contextArea) contextArea.hidden = false;
-        if (composerArea) composerArea.classList.add('hidden');
-        await loadProjectedContext();
+function handleTabActivate(tab) {
+    currentTab = tab === 'context' ? 'context' : 'chat';
+    if (composerArea) {
+        composerArea.classList.toggle('hidden', currentTab === 'context');
+    }
+    if (currentTab === 'context') {
+        loadProjectedContext();
     }
 }
 
@@ -235,26 +232,39 @@ export async function switchTerminal(newTerminalId) {
         loadProjectedContext();
     }
 
-    // 4. Iniciar canal SSE para eventos en tiempo real con soporte de streaming
-    activeSseControl = connectSSE(currentTerminalId, {
-        onConnectionOpen: () => setConnectionStatus('connected'),
-        onConnectionError: () => setConnectionStatus('connecting'),
-        onThinking: (data) => appendStreamChunk('thinking', data.content),
-        onResponse: (data) => appendStreamChunk('response', data.content),
-        onStreamEnd: () => {
-            finishStreaming();
-            if (currentTab === 'context') {
-                loadProjectedContext();
-            }
-        },
-        onLog: (data) => { finishStreaming(); addMessage('log', data.content); },
-        onError: (data) => { finishStreaming(); addMessage('error', data.content); },
-        onEditorOpen: (payload) => handleEditorOpen(payload),
-        onEditorApply: (payload) => handleEditorApply(payload),
-        onEditorSetupDone: (payload) => handleEditorSetupDone(payload),
-        onEditorAddAnnotation: (payload) => handleEditorAddAnnotation(payload),
-        onEditorClearAnnotations: (payload) => handleEditorClearAnnotations(payload)
-    });
+    // 4. Iniciar el canal SSE. Los handlers ya estan registrados sobre el
+    // componente: reconectar el canal no los vuelve a registrar.
+    activeSseControl = connectSSE(currentTerminalId);
+}
+
+/**
+ * Registra los handlers del canal SSE una sola vez, sobre el componente y no
+ * sobre el canal. Idempotente: si ya estan puestos, no hace nada.
+ *
+ * @returns {void}
+ */
+function registerSseHandlers() {
+    if (sseOffHandlers.length > 0) {
+        return;
+    }
+    sseOffHandlers.push(on('open', () => setConnectionStatus('connected')));
+    sseOffHandlers.push(on('connection-error', () => setConnectionStatus('connecting')));
+    sseOffHandlers.push(on('thinking', (data) => appendStreamChunk('thinking', data.content)));
+    sseOffHandlers.push(on('response', (data) => appendStreamChunk('response', data.content)));
+    sseOffHandlers.push(on('stream_end', () => {
+        finishStreaming();
+        if (currentTab === 'context') {
+            loadProjectedContext();
+        }
+    }));
+    sseOffHandlers.push(on('log', (data) => {
+        finishStreaming();
+        addMessage('log', data.content);
+    }));
+    sseOffHandlers.push(on('error', (data) => {
+        finishStreaming();
+        addMessage('error', data.content);
+    }));
 }
 
 /**
@@ -630,24 +640,16 @@ async function handleSend() {
 }
 
 /**
- * Actualiza la apariencia del indicador de conexión en la cabecera.
+ * Publica el estado de la conexion del chat.
+ *
+ * No toca el DOM de la cabecera: emite `noema:status` y deja que el chrome
+ * decida como representarlo. El chat solo conoce el estado semantico del
+ * canal, no la apariencia del indicador.
  *
  * @param {string} status - 'connected', 'connecting' o 'disconnected'.
  */
-export function setConnectionStatus(status) {
-    if (!statusDot || !statusText) return;
-
-    statusDot.className = `status-dot ${status}`;
-    switch (status) {
-        case 'connected':
-            statusText.textContent = 'Conectado';
-            break;
-        case 'connecting':
-            statusText.textContent = 'Conectando...';
-            break;
-        case 'disconnected':
-        default:
-            statusText.textContent = 'Desconectado';
-            break;
-    }
+function setConnectionStatus(status) {
+    window.dispatchEvent(new CustomEvent('noema:status', {
+        detail: { status }
+    }));
 }

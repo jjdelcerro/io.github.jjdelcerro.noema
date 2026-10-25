@@ -16,7 +16,8 @@
  * los criterios vigentes. Las respuestas fuera de secuencia se descartan.
  */
 
-const SEARCH_ENDPOINT = '/api/notes/search';
+import { searchNotes } from '../notes-api.js';
+
 const PAGE_SIZE = 50;
 
 const state = {
@@ -173,12 +174,13 @@ async function runSearch(page) {
     const seq = ++requestSeq;
     setBusy(true);
     try {
-        const url = buildUrl(state.page);
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        const result = await response.json();
+        const result = await searchNotes({
+            query: state.query,
+            mode: state.mode,
+            root: state.root,
+            page: state.page,
+            pageSize: PAGE_SIZE
+        });
         if (seq !== requestSeq) {
             return;
         }
@@ -196,18 +198,6 @@ async function runSearch(page) {
             setBusy(false);
         }
     }
-}
-
-function buildUrl(page) {
-    const params = new URLSearchParams();
-    params.set('q', state.query);
-    params.set('mode', state.mode);
-    if (state.root) {
-        params.set('root', state.root);
-    }
-    params.set('page', String(page));
-    params.set('pageSize', String(PAGE_SIZE));
-    return `${SEARCH_ENDPOINT}?${params.toString()}`;
 }
 
 /**
@@ -366,7 +356,7 @@ async function openResult(item, button) {
     });
     button.classList.add('active');
     try {
-        const mod = await import('./note-editor.js');
+        const mod = await import('../editor/note-editor.js');
         const highlight = state.mode === 'exact' ? state.query.trim() : null;
         await mod.openNote({
             id: item.id,

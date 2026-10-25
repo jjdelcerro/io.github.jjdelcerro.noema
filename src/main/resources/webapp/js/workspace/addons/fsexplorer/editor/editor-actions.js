@@ -8,13 +8,12 @@
  * No importa nunca de editor-ui.js (evitar dependencia circular).
  */
 
+import { saveFileContent, fetchFileContent } from '../fsexplorer-api.js';
 import {
-  saveFileContent,
-  fetchFileContent,
   postEditorDiagnostics,
   postEditorFormat,
   postEditorFiximports
-} from './api.js';
+} from './editor-api.js';
 
 /**
  * Guarda el contenido en disco.
@@ -58,4 +57,3 @@ export async function fixImports({ filePath }) {
   const data = await fetchFileContent(filePath);
   return data.content ?? '';
 }
-

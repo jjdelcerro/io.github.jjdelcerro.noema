@@ -10,12 +10,10 @@
  * modo que este modulo no depende de que el editor este cargado todavia.
  */
 
-import { showToast } from './toast.js';
-import { injectTreeStyles } from './tree-styles.js';
-import { treeLabel } from './tree-label.js';
-
-const TREE_ENDPOINT = '/api/notes/tree';
-const NOTES_ENDPOINT = '/api/notes';
+import { showToast } from '../../../toast.js';
+import { injectTreeStyles } from '../../../common/tree-styles.js';
+import { treeLabel } from '../../../common/tree-label.js';
+import { fetchNotesTree, createNote } from './notes-api.js';
 
 let TreeClass = null;
 let FolderClass = null;
@@ -33,7 +31,7 @@ export async function initNotesUI() {
     }
 
     try {
-        const mod = await import('../vendor/file-tree/prod.js');
+        const mod = await import('../../../../vendor/file-tree/prod.js');
         TreeClass = mod.Tree;
         FolderClass = mod.Folder;
         FileClass = mod.File;
@@ -121,7 +119,7 @@ async function handleTreeClick(event) {
 async function openNoteFromTree(node) {
     let opened = false;
     try {
-        const mod = await import('./note-editor.js');
+        const mod = await import('./editor/note-editor.js');
         opened = await mod.openNote({ id: node.noteId, path: node.notePath, title: node.noteTitle });
     } catch (error) {
         console.error('Error abriendo la nota:', node.noteId, error);
@@ -184,7 +182,7 @@ async function createNewNote() {
     const button = document.getElementById('btn-new-note');
     // La guardia va antes del POST: si el usuario cancela, no debe quedar una
     // nota vacia creada en disco.
-    const editor = await import('./note-editor.js');
+    const editor = await import('./editor/note-editor.js');
     if (!(await editor.confirmDiscardIfDirty())) {
         return;
     }
@@ -192,21 +190,13 @@ async function createNewNote() {
         button.disabled = true;
     }
     try {
-        const response = await fetch(NOTES_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                title: 'Nueva nota',
-                tags: [],
-                content: ''
-            })
+        const note = await createNote({
+            title: 'Nueva nota',
+            tags: [],
+            content: ''
         });
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        const note = await response.json();
         await refreshNotesTree();
-        const mod = await import('./note-editor.js');
+        const mod = await import('./editor/note-editor.js');
         await mod.openNote({ id: note.id, title: note.title });
     } catch (error) {
         console.error('Error creando una nota:', error);
@@ -247,12 +237,5 @@ function createNode(item) {
  * hijos directos de esa carpeta.
  */
 async function fetchNotesEntries(path) {
-    const url = path
-        ? `${TREE_ENDPOINT}?path=${encodeURIComponent(path)}`
-        : TREE_ENDPOINT;
-    const response = await fetch(url);
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-    }
-    return await response.json();
+    return await fetchNotesTree(path);
 }

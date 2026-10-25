@@ -2,7 +2,7 @@
  * Módulo de comunicación con la API REST y canal SSE de Noema.
  */
 
-const API_BASE = window.location.origin;
+export const API_BASE = window.location.origin;
 
 /**
  * Envía un mensaje de usuario al agente de forma asíncrona.
@@ -11,143 +11,135 @@ const API_BASE = window.location.origin;
  * @param {string} message - Texto del mensaje enviado.
  * @returns {Promise<{accepted: boolean}>}
  */
-export async function sendMessage(terminalId, message) {
-  const url = `${API_BASE}/api/chat/${encodeURIComponent(terminalId)}`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({message})
-  });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Error en el envío (${response.status}): ${errorText}`);
-  }
-
-  return {accepted: true};
-}
+/* --- Canal SSE y registro de eventos --- */
 
 /**
- * Descarga el historial de interacciones previas de un terminal.
- * 
- * @param {string} terminalId - Identificador del terminal.
- * @returns {Promise<Array<{type: string, content: string, timestamp: number}>>}
+ * Eventos que el servidor emite por el canal SSE. `kind` dice que se le
+ * entrega al handler: el objeto parseado, su campo content, o nada.
  */
-export async function fetchHistory(terminalId) {
-  const url = `${API_BASE}/api/chat/${encodeURIComponent(terminalId)}/history`;
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(`Fallo recuperando historial (${response.status})`);
-  }
-
-  return await response.json();
-}
+const SSE_EVENTS = [
+  {name: 'thinking', kind: 'payload'},
+  {name: 'response', kind: 'payload'},
+  {name: 'log', kind: 'payload'},
+  {name: 'error', kind: 'payload'},
+  {name: 'stream_end', kind: 'none'},
+  {name: 'editor_open', kind: 'content'},
+  {name: 'editor_apply', kind: 'content'},
+  {name: 'editor_setup_done', kind: 'content'},
+  {name: 'editor_add_annotation', kind: 'content'},
+  {name: 'editor_clear_annotations', kind: 'content'}
+];
 
 /**
- * Descarga el XML de contexto proyectado de la conversación para un terminal.
- * 
- * @param {string} terminalId - Identificador del terminal.
- * @returns {Promise<string>} Contenido del documento XML como texto.
+ * Handlers registrados por nombre de evento. El registro pertenece al ciclo
+ * de vida del componente que lo pide, no al del canal: sobrevive a una
+ * reconexion y solo cae cuando el componente llama a la funcion de baja.
  */
-export async function fetchContextXml(terminalId) {
-  const url = `${API_BASE}/api/chat/${encodeURIComponent(terminalId)}/context.xml`;
-  const response = await fetch(url);
+const sseListeners = new Map();
 
-  if (!response.ok) {
-    throw new Error(`Fallo recuperando contexto XML (${response.status})`);
-  }
-
-  return await response.text();
-}
+let eventSource = null;
 
 /**
- * Establece el canal de eventos Server-Sent Events (SSE) en tiempo real.
- * 
- * @param {string} terminalId - Identificador del terminal.
- * @param {Object} handlers - Callbacks para el procesamiento de eventos.
- * @returns {{close: Function, getReadyState: Function}}
+ * Registra un handler para un evento del canal SSE.
+ *
+ * @param {string} eventName - 'thinking', 'response', 'editor_open', 'open', 'connection-error', ...
+ * @param {Function} handler - Recibe el payload ya transformado del evento.
+ * @returns {Function} funcion de baja, idempotente
  */
-export function connectSSE(terminalId, handlers = {}) {
-  const url = `${API_BASE}/api/console/${encodeURIComponent(terminalId)}`;
-  const eventSource = new EventSource(url);
-
-  eventSource.onopen = () => {
-    if (handlers.onConnectionOpen) {
-      handlers.onConnectionOpen();
+export function on(eventName, handler) {
+  if (!eventName || typeof handler !== 'function') {
+    return () => {};
+  }
+  let bucket = sseListeners.get(eventName);
+  if (!bucket) {
+    bucket = new Set();
+    sseListeners.set(eventName, bucket);
+  }
+  bucket.add(handler);
+  return () => {
+    bucket.delete(handler);
+    if (bucket.size === 0) {
+      sseListeners.delete(eventName);
     }
   };
+}
 
-  eventSource.onerror = (error) => {
-    if (handlers.onConnectionError) {
-      handlers.onConnectionError(error);
-    }
-  };
-  
-  eventSource.addEventListener('thinking', (event) => {
-    if (handlers.onThinking) {
-      handlers.onThinking(parseEventData(event.data));
-    }
-  });  
-
-  eventSource.addEventListener('response', (event) => {
-    if (handlers.onResponse) {
-      handlers.onResponse(parseEventData(event.data));
+/**
+ * Entrega un evento a sus handlers. Un handler que revienta no impide que
+ * los demas reciban el evento.
+ *
+ * @param {string} eventName - Nombre del evento.
+ * @param {*} payload - Dato ya transformado.
+ */
+function emit(eventName, payload) {
+  const bucket = sseListeners.get(eventName);
+  if (!bucket) {
+    return;
+  }
+  Array.from(bucket).forEach((handler) => {
+    try {
+      handler(payload);
+    } catch (error) {
+      console.error('Error en el handler de ' + eventName + ':', error);
     }
   });
+}
 
-  eventSource.addEventListener('log', (event) => {
-    if (handlers.onLog) {
-      handlers.onLog(parseEventData(event.data));
-    }
-  });
+/**
+ * Aplica la transformacion declarada para el evento.
+ *
+ * @param {string} kind - 'payload', 'content' o 'none'.
+ * @param {string} rawData - Cuerpo crudo del evento.
+ * @returns {*} Dato entregable al handler.
+ */
+function transformData(kind, rawData) {
+  if (kind === 'none') {
+    return null;
+  }
+  const parsed = parseEventData(rawData);
+  if (kind === 'content') {
+    return parsed.content;
+  }
+  return parsed;
+}
 
-  eventSource.addEventListener('error', (event) => {
-    if (handlers.onError) {
-      handlers.onError(parseEventData(event.data));
-    }
-  });
+/**
+ * Abre el canal SSE. Si habia uno abierto lo cierra antes; los handlers
+ * registrados no se tocan.
+ *
+ * @param {string} terminalId - Identificador del terminal.
+ * @returns {{close: Function, getReadyState: Function}} control del canal
+ */
+export function connectSSE(terminalId) {
+  closeSSE();
 
-  eventSource.addEventListener('stream_end', (event) => {
-    if (handlers.onStreamEnd) {
-      handlers.onStreamEnd();
-    }
-  });
-  
-  eventSource.addEventListener('editor_open', (event) => {
-    if (handlers.onEditorOpen) {
-      handlers.onEditorOpen(parseEventData(event.data).content);
-    }
-  });
+  const url = API_BASE + '/api/console/' + encodeURIComponent(terminalId);
+  eventSource = new EventSource(url);
 
-  eventSource.addEventListener('editor_apply', (event) => {
-    if (handlers.onEditorApply) {
-      handlers.onEditorApply(parseEventData(event.data).content);
-    }
-  });
-  
-  eventSource.addEventListener('editor_setup_done', (event) => {
-    if (handlers.onEditorSetupDone) {
-      handlers.onEditorSetupDone(parseEventData(event.data).content);
-    }
-  });
+  eventSource.onopen = () => emit('open', null);
+  eventSource.onerror = (error) => emit('connection-error', error);
 
-  eventSource.addEventListener('editor_add_annotation', (event) => {
-    if (handlers.onEditorAddAnnotation) {
-      handlers.onEditorAddAnnotation(parseEventData(event.data).content);
-    }
-  });
-
-  eventSource.addEventListener('editor_clear_annotations', (event) => {
-    if (handlers.onEditorClearAnnotations) {
-      handlers.onEditorClearAnnotations(parseEventData(event.data).content);
-    }
+  SSE_EVENTS.forEach((spec) => {
+    eventSource.addEventListener(spec.name, (event) => {
+      emit(spec.name, transformData(spec.kind, event.data));
+    });
   });
 
   return {
-    close: () => eventSource.close(),
-    getReadyState: () => eventSource.readyState
+    close: closeSSE,
+    getReadyState: () => (eventSource ? eventSource.readyState : 2)
   };
+}
+
+/**
+ * Cierra el canal SSE si esta abierto.
+ */
+export function closeSSE() {
+  if (eventSource) {
+    eventSource.close();
+    eventSource = null;
+  }
 }
 
 function parseEventData(rawData) {
@@ -157,231 +149,7 @@ function parseEventData(rawData) {
     return {content: rawData, timestamp: Date.now()};
   }
 }
-
-/* --- Endpoints de Configuración --- */
-
-/**
- * Obtiene el descriptor UI de configuración (settingsui.json).
- */
-export async function fetchConfigUI() {
-  const response = await fetch(`${API_BASE}/api/config/ui`);
-  if (!response.ok) {
-    throw new Error(`Error obteniendo descriptor UI (${response.status})`);
-  }
-  return await response.json();
-}
-
-/**
- * Obtiene un diccionario de opciones para un dominio de configuración.
- * 
- * @param {string} domainName - Nombre del dominio (ej: 'LLM_MODELS').
- */
-export async function fetchConfigDomain(domainName) {
-  const url = `${API_BASE}/api/config/domains/${encodeURIComponent(domainName)}`;
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Fallo obteniendo dominio '${domainName}' (${response.status})`);
-  }
-  return await response.json();
-}
-
-/**
- * Obtiene el valor o estructura de una ruta de configuración.
- * 
- * @param {string} path - Ruta del parámetro en la jerarquía.
- */
-export async function fetchConfigValue(path) {
-  const encodedPath = encodePath(path);
-  const response = await fetch(`${API_BASE}/api/config/${encodedPath}`);
-  if (!response.ok) {
-    throw new Error(`Fallo leyendo configuración '${path}' (${response.status})`);
-  }
-  return await response.json();
-}
-
-/**
- * Actualiza un valor simple en la configuración.
- * 
- * @param {string} path - Ruta del parámetro.
- * @param {any} value - Nuevo valor a guardar.
- */
-export async function setConfigValue(path, value) {
-  const encodedPath = encodePath(path);
-  const response = await fetch(`${API_BASE}/api/config/${encodedPath}`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({value})
-  });
-  if (!response.ok) {
-    throw new Error(`Fallo guardando '${path}' (${response.status})`);
-  }
-  return await response.json();
-}
-
-/**
- * Actualiza una lista de rutas (paths).
- * 
- * @param {string} path - Ruta del parámetro de lista.
- * @param {Array<string>} values - Array de rutas a guardar.
- */
-export async function setConfigList(path, values) {
-  const encodedPath = encodePath(path);
-  const response = await fetch(`${API_BASE}/api/config/${encodedPath}/list`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(values)
-  });
-  if (!response.ok) {
-    throw new Error(`Fallo guardando lista '${path}' (${response.status})`);
-  }
-  return await response.json();
-}
-
-/**
- * Actualiza el estado booleano de un ítem en una checkedlist.
- * 
- * @param {string} basePath - Ruta base de la lista.
- * @param {string} itemKey - Clave técnica del ítem.
- * @param {boolean} checked - Nuevo estado.
- */
-export async function setConfigChecked(basePath, itemKey, checked) {
-  const fullPath = `${basePath}/${itemKey}`;
-  return await setConfigValue(fullPath, checked);
-}
-
-/**
- * Ejecuta una consulta batch de valores y evaluaciones de reglas.
- * 
- * @param {Array<{path: string, defaultValue: any, context?: Object}>} queryArray 
- */
-export async function postConfigMultivalue(queryArray) {
-  const response = await fetch(`${API_BASE}/api/config/multivalue`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(queryArray)
-  });
-  if (!response.ok) {
-    throw new Error(`Fallo en consulta multivalue (${response.status})`);
-  }
-  return await response.json();
-}
-
-/**
- * Codifica la ruta dividiéndola en segmentos.
- */
-function encodePath(path) {
-  return path.split('/').map(segment => encodeURIComponent(segment)).join('/');
-}
-
-/* --- Exploración de Sistema de Archivos --- */
-
-/**
- * Consulta la lista de directorios en una ruta del servidor.
- * 
- * @param {string} [path] - Ruta absoluta opcional a consultar.
- * @returns {Promise<{currentPath: string, parentPath: string|null, canGoUp: boolean, directories: Array<{name: string, path: string}>}>}
- */
-export async function fetchDirectories(path) {
-  const url = new URL(`${API_BASE}/api/fs/directories`);
-  if (path) {
-    url.searchParams.set('path', path);
-  }
-  const response = await fetch(url.toString());
-  if (!response.ok) {
-    throw new Error(`Error explorando directorios (${response.status})`);
-  }
-  return await response.json();
-}
-
-/* --- Ejecución de Acciones del Agente --- */
-
-/**
- * Ejecuta una acción registrada en el backend del agente.
- * 
- * @param {string} actionName - Identificador de la acción (ej: 'COMPACT_REASONING_SESSION').
- * @returns {Promise<{status: string, action?: string, message?: string}>}
- */
-export async function callBackendAction(actionName) {
-  const url = `${API_BASE}/api/actions/${encodeURIComponent(actionName)}`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'}
-  });
-
-  if (!response.ok) {
-    let errorMsg = `Error ejecutando acción (${response.status})`;
-    try {
-      const data = await response.json();
-      if (data.message) {
-        errorMsg = data.message;
-      }
-    } catch (e) {
-    }
-    throw new Error(errorMsg);
-  }
-
-  return await response.json();
-}
-
-/* --- Gestión de Contenido de Ficheros (var:/ y rutas absolutas) --- */
-
-/**
- * Obtiene el contenido textual de un fichero.
- * 
- * @param {string} filePath - Ruta del fichero (ej: 'var:/config/models.properties' o '/home/...').
- * @returns {Promise<{file: string, content: string}>}
- */
-export async function fetchFileContent(filePath) {
-  const url = new URL(`${API_BASE}/api/files/content`);
-  url.searchParams.set('file', filePath);
-
-  const response = await fetch(url.toString());
-  if (!response.ok) {
-    let errorMsg = `Error leyendo fichero (${response.status})`;
-    try {
-      const data = await response.json();
-      if (data.error) {
-        errorMsg = data.error;
-      }
-    } catch (e) {
-    }
-    throw new Error(errorMsg);
-  }
-
-  return await response.json();
-}
-
-/**
- * Guarda el contenido textual de un fichero.
- * 
- * @param {string} filePath - Ruta del fichero a guardar.
- * @param {string} content - Contenido textual a escribir (UTF-8).
- * @returns {Promise<{status: string, file: string}>}
- */
-export async function saveFileContent(filePath, content) {
-  const url = `${API_BASE}/api/files/content`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({file: filePath, content})
-  });
-
-  if (!response.ok) {
-    let errorMsg = `Error guardando fichero (${response.status})`;
-    try {
-      const data = await response.json();
-      if (data.error) {
-        errorMsg = data.error;
-      }
-    } catch (e) {
-    }
-    throw new Error(errorMsg);
-  }
-
-  return await response.json();
-}
-
-/* --- Endpoints del Editor Web --- */
+/* --- Estado de la UI --- */
 
 /**
  * Envía el estado actual del editor (push). Sin lógica en servidor: se
@@ -398,85 +166,6 @@ export async function postUIState(payload) {
   });
   if (!response.ok) {
     throw new Error(`Error enviando estado del editor (${response.status})`);
-  }
-  return await response.json();
-}
-
-/**
- * Solicita diagnósticos para un fichero Java concreto.
- *
- * @param {string} filePath - Ruta absoluta del fichero.
- * @returns {Promise<{annotations: Array<{row: number, column: number, text: string, type: string}>}>}
- */
-export async function postEditorDiagnostics(filePath) {
-  const response = await fetch(`${API_BASE}/api/editor/diagnostics`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({file: filePath})
-  });
-  if (!response.ok) {
-    throw new Error(`Error obteniendo diagnósticos (${response.status})`);
-  }
-  return await response.json();
-}
-
-/**
- * Formatea el contenido de un fichero. El contenido va en el body como
- * texto plano (sin JSON, sin escapes) y la respuesta es el contenido
- * formateado también como texto plano.
- *
- * @param {string} filePath - Ruta del fichero (informativa).
- * @param {string} ext - Extensión sin punto (ej: 'java').
- * @param {string} content - Contenido crudo del buffer.
- * @returns {Promise<string>} Contenido formateado.
- */
-export async function postEditorFormat(filePath, ext, content) {
-  const url = new URL(`${API_BASE}/api/editor/format`);
-  if (ext) {
-    url.searchParams.set('ext', ext);
-  }
-  const response = await fetch(url.toString(), {
-    method: 'POST',
-    headers: {'Content-Type': 'text/plain; charset=UTF-8'},
-    body: content
-  });
-  if (!response.ok) {
-    throw new Error(`Error formateando (${response.status})`);
-  }
-  return await response.text();
-}
-
-/**
- * Ajusta/organiza los imports de un fichero Java en disco.
- *
- * @param {string} filePath - Ruta absoluta del fichero.
- * @returns {Promise<{status: string}>}
- */
-export async function postEditorFiximports(filePath) {
-  const response = await fetch(`${API_BASE}/api/editor/fiximports`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({file: filePath})
-  });
-  if (!response.ok) {
-    throw new Error(`Error ajustando imports (${response.status})`);
-  }
-  return await response.json();
-}
-
-export async function postEditorSetupProject(terminalId, path) {
-  const response = await fetch(`${API_BASE}/api/editor/setupproject`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({terminalId, path})
-  });
-  if (!response.ok) {
-    let msg = `HTTP ${response.status}`;
-    try {
-      const data = await response.json();
-      if (data.error) msg = data.error;
-    } catch (e) { /* respuesta sin JSON */ }
-    throw new Error(msg);
   }
   return await response.json();
 }

@@ -1,0 +1,183 @@
+/*
+ * 04. Editor del explorador
+ *
+ * Pestanas, barra de herramientas y panes del editor de ficheros.
+ * Este fichero y workspace.css no deben compartir selectores: el arbol no sabe del editor y el editor no sabe del arbol (seccion 11.2).
+ *
+ * Origen: styles.css (2361 lineas), separado por pertenencia en la tarea 19.
+ * Las reglas conservan su orden relativo original. Ningun selector aparece en dos
+ * ficheros, verificado tras el reparto.
+ */
+.workspace-editor-tabs {
+  display: flex;
+  flex: 0 0 auto;
+  min-height: 32px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: var(--sidebar);
+  border-bottom: 1px solid var(--line);
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface2) transparent;
+}
+
+.editor-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px 6px 12px;
+  color: var(--muted);
+  border-right: 1px solid var(--line);
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+  user-select: none;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.editor-tab:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.editor-tab.active {
+  color: var(--ink);
+  background: var(--surface);
+}
+
+.editor-tab.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--accent);
+}
+
+.editor-tab-name {
+  overflow: hidden;
+  max-width: 200px;
+  text-overflow: ellipsis;
+}
+
+.editor-tab-close {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  color: var(--faint);
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.editor-tab.active .editor-tab-close {
+  color: var(--muted);
+}
+
+.editor-tab-close:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.editor-tab-dirty {
+  color: var(--accent);
+  font-size: 10px;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.workspace-editor {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.workspace-editor-toolbar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 8px;
+  background: var(--sidebar);
+  border-bottom: 1px solid var(--line);
+}
+
+.editor-toolbar-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  color: var(--muted);
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.editor-toolbar-btn:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.editor-toolbar-btn.active {
+  color: var(--accent);
+  background: rgba(184, 160, 255, 0.12);
+}
+
+.editor-toolbar-btn .icon {
+  display: block;
+}
+
+.editor-toolbar-btn:hover .icon {
+  filter: brightness(1.45);
+}
+
+.editor-toolbar-btn.active .icon {
+  filter: none;
+}
+
+.editor-toolbar-btn.working .icon {
+  filter: brightness(1.6);
+}
+
+.editor-toolbar-btn:disabled:hover .icon {
+  filter: none;
+}
+
+.editor-toolbar-btn:disabled {
+  color: var(--faint);
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.editor-toolbar-btn:disabled:hover {
+  color: var(--faint);
+  background: transparent;
+}
+
+.editor-toolbar-btn.working {
+  color: var(--accent);
+  background: rgba(184, 160, 255, 0.12);
+  cursor: wait;
+}
+
+.workspace-editor-pane {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+

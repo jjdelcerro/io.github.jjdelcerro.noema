@@ -10,23 +10,22 @@
  * scroll. La fachada mantiene el estado de dirty y lo publica.
  */
 
-import { showToast } from './toast.js';
+import { showToast } from '../../../../toast.js';
 import {
     saveActiveFile,
     runDiagnostics,
     formatActiveFile,
     fixImports
 } from './editor-actions.js';
-import { pushComponentState, initUIStateEvents } from './ui-state.js';
-import { postEditorSetupProject } from './api.js';
-import { confirmDiscardDialog } from './discard-dialog.js';
+import { pushComponentState } from '../../../../ui-state.js';
+import { postEditorSetupProject } from './editor-api.js';
+import { fetchFileContent } from '../fsexplorer-api.js';
+import { confirmDiscardDialog } from '../../../../common/discard-dialog.js';
+import * as storage from '../../../../storage.js';
 
-const WRAP_STORAGE_KEY = 'noema_editor_wrap';
-const TERMINAL_STORAGE_KEY = 'noema_terminal_id';
-// Open tabs per terminal. Persisted in the browser, not on the server:
-// the backend EditorState is a live snapshot and dies with the agent, so
-// remembering what the user had open is the browser's job.
-const TABS_STORAGE_KEY_PREFIX = 'noema_editor_tabs_';
+// Open tabs per terminal. Persisted in the browser under `fsexplorer.tabs`,
+// not on the server: the backend EditorState is a live snapshot and dies with
+// the agent, so remembering what the user had open is the browser's job.
 
 const MODE_BY_EXTENSION = {
     java: 'ace/mode/java',
@@ -79,7 +78,7 @@ let setupInProgress = false;
 // Set while restoreTabs() re-opens tabs, so the intermediate pushes do not
 // overwrite the stored list with a partial one.
 let restoringTabs = false;
-// Last tab state written to localStorage. Avoids touching storage on every
+// Last tab state written to storage. Avoids touching storage on every
 // cursor move.
 let lastPersistedTabs = null;
 
@@ -103,7 +102,7 @@ export function initEditorUI() {
     // Sin workers: no los tenemos en vendor y no son necesarios.
     window.ace.config.set('useWorker', false);
 
-    wrapEnabled = localStorage.getItem(WRAP_STORAGE_KEY) === 'true';
+    wrapEnabled = (storage.read('fsexplorer') || {}).wrap === true;
 
     editor = window.ace.edit(editorContainerEl, {
         theme: 'ace/theme/dracula',
@@ -123,7 +122,6 @@ export function initEditorUI() {
     createToolbar();
     registerKeyboardShortcuts();
     registerEditorListeners();
-    initUIStateEvents();
 
     if (typeof ResizeObserver !== 'undefined' && !resizeObserver) {
         resizeObserver = new ResizeObserver(() => {
@@ -139,39 +137,19 @@ export function initEditorUI() {
 }
 
 /**
- * Lee del endpoint el contenido de un fichero. Lanza un Error con el mensaje
- * que devuelva el servidor si la respuesta no es correcta, de modo que los
- * llamantes solo tengan que capturar y decidir que hacer.
- */
-async function fetchFileContent(filePath) {
-    const url = `/api/files/content?file=${encodeURIComponent(filePath)}`;
-    const response = await fetch(url);
-    if (!response.ok) {
-        let message = `HTTP ${response.status}`;
-        try {
-            const data = await response.json();
-            if (data.error) {
-                message = data.error;
-            }
-        } catch (parseError) {
-            // respuesta sin JSON; conservamos el mensaje generico
-        }
-        throw new Error(message);
-    }
-    const data = await response.json();
-    return data.content ?? '';
-}
-
-/**
  * Recarga desde disco el contenido de una sesion ya abierta.
  *
  * No decide nada por su cuenta sobre cambios sin guardar: el llamante es quien
  * debe haber comprobado entry.dirty o haber preguntado al usuario. Cuando esta
  * funcion se invoca, el buffer se sobrescribe sin preguntar.
  *
- * Ace conserva la posicion del cursor al usar setValue(-1), asi que quien
- * estaba mirando una linea concreta seguira ahi, salvo que el fichero haya
- * encogido por encima de esa linea.
+ * El segundo argumento de setValue es keepUndo, no la posicion del cursor: -1 es
+ * truthy y solo conserva el historial de undo. El cursor vive en el Editor, no en
+ * la EditSession, y al reemplazar el documento entero se clampearia al principio,
+ * asi que aqui se captura antes y se restaura despues, solo sobre la pestana activa.
+ *
+ * Si el contenido en disco no ha cambiado no se toca la sesion ni se avisa, salvo
+ * que options.force sea true (recarga pedida explicitamente por el usuario).
  */
 async function reloadSessionFromDisk(filePath, options = {}) {
     const entry = sessions.get(filePath);
@@ -179,10 +157,12 @@ async function reloadSessionFromDisk(filePath, options = {}) {
         return false;
     }
     const silent = options.silent === true;
+    const force = options.force === true;
 
     let content;
     try {
-        content = await fetchFileContent(filePath);
+        const data = await fetchFileContent(filePath);
+        content = data.content ?? '';
     } catch (error) {
         console.error('Error recargando:', filePath, error);
         if (!silent) {
@@ -191,6 +171,16 @@ async function reloadSessionFromDisk(filePath, options = {}) {
         return false;
     }
 
+    if (!force && content === entry.session.getValue()) {
+        entry.originalContent = content;
+        return false;
+    }
+
+    const view = (filePath === activePath && editor) ? {
+        cursor: editor.getCursorPosition(),
+        scrollTop: entry.session.getScrollTop()
+    } : null;
+
     suspendDirtyTracking = true;
     try {
         entry.session.setValue(content, -1);
@@ -198,6 +188,15 @@ async function reloadSessionFromDisk(filePath, options = {}) {
         entry.dirty = false;
     } finally {
         suspendDirtyTracking = false;
+    }
+
+    if (view) {
+        const lastRow = entry.session.getLength() - 1;
+        editor.moveCursorToPosition({
+            row: Math.min(view.cursor.row, lastRow),
+            column: view.cursor.column
+        });
+        entry.session.setScrollTop(view.scrollTop);
     }
 
     updateTabDirty(filePath, false);
@@ -232,7 +231,8 @@ export async function openFile(filePath, options = {}) {
 
     let content = '';
     try {
-        content = await fetchFileContent(filePath);
+        const data = await fetchFileContent(filePath);
+        content = data.content ?? '';
     } catch (error) {
         console.error('Error cargando archivo:', filePath, error);
         if (!silent) {
@@ -468,7 +468,7 @@ function toggleWrap() {
     // Se recuerda como valor por defecto de las sesiones que se abran
     // despues, pero no se propaga a las que ya estan abiertas.
     wrapEnabled = enabled;
-    localStorage.setItem(WRAP_STORAGE_KEY, String(wrapEnabled));
+    storage.update('fsexplorer', { wrap: wrapEnabled });
     updateWrapButtonState();
 }
 
@@ -796,7 +796,7 @@ function buildStateSnapshot() {
     }
 
     return {
-        terminalId: localStorage.getItem(TERMINAL_STORAGE_KEY) || 'default',
+        terminalId: getTerminalId(),
         openFiles,
         activeFile: activePath,
         cursorLine,
@@ -806,10 +806,45 @@ function buildStateSnapshot() {
     };
 }
 
-// --- Persistencia de pestanas (localStorage) ---
+// --- Persistencia de pestanas (storage.js) ---
 
 /**
- * Guarda en localStorage la lista de pestanas abiertas y cual esta activa
+ * Devuelve el identificador del terminal activo.
+ *
+ * @returns {string} Identificador del terminal, o 'default'.
+ */
+function getTerminalId() {
+    return (storage.read('app') || {}).terminalId || 'default';
+}
+
+/**
+ * Lee las pestanas guardadas de un terminal.
+ *
+ * @param {string} terminalId Identificador del terminal.
+ * @returns {{openFiles: string[], activeFile: string}|null} Snapshot o null.
+ */
+function readEditorTabs(terminalId) {
+    const section = storage.read('fsexplorer') || {};
+    const byTerminal = section.tabs || {};
+    return byTerminal[terminalId] || null;
+}
+
+/**
+ * Guarda las pestanas de un terminal.
+ *
+ * @param {string} terminalId Identificador del terminal.
+ * @param {Object} tabs Snapshot con `openFiles` y `activeFile`.
+ * @returns {void}
+ */
+function writeEditorTabs(terminalId, tabs) {
+    const section = storage.read('fsexplorer') || {};
+    const byTerminal = Object.assign({}, section.tabs || {});
+    byTerminal[terminalId] = tabs;
+    storage.update('fsexplorer', { tabs: byTerminal });
+}
+
+/**
+ * Guarda en storage la lista de pestanas abiertas y cual esta activa
  * para el terminal actual. Solo se persisten rutas: el contenido sin
  * guardar vive en el buffer del navegador y no sobrevive a una recarga,
  * asi que el flag dirty se descarta a proposito. Escribe unicamente
@@ -833,11 +868,7 @@ function persistTabs(snapshot) {
         return;
     }
     lastPersistedTabs = serialized;
-    try {
-        localStorage.setItem(TABS_STORAGE_KEY_PREFIX + snapshot.terminalId, serialized);
-    } catch (error) {
-        // Cuota agotada o almacenamiento no disponible: no es critico.
-    }
+    writeEditorTabs(snapshot.terminalId, tabs);
 }
 
 /**
@@ -849,13 +880,8 @@ async function restoreTabs() {
     if (!editor) {
         return;
     }
-    const terminalId = localStorage.getItem(TERMINAL_STORAGE_KEY) || 'default';
-    let stored;
-    try {
-        stored = JSON.parse(localStorage.getItem(TABS_STORAGE_KEY_PREFIX + terminalId) || 'null');
-    } catch (error) {
-        return;
-    }
+    const terminalId = getTerminalId();
+    const stored = readEditorTabs(terminalId);
     if (!stored || !Array.isArray(stored.openFiles)) {
         return;
     }
@@ -934,7 +960,7 @@ async function handleReload() {
             }
         }
     }
-    await reloadSessionFromDisk(path);
+    await reloadSessionFromDisk(path, { force: true });
 }
 
 /**
@@ -1099,7 +1125,7 @@ async function handleSetupProject() {
     updateToolbarState();
     updateSetupButtonState();
 
-    const terminalId = localStorage.getItem(TERMINAL_STORAGE_KEY) || 'default';
+    const terminalId = getTerminalId();
     try {
         await postEditorSetupProject(terminalId, activePath);
         // Éxito del envío (202). El resultado real llega por SSE.
@@ -1134,4 +1160,3 @@ export function handleEditorSetupDone(payload) {
         showToast(`Setup del proyecto fallido: ${payload.message || 'error desconocido'}`, 'error', 5000);
     }
 }
-

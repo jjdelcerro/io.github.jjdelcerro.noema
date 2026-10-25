@@ -10,12 +10,10 @@
  * NoteStore en el servidor.
  */
 
-import { showToast } from './toast.js';
-import { registerAreaView } from './area-tabs.js';
-import { confirmDiscardDialog } from './discard-dialog.js';
-import { pushComponentState } from './ui-state.js';
-
-const NOTES_ENDPOINT = '/api/notes';
+import { showToast } from '../../../../toast.js';
+import { confirmDiscardDialog } from '../../../../common/discard-dialog.js';
+import { pushComponentState } from '../../../../ui-state.js';
+import { fetchNote, updateNote } from '../notes-api.js';
 
 let aceEditor = null;
 let current = null;
@@ -71,7 +69,9 @@ export function initNoteEditor() {
         if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 's') {
             return;
         }
-        const view = document.querySelector('[data-area-view="notes"]');
+        // El panel del addon se localiza por data-tab-panel: el workspace ya no
+        // sirve el markup desde index.html, lo crea el en su mount().
+        const view = document.querySelector('[data-tab-panel="notes"]');
         if (!current || !view || view.hidden) {
             return;
         }
@@ -79,15 +79,6 @@ export function initNoteEditor() {
         saveNote();
     });
 
-    registerAreaView('notes', {
-        isDirty: isDirty,
-        confirmLeave: confirmLeaveNotes,
-        onActivate: () => {
-            if (aceEditor) {
-                aceEditor.resize();
-            }
-        }
-    });
 }
 
 /**
@@ -111,11 +102,7 @@ export async function openNote(reference) {
     try {
         let note = reference.note || null;
         if (!note) {
-            const response = await fetch(`${NOTES_ENDPOINT}/${encodeURIComponent(reference.id)}`);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            note = await response.json();
+            note = await fetchNote(reference.id);
         }
         applyNote(note, reference.highlight);
         return true;
@@ -138,7 +125,15 @@ export function isDirty() {
     return signature() !== originalSignature;
 }
 
-function confirmLeaveNotes() {
+/**
+ * Pregunta al usuario si quiere abandonar una nota con cambios sin guardar.
+ *
+ * Sincrona a proposito: es el confirmLeave del addon de notas y el contrato
+ * de addon espera un booleano, no una promesa.
+ *
+ * @returns {boolean} false para abortar el cambio de pestana
+ */
+export function confirmLeaveNote() {
     if (!isDirty()) {
         return true;
     }
@@ -235,15 +230,7 @@ async function saveNote() {
             tags: readTags(),
             content: aceEditor ? aceEditor.getValue() : ''
         };
-        const response = await fetch(`${NOTES_ENDPOINT}/${encodeURIComponent(current.id)}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        const updated = await response.json();
+        const updated = await updateNote(current.id, payload);
         applyNote(Object.assign({}, current, updated));
         showToast('Nota guardada', 'success');
         window.dispatchEvent(new CustomEvent('noema:notes-changed'));
@@ -314,11 +301,7 @@ async function reloadNote() {
     }
     const id = current.id;
     try {
-        const response = await fetch(`${NOTES_ENDPOINT}/${encodeURIComponent(id)}`);
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        const note = await response.json();
+        const note = await fetchNote(id);
         applyNote(note);
         showToast('Nota recargada', 'success', 1800);
         return true;
@@ -519,6 +502,17 @@ function refreshDirtyState() {
  * marca temporal. La ruta se deriva en el cliente porque el servidor mueve
  * el fichero al mes corriente en cada guardado.
  */
+/**
+ * Reajusta el editor de nota tras un cambio de visibilidad del panel.
+ *
+ * @returns {void}
+ */
+export function refreshNoteLayout() {
+    if (aceEditor) {
+        aceEditor.resize();
+    }
+}
+
 function updateStatus() {
     const status = document.getElementById('note-status');
     if (!status) {
