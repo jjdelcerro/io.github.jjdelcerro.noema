@@ -35,7 +35,7 @@ public class FileExtractTextTool extends AbstractPaginatedAgentTool {
                     + "  • La extracción puede ser costosa computacionalmente para documentos grandes.\n"
                     + "\n"
                     + getShortPaginationInstruction())
-            .addStringParameter("path", "Ruta del archivo binario (PDF, DOCX, etc.).");
+            .addStringParameter("path", "Ruta absoluta del archivo binario (PDF, DOCX, etc.).");
   }
 
   @Override

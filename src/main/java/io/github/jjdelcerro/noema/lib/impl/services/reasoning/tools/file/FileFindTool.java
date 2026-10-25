@@ -40,7 +40,7 @@ public class FileFindTool extends AbstractPaginatedAgentTool {
             .description("Lists files and directories that match a glob pattern, with pagination.\n\n"
                     + getShortPaginationInstruction()
                     + "\n**Parameters:**\n"
-                    + "- `path`: (required) Absolute or relative path to a file or directory.\n"
+                    + "- `path`: (required) Absolute path to a file or directory.\n"
                     + "- `pattern`: (required) Glob pattern (e.g. `\"**/*.java\"`, `\"pom.xml\"`).\n"
                     + "\n**Output format (one line per entry, fields separated by ';'):**\n"
                     + "`lastModified;type;size;mime;absolutePath`\n"

@@ -6,7 +6,6 @@ import io.github.jjdelcerro.noema.lib.impl.tools.AbstractPaginatedAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingFilter;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.tika.Tika;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +61,7 @@ public class FileFuzzyGrepTool extends AbstractPaginatedAgentTool {
                     + "pero DESCONOZCAS los identificadores o nombres exactos de variables/clases.\n"
                     + "Para buscar símbolos literales o expresiones regulares exactas, utiliza 'file_grep'.\n\n"
                     + getShortPaginationInstruction())
-            .addStringParameter("path", false, "Ruta del archivo o directorio donde buscar.")
+            .addStringParameter("path", false, "Ruta absoluta del archivo o directorio donde buscar.")
             .addStringParameter("query", false, "Concepto, pregunta o descripción en lenguaje natural a buscar por significado.")
             .addStringParameter("filePattern", true, "Patrón glob para filtrar archivos si se busca en un directorio (default: '**').")
             .addIntegerParameter("limit", true, "Número máximo de fragmentos relevantes a retornar (default: " + DEFAULT_LIMIT + ", max: " + MAX_LIMIT + ").")

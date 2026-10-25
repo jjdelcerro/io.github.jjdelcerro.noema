@@ -63,7 +63,7 @@ Las directivas del mapa permaneceran fijadas en tu contexto proyectado hasta
 que finalices la tarea sobre el proyecto y decidas liberarlo invocando
 'unload_project_map'.
 """)
-            .addStringParameter("path", false, "Ruta al directorio raiz del proyecto (relativa o absoluta).");
+            .addStringParameter("path", false, "Ruta absoluta al directorio raiz del proyecto.");
   }
 
   @Override

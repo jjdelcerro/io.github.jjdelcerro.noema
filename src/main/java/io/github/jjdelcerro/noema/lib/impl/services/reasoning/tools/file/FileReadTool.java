@@ -34,7 +34,7 @@ public class FileReadTool extends AbstractPaginatedAgentTool {
                     + "PROHIBIDO usar esta herramienta para cálculos acumulativos, agregaciones, medias o "
                     + "procesamiento masivo."
                     + getShortPaginationInstruction())
-            .addStringParameter("path", false, "Ruta del archivo (relativa o absoluta).")
+            .addStringParameter("path", false, "Ruta del archivo absoluta.")
             .addIntegerParameter("offset", true, "Línea inicial (0-based) desde donde empezar a leer. Opcional, por defecto 0.")
             .addIntegerParameter("limit", true, "Número máximo de líneas a leer. Opcional, por defecto " + defaultLimit + ".");
   }
