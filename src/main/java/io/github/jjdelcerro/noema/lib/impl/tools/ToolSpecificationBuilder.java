@@ -16,6 +16,8 @@ public class ToolSpecificationBuilder {
   private String description;
   private JsonObjectSchema rawParameters;
 
+  // TODO: no se estan gestionando la definicion de parametros opcionales aunque los metodos add*Parameter lo reciben.
+  
   public ToolSpecificationBuilder() {
   }
 
