@@ -3,6 +3,7 @@ package io.github.jjdelcerro.noema.lib.impl.utils.search.matchers;
 import io.github.jjdelcerro.noema.lib.impl.utils.search.SearchMatcher;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOCase;
+import org.apache.commons.lang3.Strings;
 
 /**
  *
@@ -15,6 +16,12 @@ public class GlobMatcher extends AbstractSearchMatcher implements SearchMatcher 
 
   public GlobMatcher(String type, String glob, boolean casesensitive) {
     super(type);
+    if( !Strings.CS.startsWith(glob, "*") ) {
+      glob = "*" + glob;
+    }
+    if( !Strings.CS.endsWith(glob, "*") ) {
+      glob = glob + "*";
+    }
     this.glob = glob;
     this.casesensitive = casesensitive;
   }
