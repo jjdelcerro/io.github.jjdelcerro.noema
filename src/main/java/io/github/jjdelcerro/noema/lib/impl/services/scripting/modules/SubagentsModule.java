@@ -23,10 +23,13 @@ public class SubagentsModule extends AbstractScriptModule {
   public String help() {
     return """
 [agent.subagents API] (ejecución de recetas declarativas en var/subagents/*.xml)
+Rutas absolutas en los params: las recetas suelen invocar agent.fs por dentro, y una
+ruta relativa se resuelve contra el directorio de trabajo del proceso, que no tiene
+por qué coincidir con la raíz del proyecto.
 • run(recipeName, Map params): String (SÍNCRONO, devuelve respuesta textual final)
-  -> def out = agent.subagents.run('document_indexer', [FILE_PATH: 'doc.txt', OUTPUT_PATH: 'out.md'])
+  -> def out = agent.subagents.run('document_indexer', [FILE_PATH: '/home/user/docs/doc.txt', OUTPUT_PATH: '/tmp/out.md'])
 • launch(recipeName, Map params): int (ASÍNCRONO en 2º plano, notifica fin vía SYSTEMNOTIFICATION)
-  -> int id = agent.subagents.launch('document_indexer', [FILE_PATH: 'doc.txt', OUTPUT_PATH: 'out.md'])
+  -> int id = agent.subagents.launch('document_indexer', [FILE_PATH: '/home/user/docs/doc.txt', OUTPUT_PATH: '/tmp/out.md'])
 """;
   }
 

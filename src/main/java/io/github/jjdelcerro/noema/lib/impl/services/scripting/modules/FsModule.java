@@ -16,10 +16,8 @@ import io.github.jjdelcerro.noema.lib.impl.utils.CloseableIterable;
 import io.github.jjdelcerro.noema.lib.impl.utils.FileSearchAndReplaceUtils;
 import io.github.jjdelcerro.noema.lib.impl.utils.FileSearchAndReplaceUtils.SearchAndReplaceResult;
 import io.github.jjdelcerro.noema.lib.impl.utils.FsUtils;
-import io.github.jjdelcerro.noema.lib.impl.utils.GrepUtils;
-import io.github.jjdelcerro.noema.lib.impl.utils.GrepUtils.GrepMatch;
-import io.github.jjdelcerro.noema.lib.impl.utils.GrepUtils.GrepMatcher;
-import io.github.jjdelcerro.noema.lib.impl.utils.GrepUtils.GrepMatchers;
+import io.github.jjdelcerro.noema.lib.impl.utils.search.SearchUtils;
+import io.github.jjdelcerro.noema.lib.impl.utils.search.SearchResult;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -35,11 +33,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Pattern;
 import org.apache.tika.Tika;
 import org.apache.tika.detect.AutoDetectReader;
 import org.apache.tika.metadata.Metadata;
+import io.github.jjdelcerro.noema.lib.impl.utils.search.SearchMatcher;
+import io.github.jjdelcerro.noema.lib.impl.utils.search.SearchResult.SearchResultEntry;
 
+@SuppressWarnings("UseSpecificCatch")
 public class FsModule extends AbstractScriptModule {
 
 //  public static record GrepMatch(String file, int line, String content) {
@@ -61,23 +61,26 @@ public class FsModule extends AbstractScriptModule {
   public String help() {
     return """
 [agent.fs API]
+Rutas absolutas: una ruta relativa se resuelve contra el directorio de trabajo del
+proceso, que no tiene por qué coincidir con la raíz del proyecto. Usa rutas absolutas
+para no depender de dónde se inició el agente.
 • lines(path): Iterable<String> (lazy stream, autodetección charset y extracción Tika p/ pdf/docx/odt)
-  -> agent.fs.lines('f.txt').each { println it }
+  -> agent.fs.lines('/home/user/proyecto/README.md').each { println it }
 • forEachLine(path, {line, num -> ..}): void (num: 1-based)
-  -> agent.fs.forEachLine('f.log') { line, num -> if (line.contains('ERR')) println "$num: $line" }
-• find([path], globPattern): Iterable<String> (rutas relativas al workspace o absolutas; incluye carpetas)
-  -> agent.fs.find('**/*.java')
-  -> agent.fs.find('/home/user/proyecto', '**/*.md')
+  -> agent.fs.forEachLine('/var/log/app.log') { line, num -> if (line.contains('ERR')) println "$num: $line" }
+• find([path], globPattern): Iterable<String> (incluye carpetas)
+  -> agent.fs.find('/home/user/proyecto', '**/*.java')
+  -> agent.fs.find('/home/user/proyecto', '**/pom.xml')
 • grep(regex, path): Iterable<GrepMatch(file, line, content)>
-  -> agent.fs.grep('(?i)timeout', 'src/').each { println "${it.file}:${it.line} ${it.content}" }
+  -> agent.fs.grep('(?i)timeout', '/home/user/proyecto/src').each { println "${it.file}:${it.line} ${it.content}" }
 • fuzzygrep(query, path, [glob='**', limit=5, minSim=0.25]): Iterable<FuzzyMatch(file, startLine, endLine, similarity, content)>
-  -> agent.fs.fuzzygrep('conexión base de datos', 'docs/').each { println "${it.file}:${it.startLine}-${it.endLine}" }
+  -> agent.fs.fuzzygrep('conexión base de datos', '/home/user/proyecto/docs').each { println "${it.file}:${it.startLine}-${it.endLine}" }
 • write(path, String|Iterable): void (auto-mkdir, copia de seguridad automática en RCS)
-  -> agent.fs.write('out.txt', ['línea 1', 'línea 2'])
+  -> agent.fs.write('/tmp/out.txt', ['línea 1', 'línea 2'])
 • searchAndReplace(path, oldText, newText): SearchAndReplaceResult(status, path, strategy, message, preview, startLine, replacedLineCount)
-  -> def res = agent.fs.searchAndReplace('f.txt', old, new); println res.status == 'success' ? res.preview : res.messag
+  -> def res = agent.fs.searchAndReplace('/tmp/f.txt', old, new); println res.status == 'success' ? res.preview : res.message
 • delete(path): Map(status, message) (ficheros y carpetas VACIAS; nunca recursivo; copia previa en RCS si esta activo)
-  -> println agent.fs.delete('out.txt').status         
+  -> println agent.fs.delete('/tmp/out.txt').status         
 """;
   }
 
@@ -135,15 +138,15 @@ public class FsModule extends AbstractScriptModule {
    * @param rawPath scope of the search
    * @return matches with their display path, line number and content
    */
-  public Iterable<GrepMatch> grep(String regex, String rawPath) {
+  public Iterable<SearchResultEntry> grep(String regex, String rawPath) {
     Path scope = toScope(rawPath);
-    GrepMatcher matcher = GrepUtils.matcherOf(GrepMatchers.REGEXP, regex, true);
-    Iterable<GrepMatch> results = GrepUtils.grep(
+    SearchMatcher matcher = SearchMatcher.of(SearchMatcher.REGEXP, regex, false);
+    SearchResult results = SearchUtils.search(
             this.agent.getAccessControl(), 
             matcher, 
             scope
     );
-    return results;
+    return results.results();
   }
   
   /**
@@ -202,6 +205,8 @@ public class FsModule extends AbstractScriptModule {
    * saturar la memoria heap. Delega en lines(), por lo que procesa de forma
    * transparente tanto texto plano como documentos (PDF, Word, etc.). Pasa a la
    * closure (line, lineNumber).
+   * @param rawPath
+   * @param closure
    */
   public void forEachLine(String rawPath, Closure<?> closure) {
     int lineNumber = 1;
@@ -216,6 +221,8 @@ public class FsModule extends AbstractScriptModule {
    * directa detectando codificación de caracteres. - Documentos (PDF, DOCX,
    * ODT, RTF, etc.): extracción de texto mediante Tika. - Binarios puros
    * (imágenes, ejecutables): lanza IllegalArgumentException.
+   * @param rawPath
+   * @return 
    */
   public Iterable<String> lines(String rawPath) {
     Path path = validatePath(rawPath, AgentAccessControl.AccessMode.PATH_ACCESS_READ);
@@ -413,7 +420,7 @@ public class FsModule extends AbstractScriptModule {
   private long countDirectoryEntries(Path path) {
     long count = 0;
     try (DirectoryStream<Path> children = Files.newDirectoryStream(path)) {
-      for (Path ignored : children) {
+      for (@SuppressWarnings("unused") Path ignored : children) {
         count++;
       }
       return count;

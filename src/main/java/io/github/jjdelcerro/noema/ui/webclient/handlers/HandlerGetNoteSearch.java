@@ -59,6 +59,9 @@ public class HandlerGetNoteSearch extends AbstractHandler {
         cache.write(key, fresh);
         result = this.paginate(fresh, page, pageSize);
       }
+      if( result == null ) {
+        result = search.createResults(mode, query, root);
+      }
       ctx.json(result);
     } catch (IllegalArgumentException e) {
       ctx.status(400).json(Map.of("error", String.valueOf(e.getMessage())));

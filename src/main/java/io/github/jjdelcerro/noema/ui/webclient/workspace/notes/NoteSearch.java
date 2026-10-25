@@ -2,10 +2,9 @@ package io.github.jjdelcerro.noema.ui.webclient.workspace.notes;
 
 import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsService;
-import io.github.jjdelcerro.noema.lib.impl.utils.GrepUtils;
-import io.github.jjdelcerro.noema.lib.impl.utils.GrepUtils.GrepMatch;
-import io.github.jjdelcerro.noema.lib.impl.utils.GrepUtils.GrepMatcher;
-import io.github.jjdelcerro.noema.lib.impl.utils.GrepUtils.GrepMatchers;
+import io.github.jjdelcerro.noema.lib.impl.utils.search.SearchChunker;
+import io.github.jjdelcerro.noema.lib.impl.utils.search.SearchUtils;
+import io.github.jjdelcerro.noema.lib.impl.utils.search.SearchResult;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +21,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import io.github.jjdelcerro.noema.lib.impl.utils.search.SearchMatcher;
+import io.github.jjdelcerro.noema.lib.impl.utils.search.chunkers.AbstractSearchChunker;
+import java.io.BufferedReader;
+import org.apache.commons.io.IOUtils;
 
 /**
  * Motor de busqueda sobre el arbol de notas.
@@ -59,7 +62,7 @@ public class NoteSearch {
   public static final int LIMIT = 10000;
   public static final double MIN_SIMILARITY = 0.5;
 
-  private static final String NOTES_GLOB = "**/*.xml";
+  private static final String NOTES_FILE_PATTERN = "**/*.xml";
 
   private static final Comparator<NoteSearchItem> UPDATED_DESC = Comparator.comparing(
           NoteSearchItem::getUpdated,
@@ -93,27 +96,26 @@ public class NoteSearch {
     if( normalizedMode.equals(MODE_TAGS) ) {
       items = this.searchByTags(normalizedQuery, root);       
     } else {
-      GrepMatcher matcher;
+      SearchMatcher matcher;
       switch(normalizedMode) {
         case MODE_FUZZY:
-          matcher = GrepUtils.matcherOf(GrepMatchers.FUZZYWUZZY, query);
+          matcher = SearchMatcher.of(SearchMatcher.FUZZYWUZZY, query);
           break;
         case MODE_GLOB:
-          matcher = GrepUtils.matcherOf(GrepMatchers.GLOB, query, false);
+          matcher = SearchMatcher.of(SearchMatcher.GLOB, query, false);
           break;
         case MODE_SEMANTIC:
-          matcher = GrepUtils.matcherOf(
-                  GrepMatchers.COSENO_SIMILARITY, 
+          matcher = SearchMatcher.of(SearchMatcher.COSENO_SIMILARITY, 
                   query, 
                   (EmbeddingsService) this.agent.getService(EmbeddingsService.NAME)
           );
           break;
         case MODE_REGEXP:
-          matcher = GrepUtils.matcherOf(GrepMatchers.REGEXP, query, false);
+          matcher = SearchMatcher.of(SearchMatcher.REGEXP, query, false);
           break;
         case MODE_EXACT:
         default:
-          matcher = GrepUtils.matcherOf(GrepMatchers.EXACT, query, false);
+          matcher = SearchMatcher.of(SearchMatcher.EXACT, query, false);
           break;
       }
       items = this.searchGrep(matcher, root);
@@ -129,17 +131,29 @@ public class NoteSearch {
       truncated = true;
     }
 
+    NoteSearchResult result = createResults(normalizedMode, normalizedMode, root, truncated, items);
+    return result;
+  }
+
+  public NoteSearchResult createResults(String mode, String query, String root) {
+    return this.createResults(mode, query, root, false, null);
+  }
+  
+  public NoteSearchResult createResults(String mode, String query, String root, boolean truncated, List<NoteSearchItem>items) {
+    if( items == null ) {
+      items = Collections.emptyList();
+    }
     NoteSearchResult result = new NoteSearchResult();
-    result.setQuery(normalizedQuery);
-    result.setMode(normalizedMode);
+    result.setQuery(query);
+    result.setMode(mode);
     result.setRoot(root);
     result.setTimestamp(Instant.now().toString());
-    result.setTotal(total);
+    result.setTotal(items.size());
     result.setTruncated(truncated);
     result.setItems(items);
     return result;
   }
-
+  
   /**
    * Normaliza el nombre del modo. Un modo desconocido cae a exact en vez de
    * fallar: el cliente no debe romperse por un parametro de mas.
@@ -162,26 +176,6 @@ public class NoteSearch {
     return MODE_EXACT;
   }
 
-//  private List<NoteSearchItem> searchExact(String query, String root) throws IOException {
-//    List<NoteSearchItem> items = new ArrayList<>();
-//    if (StringUtils.isBlank(query) ){
-//      return items;
-//    }
-//    
-//    String needle = query.toLowerCase(Locale.ROOT);
-//    for (Path path : this.store.findAll(root)) {
-//      Note note = this.readQuietly(path);
-//      if (note == null) {
-//        continue;
-//      }
-//      if (this.matchesText(note, needle)) {
-//        items.add(this.toItem(note, path, 1.0));
-//      }
-//    }
-//    items.sort(UPDATED_DESC);
-//    return items;
-//  }
-
   private List<NoteSearchItem> searchByTags(String query, String root) throws IOException {
     List<NoteSearchItem> items = new ArrayList<>();
     List<String> wanted = this.splitTags(query);
@@ -201,21 +195,21 @@ public class NoteSearch {
     return items;
   }
 
-  private List<NoteSearchItem> searchGrep(GrepMatcher query, String root) throws IOException {
+  private List<NoteSearchItem> searchGrep(SearchMatcher query, String root) throws IOException {
     Map<String, NoteSearchItem> best = new LinkedHashMap<>();
-    Path base = this.resolveBase(root);
-    Iterable<GrepMatch> matches = GrepUtils.grep(
+    Path scope = this.resolveBase(root);
+    SearchResult matches = SearchUtils.search(
             this.agent.getAccessControl(), 
             query, 
-            base,
-            NOTES_GLOB,
-            this::toSearchableText
+            new NoteSearchChunker(store),
+            scope,
+            NOTES_FILE_PATTERN
     );
     if( matches == null ) {
       return Collections.EMPTY_LIST;
     }
     
-    for (GrepMatch match : matches) {
+    for (SearchResult.SearchResultEntry match : matches.results()) {
       Path path = match.file();
       if (path == null) {
         continue;
@@ -237,59 +231,53 @@ public class NoteSearch {
     return items;
   }
 
-//
-//  private List<NoteSearchItem> searchFuzzy(String query, String root) throws IOException {
-//    Map<String, NoteSearchItem> best = new LinkedHashMap<>();
-//    if (query.isEmpty()) {
-//      return new ArrayList<>(best.values());
-//    }
-//    Path base = this.resolveBase(root);
-//    List<FuzzyMatch> matches = FileFuzzySearchUtils.search(
-//            (EmbeddingsService) agent.getService(EmbeddingsService.NAME),
-//            null,
-//            agent.getPaths(),
-//            base, query, NOTES_GLOB, LIMIT, MIN_SIMILARITY,
-//            this::toSearchableText);
-//    for (FuzzyMatch match : matches) {
-//      Path path = match.path();
-//      if (path == null) {
-//        continue;
-//      }
-//      String key = path.toAbsolutePath().normalize().toString();
-//      double score = (match.similarity() == null) ? 0.0 : match.similarity().getValue();
-//      NoteSearchItem previous = best.get(key);
-//      if (previous != null && previous.getScore() >= score) {
-//        continue;
-//      }
-//      Note note = this.readQuietly(path);
-//      if (note == null) {
-//        continue;
-//      }
-//      best.put(key, this.toItem(note, path, score));
-//    }
-//    List<NoteSearchItem> items = new ArrayList<>(best.values());
-//    items.sort(SCORE_DESC);
-//    return items;
-//  }
+  private static class NoteSearchChunker extends AbstractSearchChunker {
 
-  /**
-   * Aplana una nota a texto plano para el modo fuzzy.
-   *
-   * FileFuzzySearchUtils trocea por lineas y el XML de una nota guarda el
-   * contenido en un unico CDATA, de modo que sin esta conversion el fragmento
-   * que se embebe seria la nota entera con sus etiquetas y la similitud coseno
-   * de una consulta corta se quedaria por debajo del umbral. Aqui se descarta
-   * el XML y se deja el titulo y el contenido con sus saltos de linea reales.
-   *
-   * @param reader flujo del fichero XML
-   * @return flujo con el texto que se embebe
-   * @throws IOException si el XML no se puede leer o parsear
-   */
-  private Reader toSearchableText(Reader reader) throws IOException {
-    Note note = this.store.read(reader);
-    String title = StringUtils.defaultString(note.getTitle());
-    String content = StringUtils.defaultString(note.getContent());
-    return new StringReader(title + "\n\n" + content);
+    private final SearchChunker chunker;
+    private BufferedReader reader;
+    private final NoteStore store;
+    private BufferedReader contentReader;
+    private int line;
+
+    public NoteSearchChunker(NoteStore store) {
+      super(SearchChunker.LINE);
+      this.chunker = SearchChunker.of(SearchChunker.LINE);      
+      this.store = store;
+      this.line = 0;
+    }
+
+    
+    @Override
+    public SearchChunker open(Reader reader) throws IOException {      
+      this.reader = (reader instanceof BufferedReader)? (BufferedReader)reader :new BufferedReader(reader); 
+      Note note = this.store.read(reader);
+      String title = StringUtils.defaultString(note.getTitle());
+      String content = StringUtils.defaultString(note.getContent());
+      this.contentReader = new BufferedReader(new StringReader(title + "\n\n" + content));
+      this.line = 0;
+      return this;
+    }
+
+    @Override
+    public String read() throws IOException {
+      this.line++;
+      return this.contentReader.readLine();
+    }
+
+    @Override
+    public void close() throws Exception {
+      IOUtils.close(contentReader);
+      IOUtils.close(reader);
+      this.contentReader = null;
+      this.reader = null;
+      this.line = 0;
+    }
+
+    @Override
+    public SearchChunkerLocation getLocation() {
+      return new SearchChunkerLocationBase(line, line+1);
+    }
+    
   }
 
   private Path resolveBase(String root) {
@@ -303,30 +291,6 @@ public class NoteSearch {
     }
     return candidate;
   }
-
-//  private boolean matchesText(Note note, String needle) {
-//    if (this.containsIgnoreCase(note.getTitle(), needle)) {
-//      return true;
-//    }
-//    if (this.containsIgnoreCase(note.getContent(), needle)) {
-//      return true;
-//    }
-//    if (note.getTags() != null) {
-//      for (String tag : note.getTags()) {
-//        if (this.containsIgnoreCase(tag, needle)) {
-//          return true;
-//        }
-//      }
-//    }
-//    return false;
-//  }
-//
-//  private boolean containsIgnoreCase(String text, String needle) {
-//    if (text == null) {
-//      return false;
-//    }
-//    return text.toLowerCase(Locale.ROOT).contains(needle);
-//  }
 
   private List<String> splitTags(String query) {
     List<String> tags = new ArrayList<>();
