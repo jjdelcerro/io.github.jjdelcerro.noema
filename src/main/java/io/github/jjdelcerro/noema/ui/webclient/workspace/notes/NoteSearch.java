@@ -131,7 +131,7 @@ public class NoteSearch {
       truncated = true;
     }
 
-    NoteSearchResult result = createResults(normalizedMode, normalizedMode, root, truncated, items);
+    NoteSearchResult result = createResults(normalizedMode, normalizedQuery, root, truncated, items);
     return result;
   }
 
@@ -199,7 +199,7 @@ public class NoteSearch {
     Map<String, NoteSearchItem> best = new LinkedHashMap<>();
     Path scope = this.resolveBase(root);
     SearchResult matches = SearchUtils.search(
-            this.agent.getAccessControl(), 
+            null, 
             query, 
             new NoteSearchChunker(store),
             scope,
@@ -261,7 +261,8 @@ public class NoteSearch {
     @Override
     public String read() throws IOException {
       this.line++;
-      return this.contentReader.readLine();
+      String s = this.contentReader.readLine();
+      return s;
     }
 
     @Override
