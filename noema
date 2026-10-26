@@ -1,15 +1,15 @@
 #!/bin/bash
 #set -x
 workspace=$PWD
-progdir=$(dirname $0)
-progdir=$(realpath -Ls $progdir)
+progdir=$(realpath -PL $0)
+progdir=$(dirname $progdir)
 if [ -d "$progdir/target" ] ; then
 	jar=$(echo $progdir/target/io.github.jjdelcerro.noema.main-*.jar)
 else
 	jar=$(echo $progdir/io.github.jjdelcerro.noema.main-*.jar)
 fi
 args="$*"
-if [ ${args/*--debug*/--debug} == "--debug" ] ; then
+if [ "${args/*--debug*/--debug}" == "--debug" ] ; then
 	suspend=y
 else
 	suspend=n
