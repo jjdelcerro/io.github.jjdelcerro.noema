@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.github.jjdelcerro.noema.lib.api.memory.episodic.EpisodicMemory;
 import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemory;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Repositorio central que gestiona la persistencia (H2) y la indexación
@@ -135,13 +136,20 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
         int newId = getTurnCounter().get();
         ((TurnImpl) turn).setId(newId);
       }
+      // Log CSV
+      log2csv(turn);
+      
       EmbeddingsService embedding = (EmbeddingsService) agent.getService(EmbeddingsService.NAME);
 
       // 2. Embedding (Usa el texto completo del objeto en memoria, lo cual es bueno para la búsqueda)
       float[] vector = turn.getEmbedding();
       if (vector == null) {
         String textToEmbed = turn.getContentForEmbedding();
-        vector = embedding.embed(textToEmbed);
+        if( StringUtils.isNotBlank(textToEmbed) ) {
+          vector = embedding.embed(textToEmbed);
+        } else {
+          LOGGER.warn("Can't create embedding for a turn, ContentForEmbedding is blank!!!!\n"+turn.toCSVLine());
+        }
       }
       byte[] blobBytes = (vector != null) ? embedding.toBytes(vector) : null;
 
@@ -178,9 +186,6 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
         ps.setBytes(11, blobBytes);
         ps.executeUpdate();
       }
-
-      // 4. Log CSV
-      log2csv(turn);
 
     } catch (Exception ex) {
       throw new TurnException("Can't add turn", ex);
