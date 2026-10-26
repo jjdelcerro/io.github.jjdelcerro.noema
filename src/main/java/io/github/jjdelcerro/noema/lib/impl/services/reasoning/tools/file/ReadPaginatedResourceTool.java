@@ -25,8 +25,9 @@ public class ReadPaginatedResourceTool extends AbstractPaginatedAgentTool {
                     + getPaginationSystemInstruction()
             )
             .addStringParameter("resource_id", "Identificador del recurso a leer. Debe ser exactamente el proporcionado en el HINT de otra herramienta.")
-            .addIntegerParameter("offset", "Línea inicial (0-based). Default: 0.")
-            .addIntegerParameter("limit", "Máximo de líneas a leer. Default: " + defaultLimit);
+            .addIntegerParameter("offset", true, "Línea inicial (0-based). Default: 0.")
+            .addIntegerParameter("column", true, "Columna dentro de la línea inicial (0-based, contada desde el comienzo de la línea, no desde el comienzo del bloque). Si el HINT incluye este parámetro, se está reanudando una línea que quedó partida a la mitad: pásalo tal cual, sin modificarlo ni omitirlo. Default: 0.")
+            .addIntegerParameter("limit", true, "Máximo de líneas a leer. Default: " + defaultLimit);
   }
 
   @Override
@@ -45,9 +46,10 @@ public class ReadPaginatedResourceTool extends AbstractPaginatedAgentTool {
       }
 
       int offset = args.offset > 0 ? args.offset : 0;
+      int column = args.column > 0 ? args.column : 0;
       int limit = args.limit > 0 ? args.limit : getDefaultMaxLines();
 
-      return servePaginatedResource(args.resource_id, offset, limit);
+      return servePaginatedResource(args.resource_id, offset, column, limit);
 
     } catch (Exception e) {
       LOGGER.warn("Error reading paginated resource, args=" + StringUtils.replace(jsonArguments, "\\n", " "), e);
@@ -59,6 +61,7 @@ public class ReadPaginatedResourceTool extends AbstractPaginatedAgentTool {
 
     String resource_id;
     int offset;
+    int column;
     int limit;
   }
 }
