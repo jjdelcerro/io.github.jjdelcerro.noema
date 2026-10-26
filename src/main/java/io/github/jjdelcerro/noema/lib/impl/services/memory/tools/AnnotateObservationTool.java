@@ -48,6 +48,7 @@ Solo debes incluirlo cuando recibas una instrucción explícita que te indique b
             .addStringParameter("source", false, "El origen de la información (ej: nombre del archivo, URL, o 'instrucción del usuario' cuando te haya pedido explícitamente anotar o recordar algo).")
             .addStringParameter("note", false, "Los hechos clave que deseas fijar en tu memoria episódica.")
             .addStringParameter("resource_id", true, "OBLIGATORIO si la información proviene de la lectura de un archivo o web. Debes copiar exactamente el RESOURCE_ID proporcionado por la herramienta de lectura.Dejar vacío ÚNICAMENTE cuando el usuario te haya pedido EXPLÍCITAMENTE que anotes o recuerdes algo.")
+            .addStringParameter("category", false, "OBLIGATORIO, valores: INVARIANT|DESIGN_DECISION|TASK_SCRATCHPAD|DOCUMENT_SUMMARY")
             .addStringParameter(
                 "type", 
                 true, 
@@ -58,7 +59,7 @@ Solo debes incluirlo cuando recibas una instrucción explícita que te indique b
             )    
             ;
   }
-
+  
   @Override
   public int getMode() {
     return AgentTool.MODE_READ;
