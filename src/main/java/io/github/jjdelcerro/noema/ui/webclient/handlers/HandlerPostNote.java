@@ -31,9 +31,9 @@ public class HandlerPostNote extends AbstractHandler {
     }
     body.setId(null);
     body.setCreated(null);
-    body.setTitle(body.getTitle() == null ? "" : body.getTitle());
-    body.setContent(body.getContent() == null ? "" : body.getContent());
-    body.setTags(body.getTags() == null ? new ArrayList<>() : body.getTags());
+    body.setTitle(body.title() == null ? "" : body.title());
+    body.setContent(body.content() == null ? "" : body.content());
+    body.setTags(body.tags() == null ? new ArrayList<>() : body.tags());
 
     NoteStore store = NotesSupport.store(this.agent);
     try {

@@ -187,7 +187,7 @@ public class NoteSearch {
       if (note == null) {
         continue;
       }
-      if (this.containsAllTags(note.getTags(), wanted)) {
+      if (this.containsAllTags(note.tags(), wanted)) {
         items.add(this.toItem(note, path, 100));
       }
     }
@@ -251,8 +251,8 @@ public class NoteSearch {
     public SearchChunker open(Reader reader) throws IOException {      
       this.reader = (reader instanceof BufferedReader)? (BufferedReader)reader :new BufferedReader(reader); 
       Note note = this.store.read(reader);
-      String title = StringUtils.defaultString(note.getTitle());
-      String content = StringUtils.defaultString(note.getContent());
+      String title = StringUtils.defaultString(note.title());
+      String content = StringUtils.defaultString(note.content());
       this.contentReader = new BufferedReader(new StringReader(title + "\n\n" + content));
       this.line = 0;
       return this;
@@ -337,11 +337,11 @@ public class NoteSearch {
 
   private NoteSearchItem toItem(Note note, Path path, int score) {
     NoteSearchItem item = new NoteSearchItem();
-    item.setId(note.getId());
-    item.setTitle(note.getTitle());
-    item.setTags(note.getTags());
+    item.setId(note.id());
+    item.setTitle(note.title());
+    item.setTags(note.tags());
     item.setPath(this.store.relativePath(path));
-    item.setUpdated(note.getUpdated());
+    item.setUpdated(note.updated());
     item.setScore(score);
     return item;
   }

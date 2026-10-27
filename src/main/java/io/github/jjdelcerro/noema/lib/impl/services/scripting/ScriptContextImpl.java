@@ -10,6 +10,8 @@ import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.SubagentsM
 import groovy.lang.GroovyObjectSupport;
 import groovy.lang.MissingPropertyException;
 import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.AgentLocator;
+import io.github.jjdelcerro.noema.lib.api.AgentManager;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptModuleFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.GitModule;
 
 /**
@@ -51,13 +54,12 @@ public class ScriptContextImpl extends GroovyObjectSupport implements ScriptCont
 
     // Register standard static facades
     registerModule(new SessionStateModule(this, this.agent, sessionState));
-    registerModule(new FsModule(this, this.agent));
-    registerModule(new LlmModule(this, this.agent));
-    registerModule(new WebModule(this, this.agent));
     registerModule(new AnnotationModule(this, this.agent, this.subchannel));
-    registerModule(new SubagentsModule(this, this.agent));
-    registerModule(new GitModule(this, this.agent));
-    // registerModule(new MCPModule(this, this.agent)); // TODO: implementar el puenete con MCP.
+
+    AgentManager manager = AgentLocator.getAgentManager();
+    for (ScriptModuleFactory factory : manager.getScriptingModulesFactories()) {
+      registerModule(factory.createModule(this.agent, this));
+    }        
   }
 
   public static Map<String, Object> getSessionState(String subchannel) {
@@ -158,5 +160,10 @@ public class ScriptContextImpl extends GroovyObjectSupport implements ScriptCont
         LOGGER.warn("Can't close resource", ex);
       }
     }
+  }
+
+  @Override
+  public List<Class> getImports() {
+    return Collections.emptyList();
   }
 }

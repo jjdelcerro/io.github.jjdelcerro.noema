@@ -41,6 +41,8 @@ import io.github.jjdelcerro.noema.ui.webclient.workspace.editor.tools.EditorGetC
 import io.github.jjdelcerro.noema.ui.webclient.workspace.editor.tools.EditorAddAnnotationTool;
 import io.github.jjdelcerro.noema.ui.webclient.workspace.editor.tools.EditorClearAnnotationsTool;
 import io.github.jjdelcerro.noema.ui.webclient.workspace.editor.tools.EditorInsertOrReplaceTool;
+import io.github.jjdelcerro.noema.ui.webclient.workspace.notes.scripting.NotesModule;
+import io.github.jjdelcerro.noema.ui.webclient.workspace.notes.scripting.NotesModule.NotesScriptModuleFactory;
 import io.javalin.Javalin;
 import io.javalin.http.sse.SseClient;
 import org.slf4j.Logger;
@@ -89,6 +91,7 @@ public class NoemaWebServer {
 
     AgentManager manager = AgentLocator.getAgentManager();
     manager.registerProjectedMemoryOperation(new UIAwarenessOperationFactory());
+    manager.registerScriptModuleFactory(new NotesScriptModuleFactory());
 
     URL webappResource = this.getClass().getResource("/webapp");
     Path rootPath = this.agent.getPaths().getAgentFolder().resolve("var/webapp").toAbsolutePath();

@@ -39,9 +39,9 @@ public class HandlerPutNote extends AbstractHandler {
     }
     body.setId(id);
     body.setCreated(null);
-    body.setTitle(body.getTitle() == null ? "" : body.getTitle());
-    body.setContent(body.getContent() == null ? "" : body.getContent());
-    body.setTags(body.getTags() == null ? new ArrayList<>() : body.getTags());
+    body.setTitle(body.title() == null ? "" : body.title());
+    body.setContent(body.content() == null ? "" : body.content());
+    body.setTags(body.tags() == null ? new ArrayList<>() : body.tags());
 
     NoteStore store = NotesSupport.store(this.agent);
     try {
@@ -57,12 +57,12 @@ public class HandlerPutNote extends AbstractHandler {
       }
       Note stored = store.read(path);
       Map<String, Object> response = new LinkedHashMap<>();
-      response.put("id", stored.getId());
-      response.put("title", stored.getTitle());
-      response.put("tags", stored.getTags());
-      response.put("created", stored.getCreated());
-      response.put("updated", stored.getUpdated());
-      response.put("content", stored.getContent());
+      response.put("id", stored.id());
+      response.put("title", stored.title());
+      response.put("tags", stored.tags());
+      response.put("created", stored.created());
+      response.put("updated", stored.updated());
+      response.put("content", stored.content());
       response.put("path", store.relativePath(path));
       ctx.json(response);
     } catch (IllegalArgumentException e) {

@@ -28,7 +28,14 @@ import io.github.jjdelcerro.noema.lib.impl.services.skills.SkillsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.services.subagents.SubagentsServiceFactory;
 import io.github.jjdelcerro.noema.lib.impl.settings.AgentSettingsImpl;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperationFactory;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptModuleFactory;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettings;
+import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.FsModule;
+import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.FsModule.FsScriptModuleFactory;
+import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.GitModule.GitScriptModuleFactory;
+import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.LlmModule.LlmScriptModuleFactory;
+import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.SubagentsModule.SubagentsScriptModuleFactory;
+import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.WebModule.WebScriptModuleFactory;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -53,6 +60,7 @@ import org.apache.commons.lang3.StringUtils;
 public class AgentManagerImpl implements AgentManager {
 
   private final Map<String, AgentServiceFactory> serviceFactories;
+  private final Map<String, ScriptModuleFactory> scriptingModulesFactories;
   private final Map<String, SQLProvider> sqlProvider;
   private final List<Supplier<AgentAction>> actions;
   private final Map<Integer, Subagent> activeSubagents;
@@ -60,6 +68,7 @@ public class AgentManagerImpl implements AgentManager {
 
   public AgentManagerImpl() {
     this.serviceFactories = new LinkedHashMap<>();
+    this.scriptingModulesFactories = new LinkedHashMap<>();
     this.projectedMemoryOperationFactories = new LinkedHashMap<>();
     this.sqlProvider = new HashMap<>();
     this.actions = new ArrayList<>();
@@ -71,6 +80,14 @@ public class AgentManagerImpl implements AgentManager {
     this.registerProjectedMemoryOperation(new PinnedTurnsOperationFactory());
     this.registerProjectedMemoryOperation(new PeripheralAwarenessOperationFactory());
 
+    this.registerScriptModuleFactory(new FsScriptModuleFactory());
+    this.registerScriptModuleFactory(new LlmScriptModuleFactory());
+    this.registerScriptModuleFactory(new SubagentsScriptModuleFactory());
+    this.registerScriptModuleFactory(new WebScriptModuleFactory());
+    this.registerScriptModuleFactory(new GitScriptModuleFactory());
+//    this.registerScriptModuleFactory(new MCPScriptModuleFactory()); TODO: implementar el puenete con MCP.
+
+    
     this.registerService(new EmbeddingsServiceFactory());
     this.registerService(new SensorsServiceFactory());
 
@@ -95,6 +112,16 @@ public class AgentManagerImpl implements AgentManager {
   @Override
   public Collection<AgentServiceFactory> getServiceFactories() {
     return this.serviceFactories.values();
+  }
+
+  @Override
+  public final void registerScriptModuleFactory(ScriptModuleFactory factory) {
+    this.scriptingModulesFactories.put(factory.getName().toUpperCase(), factory);
+  }
+
+  @Override
+  public Iterable<ScriptModuleFactory> getScriptingModulesFactories() {
+    return this.scriptingModulesFactories.values();
   }
 
   @Override

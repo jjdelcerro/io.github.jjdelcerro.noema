@@ -34,7 +34,7 @@ public class Note {
     this.tags = new ArrayList<>();
   }
 
-  public String getId() {
+  public String id() {
     return id;
   }
 
@@ -42,7 +42,7 @@ public class Note {
     this.id = id;
   }
 
-  public String getTitle() {
+  public String title() {
     return title;
   }
 
@@ -50,7 +50,7 @@ public class Note {
     this.title = title;
   }
 
-  public List<String> getTags() {
+  public List<String> tags() {
     return tags;
   }
 
@@ -68,7 +68,7 @@ public class Note {
     }
   }
 
-  public String getCreated() {
+  public String created() {
     return created;
   }
 
@@ -76,7 +76,7 @@ public class Note {
     this.created = created;
   }
 
-  public String getUpdated() {
+  public String updated() {
     return updated;
   }
 
@@ -84,7 +84,7 @@ public class Note {
     this.updated = updated;
   }
 
-  public String getContent() {
+  public String content() {
     return content;
   }
 

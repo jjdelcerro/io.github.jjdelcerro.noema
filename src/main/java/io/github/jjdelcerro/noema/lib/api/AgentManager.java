@@ -6,6 +6,7 @@ import io.github.jjdelcerro.noema.lib.api.services.subagents.Subagent;
 import io.github.jjdelcerro.noema.lib.api.AgentActions.AgentAction;
 import io.github.jjdelcerro.noema.lib.impl.SQLProvider;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperationFactory;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptModuleFactory;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettings;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -60,4 +61,8 @@ public interface AgentManager {
   Collection<ProjectedMemoryOperationFactory> getProjectedMemoryOperationFactories();  
 
   public ModelParameters getModelParameters(AgentPaths paths, String providerUrl, String providerApiKey, String modelId, double temperature);
+
+  public Iterable<ScriptModuleFactory> getScriptingModulesFactories();
+  public void registerScriptModuleFactory(ScriptModuleFactory factory);
+  
 }

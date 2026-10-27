@@ -21,8 +21,10 @@ import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext;
 import static io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext.CONTEXT_NAME;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptModule;
 import io.github.jjdelcerro.noema.lib.impl.utils.FileFuzzySearchUtils;
 import io.github.jjdelcerro.noema.lib.impl.utils.search.SearchResult.SearchResultEntry;
+import java.util.ArrayList;
 
 /**
  *
@@ -124,11 +126,14 @@ public class ScriptEngineImpl implements ScriptEngine {
 
       ImportCustomizer importCustomizer = new ImportCustomizer();
       
-      // TODO: Hacer que a cada modulo se le puedan preguntar por los import que hay que añadir.
-      importCustomizer.addImports(
-              SearchResultEntry.class.getCanonicalName(),
-              FileFuzzySearchUtils.FuzzyMatch.class.getCanonicalName()
-      );
+      List<String> importNames = new ArrayList<>();
+      for (ScriptModule module : this.getContext().getRegisteredModules().values()) {
+        for (Class classToImport : module.getImports()) {
+          importNames.add(classToImport.getCanonicalName());
+        }
+      }
+      importCustomizer.addImports(importNames.toArray(new String[importNames.size()]));
+
       config.addCompilationCustomizers(secureCustomizer, timedInterrupt, importCustomizer);
 
       this.compilerConfig = config;

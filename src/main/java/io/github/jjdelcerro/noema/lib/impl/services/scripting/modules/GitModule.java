@@ -1,7 +1,9 @@
 package io.github.jjdelcerro.noema.lib.impl.services.scripting.modules;
 
 import io.github.jjdelcerro.noema.lib.api.Agent;
-import io.github.jjdelcerro.noema.lib.api.services.scripting.AbstractScriptModule;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptModule;
+import io.github.jjdelcerro.noema.lib.spi.services.scripting.AbstractScriptModule;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptContextImpl;
 
 /**
@@ -10,8 +12,19 @@ import io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptContextImpl;
  */
 public class GitModule extends AbstractScriptModule {
 
+  public static class GitScriptModuleFactory extends AbstractScriptModuleFactory {
 
-  public GitModule(ScriptContextImpl context, Agent agent) {
+    public GitScriptModuleFactory() {
+      super("GitModule");
+    }
+    
+    @Override
+    public ScriptModule createModule(Agent agent, ScriptContext context) {
+      return new GitModule(context, agent);
+    }    
+  }
+  
+  public GitModule(ScriptContext context, Agent agent) {
     super(context, agent, "git", "modulo de acceso a git");
     // Usaria JGit
   }

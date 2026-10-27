@@ -8,9 +8,11 @@ import io.github.jjdelcerro.javarcs.lib.commands.CheckinOptions;
 import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.AgentAccessControl;
 import static io.github.jjdelcerro.noema.lib.api.AgentAccessControl.AccessMode.PATH_ACCESS_READ;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptModule;
 import io.github.jjdelcerro.noema.lib.impl.utils.FileFuzzySearchUtils;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.AutoClosingLineIterator;
-import io.github.jjdelcerro.noema.lib.api.services.scripting.AbstractScriptModule;
+import io.github.jjdelcerro.noema.lib.spi.services.scripting.AbstractScriptModule;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptContextImpl;
 import io.github.jjdelcerro.noema.lib.impl.utils.CloseableIterable;
 import io.github.jjdelcerro.noema.lib.impl.utils.FileSearchAndReplaceUtils;
@@ -42,17 +44,21 @@ import io.github.jjdelcerro.noema.lib.impl.utils.search.SearchResult.SearchResul
 @SuppressWarnings("UseSpecificCatch")
 public class FsModule extends AbstractScriptModule {
 
-//  public static record GrepMatch(String file, int line, String content) {
-//
-//    @Override
-//    public String toString() {
-//      return String.format("%s:%d: %s", file, line, content);
-//    }
-//  }
+  public static class FsScriptModuleFactory extends AbstractScriptModuleFactory {
 
+    public FsScriptModuleFactory() {
+      super("fsModule");
+    }
+    
+    @Override
+    public ScriptModule createModule(Agent agent, ScriptContext context) {
+      return new FsModule(context, agent);
+    }    
+  }
+  
   final Tika tika;
 
-  public FsModule(ScriptContextImpl context, Agent agent) {
+  public FsModule(ScriptContext context, Agent agent) {
     super(context, agent, "fs", "modulo de acceso al sistema de ficheros");
     this.tika = new Tika();
   }
@@ -82,6 +88,14 @@ para no depender de dónde se inició el agente.
 • delete(path): Map(status, message) (ficheros y carpetas VACIAS; nunca recursivo; copia previa en RCS si esta activo)
   -> println agent.fs.delete('/tmp/out.txt').status         
 """;
+  }
+
+  @Override
+  public List<Class> getImports() {
+    return List.of(
+              SearchResultEntry.class,
+              FileFuzzySearchUtils.FuzzyMatch.class
+    );
   }
 
   /**

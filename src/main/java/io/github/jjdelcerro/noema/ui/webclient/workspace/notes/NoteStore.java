@@ -105,19 +105,19 @@ public class NoteStore {
     Document document = this.newDocumentBuilder().newDocument();
     Element root = document.createElement(TAG_NOTE);
     document.appendChild(root);
-    this.appendTextElement(document, root, TAG_ID, note.getId());
-    this.appendTextElement(document, root, TAG_TITLE, note.getTitle());
+    this.appendTextElement(document, root, TAG_ID, note.id());
+    this.appendTextElement(document, root, TAG_TITLE, note.title());
     Element tags = document.createElement(TAG_TAGS);
     root.appendChild(tags);
-    List<String> tagList = note.getTags();
+    List<String> tagList = note.tags();
     for (String tag : tagList) {
       this.appendTextElement(document, tags, TAG_TAG, tag);
     }
-    this.appendTextElement(document, root, TAG_CREATED, note.getCreated());
-    this.appendTextElement(document, root, TAG_UPDATED, note.getUpdated());
+    this.appendTextElement(document, root, TAG_CREATED, note.created());
+    this.appendTextElement(document, root, TAG_UPDATED, note.updated());
     Element content = document.createElement(TAG_CONTENT);
     root.appendChild(content);
-    this.appendCData(content, note.getContent());
+    this.appendCData(content, note.content());
     return document;
   }
 
@@ -300,7 +300,7 @@ public class NoteStore {
    */
   private Note toNote(Path path, Document document) {
     Note note = this.toNote(document);
-    if (note.getId() == null || note.getId().isEmpty()) {
+    if (note.id() == null || note.id().isEmpty()) {
       note.setId(this.idFromFileName(path));
     }
     return note;
@@ -343,17 +343,17 @@ public class NoteStore {
    */
   public void apply(Note note, Document document) {
     Element root = document.getDocumentElement();
-    this.putText(document, root, TAG_TITLE, note.getTitle());
-    this.putText(document, root, TAG_UPDATED, note.getUpdated());
+    this.putText(document, root, TAG_TITLE, note.title());
+    this.putText(document, root, TAG_UPDATED, note.updated());
     Element tags = this.ensureChild(document, root, TAG_TAGS);
     this.clearChildren(tags);
-    List<String> tagList = note.getTags();
+    List<String> tagList = note.tags();
     for (String tag : tagList) {
       this.appendTextElement(document, tags, TAG_TAG, tag);
     }
     Element content = this.ensureChild(document, root, TAG_CONTENT);
     this.clearChildren(content);
-    this.appendCData(content, note.getContent());
+    this.appendCData(content, note.content());
   }
 
   /**
@@ -519,13 +519,13 @@ public class NoteStore {
    */
   public Note create(Note note) throws IOException {
     String now = this.nowIso();
-    if (note.getId() == null || note.getId().isEmpty()) {
+    if (note.id() == null || note.id().isEmpty()) {
       note.setId(this.generateId());
     }
-    if (!isValidId(note.getId())) {
-      throw new IllegalArgumentException("Identificador de nota invalido: " + note.getId());
+    if (!isValidId(note.id())) {
+      throw new IllegalArgumentException("Identificador de nota invalido: " + note.id());
     }
-    if (note.getCreated() == null || note.getCreated().isEmpty()) {
+    if (note.created() == null || note.created().isEmpty()) {
       note.setCreated(now);
     }
     note.setUpdated(now);
@@ -563,13 +563,13 @@ public class NoteStore {
    * @return ruta del fichero dentro de la jerarquia anyo/mes
    */
   private Path notePathFor(Note note) {
-    LocalDate date = this.dateOf(note.getCreated());
+    LocalDate date = this.dateOf(note.created());
     String year = String.format("%04d", date.getYear());
     String month = String.format("%02d", date.getMonthValue());
     return this.notesFolder
         .resolve(year)
         .resolve(month)
-        .resolve(note.getId() + ".xml");
+        .resolve(note.id() + ".xml");
   }
 
   /**
@@ -611,17 +611,17 @@ public class NoteStore {
    * @throws IOException si falla la lectura, la escritura o el borrado
    */
   public Note save(Note note) throws IOException {
-    if (note == null || !isValidId(note.getId())) {
+    if (note == null || !isValidId(note.id())) {
       throw new IllegalArgumentException("Identificador de nota invalido");
     }
     note.setUpdated(this.nowIso());
-    Path existing = this.find(note.getId());
+    Path existing = this.find(note.id());
     if (existing == null) {
       return this.create(note);
     }
     Document document = this.parseDocument(existing);
     this.apply(note, document);
-    Path target = this.currentMonthPath(note.getId());
+    Path target = this.currentMonthPath(note.id());
     this.writeDocument(document, target);
     if (!target.equals(existing)) {
       Files.deleteIfExists(existing);
@@ -774,8 +774,8 @@ public class NoteStore {
    * @return true si la candidata es mas reciente
    */
   private boolean isNewer(Note candidate, Note current) {
-    String left = candidate.getUpdated();
-    String right = current.getUpdated();
+    String left = candidate.updated();
+    String right = current.updated();
     if (left == null || left.isEmpty()) {
       return false;
     }
@@ -825,7 +825,7 @@ public class NoteStore {
   private String titleOf(Path path, String fallback) {
     try {
       Note note = this.read(path);
-      String title = note.getTitle();
+      String title = note.title();
       if (title == null || title.isBlank()) {
         return fallback;
       }

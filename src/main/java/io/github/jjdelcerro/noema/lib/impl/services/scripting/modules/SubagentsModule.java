@@ -1,9 +1,11 @@
 package io.github.jjdelcerro.noema.lib.impl.services.scripting.modules;
 
 import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptModule;
 import io.github.jjdelcerro.noema.lib.api.services.subagents.Subagent;
 import io.github.jjdelcerro.noema.lib.api.services.subagents.SubagentDefinition;
-import io.github.jjdelcerro.noema.lib.api.services.scripting.AbstractScriptModule;
+import io.github.jjdelcerro.noema.lib.spi.services.scripting.AbstractScriptModule;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptContextImpl;
 import io.github.jjdelcerro.noema.lib.api.services.subagents.SubagentsService;
 import java.util.Collections;
@@ -14,8 +16,20 @@ import java.util.Map;
  * @author jjdelcerro
  */
 public class SubagentsModule extends AbstractScriptModule {
+  
+  public static class SubagentsScriptModuleFactory extends AbstractScriptModuleFactory {
 
-  public SubagentsModule(ScriptContextImpl context, Agent agent) {
+    public SubagentsScriptModuleFactory() {
+      super("SubagentsModule");
+    }
+    
+    @Override
+    public ScriptModule createModule(Agent agent, ScriptContext context) {
+      return new SubagentsModule(context, agent);
+    }    
+  }
+  
+  public SubagentsModule(ScriptContext context, Agent agent) {
     super(context, agent, "subagents", "Modulo de acceso a las funciones relacionadas con subagentes");
   }
 

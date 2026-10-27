@@ -3,8 +3,10 @@ package io.github.jjdelcerro.noema.lib.impl.services.scripting.modules;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptModule;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.AutoClosingLineIterator;
-import io.github.jjdelcerro.noema.lib.api.services.scripting.AbstractScriptModule;
+import io.github.jjdelcerro.noema.lib.spi.services.scripting.AbstractScriptModule;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptContextImpl;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -32,13 +34,25 @@ import org.apache.tika.metadata.Metadata;
  * @author jjdelcerro
  */
 public class WebModule extends AbstractScriptModule {
+  
+  public static class WebScriptModuleFactory extends AbstractScriptModuleFactory {
 
+    public WebScriptModuleFactory() {
+      super("WebModule");
+    }
+    
+    @Override
+    public ScriptModule createModule(Agent agent, ScriptContext context) {
+      return new WebModule(context, agent);
+    }    
+  }
+  
   private static final int DEFAULT_TIMEOUT_IN_SECS = 30;
   
   final HttpClient httpClient;
   final Tika tika;
 
-  public WebModule(ScriptContextImpl context, Agent agent) {
+  public WebModule(ScriptContext context, Agent agent) {
     super(context, agent, "web", "modulo de acceso a funciones web");
     this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).followRedirects(HttpClient.Redirect.NORMAL).build();
     this.tika = new Tika();

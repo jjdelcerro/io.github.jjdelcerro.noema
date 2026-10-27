@@ -147,9 +147,9 @@ public class AgentImpl implements Agent {
       this.episodicMemory = EpisodicMemoryImpl.from(this);
     }
 
-    if (this.accessControl != null && this.getPaths() != null && this.getPaths().getAgentFolder() != null) {
-      this.accessControl.addNonReadablePath(this.getPaths().getAgentFolder());
-    }
+//    if (this.accessControl != null && this.getPaths() != null && this.getPaths().getAgentFolder() != null) {
+//      this.accessControl.addNonReadablePath(this.getPaths().getAgentFolder());
+//    }
 
     AgentManager manager = AgentLocator.getAgentManager();
     for (Supplier<AgentActions.AgentAction> actionFactory : manager.getActions()) {

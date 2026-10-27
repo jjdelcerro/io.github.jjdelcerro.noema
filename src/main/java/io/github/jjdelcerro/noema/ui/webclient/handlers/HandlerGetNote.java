@@ -39,12 +39,12 @@ public class HandlerGetNote extends AbstractHandler {
       }
       Note note = store.read(path);
       Map<String, Object> response = new LinkedHashMap<>();
-      response.put("id", note.getId());
-      response.put("title", note.getTitle());
-      response.put("tags", note.getTags());
-      response.put("created", note.getCreated());
-      response.put("updated", note.getUpdated());
-      response.put("content", note.getContent());
+      response.put("id", note.id());
+      response.put("title", note.title());
+      response.put("tags", note.tags());
+      response.put("created", note.created());
+      response.put("updated", note.updated());
+      response.put("content", note.content());
       response.put("path", store.relativePath(path));
       ctx.json(response);
     } catch (IllegalArgumentException e) {

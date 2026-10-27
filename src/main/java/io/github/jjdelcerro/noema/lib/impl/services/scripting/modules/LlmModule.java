@@ -3,8 +3,10 @@ package io.github.jjdelcerro.noema.lib.impl.services.scripting.modules;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptModule;
 import io.github.jjdelcerro.noema.lib.impl.utils.SLMUtils;
-import io.github.jjdelcerro.noema.lib.api.services.scripting.AbstractScriptModule;
+import io.github.jjdelcerro.noema.lib.spi.services.scripting.AbstractScriptModule;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptContextImpl;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -17,12 +19,24 @@ import java.util.List;
  */
 public class LlmModule extends AbstractScriptModule {
 
+  public static class LlmScriptModuleFactory extends AbstractScriptModuleFactory {
+
+    public LlmScriptModuleFactory() {
+      super("LlmModule");
+    }
+    
+    @Override
+    public ScriptModule createModule(Agent agent, ScriptContext context) {
+      return new LlmModule(context, agent);
+    }    
+  }
+    
   private static final String DEFAULT_MODEL = "DOCMAPPER_BASIC";
   private static final int MAX_LLM_CALLS_PER_SCRIPT = 25;
 
   private int callCount;
 
-  public LlmModule(ScriptContextImpl context, Agent agent) {
+  public LlmModule(ScriptContext context, Agent agent) {
     super(context, agent, "llm", "modulo de acceso al API del LLM");
     callCount = 0;
   }

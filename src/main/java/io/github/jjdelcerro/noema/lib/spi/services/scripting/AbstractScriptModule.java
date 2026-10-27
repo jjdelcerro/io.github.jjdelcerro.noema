@@ -1,6 +1,11 @@
-package io.github.jjdelcerro.noema.lib.api.services.scripting;
+package io.github.jjdelcerro.noema.lib.spi.services.scripting;
 
 import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptModule;
+import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptModuleFactory;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +16,21 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractScriptModule implements ScriptModule {
 
+  
+  public static abstract class AbstractScriptModuleFactory implements ScriptModuleFactory {
+
+    final String name;
+    public AbstractScriptModuleFactory(String name) {
+      this.name = name;
+    }
+
+    @Override
+    public String getName() {
+      return this.name;
+    }
+    
+  }
+  
   protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractScriptModule.class);
 
   final String name;
@@ -39,5 +59,10 @@ public abstract class AbstractScriptModule implements ScriptModule {
   public String help() {
     return "[agent." + getName() + "] " + getDescription();
   }
+
+  @Override
+  public List<Class> getImports() {
+    return Collections.emptyList();
+  } 
 
 }
