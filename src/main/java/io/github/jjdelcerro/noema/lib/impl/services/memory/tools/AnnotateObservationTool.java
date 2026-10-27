@@ -43,12 +43,31 @@ Esto permite vincular la anotación al recurso original y evita que el sistema t
                     
 **Uso del parámetro `type`:**
 Este campo está reservado para flujos especializados. Por defecto DEBES omitirlo. 
-Solo debes incluirlo cuando recibas una instrucción explícita que te indique bajo qué tipo clasificar la información.                    
+Solo debes incluirlo cuando recibas una instrucción explícita que te indique bajo qué tipo clasificar la información. 
+
+**Criterio de categorización:**
+Para decidir la categoría, hazte esta pregunta: ¿Esta información describe una regla/decisión que debe gobernar la historia del proyecto, o describe cómo está organizado el código para orientarte?
+
+* ¿Describe cómo está organizado el monorepo, qué paquetes hay, qué componentes monta un módulo o el mapa de ficheros? -> **PROJECT_MAP**. (Es la pizarra del proyecto: la necesitas para saber dónde estás, pero no es una ley abstracta).
+* ¿Describe una regla de negocio o contrato de arquitectura que cualquier cambio DEBE respetar para no romper el sistema? -> **INVARIANT**.
+* ¿Describe por qué se eligió un camino frente a otro, alternativas descartadas o compromisos aceptados? -> **DESIGN_DECISION**.
+* ¿Sintetiza un documento conceptual, acta de reunión o guía humana en prosa? -> **DOCUMENT_SUMMARY**.
+* ¿Es una lista inmediata de pasos pendientes, errores de compilación por arreglar o un checklist transitorio? -> **TASK_SCRATCHPAD**.
+                    
 """)
             .addStringParameter("source", false, "El origen de la información (ej: nombre del archivo, URL, o 'instrucción del usuario' cuando te haya pedido explícitamente anotar o recordar algo).")
             .addStringParameter("note", false, "Los hechos clave que deseas fijar en tu memoria episódica.")
             .addStringParameter("resource_id", true, "OBLIGATORIO si la información proviene de la lectura de un archivo o web. Debes copiar exactamente el RESOURCE_ID proporcionado por la herramienta de lectura.Dejar vacío ÚNICAMENTE cuando el usuario te haya pedido EXPLÍCITAMENTE que anotes o recuerdes algo.")
-            .addStringParameter("category", false, "OBLIGATORIO, valores: INVARIANT|DESIGN_DECISION|TASK_SCRATCHPAD|DOCUMENT_SUMMARY")
+            .addStringParameter("category", false, 
+"""
+Clasificación ontológica estricta:
+- INVARIANT: Contratos y reglas permanentes del sistema que ningún cambio debe violar jamás (ej: 'capas con _ se ocultan del TOC si son vectoriales', 'common nunca importa react-redux, usa Context propio').
+- DESIGN_DECISION: Razones de por qué se eligió una solución sobre otra, alternativas descartadas o compromisos técnicos aceptados.
+- DOCUMENT_SUMMARY: Síntesis de documentación conceptual en prosa (actas de reuniones, RFCs, especificaciones). NUNCA la uses para listados de archivos o salidas de comandos.
+- PROJECT_MAP: La pizarra viva del proyecto. Radiografía técnica y mapa de navegación del código actual (estructura del monorepo, qué apps existen, cómo están cableados los módulos, qué herramientas contiene un visor). Conocimiento vital para orientarte y trabajar en el repositorio.
+- TASK_SCRATCHPAD: Checklist inmediata de pasos pendientes de la tarea en curso o notas de usar y tirar.
+"""
+            )
             .addStringParameter(
                 "type", 
                 true, 
