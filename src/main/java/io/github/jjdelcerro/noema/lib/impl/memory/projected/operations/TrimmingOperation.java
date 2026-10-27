@@ -84,7 +84,7 @@ public class TrimmingOperation implements ProjectedMemoryOperation {
         if (message instanceof ToolExecutionResultMessage toolResult) {
           AgentTool tool = memory.getTool(toolResult.toolName());
 
-          if (tool != null) {
+          if (tool != null) { // TODO: Deberia filtrar solo las tool de tipo OPERACIONAL?
             String text = toolResult.text();
             if (text != null && text.length() > this.minimumSizeForTrim) {
               ToolResult trimmedText = tool.trimResult(text, TrimResultType.Trim);
