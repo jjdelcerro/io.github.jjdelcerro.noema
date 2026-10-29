@@ -64,8 +64,8 @@ Cuando necesites más detalle, utiliza las herramientas de memoria.
 
 **TIENES PROHIBIDO** responder de memoria o inventar detalles si la información exacta está 
 oculta tras una etiqueta de cita. El resumen narrativo NO ES SUFICIENTE para dar 
-respuestas técnicas precisas. Estás OBLIGADO a ejecutar {LOOKUPTURN} para extraer 
-el dato original antes de formular tu respuesta al usuario.
+respuestas técnicas precisas. Estás OBLIGADO a ejecutar {LOOKUPTURN} para recuperar el dato
+de tu memoria global antes de formular tu respuesta al usuario.
 
 ### Interpretación de la información recuperada de una cita
 
