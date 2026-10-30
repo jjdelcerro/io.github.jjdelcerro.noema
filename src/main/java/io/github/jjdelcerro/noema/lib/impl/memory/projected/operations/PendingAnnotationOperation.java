@@ -5,72 +5,89 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ContextZoning;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.ContextZoning.ContextZone;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ContextZoning.ContextZoneType;
-import io.github.jjdelcerro.noema.lib.impl.tools.AbstractPaginatedAgentTool;
-import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.AnnotateObservationTool;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemory;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperation;
+import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.AnnotateObservationTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileFindTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileFuzzyGrepTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileGrepTool;
+import io.github.jjdelcerro.noema.lib.impl.tools.AbstractPaginatedAgentTool;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class PendingAnnotationOperation implements ProjectedMemoryOperation {
 
-    private static final int MINIMUM_SIZE_FOR_TRIM = 1024;
-    private static final int PRIORITY = 20;
+  private static final int MINIMUM_SIZE_FOR_TRIM = 1024;
+  private static final int DEFAULT_BATCH_THRESHOLD = 4; // Tamaño de lote para avisar en bloque
+  private static final int PRIORITY = 20;
 
-    private final int minimumSizeForTrim;
+  private final int minimumSizeForTrim;
+  private final int batchThreshold;
 
-    public PendingAnnotationOperation() {
-        this(MINIMUM_SIZE_FOR_TRIM);
+  public PendingAnnotationOperation() {
+    this(MINIMUM_SIZE_FOR_TRIM, DEFAULT_BATCH_THRESHOLD);
+  }
+
+  public PendingAnnotationOperation(int minimumSizeForTrim, int batchThreshold) {
+    this.minimumSizeForTrim = minimumSizeForTrim;
+    this.batchThreshold = batchThreshold;
+  }
+
+  @Override
+  public String getName() {
+    return "pending_annotation";
+  }
+
+  @Override
+  public int getPriority() {
+    return PRIORITY;
+  }
+
+  @Override
+  public void process(ProjectedMemory memory, List<ChatMessage> projectedMessages, List<String> notifications) {
+    int total = projectedMessages.size();
+    ContextZoning zoning = memory.getContextZoning();
+
+    ContextZone noticeZone = zoning.getZone(ContextZoneType.PRUNING_NOTIFICATION_ZONE, total);
+    ContextZone accumZone = zoning.getZone(ContextZoneType.PRUNING_NOTIFICATION_ACCUMULATION_ZONE, total);
+
+    if (noticeZone.isEmpty() && accumZone.isEmpty()) {
+      return;
     }
 
-    public PendingAnnotationOperation(int minimumSizeForTrim) {
-        this.minimumSizeForTrim = minimumSizeForTrim;
+    // 1. Localizar el índice del último annotate_observation de cada recurso
+    Map<String, Integer> lastAnnotatedIdx = findLastAnnotationIndices(memory, projectedMessages);
+
+    // 2. Extraer recursos pendientes en cada una de las dos zonas
+    Set<String> urgentResources = scanPendingInZone(memory, projectedMessages, noticeZone, lastAnnotatedIdx);
+    Set<String> accumulatedResources = scanPendingInZone(memory, projectedMessages, accumZone, lastAnnotatedIdx);
+
+    // 3. Regla de disparo:
+    //    - Salta si hay urgencia (al menos 1 recurso en PRUNING_NOTICE a punto de podarse)
+    //    - O BIEN si se ha acumulado un lote suficiente (>= batchThreshold)
+    boolean urgentTrigger = !urgentResources.isEmpty();
+    boolean batchTrigger = (urgentResources.size() + accumulatedResources.size()) >= this.batchThreshold;
+
+    if (!urgentTrigger && !batchTrigger) {
+      return; // Aún no hay volumen ni urgencia: dejamos trabajar al agente
     }
 
-    @Override
-    public String getName() {
-        return "pending_annotation";
+    // 4. Si se dispara, notificamos en bloque todos los recursos pendientes de ambas zonas
+    Set<String> allPending = new LinkedHashSet<>(urgentResources);
+    allPending.addAll(accumulatedResources);
+
+    if (allPending.isEmpty()) {
+      return;
     }
 
-    @Override
-    public int getPriority() {
-        return PRIORITY;
-    }
-
-    @Override
-    public void process(ProjectedMemory memory, List<ChatMessage> projectedMessages, List<String> notifications) {
-        List<String> pendingResources = detectPendingAnnotationResources(memory, projectedMessages);
-        if (pendingResources.isEmpty()) {
-            return;
-        }
-        // Estoy indeciso de que version dejar, asi que de momento dejo estas tres aqui
-        String warning = """
-Hay turnos de herramientas con datos crudos en la ventana de consolidación sin anotar.
-Las anotaciones sobreviven a la poda del contexto; las lecturas/greps/finds crudos se eliminarán al salir de la ventana reciente.
-Anota solo si hay conocimiento derivado relevante (síntesis, relaciones, decisiones). No dupliques datos que puedas releer.
-Herramienta: {annotate_observation}(resource_id, note)
-Recursos pendientes: {resources_list}
-""";
-        warning = """
-[PODA DE CONTEXTO] Próxima poda de datos crudos: {resources_list} (las anotaciones sobreviven).
-Si hay conclusiones o decisiones que no puedas releer, usa {annotate_observation}(resource_id, note); si no, ignora este aviso.
-""";
-        warning = """
+    String warning = """
 [PODA DE CONTEXTO] Datos crudos próximos a eliminarse: {resources_list}
 Las anotaciones sobreviven; los datos crudos no.
 Anota solo conclusiones/decisiones/conocimiento-derivado irrepetible (no dupliques lo que puedas releer o que forme parte de la conversacion con el usuario).
-Herramienta: {annotate_observation}(resource_id, note)        
+Herramienta: {annotate_observation}(resource_id, note)
 """;
         warning = StringUtils.replace(
                 warning,
@@ -80,74 +97,88 @@ Herramienta: {annotate_observation}(resource_id, note)
         warning = StringUtils.replace(
                 warning,
                 "{resources_list}", 
-                StringUtils.join(pendingResources, ", ")
+                StringUtils.join(allPending, ", ")
         );
         warning = warning.trim();
         notifications.add(warning);
+  }
+
+  private Map<String, Integer> findLastAnnotationIndices(ProjectedMemory memory, List<ChatMessage> messages) {
+    Map<String, Integer> lastAnnotatedIdx = new HashMap<>();
+    for (int i = 0; i < messages.size(); i++) {
+      ChatMessage msg = messages.get(i);
+      if (msg instanceof ToolExecutionResultMessage toolMsg) {
+        AgentTool tool = memory.getTool(toolMsg.toolName());
+        if (tool instanceof AnnotateObservationTool annotateTool) {
+          String resourceId = annotateTool.getResourceIdFromResultMessage(toolMsg);
+          if (StringUtils.isNotBlank(resourceId)) {
+            lastAnnotatedIdx.put(resourceId, i);
+          }
+        }
+      }
+    }
+    return lastAnnotatedIdx;
+  }
+
+  private Set<String> scanPendingInZone(
+          ProjectedMemory memory,
+          List<ChatMessage> messages,
+          ContextZone zone,
+          Map<String, Integer> lastAnnotatedIdx
+  ) {
+    if (zone.isEmpty()) {
+      return Collections.emptySet();
     }
 
-    private List<String> detectPendingAnnotationResources(ProjectedMemory memory, List<ChatMessage> projectedMessages) {
-        int total = projectedMessages.size();
-        
-        ContextZoning zoning = memory.getContextZoning();
-        ContextZoning.ContextZone riskZone = zoning.getZone(ContextZoneType.RISK, total);
-
-        // Si no hay zona de riesgo, todo el contexto cae en la zona segura.
-        if (riskZone.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        // 1. Localizar el indice de la ultima nota registrada para cada recurso
-        Map<String, Integer> lastAnnotatedIdx = new HashMap<>();
-        for (int i = 0; i < total; i++) {
-            ChatMessage msg = projectedMessages.get(i);
-            if (msg instanceof ToolExecutionResultMessage toolMsg) {
-                AgentTool tool = memory.getTool(toolMsg.toolName());
-                if (tool instanceof AnnotateObservationTool annotateTool) {
-                    String resourceId = annotateTool.getResourceIdFromResultMessage(toolMsg);
-                    if (StringUtils.isNotBlank(resourceId)) {
-                        lastAnnotatedIdx.put(resourceId, i);
-                    }
-                }
+    Set<String> pending = new LinkedHashSet<>();
+    for (int i = zone.min(); i < zone.max(); i++) {
+      ChatMessage msg = messages.get(i);
+      if (msg instanceof ToolExecutionResultMessage toolMsg) {
+        AgentTool tool = memory.getTool(toolMsg.toolName());
+        if (tool instanceof AbstractPaginatedAgentTool paginatedTool) {
+          String text = toolMsg.text();
+          if (text != null && text.length() > this.minimumSizeForTrim) {
+            String resourceId = paginatedTool.getResourceIdFromResultMessage(toolMsg);
+            // ignorar búferes efímeros de búsqueda que no aportan valor anotar
+            if (isIgnorableResource(resourceId)) {
+              continue;
             }
-        }
-
-        // 2. Detectar lecturas de recursos pesados sin anotar en la zona de riesgo
-        Set<String> pending = new LinkedHashSet<>();
-        for (int i = riskZone.min(); i <= riskZone.max(); i++) {
-            ChatMessage msg = projectedMessages.get(i);
-            if (msg instanceof ToolExecutionResultMessage toolMsg) {
-                AgentTool tool = memory.getTool(toolMsg.toolName());
-                if (tool instanceof AbstractPaginatedAgentTool paginatedTool) {
-                    String text = toolMsg.text();
-                    if (text != null && text.length() > this.minimumSizeForTrim) {
-                        String resourceId = paginatedTool.getResourceIdFromResultMessage(toolMsg);
-                        if (StringUtils.isNotBlank(resourceId)) {
-                            int lastAnnotated = lastAnnotatedIdx.getOrDefault(resourceId, -1);
-                            if (i > lastAnnotated) {
-                                pending.add(resourceId);
-                            }
-                        }
-                    }
-                }
+            if (StringUtils.isNotBlank(resourceId)) {
+              int lastAnnotated = lastAnnotatedIdx.getOrDefault(resourceId, -1);
+              if (i > lastAnnotated) {
+                pending.add(resourceId);
+              }
             }
+          }
         }
-        
-        // TODO: Eliminar los resourceId asociados a salidas de grep y find en "tmp:"
-//        FileFindTool.FILE_FIND_TEMPORAL_PREFIX;
-//        FileGrepTool.FILE_GREP_TEMPORAL_PREFIX;
-//        FileFuzzyGrepTool.FILE_FUZZYGREP_TEMPORAL_PREFIX;
-        
-        return new ArrayList<>(pending);
+      }
     }
+    return pending;
+  }
 
-    @Override
-    public JsonObject getState() {
-        return null;
+  private boolean isIgnorableResource(String resourceId) {
+    if (resourceId == null) {
+      return true;
     }
+    String[] ignorableResourcesPrefix = new String[] {
+      "tmp://"+FileGrepTool.FILE_GREP_TEMPORAL_PREFIX,
+      "tmp://"+FileFuzzyGrepTool.FILE_FUZZYGREP_TEMPORAL_PREFIX,
+      "tmp://"+FileFindTool.FILE_FIND_TEMPORAL_PREFIX
+    };
+    for (String ignorableResourcePrefix : ignorableResourcesPrefix) {
+      if( resourceId.startsWith(ignorableResourcePrefix) ) {
+        return true;
+      }
+    }
+    return false;
+  }
 
-    @Override
-    public void restoreState(JsonObject state) {
-        // Operacion sin estado persistente
-    }
+  @Override
+  public JsonObject getState() {
+    return null;
+  }
+
+  @Override
+  public void restoreState(JsonObject state) {
+  }
 }
