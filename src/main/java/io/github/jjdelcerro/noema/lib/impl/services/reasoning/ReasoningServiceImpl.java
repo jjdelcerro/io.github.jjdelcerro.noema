@@ -10,6 +10,8 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.output.FinishReason;
 import dev.langchain4j.model.output.Response;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import edu.emory.mathcs.backport.java.util.Collections;
 import io.github.jjdelcerro.noema.lib.spi.AbstractAgentAction;
 import io.github.jjdelcerro.noema.lib.api.Agent;
@@ -373,6 +375,32 @@ public class ReasoningServiceImpl
 
   private AgentConsole console(String subchannel) {
     return this.agent.getConsole(subchannel);
+  }
+
+  /**
+   * Serializes the tool execution request as a plain JSON document. The Java
+   * toString() of ToolExecutionRequest is not valid JSON and cannot be parsed
+   * by the consumers of the episodic memory.
+   *
+   * @param request Tool execution request issued by the model.
+   * @return JSON document with the id, the tool name and the arguments.
+   */
+  private String toolExecutionRequestToJson(ToolExecutionRequest request) {
+    JsonObject json = new JsonObject();
+    json.addProperty("id", request.id());
+    json.addProperty("name", request.name());
+    String rawArguments = request.arguments();
+    if (StringUtils.isBlank(rawArguments)) {
+      json.add("arguments", new JsonObject());
+    } else {
+      try {
+        json.add("arguments", JsonParser.parseString(rawArguments));
+      } catch (Exception e) {
+        LOGGER.warn("Invalid JSON arguments for tool " + request.name() + ", stored as plain text");
+        json.addProperty("arguments", rawArguments);
+      }
+    }
+    return json.toString();
   }
 
   private AgentTool.ToolResult executeTool(RecentMemory recentMemory, ToolExecutionRequest request) {
@@ -758,7 +786,7 @@ public class ReasoningServiceImpl
                     null,
                     aiThinking,
                     null,
-                    request.toString(),
+                    toolExecutionRequestToJson(request),
                     result.toString(),
                     null
             );

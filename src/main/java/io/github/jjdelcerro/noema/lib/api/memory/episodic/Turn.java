@@ -36,6 +36,26 @@ public interface Turn {
 
   String getToolResult();
 
+  /**
+   * Devuelve una copia del turno con el toolCall sustituido. El resto de
+   * campos, incluido el identificador, se conservan del original. El turno
+   * sobre el que se invoca no se modifica.
+   *
+   * @param toolCall Nuevo valor del toolCall.
+   * @return Una instancia nueva del turno.
+   */
+  Turn withToolCall(String toolCall);
+
+  /**
+   * Devuelve una copia del turno con el toolResult sustituido. El resto de
+   * campos, incluido el identificador, se conservan del original. El turno
+   * sobre el que se invoca no se modifica.
+   *
+   * @param toolResult Nuevo valor del toolResult.
+   * @return Una instancia nueva del turno.
+   */
+  Turn withToolResult(String toolResult);
+
   String getAnnotationType();
   
   /**
@@ -45,5 +65,9 @@ public interface Turn {
    * @return
    */
   String toCSVLine();
+  
+  String toXML();
+
+  public String getCSVHeader();
 
 }

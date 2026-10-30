@@ -10,7 +10,6 @@ import io.github.jjdelcerro.noema.lib.api.memory.projected.ContextZoning;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ContextZoning.ContextZoneType;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemory;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperation;
-import io.github.jjdelcerro.noema.lib.impl.memory.projected.ContextZoningImpl;
 import io.github.jjdelcerro.noema.lib.impl.tools.ToolResultImpl;
 import java.util.List;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ContextZoning.ContextZone;
@@ -40,37 +39,6 @@ public class TrimmingOperation implements ProjectedMemoryOperation {
     return PRIORITY;
   }
 
-//    @Override
-//    public void process(ProjectedMemory memory, List<ChatMessage> projectedMessages, List<String> notifications) {
-//        int total = projectedMessages.size();
-//        int safeLimit = total - this.messagesToKeep;
-//
-//        for (int i = 0; i < total; i++) {
-//            if (i >= safeLimit) {
-//                break;
-//            }
-//
-//            ChatMessage message = projectedMessages.get(i);
-//            if (message instanceof ToolExecutionResultMessage toolResult) {
-//                AgentTool tool = memory.getTool(toolResult.toolName());
-//
-//                if (tool != null) {
-//                    String text = toolResult.text();
-//                    if (text != null && text.length() > this.minimumSizeForTrim) {
-//                        ToolResult trimmedText = tool.trimResult(text, TrimResultType.Trim);
-//                        if (trimmedText != null) {
-//                          ToolExecutionResultMessage trimmedMessage = ToolResultImpl.toToolExecutionResultMessage(
-//                                  toolResult.id(),
-//                                  toolResult.toolName(),
-//                                  trimmedText
-//                          );
-//                          projectedMessages.set(i, trimmedMessage);
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
   @Override
   public void process(ProjectedMemory memory, List<ChatMessage> projectedMessages, List<String> notifications) {
     int total = projectedMessages.size();

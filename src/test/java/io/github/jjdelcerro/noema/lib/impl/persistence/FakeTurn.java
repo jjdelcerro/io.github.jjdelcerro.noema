@@ -2,6 +2,7 @@ package io.github.jjdelcerro.noema.lib.impl.persistence;
 
 import io.github.jjdelcerro.noema.lib.api.memory.episodic.Turn;
 import java.time.LocalDateTime;
+import org.apache.commons.lang3.StringUtils;
 
 public class FakeTurn implements Turn {
 
@@ -72,5 +73,64 @@ public class FakeTurn implements Turn {
                 toolCall != null ? toolCall.replace("\"", "\"\"") : "",
                 toolResult != null ? toolResult.replace("\"", "\"\"") : ""
         );
+    }
+    
+  public String toXML() {  // FIXME: escapar los CDATA
+    String xml = String.format(
+"""
+    <turn id="%s" timestamp="%s" contenttype="%s" subchannel="%s">
+      <textUser>CDATA[[%s]]</textUser>
+      <textModelThinking>CDATA[[%s]]</textModelThinking>
+      <textModel>CDATA[[%s]]</textModel>
+      <toolCall>CDATA[[%s]]</toolCall>
+      <toolResult>CDATA[[%s]]</toolResult>
+      <textModel>CDATA[[%s]]</textModel>
+    </turn>
+""",
+            StringUtils.trim(String.valueOf(id)),
+            StringUtils.trim(String.valueOf(timestamp)),
+            contenttype,
+            subchannel,
+            textUser,
+            textModelThinking,
+            textModel,
+            toolCall,
+            toolResult            
+    );
+    return xml;
+  }
+
+    @Override
+    public String getCSVHeader() {
+      return "code,timestamp,contenttype,subchannel,text_user,text_model_thinking,text_model,tool_call,tool_result";
+    }
+
+    @Override
+    public Turn withToolCall(String toolCall) {
+        FakeTurn copy = copy();
+        copy.toolCall = toolCall;
+        return copy;
+    }
+
+    @Override
+    public Turn withToolResult(String toolResult) {
+        FakeTurn copy = copy();
+        copy.toolResult = toolResult;
+        return copy;
+    }
+
+    private FakeTurn copy() {
+        FakeTurn copy = new FakeTurn();
+        copy.id = this.id;
+        copy.timestamp = this.timestamp;
+        copy.contenttype = this.contenttype;
+        copy.subchannel = this.subchannel;
+        copy.textUser = this.textUser;
+        copy.textModelThinking = this.textModelThinking;
+        copy.textModel = this.textModel;
+        copy.toolCall = this.toolCall;
+        copy.toolResult = this.toolResult;
+        copy.embedding = this.embedding;
+        return copy;
     }
 }

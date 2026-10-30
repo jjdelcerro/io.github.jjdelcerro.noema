@@ -369,7 +369,7 @@ public final class ConversationJsonToXml {
   /**
    * Prevents invalid CDATA termination if the content contains ']]>'.
    */
-  private static void writeCDataSafe(XMLStreamWriter writer, String text) throws XMLStreamException {
+  private static void writeCDataSafe(XMLStreamWriter writer, String text) throws XMLStreamException {  // FIXME: extraer getCDataSafe y mover a un modulo reutilizable
     if (text == null) {
       return;
     }
@@ -389,7 +389,7 @@ public final class ConversationJsonToXml {
    * surrogates would otherwise produce a malformed document. Iterates by code
    * points so that valid surrogate pairs (outside the BMP) are preserved.
    */
-  private static String sanitizeXmlText(String text) {
+  private static String sanitizeXmlText(String text) { // FIXME: mover sanitizeXmlText a un modulo reutilizable
     if (text == null) {
       return null;
     }

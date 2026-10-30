@@ -25,6 +25,8 @@ import java.util.regex.PatternSyntaxException;
  */
 public class FileGrepTool extends AbstractPaginatedAgentTool {
 
+  public static final String FILE_GREP_TEMPORAL_PREFIX = "grep_";
+  
   private static final Logger LOGGER = LoggerFactory.getLogger(FileGrepTool.class);
   public static final String TOOL_NAME = "file_grep";
 
@@ -100,7 +102,7 @@ public class FileGrepTool extends AbstractPaginatedAgentTool {
       // 5. Create a temporary file for the grep output
       Path tempDir = agent.getPaths().getTempFolder();
       Files.createDirectories(tempDir);
-      Path tempFile = Files.createTempFile(tempDir, "grep_", ".tmp");
+      Path tempFile = Files.createTempFile(tempDir, FILE_GREP_TEMPORAL_PREFIX, ".tmp");
 
       // 6. Perform the grep search
       performGrep(tempFile, target, matcher, filePattern);

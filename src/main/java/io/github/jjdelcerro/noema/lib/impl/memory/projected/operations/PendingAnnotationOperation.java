@@ -10,6 +10,9 @@ import io.github.jjdelcerro.noema.lib.impl.tools.AbstractPaginatedAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.AnnotateObservationTool;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemory;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperation;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileFindTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileFuzzyGrepTool;
+import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileGrepTool;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -83,54 +86,6 @@ Herramienta: {annotate_observation}(resource_id, note)
         notifications.add(warning);
     }
 
-//    private List<String> detectPendingAnnotationResources(ProjectedMemory memory, List<ChatMessage> projectedMessages) {
-//        int total = projectedMessages.size();
-//        if (total < this.messagesToKeep) {
-//            return Collections.emptyList();
-//        }
-//
-//        int riskStartIdx = total - this.messagesToKeep;
-//        int riskEndIdx = total - (this.messagesToKeep / 2);
-//
-//        // 1. Localizar el indice de la ultima nota registrada para cada recurso
-//        Map<String, Integer> lastAnnotatedIdx = new HashMap<>();
-//        for (int i = 0; i < total; i++) {
-//            ChatMessage msg = projectedMessages.get(i);
-//            if (msg instanceof ToolExecutionResultMessage toolMsg) {
-//                AgentTool tool = memory.getTool(toolMsg.toolName());
-//                if (tool instanceof AnnotateObservationTool annotateTool) {
-//                    String resourceId = annotateTool.getResourceIdFromResultMessage(toolMsg);
-//                    if (StringUtils.isNotBlank(resourceId)) {
-//                        lastAnnotatedIdx.put(resourceId, i);
-//                    }
-//                }
-//            }
-//        }
-//
-//        // 2. Detectar lecturas de recursos pesados sin anotar en la zona de riesgo
-//        Set<String> pending = new LinkedHashSet<>();
-//        for (int i = riskStartIdx; i < riskEndIdx; i++) {
-//            ChatMessage msg = projectedMessages.get(i);
-//            if (msg instanceof ToolExecutionResultMessage toolMsg) {
-//                AgentTool tool = memory.getTool(toolMsg.toolName());
-//                if (tool instanceof AbstractPaginatedAgentTool paginatedTool) {
-//                    String text = toolMsg.text();
-//                    if (text != null && text.length() > this.minimumSizeForTrim) {
-//                        String resourceId = paginatedTool.getResourceIdFromResultMessage(toolMsg);
-//                        if (StringUtils.isNotBlank(resourceId)) {
-//                            int lastAnnotated = lastAnnotatedIdx.getOrDefault(resourceId, -1);
-//                            if (i > lastAnnotated) {
-//                                pending.add(resourceId);
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//
-//        return new ArrayList<>(pending);
-//    }
-
     private List<String> detectPendingAnnotationResources(ProjectedMemory memory, List<ChatMessage> projectedMessages) {
         int total = projectedMessages.size();
         
@@ -177,7 +132,12 @@ Herramienta: {annotate_observation}(resource_id, note)
                 }
             }
         }
-
+        
+        // TODO: Eliminar los resourceId asociados a salidas de grep y find en "tmp:"
+//        FileFindTool.FILE_FIND_TEMPORAL_PREFIX;
+//        FileGrepTool.FILE_GREP_TEMPORAL_PREFIX;
+//        FileFuzzyGrepTool.FILE_FUZZYGREP_TEMPORAL_PREFIX;
+        
         return new ArrayList<>(pending);
     }
 

@@ -5,6 +5,7 @@ import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.AbstractPaginatedAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 
 public class ReadPaginatedResourceTool extends AbstractPaginatedAgentTool {
 
@@ -17,6 +18,7 @@ public class ReadPaginatedResourceTool extends AbstractPaginatedAgentTool {
   @Override
   public ToolSpecificationBuilder getSpecification() {
     int defaultLimit = getDefaultMaxLines();
+    int limit = getMaxLines();
     return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
             .description("Herramienta universal para leer recursos paginados (salidas de comandos, contenido web, archivos temporales, cachés de extracción de documentos, etc.).\n"
@@ -27,7 +29,7 @@ public class ReadPaginatedResourceTool extends AbstractPaginatedAgentTool {
             .addStringParameter("resource_id", "Identificador del recurso a leer. Debe ser exactamente el proporcionado en el HINT de otra herramienta.")
             .addIntegerParameter("offset", true, "Línea inicial (0-based). Default: 0.")
             .addIntegerParameter("column", true, "Columna dentro de la línea inicial (0-based, contada desde el comienzo de la línea, no desde el comienzo del bloque). Si el HINT incluye este parámetro, se está reanudando una línea que quedó partida a la mitad: pásalo tal cual, sin modificarlo ni omitirlo. Default: 0.")
-            .addIntegerParameter("limit", true, "Máximo de líneas a leer. Default: " + defaultLimit);
+            .addIntegerParameter("limit", true, "Máximo de líneas a leer. Por defecto " + defaultLimit + ", maximo " + limit + ".");
   }
 
   @Override
@@ -48,11 +50,14 @@ public class ReadPaginatedResourceTool extends AbstractPaginatedAgentTool {
       int offset = args.offset > 0 ? args.offset : 0;
       int column = args.column > 0 ? args.column : 0;
       int limit = args.limit > 0 ? args.limit : getDefaultMaxLines();
+      if( limit > this.getMaxLines() ) {
+        return formatErrorResponse("lines limit exceded");
+      }
 
       return servePaginatedResource(args.resource_id, offset, column, limit);
 
     } catch (Exception e) {
-      LOGGER.warn("Error reading paginated resource, args=" + StringUtils.replace(jsonArguments, "\\n", " "), e);
+      LOGGER.warn("Error reading paginated resource, args=" + Strings.CS.replace(jsonArguments, "\\n", " "), e);
       return formatErrorResponse("Error reading paginated resource: " + e.getMessage());
     }
   }

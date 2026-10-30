@@ -208,7 +208,7 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
     }
   }
 
-  private String applyStoragePolicy(String originalText) {
+  private String applyStoragePolicy(String originalText) { // FIXME: Si se aplica a un resultado de herramienta paginado, deberia usarse el formato de paginacion.
     if (originalText == null) {
       return null;
     }

@@ -24,6 +24,8 @@ import static io.github.jjdelcerro.noema.lib.api.AgentAccessControl.AccessMode.P
 @SuppressWarnings("UseSpecificCatch")
 public class FileFindTool extends AbstractPaginatedAgentTool {
 
+  public static final String FILE_FIND_TEMPORAL_PREFIX = "find_";
+  
   public static final String TOOL_NAME = "file_find";
 
   // Maximum number of matching entries to write to the temporary file.
@@ -76,7 +78,7 @@ public class FileFindTool extends AbstractPaginatedAgentTool {
       // 3. Create a temporary file for the find output
       Path tempDir = agent.getPaths().getTempFolder();
       Files.createDirectories(tempDir);
-      Path tempFile = Files.createTempFile(tempDir, "find_", ".tmp");
+      Path tempFile = Files.createTempFile(tempDir, FILE_FIND_TEMPORAL_PREFIX, ".tmp");
 
       // 4. Perform the find and write results to the temporary file
       performFind(tempFile, target, pattern);

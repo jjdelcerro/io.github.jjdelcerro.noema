@@ -94,7 +94,72 @@ public class TurnImpl implements Turn {
             toolResult
     ).map(this::escapeCsv).collect(Collectors.joining(",")).replace("\n", "\\n");
   }
+  
+  public String toXML() {  
+    String xml = String.format(
+"""
+    <turn id="%s" timestamp="%s" contenttype="%s" subchannel="%s">
+      <textUser>CDATA[[%s]]</textUser>
+      <textModelThinking>CDATA[[%s]]</textModelThinking>
+      <textModel>CDATA[[%s]]</textModel>
+      <toolCall>CDATA[[%s]]</toolCall>
+      <toolResult>CDATA[[%s]]</toolResult>
+    </turn>
+""",
+            StringUtils.trim(String.valueOf(id)),
+            StringUtils.trim(String.valueOf(timestamp)),
+            contenttype,
+            subchannel,
+            textUser,
+            getCDataSafe(textModelThinking),
+            getCDataSafe(textModel),
+            getCDataSafe(toolCall),
+            getCDataSafe(toolResult)
+    );
+    return xml;
+  }
+  private String getCDataSafe(String text)  { // FIXME: mover getCDataSafe a un modulo reutilizable
+    if (StringUtils.isBlank(text) ) {
+      return "";
+    }
+    String sanitized = sanitizeXmlText(text);
+    if (sanitized.contains("]]>")) {
+      // Split into safe chunks
+      String safe = sanitized.replace("]]>", "]]]]><![CDATA[>");
+      return safe;
+    } else {
+      return sanitized;
+    }
+  }
 
+  private String sanitizeXmlText(String text) {  // FIXME: mover sanitizeXmlText a un modulo reutilizable
+    if (text == null) {
+      return null;
+    }
+    StringBuilder sb = new StringBuilder(text.length());
+    int i = 0;
+    while (i < text.length()) {
+      int cp = text.codePointAt(i);
+      boolean legal = (cp == 0x9 || cp == 0xA || cp == 0xD)
+              || (cp >= 0x20 && cp <= 0xD7FF)
+              || (cp >= 0xE000 && cp <= 0xFFFD)
+              || (cp >= 0x10000 && cp <= 0x10FFFF);
+      if (legal) {
+        sb.appendCodePoint(cp);
+      } else {
+        sb.append('\uFFFD');
+      }
+      i += Character.charCount(cp);
+    }
+    return sb.toString();
+  }
+
+  @Override
+  public String getCSVHeader() {
+    return "code,timestamp,contenttype,subchannel,text_user,text_model_thinking,text_model,tool_call,tool_result";
+  }
+
+  
   /**
    * Devuelve el texto concatenado que representa el contenido semántico del
    * turno. Útil para que el EpisodicMemory calcule el embedding sobre esto.
@@ -165,7 +230,30 @@ public class TurnImpl implements Turn {
 
   @Override
   public String getToolResult() {
-    return toolResult;
+    return toolResult; 
+  }
+
+  /**
+   * Copia el turno sustituyendo el toolCall. Se conserva el identificador y
+   * el annotationType del original: la sustitucion del contenido de una nota
+   * no altera su classification.
+   */
+  @Override
+  public Turn withToolCall(String toolCall) {
+    return new TurnImpl(this.id, this.timestamp, this.contenttype, this.subchannel,
+            this.textUser, this.textModelThinking, this.textModel, toolCall,
+            this.toolResult, this.annotationType, this.embedding);
+  }
+
+  /**
+   * Copia el turno sustituyendo el toolResult. Se conserva el identificador y
+   * el resto de campos del original.
+   */
+  @Override
+  public Turn withToolResult(String toolResult) {
+    return new TurnImpl(this.id, this.timestamp, this.contenttype, this.subchannel,
+            this.textUser, this.textModelThinking, this.textModel, this.toolCall,
+            toolResult, this.annotationType, this.embedding);
   }
 
   @Override

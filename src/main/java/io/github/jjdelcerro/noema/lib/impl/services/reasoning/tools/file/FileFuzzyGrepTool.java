@@ -27,6 +27,8 @@ import io.github.jjdelcerro.noema.lib.impl.utils.FileFuzzySearchUtils;
  */
 public class FileFuzzyGrepTool extends AbstractPaginatedAgentTool {
 
+  public static final String FILE_FUZZYGREP_TEMPORAL_PREFIX = "fuzzygrep_";
+  
   private static final Logger LOGGER = LoggerFactory.getLogger(FileFuzzyGrepTool.class);
   public static final String TOOL_NAME = "file_fuzzygrep";
 
@@ -93,7 +95,7 @@ public class FileFuzzyGrepTool extends AbstractPaginatedAgentTool {
       List<FileFuzzySearchUtils.FuzzyMatch> results = FileFuzzySearchUtils.search(
               agent, target, args.query, args.filePattern, limit, minSim);
 
-      Path tempFile = Files.createTempFile(agent.getPaths().getTempFolder(), "fuzzygrep_", ".tmp");
+      Path tempFile = Files.createTempFile(agent.getPaths().getTempFolder(), FILE_FUZZYGREP_TEMPORAL_PREFIX, ".tmp");
       writeResults(tempFile, results, args.query.trim(), minSim);
 
       String resourceId = getIdFromPath(tempFile);

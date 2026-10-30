@@ -29,6 +29,7 @@ public abstract class AbstractPaginatedAgentTool extends AbstractAgentTool {
   private static final String PREFIX_USER = "user://";
 
   private static final int DEFAULT_MAX_LINES = 1000;
+  private static final int MAX_LINES = 1000;
   private static final int MAX_CHARS_SOFT = 30000;
   private static final int MAX_CHARS_HARD = 40000;
   private static final int CACHE_SIZE = 30;
@@ -47,7 +48,11 @@ public abstract class AbstractPaginatedAgentTool extends AbstractAgentTool {
   protected int getDefaultMaxLines() {
     return DEFAULT_MAX_LINES;
   }
-
+  
+  protected int getMaxLines() {
+    return MAX_LINES;
+  }
+  
   private int getCacheSize() {
     return CACHE_SIZE;
   }
@@ -583,6 +588,10 @@ Adopta dos formas según los extremos del bloque:
     }
     String header = result.substring(0, separatorIndex);
     String body = result.substring(separatorIndex);
+    if (header.contains(CONTENT_TRIMMED)) {
+      return toolResult;
+    }
+    
     switch (trimResultType) {
       case Trim:
 //        LOGGER.info("TRIM RESULTS OF "+this.getClass().getSimpleName());

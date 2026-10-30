@@ -26,6 +26,7 @@ public class FileReadTool extends AbstractPaginatedAgentTool {
   @Override
   public ToolSpecificationBuilder getSpecification() {
     int defaultLimit = getDefaultMaxLines();
+    int limit = getMaxLines();
     return ToolSpecificationBuilder.create()
             .name(TOOL_NAME)
             .description("Devuelve el contenido de un archivo de texto del proyecto (código fuente, "
@@ -36,7 +37,7 @@ public class FileReadTool extends AbstractPaginatedAgentTool {
                     + getShortPaginationInstruction())
             .addStringParameter("path", false, "Ruta del archivo absoluta.")
             .addIntegerParameter("offset", true, "Línea inicial (0-based) desde donde empezar a leer. Opcional, por defecto 0.")
-            .addIntegerParameter("limit", true, "Número máximo de líneas a leer. Opcional, por defecto " + defaultLimit + ".");
+            .addIntegerParameter("limit", true, "Máximo de líneas a leer. Por defecto " + defaultLimit + ", maximo " + limit + ".");
   }
 
   @Override
@@ -87,6 +88,9 @@ public class FileReadTool extends AbstractPaginatedAgentTool {
 
       int offset = (args.offset != null && args.offset > 0) ? args.offset : 0;
       int limit = (args.limit != null && args.limit > 0) ? args.limit : getDefaultMaxLines();
+      if( limit > this.getMaxLines() ) {
+        return formatErrorResponse("lines limit exceded");
+      }
 
       return servePaginatedResource(resourceId, offset, limit);
 

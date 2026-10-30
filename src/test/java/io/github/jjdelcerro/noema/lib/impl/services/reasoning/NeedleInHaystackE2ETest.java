@@ -22,11 +22,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,15 +51,15 @@ import static io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningSer
 @Tag("e2e")
 public class NeedleInHaystackE2ETest {
 
-    @TempDir
-    Path tempDir;
+    private static final Path DEFAULT_DUMP_DIR = Path.of("target", "xxx1");
 
     private Path workspaceDir;
     private Agent agent;
     private Properties testProps;
+  private String fixtureFileName;
 
     @BeforeEach
-    public void setUp() throws IOException {
+    public void setUp(TestInfo testInfo) throws IOException {
         // 1. Cargar credenciales desde ~/.noema-tests.properties
         Path propsPath = Path.of(System.getProperty("user.home"), ".noema-tests.properties");
         if (!Files.exists(propsPath)) {
@@ -88,19 +89,21 @@ public class NeedleInHaystackE2ETest {
         String dumpPathStr = testProps.getProperty("debug.dump.path");
         if (StringUtils.isNotBlank(dumpPathStr)) {
             workspaceDir = Path.of(dumpPathStr).toAbsolutePath().normalize();
-            if (Files.exists(workspaceDir)) {
-                FileUtils.deleteDirectory(workspaceDir.toFile());
-            }
-            Files.createDirectories(workspaceDir);
-            System.out.println(">>> [E2E DEBUG] Workspace persistente limpio en: " + workspaceDir);
         } else {
-            workspaceDir = tempDir;
+            String testName = testInfo.getTestMethod().map(Method::getName).orElse("default");
+            workspaceDir = DEFAULT_DUMP_DIR.toAbsolutePath().normalize();
         }
+        if (Files.exists(workspaceDir)) {
+            FileUtils.deleteDirectory(workspaceDir.toFile());
+        }
+        Files.createDirectories(workspaceDir);
+        System.out.println(">>> [E2E] Workspace limpio en: " + workspaceDir);
 
         // 3. Copiar el documento pajar (datos-test.md) a la raiz del workspace
         Path fixturePath = Path.of("src/test/resources/fixtures/datos-test.md").toAbsolutePath().normalize();
         assertTrue(Files.exists(fixturePath), "No se encontro el archivo de fixture en: " + fixturePath);
         Files.copy(fixturePath, workspaceDir.resolve("datos-test.md"), StandardCopyOption.REPLACE_EXISTING);
+        this.fixtureFileName = workspaceDir.resolve("datos-test.md").toAbsolutePath().toString();
 
         // 4. Inicializar configuracion de Noema
         AgentManager manager = AgentLocator.getAgentManager();
@@ -145,6 +148,23 @@ public class NeedleInHaystackE2ETest {
             protected int getDefaultMaxLines() {
                 return 100;
             }
+
+            @Override
+            protected int getMaxLines() {
+              return 100;
+            }            
+        });
+
+        reasoning.addTool(new ReadPaginatedResourceTool(agent) {
+            @Override
+            protected int getDefaultMaxLines() {
+                return 100;
+            }
+
+            @Override
+            protected int getMaxLines() {
+              return 100;
+            }            
         });
 
         // Activamos unicamente las 5 herramientas necesarias para el escenario
@@ -179,7 +199,7 @@ public class NeedleInHaystackE2ETest {
     }
 
     @Test
-    @Timeout(value = 15, unit = TimeUnit.MINUTES)
+    @Timeout(value = 30, unit = TimeUnit.MINUTES)
     @DisplayName("E2E: Debe retener las tres agujas cognitivas tras la lectura masiva y compactacion real")
     public void testNeedleInHaystackE2E() throws Throwable {
 
@@ -196,8 +216,7 @@ public class NeedleInHaystackE2ETest {
 
         // --- ACTO 3: El Pajar (Lectura masiva de 5.366 lineas en bloques de 100) ---
         // Esto forzara ~54 llamadas a herramientas y disparara la compactacion real de memoria
-        String prompt3 = "Por favor, lee el archivo 'datos-test.md' de principio a fin utilizando bloques de 100 lineas "
-                + "para no saturar tu memoria de trabajo, y hazme un analisis general de los servicios que describe.";
+        String prompt3 = "Por favor, lee el archivo '"+fixtureFileName+"' de principio a fin y hazme un analisis general de los servicios que describe.";
         String res3 = sendUserMessageAndWait(prompt3);
         assertNotNull(res3);
 
@@ -223,7 +242,7 @@ public class NeedleInHaystackE2ETest {
                 "El agente deberia recordar el puerto '7788' acordado con Paco.");
 
         // 3. Verificacion de Aguja 3 (Detalle tecnico organico dentro del documento)
-        String query3 = "Segun la seccion del SchedulerService que leiste en datos-test.md, "
+        String query3 = "Segun la seccion del SchedulerService que leiste en '"+fixtureFileName+"', "
                 + "cual es el formato del ID que se asigna a cada alarma y que libreria parser de fechas utiliza?";
         String answer3 = sendUserMessageAndWait(query3);
         System.out.println(">>> [RESPUESTA AGUJA 3] " + answer3);

@@ -146,7 +146,7 @@ Esta sección es un resumen ejecutivo y factual.
 
 Esta sección debe ser una crónica narrativa de lo descrito en la **conversación** suministrada. Su propósito es capturar el "alma" del diálogo, preservando el proceso de razonamiento, la evolución de las ideas y el contexto humano.
 
-*   **Contenido:** Debe describir cómo se llegó a las conclusiones del resumen. Incluye los puntos de inflexión, 
+*   **Contenido:** Debe describir cómo se llegó a las conclusiones del resumen narrada en primera persona. Incluye los puntos de inflexión, 
     los malentendidos resueltos y la evolución del tono.
 *   **Tono:** Narrativo, cronológico y detallado.
 
@@ -222,7 +222,10 @@ Esta sección es un resumen ejecutivo y factual.
 ##### **6.2.2. Detalle seccion El Viaje en Actualización de la memoria consolidada**
 
 
-Esta sección debe ser una crónica narrativa que unifica lo descrito en la **memoria consolidada anterior** con la informacion de la **conversación** suministrada. Su propósito es capturar el "alma" del diálogo, preservando el proceso de razonamiento, la evolución de las ideas y el contexto humano.
+Esta sección debe ser una crónica narrativa que unifica lo descrito en la **memoria consolidada anterior** con 
+la informacion de la **conversación** suministrada. Su propósito es capturar el "alma" 
+del diálogo, preservando el proceso de razonamiento, la evolución de las ideas y el contexto humano 
+todo ello narrado en primera persona.
 
 El viaje descrito en la memoria consolidada a generar debe incluir lo descrito en la seccion de el viaje de la **memoria consolidada anterior**, para continuar con el contenido de **conversacion** suministrada.
 

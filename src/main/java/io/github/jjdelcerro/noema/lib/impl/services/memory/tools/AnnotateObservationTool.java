@@ -45,27 +45,49 @@ Esto permite vincular la anotación al recurso original y evita que el sistema t
 Este campo está reservado para flujos especializados. Por defecto DEBES omitirlo. 
 Solo debes incluirlo cuando recibas una instrucción explícita que te indique bajo qué tipo clasificar la información. 
 
-**Criterio de categorización:**
-Para decidir la categoría, hazte esta pregunta: ¿Esta información describe una regla/decisión que debe gobernar la historia del proyecto, o describe cómo está organizado el código para orientarte?
+**Criterio de categorización (según la PROCEDENCIA de la información):**
+            
+1. Si nace de LEER y SINTETIZAR un documento concreto (archivo .md, PDF, especificación, manual, RFC, página web o guía)
+   -> **DOCUMENT_SUMMARY**.
+   *REGLA DE ORO:* Da igual de qué trate el documento. Si estás destilando un texto o 
+    especificación técnica que has leído con file_read o web_get_content, ES SIEMPRE `DOCUMENT_SUMMARY` 
+    (incluso si el documento describe la arquitectura, las clases o el diseño de un sistema).
 
-* ¿Describe cómo está organizado el monorepo, qué paquetes hay, qué componentes monta un módulo o el mapa de ficheros? -> **PROJECT_MAP**. (Es la pizarra del proyecto: la necesitas para saber dónde estás, pero no es una ley abstracta).
-* ¿Describe una regla de negocio o contrato de arquitectura que cualquier cambio DEBE respetar para no romper el sistema? -> **INVARIANT**.
-* ¿Describe por qué se eligió un camino frente a otro, alternativas descartadas o compromisos aceptados? -> **DESIGN_DECISION**.
-* ¿Sintetiza un documento conceptual, acta de reunión o guía humana en prosa? -> **DOCUMENT_SUMMARY**.
-* ¿Es una lista inmediata de pasos pendientes, errores de compilación por arreglar o un checklist transitorio? -> **TASK_SCRATCHPAD**.
-                    
+2. Si nace de EXPLORAR DIRECTAMENTE el repositorio/código (árbol de ficheros, estructura de 
+   carpetas, pom.xml, rastreo de imports o comandos como file_find/file_grep)
+   -> **PROJECT_MAP**.
+   *REGLA DE ORO:* Es la cartografía del código o orchivos obtenida por exploración 
+   empírica del workspace (qué módulos existen físicamente en disco, qué paquetes 
+   cuelgan de dónde, cómo se distribuyen las fuentes). NUNCA uses PROJECT_MAP 
+   para resumir un archivo de documentación.
+
+3. Si nace de una regla permanente que ningún cambio futuro debe violar
+   -> **INVARIANT**.
+
+4. Si nace de justificar por qué se eligió una solución frente a otra o un compromiso técnico
+   -> **DESIGN_DECISION**.
+
+5. Si es un checklist temporal, pasos pendientes o notas inmediatas de trabajo sobre un proyecto
+   -> **TASK_SCRATCHPAD**.
+
 """)
             .addStringParameter("source", false, "El origen de la información (ej: nombre del archivo, URL, o 'instrucción del usuario' cuando te haya pedido explícitamente anotar o recordar algo).")
             .addStringParameter("note", false, "Los hechos clave que deseas fijar en tu memoria episódica.")
-            .addStringParameter("resource_id", true, "OBLIGATORIO si la información proviene de la lectura de un archivo o web. Debes copiar exactamente el RESOURCE_ID proporcionado por la herramienta de lectura.Dejar vacío ÚNICAMENTE cuando el usuario te haya pedido EXPLÍCITAMENTE que anotes o recuerdes algo.")
+            .addStringParameter("resource_id", false, "Debes copiar exactamente el RESOURCE_ID proporcionado por la herramienta de lectura (ej. file_read, web_get_content) que genero esta anotación.")
             .addStringParameter("category", false, 
 """
 Clasificación ontológica estricta:
-- INVARIANT: Contratos y reglas permanentes del sistema que ningún cambio debe violar jamás (ej: 'capas con _ se ocultan del TOC si son vectoriales', 'common nunca importa react-redux, usa Context propio').
-- DESIGN_DECISION: Razones de por qué se eligió una solución sobre otra, alternativas descartadas o compromisos técnicos aceptados.
-- DOCUMENT_SUMMARY: Síntesis de documentación conceptual en prosa (actas de reuniones, RFCs, especificaciones). NUNCA la uses para listados de archivos o salidas de comandos.
-- PROJECT_MAP: La pizarra viva del proyecto. Radiografía técnica y mapa de navegación del código actual (estructura del monorepo, qué apps existen, cómo están cableados los módulos, qué herramientas contiene un visor). Conocimiento vital para orientarte y trabajar en el repositorio.
-- TASK_SCRATCHPAD: Checklist inmediata de pasos pendientes de la tarea en curso o notas de usar y tirar.
+- DOCUMENT_SUMMARY: Síntesis de un recurso documental leído (especificaciones técnicas,
+  archivos markdown/PDF, RFCs, páginas web, actas). Si la información procede de resumir
+  un documento que leíste, usa SIEMPRE esta categoría sin importar su temática técnica.
+- PROJECT_MAP: Cartografía del repositorio real obtenida explorando el sistema de 
+  archivos (árbol de carpetas, módulos existentes en disco, mapa de paquetes, estructura
+  del monorepo). Solo para la radiografía viva del código en el workspace, NUNCA 
+  para resúmenes de documentos.
+- INVARIANT: Contratos arquitectónicos y reglas inviolables del sistema.
+- DESIGN_DECISION: Razones de diseño, alternativas descartadas y compromisos técnicos.
+- TASK_SCRATCHPAD: Checklist inmediata o notas de usar y tirar de la tarea en curso.
+
 """
             )
             .addStringParameter(
@@ -140,39 +162,23 @@ Clasificación ontológica estricta:
     }
 
     try {
-      String jsonText = toolCall.trim();
+      JsonObject json = JsonParser.parseString(toolCall.trim()).getAsJsonObject();
 
-      // Si no empieza directamente por '{', localizamos el bloque JSON en la cadena
-      if (!jsonText.startsWith("{")) {
-        int firstBrace = jsonText.indexOf('{');
-        int lastBrace = jsonText.lastIndexOf('}');
-        if (firstBrace != -1 && lastBrace != -1 && lastBrace > firstBrace) {
-          jsonText = jsonText.substring(firstBrace, lastBrace + 1);
-        } else {
-          return null;
-        }
+      // The tool call is stored as { id, name, arguments }. Fall back to the
+      // root object so that a bare arguments document is still accepted.
+      JsonObject arguments = json.has("arguments") && json.get("arguments").isJsonObject()
+              ? json.getAsJsonObject("arguments")
+              : json;
+
+      if (!arguments.has("type") || arguments.get("type").isJsonNull()) {
+        return null;
       }
 
-      JsonObject json = JsonParser.parseString(jsonText).getAsJsonObject();
-
-      // Si el JSON contiene un campo anidado 'arguments' como string (ej. ToolExecutionRequest serializado)
-      if (json.has("arguments") && json.get("arguments").isJsonPrimitive()) {
-        String innerArgs = json.get("arguments").getAsString();
-        if (innerArgs != null && innerArgs.trim().startsWith("{")) {
-          json = JsonParser.parseString(innerArgs).getAsJsonObject();
-        }
-      }
-
-      if (json.has("type") && !json.get("type").isJsonNull()) {
-        String type = json.get("type").getAsString().trim();
-        if (!type.isEmpty()) {
-          return type;
-        }
-      }
+      String type = arguments.get("type").getAsString().trim();
+      return type.isEmpty() ? null : type;
     } catch (Exception e) {
       // Ignorar errores de parseo y retornar null de forma segura
+      return null;
     }
-
-    return null;
   }
 }
