@@ -72,6 +72,7 @@ import static io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningSer
 import static io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService.REASONING_PROVIDER_URL;
 import static io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService.PRIORITY_HIGH;
 import static io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService.PRIORITY_NORMAL;
+import io.github.jjdelcerro.noema.lib.impl.TelemetryImpl;
 import java.util.Collection;
 
 /**
@@ -114,7 +115,12 @@ public class SubagentImpl implements Subagent {
   public int getId() {
     return this.id;
   }
-
+  
+  @Override
+  public TelemetryImpl getTelemetry() {
+    return this.subAgent.getTelemetry();
+  }
+  
   @Override
   public SubagentDefinition getDefinition() {
     return this.definition;

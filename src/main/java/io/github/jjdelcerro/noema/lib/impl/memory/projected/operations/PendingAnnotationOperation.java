@@ -1,14 +1,16 @@
 package io.github.jjdelcerro.noema.lib.impl.memory.projected.operations;
 
-import com.google.gson.JsonObject;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.AgentTool;
+import io.github.jjdelcerro.noema.lib.api.Telemetry;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ContextZoning;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ContextZoning.ContextZone;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ContextZoning.ContextZoneType;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemory;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperation;
+import io.github.jjdelcerro.noema.lib.spi.memory.projected.AbstractProjectedMemoryOperation;
 import io.github.jjdelcerro.noema.lib.impl.services.memory.tools.AnnotateObservationTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileFindTool;
 import io.github.jjdelcerro.noema.lib.impl.services.reasoning.tools.file.FileFuzzyGrepTool;
@@ -18,7 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 
-public class PendingAnnotationOperation implements ProjectedMemoryOperation {
+public class PendingAnnotationOperation extends AbstractProjectedMemoryOperation implements ProjectedMemoryOperation {
 
   private static final int MINIMUM_SIZE_FOR_TRIM = 1024;
   private static final int DEFAULT_BATCH_THRESHOLD = 4; // Tamaño de lote para avisar en bloque
@@ -27,25 +29,15 @@ public class PendingAnnotationOperation implements ProjectedMemoryOperation {
   private final int minimumSizeForTrim;
   private final int batchThreshold;
 
-  public PendingAnnotationOperation() {
-    this(MINIMUM_SIZE_FOR_TRIM, DEFAULT_BATCH_THRESHOLD);
+  public PendingAnnotationOperation(Agent agent) {
+    this(agent,MINIMUM_SIZE_FOR_TRIM, DEFAULT_BATCH_THRESHOLD);
   }
 
-  public PendingAnnotationOperation(int minimumSizeForTrim, int batchThreshold) {
+  public PendingAnnotationOperation(Agent agent, int minimumSizeForTrim, int batchThreshold) {
+    super(agent, "pending_annotation", PRIORITY);
     this.minimumSizeForTrim = minimumSizeForTrim;
     this.batchThreshold = batchThreshold;
   }
-
-  @Override
-  public String getName() {
-    return "pending_annotation";
-  }
-
-  @Override
-  public int getPriority() {
-    return PRIORITY;
-  }
-
   @Override
   public void process(ProjectedMemory memory, List<ChatMessage> projectedMessages, List<String> notifications) {
     int total = projectedMessages.size();
@@ -83,6 +75,9 @@ public class PendingAnnotationOperation implements ProjectedMemoryOperation {
       return;
     }
 
+    this.getTelemetry().registerCounter("projectedmemory.annotationreminders", "Recordatorios de anotar", null);
+    this.getTelemetry().increment("projectedmemory.annotationreminders");
+    
     String warning = """
 [PODA DE CONTEXTO] Datos crudos próximos a eliminarse: {resources_list}
 Las anotaciones sobreviven; los datos crudos no.
@@ -171,14 +166,5 @@ Herramienta: {annotate_observation}(resource_id, note)
       }
     }
     return false;
-  }
-
-  @Override
-  public JsonObject getState() {
-    return null;
-  }
-
-  @Override
-  public void restoreState(JsonObject state) {
   }
 }

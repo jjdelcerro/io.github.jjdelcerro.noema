@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import io.github.jjdelcerro.noema.lib.api.AgentConsole;
 import io.github.jjdelcerro.noema.lib.api.ConnectionSupplier;
+import io.github.jjdelcerro.noema.lib.api.Telemetry;
 import io.github.jjdelcerro.noema.lib.impl.SQLProvider;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingFilter;
 import io.github.jjdelcerro.noema.lib.impl.services.embeddings.EmbeddingsService;
@@ -55,6 +56,8 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
     createTables();
     this.turnCounter = Counter.from(this.getConnection(), "episodicmemory");
     this.consolidateMemoryCounter = Counter.from(this.getConnection(), "consolidatememory");
+    Telemetry telemetry = agent.getTelemetry();
+    telemetry.registerCounter("episodicmemory.turns", "Turnos en la memoria episodica", null);
   }
 
   public static EpisodicMemory from(Agent agent) {
@@ -186,6 +189,8 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
         ps.setBytes(11, blobBytes);
         ps.executeUpdate();
       }
+    Telemetry telemetry = agent.getTelemetry();
+    telemetry.increment("episodicmemory.turns");
 
     } catch (Exception ex) {
       throw new TurnException("Can't add turn", ex);

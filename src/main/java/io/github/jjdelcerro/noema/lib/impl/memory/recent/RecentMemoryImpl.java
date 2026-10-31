@@ -6,6 +6,7 @@ import com.google.gson.GsonBuilder;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.Content;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
+import io.github.jjdelcerro.noema.lib.api.Telemetry;
 import io.github.jjdelcerro.noema.lib.impl.memory.GsonUtils.ChatMessageAdapter;
 import io.github.jjdelcerro.noema.lib.impl.memory.GsonUtils.ContentAdapter;
 import io.github.jjdelcerro.noema.lib.api.settings.AgentSettings;

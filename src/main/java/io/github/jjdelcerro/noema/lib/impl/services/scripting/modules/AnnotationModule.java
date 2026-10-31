@@ -68,6 +68,7 @@ public class AnnotationModule extends AbstractScriptModule {
     String toolCallJson = new Gson().toJson(args);
     Turn turn = agent.getEpisodicMemory().createTurn(LocalDateTime.now(), "annotation", subchannel, null, null, null, toolCallJson, "{\"status\": \"success\"}", null);
     agent.getEpisodicMemory().add(turn);
+    this.getTelemetry().increment("scripting.annotation.adds");
     LOGGER.info("Knowledge note registered from script: [{}] {}", source, StringUtils.abbreviate(note, 60));
   }
 

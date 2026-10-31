@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.memory.projected.operations;
 
-import com.google.gson.JsonObject;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperation;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperationFactory;
 
@@ -15,11 +15,8 @@ public class TrimmingOperationFactory implements ProjectedMemoryOperationFactory
     }
 
     @Override
-    public ProjectedMemoryOperation create(JsonObject state) {
-        TrimmingOperation operation = new TrimmingOperation();
-        if (state != null && !state.isEmpty()) {
-            operation.restoreState(state);
-        }
+    public ProjectedMemoryOperation create(Agent agent) {
+        TrimmingOperation operation = new TrimmingOperation(agent);
         return operation;
     }
 }

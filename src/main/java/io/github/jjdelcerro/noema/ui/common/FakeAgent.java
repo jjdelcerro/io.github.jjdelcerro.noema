@@ -21,6 +21,7 @@ import java.util.function.Supplier;
 import io.github.jjdelcerro.noema.lib.api.memory.episodic.EpisodicMemory;
 import io.github.jjdelcerro.noema.lib.api.model.ChatModel;
 import io.github.jjdelcerro.noema.lib.api.model.ModelParameters;
+import io.github.jjdelcerro.noema.lib.impl.TelemetryImpl;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -35,9 +36,11 @@ public class FakeAgent implements Agent {
   private final AgentSettings settings;
   private AgentConsole console;
   private final AgentActions actions;
+  private TelemetryImpl telemetry;
 
   public FakeAgent(AgentSettings settings, AgentConsole console) {
     AgentManager agentManager = AgentLocator.getAgentManager();
+    this.telemetry = new TelemetryImpl();
     this.settings = settings;
     this.actions = new FakeAgentActions(agentManager.createActions());
     this.console = console==null?new FakeConsole():console;
@@ -50,7 +53,12 @@ public class FakeAgent implements Agent {
       this.actions.addAction(action);
     }
   }
-
+  
+  @Override
+  public TelemetryImpl getTelemetry() {
+    return this.telemetry;
+  }
+  
   @Override
   public AgentActions getActions() {
     return actions;

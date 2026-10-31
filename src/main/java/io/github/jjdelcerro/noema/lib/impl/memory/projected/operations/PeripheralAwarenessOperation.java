@@ -1,6 +1,5 @@
 package io.github.jjdelcerro.noema.lib.impl.memory.projected.operations;
 
-import com.google.gson.JsonObject;
 import dev.langchain4j.data.message.ChatMessage;
 import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.impl.utils.DateUtils;
@@ -14,24 +13,19 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemory;
+import io.github.jjdelcerro.noema.lib.spi.memory.projected.AbstractProjectedMemoryOperation;
 
-public class PeripheralAwarenessOperation implements ProjectedMemoryOperation {
+public class PeripheralAwarenessOperation extends AbstractProjectedMemoryOperation implements ProjectedMemoryOperation {
 
   public static final String OPERATION_NAME = "peripheral_awareness";
   private static final int PRIORITY = 1000;
   private static final long HOT_HOURS_THRESHOLD = 24L;
   private static final long COLD_DAYS_THRESHOLD = 7L;
 
-  @Override
-  public String getName() {
-    return OPERATION_NAME;
+  public PeripheralAwarenessOperation(Agent agent) {
+    super(agent, OPERATION_NAME, PRIORITY);
   }
-
-  @Override
-  public int getPriority() {
-    return PRIORITY;
-  }
-
+  
   @Override
   public void process(ProjectedMemory memory, List<ChatMessage> projectedMessages, List<String> notifications) {
     if (memory == null || notifications == null) {
@@ -111,15 +105,5 @@ public class PeripheralAwarenessOperation implements ProjectedMemoryOperation {
       sb.append("\nSi requieres mas detalles sobre alguna de estas conversaciones, utiliza las herramientas de busqueda en el historial.");
       notifications.add("[CONSCIENCIA PERIFERICA] "+sb.toString().trim());
     }
-  }
-
-  @Override
-  public JsonObject getState() {
-    return null;
-  }
-
-  @Override
-  public void restoreState(JsonObject state) {
-    // Stateless operation
   }
 }

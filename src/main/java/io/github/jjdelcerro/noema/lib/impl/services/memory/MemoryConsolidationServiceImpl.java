@@ -35,6 +35,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.jjdelcerro.noema.lib.api.Agent.DEFAULT_SUBCHANNEL;
+import io.github.jjdelcerro.noema.lib.api.Telemetry;
 import io.github.jjdelcerro.noema.lib.api.model.ChatModel;
 import io.github.jjdelcerro.noema.lib.api.memory.episodic.EpisodicMemory;
 import io.github.jjdelcerro.noema.lib.api.services.memory.MemoryConsolidationService;
@@ -88,6 +89,11 @@ public class MemoryConsolidationServiceImpl
     super(factory, agent);
     this.episodicMemory = agent.getEpisodicMemory();
     this.console = agent.getConsole(DEFAULT_SUBCHANNEL);
+    Telemetry telemetry = agent.getTelemetry();
+    telemetry.registerCounter("consolidation.consolidations", "Consolidaciones", null);
+    telemetry.registerCounter("consolidation.badcites", "Citas erroneas en la consolidacion", null);
+    telemetry.registerCounter("consolidation.turns", "Numero de turnos consolidados", null);
+
   }
 
   @Override
@@ -142,6 +148,8 @@ public class MemoryConsolidationServiceImpl
         throw new IllegalArgumentException("No hay turnos para consolidar.");
       }
 
+      Telemetry telemetry = agent.getTelemetry();
+      
       List<Turn> refinedTurns = refineTurns(newTurns);
 
       Set<Integer> validTurnIds = new HashSet<>();
@@ -178,6 +186,7 @@ public class MemoryConsolidationServiceImpl
           LOGGER.warn("Encontrada cita " + turnId + " incorrecta.");
           this.console.printSystemLog("Encontrada cita " + turnId + " incorrecta.");
           generatedText = generatedText.replace("{cite:" + turnId + "}", "{badcite:" + turnId + "}");
+          telemetry.increment("consolidation.badcites");
         }
       }
 
@@ -191,6 +200,8 @@ public class MemoryConsolidationServiceImpl
       LocalDateTime tm = LocalDateTime.now();
       ConsolidateMemory cp = this.episodicMemory.createConsolidateMemory(subchannel, firstId, lastId, tm, generatedText);
       dump(previous, cp, refinedTurns);
+      telemetry.increment("consolidation.consolidations");
+      telemetry.increment("consolidation.turns",refinedTurns.size());
       LOGGER.info("Consolidación finalizada.");
       return cp;
     } catch(Throwable t) {

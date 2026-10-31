@@ -7,7 +7,6 @@ import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptModule;
 import io.github.jjdelcerro.noema.lib.impl.utils.SLMUtils;
 import io.github.jjdelcerro.noema.lib.spi.services.scripting.AbstractScriptModule;
-import io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptContextImpl;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -65,6 +64,7 @@ public class LlmModule extends AbstractScriptModule {
   }
 
   public String sml_query(String prompt) {
+    this.getTelemetry().increment("scripting.llm.sml_query");
     return SLMUtils.generate(agent, prompt);
   }
 
@@ -78,6 +78,7 @@ public class LlmModule extends AbstractScriptModule {
       );
     }
     String result = agent.callChatModel(modelId, systemPrompt, message != null ? message : "");
+    this.getTelemetry().increment("scripting.llm.querys");
     return result != null ? result.trim() : "";
   }
 
@@ -97,6 +98,7 @@ public class LlmModule extends AbstractScriptModule {
     if (json == null) {
       return Collections.emptyMap();
     }
+    this.getTelemetry().increment("scripting.llm.extractJson");
     return new Gson().fromJson(json, Object.class);
   }
 
@@ -117,6 +119,7 @@ public class LlmModule extends AbstractScriptModule {
     for (String message : messages) {
       results.add(query(systemPrompt, message));
     }
+    this.getTelemetry().increment("scripting.llm.map");
     return results;
   }
 

@@ -1,8 +1,8 @@
 package io.github.jjdelcerro.noema.lib.impl.memory.projected.operations;
 
-import com.google.gson.JsonObject;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.api.AgentTool.ToolResult;
 import io.github.jjdelcerro.noema.lib.api.AgentTool.TrimResultType;
@@ -11,13 +11,14 @@ import io.github.jjdelcerro.noema.lib.api.memory.projected.ContextZoning.Context
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ContextZoning.ContextZoneType;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemory;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperation;
+import io.github.jjdelcerro.noema.lib.spi.memory.projected.AbstractProjectedMemoryOperation;
 import io.github.jjdelcerro.noema.lib.impl.tools.ToolResultImpl;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class TrimmingOperation implements ProjectedMemoryOperation {
+public class TrimmingOperation extends AbstractProjectedMemoryOperation implements ProjectedMemoryOperation {
 
   private static final int MINIMUM_SIZE_FOR_TRIM = 1024;
   private static final int DEFAULT_BATCH_THRESHOLD = 4;
@@ -30,23 +31,14 @@ public class TrimmingOperation implements ProjectedMemoryOperation {
 
   }
 
-  public TrimmingOperation() {
-    this(MINIMUM_SIZE_FOR_TRIM, DEFAULT_BATCH_THRESHOLD);
+  public TrimmingOperation(Agent agent) {
+    this(agent,MINIMUM_SIZE_FOR_TRIM, DEFAULT_BATCH_THRESHOLD);
   }
 
-  public TrimmingOperation(int minimumSizeForTrim, int batchThreshold) {
+  public TrimmingOperation(Agent agent, int minimumSizeForTrim, int batchThreshold) {
+    super(agent, "trimming",PRIORITY);
     this.minimumSizeForTrim = minimumSizeForTrim;
     this.batchThreshold = batchThreshold;
-  }
-
-  @Override
-  public String getName() {
-    return "trimming";
-  }
-
-  @Override
-  public int getPriority() {
-    return PRIORITY;
   }
 
   @Override
@@ -118,6 +110,8 @@ public class TrimmingOperation implements ProjectedMemoryOperation {
     List<PruneCandidate> allTargets = new ArrayList<>(unprunedInPrunable);
     allTargets.addAll(unprunedInAccum);
 
+    this.getTelemetry().registerCounter("projectedmemory.trimming.pruneds", "Mensajes podados en la memoria proyectada", null);
+    
     for (PruneCandidate candidate : allTargets) {
       ToolExecutionResultMessage trimmedMessage = ToolResultImpl.toToolExecutionResultMessage(
               candidate.id(),
@@ -125,6 +119,7 @@ public class TrimmingOperation implements ProjectedMemoryOperation {
               candidate.trimmedResult()
       );
       projectedMessages.set(candidate.index(), trimmedMessage);
+      this.getTelemetry().increment("projectedmemory.trimming.pruneds");
     }
   }
 
@@ -172,15 +167,5 @@ public class TrimmingOperation implements ProjectedMemoryOperation {
     }
 
     return new PruneCandidate(index, toolResult.id(), toolResult.toolName(), trimmed);
-  }
-
-  @Override
-  public JsonObject getState() {
-    return null;
-  }
-
-  @Override
-  public void restoreState(JsonObject state) {
-    // Operación completamente funcional y sin estado persistente
   }
 }

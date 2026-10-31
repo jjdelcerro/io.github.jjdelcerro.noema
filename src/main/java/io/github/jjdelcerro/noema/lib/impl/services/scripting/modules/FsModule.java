@@ -13,7 +13,6 @@ import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptModule;
 import io.github.jjdelcerro.noema.lib.impl.utils.FileFuzzySearchUtils;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.AutoClosingLineIterator;
 import io.github.jjdelcerro.noema.lib.spi.services.scripting.AbstractScriptModule;
-import io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptContextImpl;
 import io.github.jjdelcerro.noema.lib.impl.utils.CloseableIterable;
 import io.github.jjdelcerro.noema.lib.impl.utils.FileSearchAndReplaceUtils;
 import io.github.jjdelcerro.noema.lib.impl.utils.FileSearchAndReplaceUtils.SearchAndReplaceResult;
@@ -134,8 +133,10 @@ para no depender de dónde se inició el agente.
       for (Path entry : entries) {
         matches.add(FsUtils.toDisplayPath(agent, entry));
       }
+      this.getTelemetry().increment("scripting.fs.finds");
     } catch (IOException e) {
       LOGGER.warn("Error scanning files with pattern: {}", globPattern, e);
+      this.getTelemetry().increment("scripting.fs.findsfaileds");
     }
     return matches;
   }
@@ -160,6 +161,7 @@ para no depender de dónde se inició el agente.
             matcher, 
             scope
     );
+    this.getTelemetry().increment("scripting.fs.greps");
     return results.results();
   }
   
@@ -185,7 +187,9 @@ para no depender de dónde se inició el agente.
       } else {
         Files.writeString(path, Objects.toString(content, ""), StandardCharsets.UTF_8);
       }
+      this.getTelemetry().increment("scripting.fs.writes");
     } catch (IOException e) {
+      this.getTelemetry().increment("scripting.fs.writesfaileds");
       throw new RuntimeException("Error writing file: " + rawPath + " (" + e.getMessage() + ")", e);
     }
   }
@@ -227,6 +231,7 @@ para no depender de dónde se inició el agente.
     for (String line : lines(rawPath)) {
       closure.call(line, lineNumber++);
     }
+    this.getTelemetry().increment("scripting.fs.foreachline");
   }
 
   /**
@@ -240,6 +245,7 @@ para no depender de dónde se inició el agente.
    */
   public Iterable<String> lines(String rawPath) {
     Path path = validatePath(rawPath, AgentAccessControl.AccessMode.PATH_ACCESS_READ);
+    this.getTelemetry().increment("scripting.fs.lines");
     return () -> {
       try {
         BufferedReader reader = openReader(path);
@@ -355,6 +361,7 @@ para no depender de dónde se inició el agente.
 
   public Iterable<FileFuzzySearchUtils.FuzzyMatch> fuzzygrep(String query, String rawPath, String filePattern, int limit, double minSimilarity) {
     Path path = toScope(rawPath);
+    this.getTelemetry().increment("scripting.fs.fuzzygreps");
     return FileFuzzySearchUtils.search(agent, path, query, filePattern, limit, minSimilarity);
   }
 
@@ -371,6 +378,7 @@ para no depender de dónde se inició el agente.
    * y vista previa.
    */
   public SearchAndReplaceResult searchAndReplace(String rawPath, String oldText, String newText) {
+    this.getTelemetry().increment("scripting.fs.searchAndReplaces");
     return FileSearchAndReplaceUtils.searchAndReplace(
             agent.getAccessControl(),
             rawPath,
@@ -398,18 +406,22 @@ para no depender de dónde se inició el agente.
     try {
       path = validatePath(rawPath, AgentAccessControl.AccessMode.PATH_ACCESS_WRITE);
     } catch (SecurityException e) {
+      this.getTelemetry().increment("scripting.fs.deletesdenieds");
       return deleteResult(result, "denied", e.getMessage());
     }
     if (!Files.exists(path)) {
+      this.getTelemetry().increment("scripting.fs.deletesnotfound");
       return deleteResult(result, "not_found", "File does not exist: " + rawPath);
     }
     boolean directory = Files.isDirectory(path);
     if (directory) {
       long entries = countDirectoryEntries(path);
       if (entries < 0) {
+        this.getTelemetry().increment("scripting.fs.deletesfaileds");
         return deleteResult(result, "error", "Cannot inspect directory: " + rawPath);
       }
       if (entries > 0) {
+        this.getTelemetry().increment("scripting.fs.deletesdenieds");
         return deleteResult(result, "denied",
                 "Refusing to delete a non-empty directory (" + entries + " entries): " + rawPath);
       }
@@ -419,8 +431,11 @@ para no depender de dónde se inició el agente.
         backupInRcs(path);
       }
       Files.delete(path);
-      return deleteResult(result, "success", (directory ? "Directory" : "File") + " deleted: " + rawPath);
+      Map<String, Object> r = deleteResult(result, "success", (directory ? "Directory" : "File") + " deleted: " + rawPath);
+      this.getTelemetry().increment("scripting.fs.deletes");
+      return r;
     } catch (IOException e) {
+      this.getTelemetry().increment("scripting.fs.deletesfaileds");
       return deleteResult(result, "error", "Error deleting " + rawPath + " (" + e.getMessage() + ")");
     }
   }

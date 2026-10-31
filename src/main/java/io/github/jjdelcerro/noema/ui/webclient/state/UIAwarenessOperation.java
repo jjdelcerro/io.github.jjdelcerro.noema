@@ -1,9 +1,10 @@
 package io.github.jjdelcerro.noema.ui.webclient.state;
 
-import com.google.gson.JsonObject;
 import dev.langchain4j.data.message.ChatMessage;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemory;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperation;
+import io.github.jjdelcerro.noema.lib.spi.memory.projected.AbstractProjectedMemoryOperation;
 import io.github.jjdelcerro.noema.ui.webclient.NoemaWebServer;
 
 import java.util.List;
@@ -19,21 +20,12 @@ import org.apache.commons.lang3.Strings;
  * <p>Each component adds an independent block, so the components can appear
  * or disappear without affecting each other.</p>
  */
-public class UIAwarenessOperation implements ProjectedMemoryOperation {
+public class UIAwarenessOperation extends AbstractProjectedMemoryOperation implements ProjectedMemoryOperation {
 
     private static final int PRIORITY = 30;
 
-    public UIAwarenessOperation() {
-    }
-
-    @Override
-    public String getName() {
-        return UIAwarenessOperationFactory.NAME;
-    }
-
-    @Override
-    public int getPriority() {
-        return PRIORITY;
+    public UIAwarenessOperation(Agent agent) {
+        super(agent, UIAwarenessOperationFactory.NAME, PRIORITY);
     }
 
     @Override
@@ -112,15 +104,5 @@ Ruta: %s
                     notes.getSelectionEndLine()));
         }
         return notice.toString();
-    }
-
-    @Override
-    public JsonObject getState() {
-        return null;
-    }
-
-    @Override
-    public void restoreState(JsonObject state) {
-        // Operacion sin estado persistente propio
     }
 }

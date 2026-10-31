@@ -30,10 +30,12 @@ public class SessionStateModule extends AbstractScriptModule {
   }
 
   public void set(String name, Object value) {
+    this.getTelemetry().increment("scripting.sessionstate.set");
     this.sessionState.put(name, value);
   }
 
   public Object get(String name) {
+    this.getTelemetry().increment("scripting.sessionstate.get");
     return this.sessionState.get(name);
   }
 

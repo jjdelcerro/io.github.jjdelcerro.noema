@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.memory.projected.operations;
 
-import com.google.gson.JsonObject;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperation;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperationFactory;
 
@@ -15,11 +15,8 @@ public class PendingAnnotationOperationFactory implements ProjectedMemoryOperati
     }
 
     @Override
-    public ProjectedMemoryOperation create(JsonObject state) {
-        PendingAnnotationOperation operation = new PendingAnnotationOperation();
-        if (state != null && !state.isEmpty()) {
-            operation.restoreState(state);
-        }
+    public ProjectedMemoryOperation create(Agent agent) {
+        PendingAnnotationOperation operation = new PendingAnnotationOperation(agent);
         return operation;
     }
 }

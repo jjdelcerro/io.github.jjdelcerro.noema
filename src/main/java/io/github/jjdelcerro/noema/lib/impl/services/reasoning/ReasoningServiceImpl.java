@@ -71,6 +71,7 @@ import static io.github.jjdelcerro.noema.lib.api.Agent.DEFAULT_SUBCHANNEL;
 import static io.github.jjdelcerro.noema.lib.api.AgentActions.COMPACT_REASONING_FULL_MEMORY;
 import static io.github.jjdelcerro.noema.lib.api.AgentActions.COMPACT_REASONING_MEMORY;
 import io.github.jjdelcerro.noema.lib.api.AgentTool.ToolResult;
+import io.github.jjdelcerro.noema.lib.api.Telemetry;
 import io.github.jjdelcerro.noema.lib.api.model.ChatModel;
 import io.github.jjdelcerro.noema.lib.api.model.ModelParameters;
 import io.github.jjdelcerro.noema.lib.impl.memory.projected.ProjectedMemoryImpl;
@@ -100,6 +101,19 @@ public class ReasoningServiceImpl
   protected String lastestSystemPrompt;
   protected String currentSubchannel;
 
+  private long estimeChars(List<ChatMessage> messages) {
+    if( messages == null ) {
+      return 0;
+    }
+    long counter = 0L;
+    for (ChatMessage msg : messages) {
+      if( msg!=null ) {        
+        counter += msg.toString().length();
+      }
+    }
+    return counter;
+  }
+
   private static class AvailableAgentTool {
 
     private final AgentTool tool;
@@ -128,6 +142,10 @@ public class ReasoningServiceImpl
     this.projectedMemories = new HashMap<>();
     this.activeConsolidateMemories = new HashMap<>();
     this.currentSubchannel = DEFAULT_SUBCHANNEL;
+    Telemetry telemetry = agent.getTelemetry();
+    telemetry.registerCounter("reasoning.tools", "Herramientas en el razonador", null);
+    telemetry.registerCounter("reasoning.apicalls", "Llamadas realizadas al LLM", null);
+    
   }
 
   public RecentMemory createRecentMemory(String subchannel) {
@@ -432,7 +450,11 @@ public class ReasoningServiceImpl
         String msg1 = "Error ejecutando herramienta '" + toolName + "'.";
         LOGGER.info(msg1, e);
         return tool.result(msg1 + "\nSé cauteloso a la hora de reintentar la llamada a esta herramienta, si el error es grave puede seguir repitiendose.\nError "+ e.getClass().getCanonicalName() + ": " + e.getMessage());
+      } finally {
+        Telemetry telemetry = agent.getTelemetry();
+        telemetry.increment("reasoning.execute."+tool.getName());
       }
+      
     } else {
       String msg = "Herramienta '" + toolName + "' no encontrada.";
       LOGGER.info(msg);
@@ -589,6 +611,10 @@ public class ReasoningServiceImpl
         toolSpecifications.add(availableTool.tool.getSpecification().build());
       }
     }
+
+    Telemetry telemetry = agent.getTelemetry();
+    telemetry.setValue("reasoning.tools", toolSpecifications.size());
+    
     return toolSpecifications;
   }
 
@@ -715,16 +741,21 @@ public class ReasoningServiceImpl
 
         Response<AiMessage> response;
         try {
+          List<ChatMessage> proyectedHistory = projectedMemory.getMessages(
+                  recentMemory,
+                  consolidateMemory,
+                  this.getBaseSystemPrompt()
+          );
           response = this.getModel().generate(
-                  projectedMemory.getMessages(
-                          recentMemory,
-                          consolidateMemory,
-                          this.getBaseSystemPrompt()
-                  ),
+                  proyectedHistory,
                   this.getToolSpecifications(),
                   abort,
                   console
           );
+          long estimatedChars = this.estimeChars(proyectedHistory);
+          Telemetry telemetry = agent.getTelemetry();
+          telemetry.increment("reasoning.apicalls");          
+          telemetry.increment("reasoning.estimatedchars", estimatedChars);          
         } catch (Throwable t) {
           LOGGER.warn("Fallo durante la invocación al modelo en el turno actual", t);
           String errorMsg = "No se pudo completar el razonamiento debido a un error del proveedor: " + t.getMessage();

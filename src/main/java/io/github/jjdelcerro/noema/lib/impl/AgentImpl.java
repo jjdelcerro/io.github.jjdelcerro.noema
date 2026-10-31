@@ -95,6 +95,7 @@ public class AgentImpl implements Agent {
   private final Map<String, AgentService> sharedServices;
   
   private Map<String,Object> extraProperties;
+  private final TelemetryImpl telemetry;
 
   /**
    * Constructor reservado para entornos de pruebas y depuracion. Permite
@@ -116,6 +117,7 @@ public class AgentImpl implements Agent {
           EpisodicMemory episodicMemory,
           AgentAccessControl accessControl
   ) {
+    this.telemetry = new TelemetryImpl();
     this.running = false;
     this.actions = AgentLocator.getAgentManager().createActions();
     this.settings = settings;
@@ -611,5 +613,10 @@ public class AgentImpl implements Agent {
   public ToolResult createResultImage(Path pathname) {
     return new ToolResultImpl(pathname, AgentTool.ToolResultType.Image);
   }
-  
+
+  @Override
+  public TelemetryImpl getTelemetry() {
+    return telemetry;
+  }
+
 }

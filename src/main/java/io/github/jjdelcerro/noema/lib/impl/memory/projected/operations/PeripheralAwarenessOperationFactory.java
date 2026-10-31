@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.memory.projected.operations;
 
-import com.google.gson.JsonObject;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperation;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperationFactory;
 
@@ -12,11 +12,8 @@ public class PeripheralAwarenessOperationFactory implements ProjectedMemoryOpera
   }
 
   @Override
-  public ProjectedMemoryOperation create(JsonObject state) {
-    PeripheralAwarenessOperation operation = new PeripheralAwarenessOperation();
-    if (state != null && !state.isEmpty()) {
-      operation.restoreState(state);
-    }
+  public ProjectedMemoryOperation create(Agent agent) {
+    PeripheralAwarenessOperation operation = new PeripheralAwarenessOperation(agent);
     return operation;
   }
 }

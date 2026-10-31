@@ -1,7 +1,7 @@
 package io.github.jjdelcerro.noema.lib.impl.memory.projected.operations;
 
 
-import com.google.gson.JsonObject;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperation;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperationFactory;
 
@@ -15,11 +15,8 @@ public class TemporalPerceptionOperationFactory implements ProjectedMemoryOperat
     }
 
     @Override
-    public ProjectedMemoryOperation create(JsonObject state) {
-        TemporalPerceptionOperation operation = new TemporalPerceptionOperation();
-        if (state != null && !state.isEmpty()) {
-            operation.restoreState(state);
-        }
+    public ProjectedMemoryOperation create(Agent agent) {
+        TemporalPerceptionOperation operation = new TemporalPerceptionOperation(agent);
         return operation;
     }
 }

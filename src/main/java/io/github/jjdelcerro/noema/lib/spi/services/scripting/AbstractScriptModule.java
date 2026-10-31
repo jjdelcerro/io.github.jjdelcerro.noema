@@ -1,6 +1,7 @@
 package io.github.jjdelcerro.noema.lib.spi.services.scripting;
 
 import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.Telemetry;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptModule;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptModuleFactory;
@@ -45,6 +46,10 @@ public abstract class AbstractScriptModule implements ScriptModule {
     this.description = description;
   }
 
+  public Telemetry getTelemetry() {
+    return this.agent.getTelemetry();
+  }
+  
   @Override
   public String getName() {
     return name;

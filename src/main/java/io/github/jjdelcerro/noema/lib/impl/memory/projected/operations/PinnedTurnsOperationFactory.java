@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.lib.impl.memory.projected.operations;
 
-import com.google.gson.JsonObject;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperation;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperationFactory;
 
@@ -12,11 +12,8 @@ public class PinnedTurnsOperationFactory implements ProjectedMemoryOperationFact
     }
 
     @Override
-    public ProjectedMemoryOperation create(JsonObject state) {
-        PinnedTurnsOperationImpl operation = new PinnedTurnsOperationImpl();
-        if (state != null && !state.isEmpty()) {
-            operation.restoreState(state);
-        }
+    public ProjectedMemoryOperation create(Agent agent) {
+        PinnedTurnsOperationImpl operation = new PinnedTurnsOperationImpl(agent);
         return operation;
     }
 }

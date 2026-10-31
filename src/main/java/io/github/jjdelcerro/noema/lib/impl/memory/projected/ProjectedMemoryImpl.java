@@ -84,7 +84,7 @@ public class ProjectedMemoryImpl implements ProjectedMemory {
     if (factories != null) {
       for (ProjectedMemoryOperationFactory factory : factories) {
         try {
-          ProjectedMemoryOperation op = factory.create(null);
+          ProjectedMemoryOperation op = factory.create(this.agent);
           if (op != null) {
             this.operations.add(op);
           }
@@ -140,7 +140,7 @@ public class ProjectedMemoryImpl implements ProjectedMemory {
       projectedMessages.addAll(recentMemory.getMessages());
     }
 
-    // 3. Ejecucion secuencial del Pipeline de Operaciones
+    // 3. Ejecucion secuencial de las Operaciones (Ojo, que no es un pipeline extrictamente hablando de operaciones)
     List<String> notifications = new ArrayList<>();
     for (ProjectedMemoryOperation op : this.operations) {
       try {

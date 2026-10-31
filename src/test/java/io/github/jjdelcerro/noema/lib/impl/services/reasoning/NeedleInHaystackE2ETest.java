@@ -186,6 +186,7 @@ public class NeedleInHaystackE2ETest {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<String> finalResponse = new AtomicReference<>("");
 
+        this.agent.getConsole(userPrompt);
         agent.putUsersMessage(Agent.DEFAULT_SUBCHANNEL, userPrompt, response -> {
             finalResponse.set(response != null ? response : "");
             latch.countDown();
@@ -223,32 +224,42 @@ public class NeedleInHaystackE2ETest {
         // Verificamos que se ha generado al menos un ConsolidateMemory en la base de datos
         ConsolidateMemory consolidateMemory = agent.getEpisodicMemory().getLatestConsolidateMemory(Agent.DEFAULT_SUBCHANNEL);
         assertNotNull(consolidateMemory, "La memoria deberia haberse compactado generando al menos un ConsolidateMemory.");
-        System.out.println(">>> [E2E INFO] ConsolidateMemory generado: " + consolidateMemory.getCode());
+//        System.out.println(">>> [E2E INFO] ConsolidateMemory generado: " + consolidateMemory.getCode());
 
         // --- ACTO 4: Interrogatorio final sobre las tres agujas ---
-
+        
         // 1. Verificacion de Aguja 1 (Clave secreta explicita)
+        System.out.println("[Telemetry]");
+        System.out.println(this.agent.getTelemetry().getReport());
+        System.out.println("---");
         String query1 = "Cual es la clave secreta de despliegue del proyecto Titan que te di al principio?";
         String answer1 = sendUserMessageAndWait(query1);
-        System.out.println(">>> [RESPUESTA AGUJA 1] " + answer1);
         assertTrue(answer1.contains("TitanSecret-9942"),
                 "El agente deberia recordar la clave secreta explicita 'TitanSecret-9942'.");
 
         // 2. Verificacion de Aguja 2 (Conversacion casual con Paco)
+        System.out.println("[Telemetry]");
+        System.out.println(this.agent.getTelemetry().getReport());
+        System.out.println("---");
         String query2 = "En que puerto acordamos con Paco que correria el servidor de staging?";
         String answer2 = sendUserMessageAndWait(query2);
-        System.out.println(">>> [RESPUESTA AGUJA 2] " + answer2);
         assertTrue(answer2.contains("7788"),
                 "El agente deberia recordar el puerto '7788' acordado con Paco.");
 
         // 3. Verificacion de Aguja 3 (Detalle tecnico organico dentro del documento)
+        System.out.println("[Telemetry]");
+        System.out.println(this.agent.getTelemetry().getReport());
+        System.out.println("---");
         String query3 = "Segun la seccion del SchedulerService que leiste en '"+fixtureFileName+"', "
                 + "cual es el formato del ID que se asigna a cada alarma y que libreria parser de fechas utiliza?";
         String answer3 = sendUserMessageAndWait(query3);
-        System.out.println(">>> [RESPUESTA AGUJA 3] " + answer3);
         assertTrue(answer3.contains("ALARM") || answer3.contains("ALARM-"),
                 "El agente deberia recordar que el formato de alarma es 'ALARM-<num>'.");
         assertTrue(answer3.toLowerCase().contains("natty"),
                 "El agente deberia recordar que el parser utilizado es 'Natty'.");
+
+        System.out.println("[Telemetry]");
+        System.out.println(this.agent.getTelemetry().getReport());
+        System.out.println("---");
     }
 }

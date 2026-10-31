@@ -1,6 +1,6 @@
 package io.github.jjdelcerro.noema.ui.webclient.state;
 
-import com.google.gson.JsonObject;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperation;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperationFactory;
 
@@ -21,11 +21,8 @@ public class UIAwarenessOperationFactory implements ProjectedMemoryOperationFact
     }
 
     @Override
-    public ProjectedMemoryOperation create(JsonObject state) {
-        UIAwarenessOperation operation = new UIAwarenessOperation();
-        if (state != null && !state.isEmpty()) {
-            operation.restoreState(state);
-        }
+    public ProjectedMemoryOperation create(Agent agent) {
+        UIAwarenessOperation operation = new UIAwarenessOperation(agent);
         return operation;
     }
 }

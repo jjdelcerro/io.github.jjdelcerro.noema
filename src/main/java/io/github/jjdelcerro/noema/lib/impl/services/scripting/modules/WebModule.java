@@ -7,7 +7,6 @@ import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptModule;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.AutoClosingLineIterator;
 import io.github.jjdelcerro.noema.lib.spi.services.scripting.AbstractScriptModule;
-import io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptContextImpl;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -82,6 +81,7 @@ Todos los metodos aceptan un segundo parametro opcional con el timeout en segund
 
     URI uri = URI.create(url);
     if (!agent.getAccessControl().isAccessible(uri)) {
+      this.getTelemetry().increment("scripting.web.linesdenied");
       throw new SecurityException("Access Denied to URL: " + url);
     }
     try {
@@ -93,6 +93,7 @@ Todos los metodos aceptan un segundo parametro opcional con el timeout en segund
               .build();
       HttpResponse<byte[]> response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
       if (response.statusCode() != 200) {
+        this.getTelemetry().increment("scripting.web.lineshttperror");
         throw new IOException("HTTP Error " + response.statusCode());
       }
       String contentType = response.headers().firstValue("Content-Type").orElse("text/plain");
@@ -100,8 +101,10 @@ Todos los metodos aceptan un segundo parametro opcional con el timeout en segund
       Reader reader = contentType.contains("text/plain") ? new InputStreamReader(input, StandardCharsets.UTF_8) : tika.parse(input, new Metadata());
       BufferedReader bufferedReader = new BufferedReader(reader);
       this.context.registerResource(bufferedReader);
-      return () -> new AutoClosingLineIterator(bufferedReader);
+      this.getTelemetry().increment("scripting.web.lines");
+      return () -> new AutoClosingLineIterator(bufferedReader);      
     } catch (Exception e) {
+      this.getTelemetry().increment("scripting.web.linesfailed");
       throw new RuntimeException("Error fetching URL: " + url + " (" + e.getMessage() + ")", e);
     }
   }
@@ -114,6 +117,7 @@ Todos los metodos aceptan un segundo parametro opcional con el timeout en segund
    * Performs a web search using the default provider (DeepSeek).
    */
   public Iterable<Map<String, String>> search(String query, int timeoutsecs) {
+    this.getTelemetry().increment("scripting.web.search");
     return this.search_deepseek(query, timeoutsecs);
   }
 

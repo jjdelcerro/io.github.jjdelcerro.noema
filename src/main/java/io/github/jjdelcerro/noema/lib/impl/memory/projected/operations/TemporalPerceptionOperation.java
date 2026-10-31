@@ -1,38 +1,30 @@
 package io.github.jjdelcerro.noema.lib.impl.memory.projected.operations;
 
-import com.google.gson.JsonObject;
 import dev.langchain4j.data.message.ChatMessage;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.impl.utils.DateUtils;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemory;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperation;
+import io.github.jjdelcerro.noema.lib.spi.memory.projected.AbstractProjectedMemoryOperation;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public class TemporalPerceptionOperation implements ProjectedMemoryOperation {
+public class TemporalPerceptionOperation extends AbstractProjectedMemoryOperation implements ProjectedMemoryOperation {
 
     private static final long DEFAULT_HOURS_THRESHOLD = 1L;
     private static final int PRIORITY = 30;
 
     private final long hoursThreshold;
 
-    public TemporalPerceptionOperation() {
-        this(DEFAULT_HOURS_THRESHOLD);
+    public TemporalPerceptionOperation(Agent agent) {
+        this(agent,DEFAULT_HOURS_THRESHOLD);
     }
 
-    public TemporalPerceptionOperation(long hoursThreshold) {
+    public TemporalPerceptionOperation(Agent agent, long hoursThreshold) {
+      super(agent, "temporal_perception", PRIORITY);
         this.hoursThreshold = hoursThreshold;
-    }
-
-    @Override
-    public String getName() {
-        return "temporal_perception";
-    }
-
-    @Override
-    public int getPriority() {
-        return PRIORITY;
     }
 
     @Override
@@ -49,15 +41,5 @@ public class TemporalPerceptionOperation implements ProjectedMemoryOperation {
 
         String timeNotice = "[CONSCIENCIA TEMPORAL] Ha pasado " + DateUtils.timeAgo(lastTime) + " desde la ultima interaccion con el usuario.";
         notifications.add(timeNotice);
-    }
-
-    @Override
-    public JsonObject getState() {
-        return null;
-    }
-
-    @Override
-    public void restoreState(JsonObject state) {
-        // Operacion sin estado persistente propio
     }
 }

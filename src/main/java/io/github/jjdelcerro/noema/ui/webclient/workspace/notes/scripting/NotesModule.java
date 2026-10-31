@@ -50,6 +50,7 @@ public class NotesModule extends AbstractScriptModule {
     NoteStore store = NotesSupport.store(agent);
     Path path = store.getNotesFolder().resolve(relpath);
     Note note = store.read(path);
+    this.getTelemetry().increment("scripting.notes.read");   
     return note;
   }
 

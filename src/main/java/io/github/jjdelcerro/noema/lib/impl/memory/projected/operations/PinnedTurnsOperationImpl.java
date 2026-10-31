@@ -12,9 +12,12 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.Content;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
+import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.AgentTool;
+import io.github.jjdelcerro.noema.lib.api.Telemetry;
 import io.github.jjdelcerro.noema.lib.impl.memory.GsonUtils;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemory;
+import io.github.jjdelcerro.noema.lib.spi.memory.projected.AbstractProjectedMemoryOperation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,7 +30,7 @@ import org.apache.commons.lang3.StringUtils;
  * beginning of the projected context after recent consolidation memory, and emits
  * periodic reminders.
  */
-public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
+public class PinnedTurnsOperationImpl extends AbstractProjectedMemoryOperation implements PinnedTurnsOperation {
 
   private static final int PRIORITY = 5; // Executes before TrimmingOperation
   private static final long NOTIFICATION_TURN_INTERVAL = 5L;
@@ -36,7 +39,7 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
   private int lastNotifiedIndex;
   private final Gson gson;
 
-  public static class PinnedTurnStateImpl implements PinnedTurnState {
+  private static class PinnedTurnStateImpl implements PinnedTurnState {
 
     private final AiMessage requestMessage;
     private final ToolExecutionResultMessage resultMessage;
@@ -82,7 +85,8 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
     }
   }
 
-  public PinnedTurnsOperationImpl() {
+  public PinnedTurnsOperationImpl(Agent agent) {
+    super(agent, OPERATION_NAME, PRIORITY);
     this.pinnedTurns = new ArrayList<>();
     this.lastNotifiedIndex = -1;
     this.gson = createGson();
@@ -95,16 +99,6 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
             .registerTypeAdapter(Content.class, new GsonUtils.ContentAdapter())
             .enableComplexMapKeySerialization()
             .create();
-  }
-
-  @Override
-  public String getName() {
-    return OPERATION_NAME;
-  }
-
-  @Override
-  public int getPriority() {
-    return PRIORITY;
   }
 
   @Override
@@ -134,6 +128,8 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
       if (state.isPinned() && predicate.test(state)) {
         state.setPinned(false);
         removed = true;
+        this.getTelemetry().increment("projectedmemory.pinnedturns.unpinnedturns");
+        
       }
     }
     return removed;
@@ -156,10 +152,10 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
     captureNewPinnedTurns(memory, projectedMessages);
 
     // 3. Re-inject pinned turns that have been purged by consolidation
-    reinjectCompactedPinnedTurns(projectedMessages);
+    reinjectCompactedPinnedTurns(memory, projectedMessages);
 
     // 4. Emit periodic reminder notifications every 5 messages
-    processPeriodicNotifications(projectedMessages, notifications);
+    processPeriodicNotifications(memory, projectedMessages, notifications);
   }
 
   private void captureNewPinnedTurns(ProjectedMemory memory, List<ChatMessage> messages) {
@@ -193,6 +189,7 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
                 this.pinnedTurns.add(new PinnedTurnStateImpl(tool, isolatedRequestMsg, resultMsg));
               }
             }
+            this.getTelemetry().increment("projectedmemory.pinnedturns.turnsdetection");
           }          
           
         }
@@ -216,7 +213,7 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
     return null;
   }
 
-  private void reinjectCompactedPinnedTurns(List<ChatMessage> projectedMessages) {
+  private void reinjectCompactedPinnedTurns(ProjectedMemory memory, List<ChatMessage> projectedMessages) {
     if (this.pinnedTurns.isEmpty()) {
       return;
     }
@@ -248,6 +245,7 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
           projectedMessages.add(insertIndex++, pinnedTurn.getResultMessage());
         }
       }
+      this.getTelemetry().increment("projectedmemory.pinnedturns.reinjectedturns");      
     }
 
     if (!toRemove.isEmpty()) {
@@ -255,7 +253,7 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
     }
   }
 
-  private void processPeriodicNotifications(List<ChatMessage> projectedMessages, List<String> notifications) {
+  private void processPeriodicNotifications(ProjectedMemory memory, List<ChatMessage> projectedMessages, List<String> notifications) {
     if (this.pinnedTurns.isEmpty() || notifications == null) {
       return;
     }
@@ -300,6 +298,7 @@ public class PinnedTurnsOperationImpl implements PinnedTurnsOperation {
               String message = tool.getPinnedNotificationMessage(req, state.getResultMessage());
               if (StringUtils.isNotBlank(message)) {
                 notifications.add(message.trim());
+                this.getTelemetry().increment("projectedmemory.pinnedturns.notifications");      
               }
             }
           }

@@ -152,4 +152,6 @@ public interface Agent {
   default ToolResult createResultImage(Path pathname) {
     return null;
   }
+  
+  public Telemetry getTelemetry();
 }
