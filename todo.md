@@ -1,7 +1,7 @@
 
 
 3. [x] (baja) grep con lineas inmensas.
-4. [ ] (baja) intencion del viaje ¿Deberia estar en primera persona? 
+4. [x] (baja) intencion del viaje ¿Deberia estar en primera persona? 
 5. [*] (**media**) Soporte para imagenes.No olvidarse de ImagePruningOperation.
 6. [ ] (baja) Tendria que plantearme si merece la pena hacer algo para sanear una conversacioon cosas como: 
    - Una llamada a herramienta sin respuesta antes del turno del usuario.
@@ -14,7 +14,7 @@
    debe estar "bien".
   
 7. [ ] Consolidacion en segundo plano.
-9. [ ] (media) repasar por que esta creciendo la memoria consolidada mas de lo esperado.
+9. [x] (media) repasar por que esta creciendo la memoria consolidada mas de lo esperado.
 12. [-] herramienta para el LLM para que pueda abrir una pestaña nueva y cargar un texto arbitrario.
 13. [ ] Posibilidad de herramienta que haga git diff de un fichero.
     Modulo de scriptint git.
