@@ -45,6 +45,7 @@ import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemoryOperat
 import static io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService.PRIORITY_HIGH;
 import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemory;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ContextZoning;
+import java.util.Iterator;
 
 public class ProjectedMemoryImpl implements ProjectedMemory {
 
@@ -94,6 +95,28 @@ public class ProjectedMemoryImpl implements ProjectedMemory {
       }
     }
     this.operations.sort(Comparator.comparingInt(ProjectedMemoryOperation::getPriority));
+  }
+
+  @Override
+  public void addOperation(ProjectedMemoryOperation operation) {
+    this.removeOperation(operation.getName());
+    this.operations.add(operation);
+    this.operations.sort(Comparator.comparingInt(ProjectedMemoryOperation::getPriority));
+  }
+
+  @Override
+  public boolean removeOperation(String name) {
+    boolean found = false;
+    Iterator<ProjectedMemoryOperation> it = operations.iterator();
+    while (it.hasNext()) {
+      ProjectedMemoryOperation operation = it.next();
+      if( operation.getName().equals(name) ) {
+        found = true;
+        it.remove();        
+        break;
+      }
+    }
+    return found;
   }
 
   @Override

@@ -2,6 +2,7 @@ package io.github.jjdelcerro.noema.lib.impl.services.scripting;
 
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptEngine;
 import groovy.lang.Binding;
+import groovy.lang.GroovyClassLoader;
 import groovy.lang.GroovyShell;
 import groovy.transform.TimedInterrupt;
 import io.github.jjdelcerro.noema.lib.api.Agent;
@@ -22,8 +23,6 @@ import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext;
 import static io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext.CONTEXT_NAME;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptModule;
-import io.github.jjdelcerro.noema.lib.impl.utils.FileFuzzySearchUtils;
-import io.github.jjdelcerro.noema.lib.impl.utils.search.SearchResult.SearchResultEntry;
 import java.util.ArrayList;
 
 /**
@@ -38,11 +37,33 @@ public class ScriptEngineImpl implements ScriptEngine {
   private final Agent agent;
   private ScriptContext context;
   private Binding binding;
+  private final List<Path> classPaths;
+  private GroovyClassLoader classLoader; // null = invalidation
 
   public ScriptEngineImpl(Agent agent) {
     this.agent = agent;
     this.compilerConfig = null;
     this.context = null;
+    classPaths = new ArrayList<>();
+    classLoader = null; // null = invalidation
+  }
+
+  @Override
+  public void addClassPath(Path path) {
+    this.classPaths.add(path);
+    this.classLoader = null; // invalida el loader cacheado
+  }
+
+  private GroovyClassLoader getClassLoader() {
+    if (this.classLoader == null) {
+      this.classLoader = new GroovyClassLoader(
+              Thread.currentThread().getContextClassLoader()
+      );
+      for (Path p : classPaths) {
+        this.classLoader.addClasspath(p.toString());
+      }
+    }
+    return this.classLoader;
   }
 
   @Override
@@ -81,6 +102,7 @@ public class ScriptEngineImpl implements ScriptEngine {
       this.setVariable(CONTEXT_NAME, this.getContext());
       this.setVariable("context", this.getContext());
       GroovyShell shell = new GroovyShell(
+              this.getClassLoader(),
               this.getBinding(),
               this.getCompilerConfiguration()
       );
@@ -123,9 +145,8 @@ public class ScriptEngineImpl implements ScriptEngine {
       Map<String, Object> timeoutParams = Collections.singletonMap("value", EXECUTION_TIMEOUT_SECONDS);
       ASTTransformationCustomizer timedInterrupt = new ASTTransformationCustomizer(timeoutParams, TimedInterrupt.class);
 
-
       ImportCustomizer importCustomizer = new ImportCustomizer();
-      
+
       List<String> importNames = new ArrayList<>();
       for (ScriptModule module : this.getContext().getRegisteredModules().values()) {
         for (Class classToImport : module.getImports()) {

@@ -86,6 +86,7 @@ para no depender de dónde se inició el agente.
   -> def res = agent.fs.searchAndReplace('/tmp/f.txt', old, new); println res.status == 'success' ? res.preview : res.message
 • delete(path): Map(status, message) (ficheros y carpetas VACIAS; nunca recursivo; copia previa en RCS si esta activo)
   -> println agent.fs.delete('/tmp/out.txt').status         
+• exists(path): return boolean
 """;
   }
 
@@ -97,6 +98,15 @@ para no depender de dónde se inició el agente.
     );
   }
 
+  
+  public boolean exists(String path) {
+    Path resolved = agent.getAccessControl().resolvePathOrNull(path, AgentAccessControl.AccessMode.PATH_ACCESS_READ);
+    if (resolved == null) {
+      return false;
+    }
+    return resolved.toFile().exists();
+  }
+  
   /**
    * Finds entries matching a glob pattern inside the workspace.
    *

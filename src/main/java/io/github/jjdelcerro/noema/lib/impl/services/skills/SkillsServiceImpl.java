@@ -206,7 +206,13 @@ public class SkillsServiceImpl
   @Override
   public void start() {
     String[] resources = new String[]{
-        "var/skills/software_developmet/SKILL.md"
+        "var/skills/software_development/SKILL.md",
+        "var/skills/task_executor/SKILL.md",
+        "var/skills/task_executor/scripts/setCurrentPlan.groovy",
+        "var/skills/task_executor/scripts/getCurrentTasks.groovy",
+        "var/skills/task_executor/scripts/getCurrentPlanSpecifications.groovy",
+        "var/skills/task_executor/scripts/getCurrentPlanName.groovy",
+        "var/skills/task_executor/scripts/clearCurrentPlan.groovy"            
     };
     for (String resPath : resources) {
       this.agent.installResource(resPath);

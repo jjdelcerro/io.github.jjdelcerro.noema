@@ -13,6 +13,8 @@ public interface ScriptEngine extends AutoCloseable {
 
   }
   
+  public void addClassPath(Path path);
+
   public void setContext(ScriptContext context);
   
   public ScriptContext getContext();

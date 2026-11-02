@@ -10,12 +10,22 @@ import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemory;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.operations.PinnedTurnsOperation;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.operations.PinnedTurnsOperation.PinnedTurnState;
 import io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService;
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
+import org.apache.commons.lang3.mutable.MutableObject;
 
 public class Skill {
 
@@ -25,6 +35,7 @@ public class Skill {
   private final String description;
   private final String version;
   private final String content;
+  private static final long MAX_SCRIPT_FILE_BYTES = 512L * 1024L;
 
   public Skill(Agent agent, Path rootPath, String name, String description, String version, String content) {
     this.agent = Objects.requireNonNull(agent, "agent cannot be null");
@@ -143,4 +154,64 @@ public class Skill {
     }
     return false;
   }
+  
+  public String getScriptBody(String scriptName) {
+    Path scriptsDir = rootPath.resolve("scripts").normalize();
+    Path path = scriptsDir.resolve(scriptName).normalize();
+    if (path == null) {
+      throw new IllegalArgumentException("Script file is not accessible: " + path);
+    }
+    if (!Files.isRegularFile(path)) {
+      throw new IllegalArgumentException("Script file does not exist or is not a regular file: " + path);
+    }
+    if( !path.toAbsolutePath().startsWith(rootPath) ) {
+      throw new IllegalArgumentException("Script file is not accessible: " + path);
+    }
+    String fileName = path.getFileName().toString().toLowerCase(Locale.ROOT);
+    if (!fileName.endsWith(".groovy")) {
+      throw new IllegalArgumentException("Script file must have a .groovy extension: " + path);
+    }
+    try {
+      long size = Files.size(path);
+      if (size > MAX_SCRIPT_FILE_BYTES) {
+        throw new IllegalArgumentException(
+                "Script file exceeds the " + MAX_SCRIPT_FILE_BYTES + " bytes limit: " + path);
+      }
+      return Files.readString(path, StandardCharsets.UTF_8);
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Cannot read script file '" + path + "': " + e.getMessage(), e);
+    }
+  }
+  
+  /**
+   * Devuelve la extension del archivo sin el punto o null.
+   * Si el nombre indicado no tiene extension, busca en la carpeta de scritps
+   * de la skill si hay algun archivo con ese nombre y devuleve su extension.
+   * 
+   * @param scriptName
+   * @return 
+   */
+  public String getScriptExtension(String scriptName) { 
+    MutableObject<String> fileExtension = new MutableObject<>(FilenameUtils.getExtension(scriptName));   
+    if( StringUtils.isNotBlank(fileExtension.get()) ) {
+      return fileExtension.get();
+    }
+    Path scriptsDir = rootPath.resolve("scripts").normalize();  
+    scriptsDir.toFile().list((File dir, String fileName) -> {
+      if( fileExtension.get() != null ) {
+        return false;
+      }
+      String basename = FilenameUtils.getBaseName(fileName);
+      if (Strings.CS.equals(basename, scriptName)) {
+        String ext = FilenameUtils.getExtension(fileName);
+        fileExtension.setValue(ext);
+        return true;
+      }
+      return false;
+    });
+    return StringUtils.defaultIfBlank(fileExtension.get(), null);
+  }
+  
 }
+
+

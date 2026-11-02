@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemory;
 
-public interface ProjectedMemory {
+public interface ProjectedMemory extends SimplifiedProjectedMemory {
 
   /**
    * Devuelve la lista inmutable y curada de mensajes lista para ser enviada al
@@ -41,8 +41,6 @@ public interface ProjectedMemory {
 
   public Agent getAgent();
 
-  public String getSubchannel();
-
   public String getMessagesAsJson(
           RecentMemory recentMemory,
           ConsolidateMemory consolidateMemory,
@@ -50,5 +48,9 @@ public interface ProjectedMemory {
   );
   
   public ContextZoning getContextZoning();
+
+  public void addOperation(ProjectedMemoryOperation operation);
+          
+  public boolean removeOperation(String name);
 
 }
