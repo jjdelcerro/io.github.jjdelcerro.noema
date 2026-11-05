@@ -112,6 +112,21 @@
   border-bottom: 1px solid var(--line);
 }
 
+.editor-toolbar-path {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 22px;
+  padding: 0 6px;
+  color: var(--muted);
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  outline: none;
+  cursor: text;
+}
+
 .editor-toolbar-btn {
   display: inline-grid;
   place-items: center;

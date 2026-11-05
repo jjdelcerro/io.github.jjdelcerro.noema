@@ -66,6 +66,7 @@ function iconHtml(name, size) {
 let editor = null;
 let tabsEl = null;
 let toolbarEl = null;
+let pathEl = null;
 let editorContainerEl = null;
 let resizeObserver = null;
 // Map<path, {session, originalContent, dirty}>
@@ -366,6 +367,9 @@ function createToolbar() {
     }
     toolbarEl.replaceChildren();
 
+    pathEl = makeToolbarPath();
+    toolbarEl.appendChild(pathEl);
+
     toolbarEl.appendChild(makeToolbarButton('btn-editor-wrap', 'wrap', 'Ajuste de línea', toggleWrap));
     toolbarEl.appendChild(makeToolbarButton('btn-editor-save', 'save', 'Guardar', handleSave));
     toolbarEl.appendChild(makeToolbarButton('btn-editor-format', 'format', 'Formatear', handleFormat));
@@ -376,6 +380,26 @@ function createToolbar() {
 
     // updateToolbarState() ya refresca el toggle de wrap al final.
     updateToolbarState();
+}
+
+/**
+ * Campo de solo lectura con la ruta del fichero activo. Se comporta como un
+ * input de texto sin caja: la ruta se puede recorrer con las flechas y con
+ * Inicio/Fin, y seleccionar para copiarla cuando no cabe entera. Equivale a
+ * un JTextField no editable.
+ *
+ * @returns {HTMLInputElement} Campo listo para insertar en la barra.
+ */
+function makeToolbarPath() {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = 'editor-toolbar-path';
+    input.className = 'editor-toolbar-path';
+    input.readOnly = true;
+    input.spellcheck = false;
+    input.autocomplete = 'off';
+    input.setAttribute('aria-label', 'Ruta del fichero activo');
+    return input;
 }
 
 function makeToolbarButton(id, icon, label, handler) {
@@ -395,6 +419,16 @@ function updateToolbarState() {
     const entry = path ? sessions.get(path) : null;
     const ext = path ? extensionOf(path) : '';
     const dirty = entry ? entry.dirty : false;
+
+    // El valor solo se reasigna cuando cambia. Reescribirlo en cada refresco
+    // devolveria el cursor y el scroll al principio de la ruta, y el campo
+    // dejaria de poder recorrerse con las flechas o con Inicio/Fin.
+    if (pathEl) {
+        const value = path || '';
+        if (pathEl.value !== value) {
+            pathEl.value = value;
+        }
+    }
 
     setBtnEnabled('btn-editor-save',
         !!entry && dirty && matchesExtensions(ext, ACTION_EXTENSIONS.save));

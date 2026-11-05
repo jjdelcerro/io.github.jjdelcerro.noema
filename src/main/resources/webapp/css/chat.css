@@ -77,8 +77,20 @@
   flex: 1;
   overflow-y: auto;
   margin: 0 auto;
-  padding: 48px 34px 28px;
+  padding: 0 34px 28px;
   scrollbar-color: var(--surface2) transparent;
+}
+
+/*
+ * El aire superior va como espaciador en flujo, no como padding del scroller.
+ * El padding-top de un contenedor con scroll desplaza el punto de anclaje de
+ * los elementos sticky: el contenido scrollea por esa franja pero la cabecera
+ * de los bloques se queda anclada por debajo, dejando ver el texto por encima.
+ */
+.chat-area::before {
+  content: "";
+  display: block;
+  height: 48px;
 }
 
 .context-area {
@@ -167,7 +179,7 @@
 }
 
 .message-block.error {
-  max-width: 92%;
+  max-width: 100%;
   margin-right: auto;
   padding: 10px 13px;
   border-radius: 8px;
@@ -178,6 +190,7 @@
 }
 
 .message-block.log {
+  max-width: 100%;
   color: #9da3a1;
 }
 
@@ -185,19 +198,70 @@
   color: #b49aa1;
 }
 
-.message-block.thinking.collapsed .message-item {
+/*
+ * Los bloques colapsables no dibujan caja en reposo: el borde queda
+ * transparente (conservando su grosor para no desplazar el contenido) y el
+ * fondo desaparece. Al pasar el raton o al recibir el foco recuperan su
+ * aspecto. Aplica tambien al estado colapsado, que si no conservaria el borde
+ * de 1px con el radio de 14px y romperia la idea de log limpio.
+ *
+ * La cabecera sticky queda al margen: mantiene su fondo opaco para que el texto
+ * no se vea pasar por debajo al hacer scroll.
+ */
+.message-block.collapsible:not(.collapsed),
+.message-block.collapsible.collapsed {
+  border-color: transparent;
+  background-color: transparent;
+  background-image: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.message-block.thinking {
+  --collapse-border: rgba(255, 255, 255, 0.11);
+  --collapse-border-accent: rgba(184, 160, 255, 0.5);
+  --collapse-bg: rgba(255, 255, 255, 0.035);
+}
+
+.message-block.error {
+  --collapse-border: #343a46;
+  --collapse-border-accent: #343a46;
+  --collapse-bg: #12151b;
+}
+
+.message-block.collapsible:not(.collapsed):hover,
+.message-block.collapsible.collapsed:hover {
+  border-color: var(--collapse-border, #2c313a);
+  border-left-color: var(--collapse-border-accent, #2c313a);
+  background-color: var(--collapse-bg, rgba(255, 255, 255, 0.02));
+}
+
+/*
+ * Foco por teclado. Se usa :has(:focus-visible) y no :focus-within porque al
+ * pulsar el chevron con el raton el boton conserva el foco y el bloque se
+ * quedaba materializado hasta enfocar otro elemento. Con :focus-visible solo
+ * responde a la navegacion con teclado. Va en regla aparte para que un
+ * navegador sin :has() descarte unicamente esta, no la del hover.
+ */
+.message-block.collapsible:not(.collapsed):has(:focus-visible),
+.message-block.collapsible.collapsed:has(:focus-visible) {
+  border-color: var(--collapse-border, #2c313a);
+  border-left-color: var(--collapse-border-accent, #2c313a);
+  background-color: var(--collapse-bg, rgba(255, 255, 255, 0.02));
+}
+
+.message-block.collapsible.collapsed .message-item {
   display: none;
 }
 
-.message-block.thinking.collapsed {
+.message-block.collapsible.collapsed {
   padding-top: 7px;
   padding-bottom: 7px;
 }
 
-.message-block.thinking.collapsed .message-actions{
-  margin-top: 0;
-  padding-top: 0;
-  border-top: 0;
+.message-block.collapsible.collapsed .message-actions {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
 }
 
 .message-item + .message-item {
@@ -240,9 +304,9 @@
 }
 
 .message-block.thinking .message-actions {
-  margin-top: 8px;
-  padding-top: 5px;
-  border-top-color: rgba(255, 255, 255, 0.04);
+  margin-bottom: 8px;
+  padding-bottom: 5px;
+  border-bottom-color: rgba(255, 255, 255, 0.04);
 }
 
 @keyframes appear {
@@ -342,6 +406,34 @@
   margin-top: 10px;
   padding-top: 7px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* En los bloques colapsables la barra pasa a ser la cabecera: el control de
+   colapso queda arriba y permanece visible mientras se recorre el contenido. */
+.message-block.collapsible .message-actions {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+  margin-bottom: 8px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.message-block.collapsible:not(.collapsed) .message-actions {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  /* La cabecera debe reproducir el fondo de su propio bloque, no un color
+     global: color base opaco mas la capa que añada cada variante. Asi no
+     queda una franja de otro tono al hacer scroll. */
+  background-color: var(--collapse-bar-base, #0d0f13);
+  background-image: var(--collapse-bar-overlay, none);
+}
+
+/* El bloque de razonamiento aclara su fondo con un 2% de blanco: la cabecera
+   replica exactamente esa capa sobre el mismo color base. */
+.message-block.thinking:not(.collapsed) .message-actions {
+  --collapse-bar-overlay: linear-gradient(rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.02));
 }
 
 .copy-message-button .copy-confirmation {

@@ -290,6 +290,18 @@ export function clearChat() {
 }
 
 /**
+ * Indica si un tipo de mensaje admite la mecanica de colapso.
+ * Unica fuente de verdad en el frontal: al anadir un tipo nuevo basta con
+ * incluirlo aqui; el bloque se marca como 'collapsible' y el CSS ya responde.
+ *
+ * @param {string} type - Tipo de bloque de mensaje.
+ * @returns {boolean}
+ */
+function isCollapsibleType(type) {
+    return type === 'log' || type === 'error' || type === 'thinking';
+}
+
+/**
  * Acumula y renderiza progresivamente fragmentos en streaming sobre un único bloque.
  *
  * @param {string} type - 'thinking' o 'response'.
@@ -323,7 +335,8 @@ export function appendStreamChunk(type, chunk) {
         const actions = document.createElement('div');
         actions.className = 'message-actions';
 
-        if (type === 'log' || type === 'error' || type === 'thinking') {
+        if (isCollapsibleType(type)) {
+            block.classList.add('collapsible');
             const isThinking = type === 'thinking';
             // Mientras fluye el stream de thinking se mantiene abierto para que sea visible
             if (!isThinking) {
@@ -349,7 +362,7 @@ export function appendStreamChunk(type, chunk) {
         copyButton.addEventListener('click', () => copyBlockAsMarkdown(block, copyButton));
         actions.appendChild(copyButton);
 
-        if (type === 'log' || type === 'error' || type === 'thinking') {
+        if (isCollapsibleType(type)) {
             const blockLabel = document.createElement('span');
             blockLabel.className = 'message-block-label';
             if (type === 'thinking') {
@@ -362,8 +375,15 @@ export function appendStreamChunk(type, chunk) {
             actions.appendChild(blockLabel);
         }
 
-        block.appendChild(paragraph);
-        block.appendChild(actions);
+        // Los bloques colapsables llevan la barra arriba (cabecera con el control
+        // de colapso); el resto la mantiene al final, junto al boton de copiar.
+        if (isCollapsibleType(type)) {
+            block.appendChild(actions);
+            block.appendChild(paragraph);
+        } else {
+            block.appendChild(paragraph);
+            block.appendChild(actions);
+        }
         chatArea.appendChild(block);
 
         activeStreamingBlock = block;
@@ -414,7 +434,13 @@ export function addMessage(type, content) {
         const paragraph = document.createElement('div');
         paragraph.className = 'message-item';
         paragraph.innerHTML = formatContent(type, rawContent);
-        lastBlockElement.insertBefore(paragraph, lastBlockElement.querySelector('.message-actions'));
+        if (isCollapsibleType(type)) {
+            // La cabecera ocupa la primera posicion del bloque: el contenido
+            // agrupado se añade al final para no quedar por encima de ella.
+            lastBlockElement.appendChild(paragraph);
+        } else {
+            lastBlockElement.insertBefore(paragraph, lastBlockElement.querySelector('.message-actions'));
+        }
         lastBlockElement.__rawContents.push(rawContent);
     } else {
         const block = document.createElement('div');
@@ -429,7 +455,8 @@ export function addMessage(type, content) {
         actions.className = 'message-actions';
 
         // Botón para colapsar/expandir (colapsado por defecto en logs, errores y razonamiento)
-        if (type === 'log' || type === 'error' || type === 'thinking') {
+        if (isCollapsibleType(type)) {
+            block.classList.add('collapsible');
             block.classList.add('collapsed');
             const collapseButton = document.createElement('button');
             collapseButton.className = 'icon-btn collapse-message-button';
@@ -453,7 +480,7 @@ export function addMessage(type, content) {
         actions.appendChild(copyButton);
 
         // Etiqueta descriptiva en la barra de acciones
-        if (type === 'log' || type === 'error' || type === 'thinking') {
+        if (isCollapsibleType(type)) {
             const blockLabel = document.createElement('span');
             blockLabel.className = 'message-block-label';
             if (type === 'thinking') {
@@ -466,8 +493,15 @@ export function addMessage(type, content) {
             actions.appendChild(blockLabel);
         }
 
-        block.appendChild(paragraph);
-        block.appendChild(actions);
+        // Los bloques colapsables llevan la barra arriba (cabecera con el control
+        // de colapso); el resto la mantiene al final, junto al boton de copiar.
+        if (isCollapsibleType(type)) {
+            block.appendChild(actions);
+            block.appendChild(paragraph);
+        } else {
+            block.appendChild(paragraph);
+            block.appendChild(actions);
+        }
         chatArea.appendChild(block);
 
         lastBlockType = type;
