@@ -122,7 +122,7 @@ public class AgentImpl implements Agent {
     this.actions = AgentLocator.getAgentManager().createActions();
     this.settings = settings;
     this.consoles = new HashMap<>();
-    this.consoles.put(DEFAULT_SUBCHANNEL, console);
+    this.setConsole(DEFAULT_SUBCHANNEL, console);
     this.services = new LinkedHashMap<>();
     this.sharedServices = new HashMap<>();
     this.extraProperties = new HashMap<>();
@@ -257,9 +257,12 @@ public class AgentImpl implements Agent {
 
   @Override
   public AgentConsole getConsole(String subchannel) {
-    AgentConsole console = this.consoles.get(subchannel);
+    AgentConsole console = (subchannel != null) ? this.consoles.get(subchannel) : null;
     if (console == null) {
       console = this.consoles.get(DEFAULT_SUBCHANNEL);
+    }
+    if (console == null) {
+      console = LoggingAgentConsole.getInstance();
     }
     return console;
   }
@@ -287,7 +290,14 @@ public class AgentImpl implements Agent {
 
   @Override
   public void setConsole(String subchannel, AgentConsole console) {
-    this.consoles.put(subchannel, console);
+    if (subchannel == null) {
+      return;
+    }
+    if (console == null) {
+      this.consoles.remove(subchannel);
+    } else {
+      this.consoles.put(subchannel, console);
+    }
   }
 
   @Override

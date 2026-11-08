@@ -55,6 +55,7 @@ import java.util.LinkedHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService;
+import io.github.jjdelcerro.noema.lib.impl.LoggingAgentConsole;
 import static io.github.jjdelcerro.noema.lib.api.AgentActions.CHANGE_REASONING_MODEL;
 import static io.github.jjdelcerro.noema.lib.api.AgentActions.CHANGE_REASONING_PROVIDER;
 import io.github.jjdelcerro.noema.lib.impl.utils.DateUtils;
@@ -392,7 +393,11 @@ public class ReasoningServiceImpl
   }
 
   private AgentConsole console(String subchannel) {
-    return this.agent.getConsole(subchannel);
+    AgentConsole console = this.agent.getConsole(subchannel);
+    if (console == null) {
+      console = LoggingAgentConsole.getInstance();
+    }
+    return console;
   }
 
   /**
@@ -690,7 +695,11 @@ public class ReasoningServiceImpl
         this.processSingleEvent(event);
       } catch (Throwable e) {
         LOGGER.error("Error crítico en el bucle de consciencia", e);
-        this.console(currentSubchannel).printSystemError("Dispatcher Critical Error: " + e.getMessage());
+        try {
+          this.console(currentSubchannel).printSystemError("Dispatcher Critical Error: " + e.getMessage());
+        } catch (Throwable consoleError) {
+          LOGGER.error("No se pudo informar del error por la consola del subcanal", consoleError);
+        }
       }
     }
   }
