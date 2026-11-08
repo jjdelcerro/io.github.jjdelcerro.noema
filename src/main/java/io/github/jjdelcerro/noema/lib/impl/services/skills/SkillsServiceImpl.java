@@ -1,8 +1,16 @@
 package io.github.jjdelcerro.noema.lib.impl.services.skills;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import dev.langchain4j.agent.tool.ToolExecutionRequest;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.AgentServiceFactory;
 import io.github.jjdelcerro.noema.lib.api.AgentTool;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemory;
+import io.github.jjdelcerro.noema.lib.api.memory.projected.operations.PinnedTurnsOperation;
+import io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService;
 import io.github.jjdelcerro.noema.lib.impl.services.skills.tools.ActivateSkillTool;
 import io.github.jjdelcerro.noema.lib.impl.services.skills.tools.DeactivateSkillTool;
 import io.github.jjdelcerro.noema.lib.impl.services.skills.tools.ListSkillsTool;
@@ -25,6 +33,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
+@SuppressWarnings("UseSpecificCatch")
 public class SkillsServiceImpl 
         extends AbstractAgentService
         implements SkillsService
@@ -207,12 +216,21 @@ public class SkillsServiceImpl
   public void start() {
     String[] resources = new String[]{
         "var/skills/software_development/SKILL.md",
-        "var/skills/task_executor/SKILL.md",
-        "var/skills/task_executor/scripts/setCurrentPlan.groovy",
-        "var/skills/task_executor/scripts/getCurrentTasks.groovy",
-        "var/skills/task_executor/scripts/getCurrentPlanSpecifications.groovy",
-        "var/skills/task_executor/scripts/getCurrentPlanName.groovy",
-        "var/skills/task_executor/scripts/clearCurrentPlan.groovy"            
+        "var/skills/plan_manager/lib/PlanCore.groovy",
+        "var/skills/plan_manager/SKILL.md",
+        "var/skills/plan_manager/scripts/setPlanState.groovy",
+        "var/skills/plan_manager/scripts/addTask.groovy",
+        "var/skills/plan_manager/scripts/getCurrentTasks.groovy",
+        "var/skills/plan_manager/scripts/getCurrentPlanSpecifications.groovy",
+        "var/skills/plan_manager/scripts/listPlans.groovy",
+        "var/skills/plan_manager/scripts/createPlan.groovy",
+        "var/skills/plan_manager/scripts/getCurrentPlanName.groovy",
+        "var/skills/plan_manager/scripts/setTaskState.groovy",
+        "var/skills/plan_manager/scripts/getCurrentIssues.groovy",
+        "var/skills/plan_manager/scripts/getSections.groovy",
+        "var/skills/plan_manager/resources/issues.md",
+        "var/skills/plan_manager/resources/tasks.md",
+        "var/skills/plan_manager/resources/specs.md"
     };
     for (String resPath : resources) {
       this.agent.installResource(resPath);
@@ -232,4 +250,62 @@ public class SkillsServiceImpl
     return tools;
   }
 
+  @Override
+  public void deactivateSkill(String subchannel, String skillname) {
+    ReasoningService reasoning = (ReasoningService) agent.getService(ReasoningService.NAME);
+    if (reasoning == null) {
+      return;
+    }
+
+    ProjectedMemory projectedMemory = reasoning.getProjectedMemory(subchannel);
+    if (projectedMemory == null) {
+      return;
+    }
+    PinnedTurnsOperation operation = (PinnedTurnsOperation) projectedMemory.getOperation(PinnedTurnsOperation.OPERATION_NAME);
+    operation.removePinnedTurn((PinnedTurnsOperation.PinnedTurnState t) -> isMatchingPinnedTurn(skillname, t));
+  }
+
+  public boolean isActiveSkill(String subchannel, String skillname) {
+    ReasoningService reasoning = (ReasoningService) agent.getService(ReasoningService.NAME);
+    if (reasoning == null) {
+      return false;
+    }
+
+    ProjectedMemory projectedMemory = reasoning.getProjectedMemory(subchannel);
+    if (projectedMemory == null) {
+      return false;
+    }
+    PinnedTurnsOperation operation = (PinnedTurnsOperation) projectedMemory.getOperation(PinnedTurnsOperation.OPERATION_NAME);
+    return operation.hasPinnedTurn((PinnedTurnsOperation.PinnedTurnState t) -> isMatchingPinnedTurn(skillname, t));
+  }
+  
+  private boolean isMatchingPinnedTurn(String skillname, PinnedTurnsOperation.PinnedTurnState state) {
+    ToolExecutionResultMessage result = state.getResultMessage();
+    if (result != null && "activate_skill".equals(result.toolName())) {
+      AiMessage req = state.getRequestMessage();
+      if (req != null && req.hasToolExecutionRequests()) {
+        for (ToolExecutionRequest r : req.toolExecutionRequests()) {
+          if (isMatchingSkillRequest(skillname, r)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  private boolean isMatchingSkillRequest(String skillname, ToolExecutionRequest request) {
+    if (request == null || request.arguments() == null) {
+      return false;
+    }
+    try {
+      JsonObject args = JsonParser.parseString(request.arguments()).getAsJsonObject();
+      if (args.has("name")) {
+        return skillname.equalsIgnoreCase(args.get("name").getAsString().trim());
+      }
+    } catch (Exception e) {
+      return request.arguments().contains("\"" + skillname + "\"");
+    }
+    return false;
+  }  
 }

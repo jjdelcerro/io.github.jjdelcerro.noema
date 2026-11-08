@@ -65,29 +65,29 @@ public class FsModule extends AbstractScriptModule {
   @Override
   public String help() {
     return """
-[agent.fs API]
+[{CONTEXT}.fs API]
 Rutas absolutas: una ruta relativa se resuelve contra el directorio de trabajo del
 proceso, que no tiene por qué coincidir con la raíz del proyecto. Usa rutas absolutas
 para no depender de dónde se inició el agente.
 • lines(path): Iterable<String> (lazy stream, autodetección charset y extracción Tika p/ pdf/docx/odt)
-  -> agent.fs.lines('/home/user/proyecto/README.md').each { println it }
+  -> {CONTEXT}.fs.lines('/home/user/proyecto/README.md').each { println it }
 • forEachLine(path, {line, num -> ..}): void (num: 1-based)
-  -> agent.fs.forEachLine('/var/log/app.log') { line, num -> if (line.contains('ERR')) println "$num: $line" }
+  -> {CONTEXT}.fs.forEachLine('/var/log/app.log') { line, num -> if (line.contains('ERR')) println "$num: $line" }
 • find([path], globPattern): Iterable<String> (incluye carpetas)
-  -> agent.fs.find('/home/user/proyecto', '**/*.java')
-  -> agent.fs.find('/home/user/proyecto', '**/pom.xml')
+  -> {CONTEXT}.fs.find('/home/user/proyecto', '**/*.java')
+  -> {CONTEXT}.fs.find('/home/user/proyecto', '**/pom.xml')
 • grep(regex, path): Iterable<GrepMatch(file, line, content)>
-  -> agent.fs.grep('(?i)timeout', '/home/user/proyecto/src').each { println "${it.file}:${it.line} ${it.content}" }
+  -> {CONTEXT}.fs.grep('(?i)timeout', '/home/user/proyecto/src').each { println "${it.file}:${it.line} ${it.content}" }
 • fuzzygrep(query, path, [glob='**', limit=5, minSim=0.25]): Iterable<FuzzyMatch(file, startLine, endLine, similarity, content)>
-  -> agent.fs.fuzzygrep('conexión base de datos', '/home/user/proyecto/docs').each { println "${it.file}:${it.startLine}-${it.endLine}" }
+  -> {CONTEXT}.fs.fuzzygrep('conexión base de datos', '/home/user/proyecto/docs').each { println "${it.file}:${it.startLine}-${it.endLine}" }
 • write(path, String|Iterable): void (auto-mkdir, copia de seguridad automática en RCS)
-  -> agent.fs.write('/tmp/out.txt', ['línea 1', 'línea 2'])
+  -> {CONTEXT}.fs.write('/tmp/out.txt', ['línea 1', 'línea 2'])
 • searchAndReplace(path, oldText, newText): SearchAndReplaceResult(status, path, strategy, message, preview, startLine, replacedLineCount)
-  -> def res = agent.fs.searchAndReplace('/tmp/f.txt', old, new); println res.status == 'success' ? res.preview : res.message
+  -> def res = {CONTEXT}.fs.searchAndReplace('/tmp/f.txt', old, new); println res.status == 'success' ? res.preview : res.message
 • delete(path): Map(status, message) (ficheros y carpetas VACIAS; nunca recursivo; copia previa en RCS si esta activo)
-  -> println agent.fs.delete('/tmp/out.txt').status         
+  -> println {CONTEXT}.fs.delete('/tmp/out.txt').status         
 • exists(path): return boolean
-""";
+""".replace("{CONTEXT}", context.getName());
   }
 
   @Override

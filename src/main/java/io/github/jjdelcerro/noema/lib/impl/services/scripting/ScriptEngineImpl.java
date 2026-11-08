@@ -21,7 +21,6 @@ import org.codehaus.groovy.control.customizers.SecureASTCustomizer;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext;
-import static io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext.CONTEXT_NAME;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptModule;
 import java.util.ArrayList;
 
@@ -99,7 +98,7 @@ public class ScriptEngineImpl implements ScriptEngine {
       Path outputFile = agent.getPaths().getTempFolder().resolve(executionId + ".txt");
       stdoutWriter = Files.newBufferedWriter(outputFile, StandardCharsets.UTF_8);
       this.getBinding().setProperty("out", stdoutWriter);
-      this.setVariable(CONTEXT_NAME, this.getContext());
+//      this.setVariable(CONTEXT_NAME, this.getContext());
       this.setVariable("context", this.getContext());
       GroovyShell shell = new GroovyShell(
               this.getClassLoader(),

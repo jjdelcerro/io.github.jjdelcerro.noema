@@ -23,5 +23,5 @@
     
 20. [ ] Poder interrumpirt la cadena de pensamiento/ejecucion de herramientas. Digo algo, se pone ha hacer cosas y no tengo claro como interrumpirlo.
 
- 
+21. [x] (alta) Añadir bajo la pestaña y a la izquierda de los botones del editor (webui) la ruta del archivo que esta abierto. Me ha pasado que he abierto dos archivos con el mismo nombre distinta ruta que eran muy iguales y no sabia distinguir cual era cual.
 

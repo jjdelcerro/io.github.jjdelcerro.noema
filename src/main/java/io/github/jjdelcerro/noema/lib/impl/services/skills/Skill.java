@@ -1,17 +1,7 @@
 package io.github.jjdelcerro.noema.lib.impl.services.skills;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import dev.langchain4j.agent.tool.ToolExecutionRequest;
-import dev.langchain4j.data.message.AiMessage;
-import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import io.github.jjdelcerro.noema.lib.api.Agent;
-import io.github.jjdelcerro.noema.lib.api.memory.projected.ProjectedMemory;
-import io.github.jjdelcerro.noema.lib.api.memory.projected.operations.PinnedTurnsOperation;
-import io.github.jjdelcerro.noema.lib.api.memory.projected.operations.PinnedTurnsOperation.PinnedTurnState;
-import io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService;
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
@@ -21,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
@@ -111,49 +100,49 @@ public class Skill {
     return pb;
   }
 
-  public void deactivate(String subchannel) {
-    ReasoningService reasoning = (ReasoningService) agent.getService(ReasoningService.NAME);
-    if (reasoning == null) {
-      return;
-    }
-
-    ProjectedMemory projectedMemory = reasoning.getProjectedMemory(subchannel);
-    if (projectedMemory == null) {
-      return;
-    }
-    PinnedTurnsOperation operation = (PinnedTurnsOperation) projectedMemory.getOperation(PinnedTurnsOperation.OPERATION_NAME);
-    operation.removePinnedTurn(this::isMatchingPinnedTurn);
-  }
-
-  private boolean isMatchingPinnedTurn(PinnedTurnState state) {
-    ToolExecutionResultMessage result = state.getResultMessage();
-    if (result != null && "activate_skill".equals(result.toolName())) {
-      AiMessage req = state.getRequestMessage();
-      if (req != null && req.hasToolExecutionRequests()) {
-        for (ToolExecutionRequest r : req.toolExecutionRequests()) {
-          if (isMatchingSkillRequest(r)) {
-            return true;
-          }
-        }
-      }
-    }
-    return false;
-  }
-
-  private boolean isMatchingSkillRequest(ToolExecutionRequest request) {
-    if (request == null || request.arguments() == null) {
-      return false;
-    }
-    try {
-      JsonObject args = JsonParser.parseString(request.arguments()).getAsJsonObject();
-      if (args.has("name")) {
-        return this.name.equalsIgnoreCase(args.get("name").getAsString().trim());
-      }
-    } catch (Exception e) {
-      return request.arguments().contains("\"" + this.name + "\"");
-    }
-    return false;
-  }
+//  public void deactivate(String subchannel) { 
+//    ReasoningService reasoning = (ReasoningService) agent.getService(ReasoningService.NAME);
+//    if (reasoning == null) {
+//      return;
+//    }
+//
+//    ProjectedMemory projectedMemory = reasoning.getProjectedMemory(subchannel);
+//    if (projectedMemory == null) {
+//      return;
+//    }
+//    PinnedTurnsOperation operation = (PinnedTurnsOperation) projectedMemory.getOperation(PinnedTurnsOperation.OPERATION_NAME);
+//    operation.removePinnedTurn(this::isMatchingPinnedTurn);
+//  }
+//
+//  private boolean isMatchingPinnedTurn(PinnedTurnState state) {
+//    ToolExecutionResultMessage result = state.getResultMessage();
+//    if (result != null && "activate_skill".equals(result.toolName())) {
+//      AiMessage req = state.getRequestMessage();
+//      if (req != null && req.hasToolExecutionRequests()) {
+//        for (ToolExecutionRequest r : req.toolExecutionRequests()) {
+//          if (isMatchingSkillRequest(r)) {
+//            return true;
+//          }
+//        }
+//      }
+//    }
+//    return false;
+//  }
+//
+//  private boolean isMatchingSkillRequest(ToolExecutionRequest request) {
+//    if (request == null || request.arguments() == null) {
+//      return false;
+//    }
+//    try {
+//      JsonObject args = JsonParser.parseString(request.arguments()).getAsJsonObject();
+//      if (args.has("name")) {
+//        return this.name.equalsIgnoreCase(args.get("name").getAsString().trim());
+//      }
+//    } catch (Exception e) {
+//      return request.arguments().contains("\"" + this.name + "\"");
+//    }
+//    return false;
+//  }
   
   public String getScriptBody(String scriptName) {
     Path scriptsDir = rootPath.resolve("scripts").normalize();

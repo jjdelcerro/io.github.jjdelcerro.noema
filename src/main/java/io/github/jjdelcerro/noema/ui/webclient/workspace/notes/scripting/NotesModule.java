@@ -41,9 +41,9 @@ public class NotesModule extends AbstractScriptModule {
   @Override
   public String help() {
     return """
-[agent.notes API] 
+[{CONTEXT}.notes API] 
 • read(relativePath)
-""";
+""".replace("{CONTEXT}", this.context.getName());
   }
 
   public Note read(Path relpath) throws IOException {

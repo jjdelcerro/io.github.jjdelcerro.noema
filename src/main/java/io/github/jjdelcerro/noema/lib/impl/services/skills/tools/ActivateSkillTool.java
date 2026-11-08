@@ -105,6 +105,7 @@ public class ActivateSkillTool extends AbstractAgentTool {
       if (skill == null) {
         return error("Skill no encontrado: " + name);
       }
+      service.deactivateSkill(this.agent.getCurrentSubchannel(),name);
 
       LOGGER.info("Activando skill procedimental: {}", name);
       return result(skill.getContents());

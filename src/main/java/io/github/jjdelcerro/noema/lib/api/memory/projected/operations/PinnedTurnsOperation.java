@@ -33,6 +33,8 @@ public interface PinnedTurnsOperation extends ProjectedMemoryOperation {
    */
   boolean removePinnedTurn(Predicate<PinnedTurnState> predicate);
   
+  public boolean hasPinnedTurn(Predicate<PinnedTurnState> predicate);
+  
   public List<PinnedTurnState> getPinnedTurns();
 
 }

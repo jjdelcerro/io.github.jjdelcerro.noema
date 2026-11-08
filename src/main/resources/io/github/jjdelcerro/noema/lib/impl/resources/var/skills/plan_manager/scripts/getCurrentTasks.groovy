@@ -1,3 +1,3 @@
 // scripts/getCurrentTasks.groovy
 import lib.PlanCore
-return PlanCore.getCurrentTasks(agent)
+return new PlanCore(agent,context).getCurrentTasks()

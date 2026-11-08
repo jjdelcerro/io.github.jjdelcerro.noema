@@ -135,6 +135,18 @@ public class PinnedTurnsOperationImpl extends AbstractProjectedMemoryOperation i
     return removed;
   }
 
+  public boolean hasPinnedTurn(Predicate<PinnedTurnState> predicate) {
+    if (predicate == null) {
+      return false;
+    }
+    for (PinnedTurnStateImpl state : this.pinnedTurns) {
+      if (state.isPinned() && predicate.test(state)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   @Override
   public void process(ProjectedMemory memory, List<ChatMessage> projectedMessages, List<String> notifications) {
     if (projectedMessages == null) {

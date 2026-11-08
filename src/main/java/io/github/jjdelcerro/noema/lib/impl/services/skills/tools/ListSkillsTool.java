@@ -43,7 +43,8 @@ public class ListSkillsTool extends AbstractAgentTool {
   public ToolResult execute(String jsonArguments) {
     try {
       SkillsService service = (SkillsService) this.agent.getService(SkillsService.NAME);
-
+      String subchannel = this.agent.getCurrentSubchannel();
+      
       List<Skill> skills = service.listSkills(this.agent);
       List<Map<String, String>> catalog = new ArrayList<>();
 
@@ -52,6 +53,7 @@ public class ListSkillsTool extends AbstractAgentTool {
         item.put("name", skill.getName());
         item.put("description", skill.getDescription());
         item.put("version", skill.getVersion());
+        item.put("active", Boolean.toString(service.isActiveSkill(subchannel, skill.getName())));
         catalog.add(item);
       }
 

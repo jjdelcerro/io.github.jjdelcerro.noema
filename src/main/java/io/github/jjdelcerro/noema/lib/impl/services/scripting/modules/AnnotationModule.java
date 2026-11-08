@@ -26,14 +26,14 @@ public class AnnotationModule extends AbstractScriptModule {
   @Override
   public String help() {
     return """
-[agent.annotation API] (persistencia directa en memoria episódica sin ensuciar contexto)
+[{CONTEXT}.annotation API] (persistencia directa en memoria episódica sin ensuciar contexto)
 • add(source, note, [resourceId=null, type=null]): void
   - source: origen del dato (archivo, URL, script)
   - note: síntesis, insight o regla a recordar
   - resourceId: opcional (ej: 'user://ruta') para silenciar avisos de recursos no anotados
   - type: categoría de índice opcional (ej: 'arquitectura', 'bug')
-  -> agent.annotation.add('pom.xml', 'Usa LangChain4j 1.16.3', 'user://pom.xml', 'arquitectura')
-""";
+  -> {CONTEXT}.annotation.add('pom.xml', 'Usa LangChain4j 1.16.3', 'user://pom.xml', 'arquitectura')
+""".replace("{CONTEXT}",context.getName());
   }
 
   public void add(String source, String note) {

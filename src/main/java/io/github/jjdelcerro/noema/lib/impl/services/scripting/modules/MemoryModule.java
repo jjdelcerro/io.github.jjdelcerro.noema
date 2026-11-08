@@ -56,19 +56,19 @@ public class MemoryModule extends AbstractScriptModule {
   @Override
   public String help() {
     return """
-[agent.memory API] 
+[{CONTEXT}.memory API] 
 • registerProjectedOperation(name, priority, closure): boolean
   Registra una regla/monitor dinámico que se ejecuta en CADA turno antes de que el LLM reciba el contexto.
   - name: Identificador único de la operación (permite sustituirla o retirarla después).
   - priority: Orden en el pipeline (40 recomendado para avisos; menor número = antes en el pipeline).
   - closure: Bloque { SimpleProjectedMemory memory, List<String> notifications -> ... } 
-  -> agent.memory.registerProjectedOperation('recordatorio_plan', 40) { mem, notifications ->
+  -> {CONTEXT}.memory.registerProjectedOperation('recordatorio_plan', 40) { mem, notifications ->
          notifications.add('[PLAN ACTIVO: "mi-plan"] Continúa con la siguiente tarea pendiente.')
      }
 • removeProjectedOperation(name): boolean
   Retira una operación dinámica previamente registrada por su nombre para detener los avisos.
-  -> agent.memory.removeProjectedOperation('recordatorio_plan')
-""";
+  -> {CONTEXT}.memory.removeProjectedOperation('recordatorio_plan')
+""".replace("{CONTEXT}", context.getName());
   }
 
   @Override

@@ -1,12 +1,8 @@
 package io.github.jjdelcerro.noema.lib.impl.services.scripting;
 
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptModule;
-import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.FsModule;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.SessionStateModule;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.AnnotationModule;
-import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.LlmModule;
-import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.WebModule;
-import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.SubagentsModule;
 import groovy.lang.GroovyObjectSupport;
 import groovy.lang.MissingPropertyException;
 import io.github.jjdelcerro.noema.lib.api.Agent;
@@ -24,7 +20,6 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptModuleFactory;
-import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.GitModule;
 
 /**
  * Root context object ('agent') exposed to the embedded Groovy environment.
@@ -80,7 +75,7 @@ public class ScriptContextImpl extends GroovyObjectSupport implements ScriptCont
   }
 
   public String getName() {
-    return CONTEXT_NAME;
+    return "context";
   }
 
   public String getDescription() {
@@ -89,15 +84,15 @@ public class ScriptContextImpl extends GroovyObjectSupport implements ScriptCont
 
   @Override
   public String help() {
-    StringBuilder sb = new StringBuilder("[agent API]\n");
+    StringBuilder sb = new StringBuilder("["+this.getName()+" API]\n");
     for (ScriptModule module : modules.values()) {
-      sb.append("• agent.")
+      sb.append("• ").append(this.getName()).append(".")
               .append(module.getName())
               .append(" : ")
               .append(module.getDescription())
               .append("\n");
     }
-    sb.append("Ayuda detallada: println agent.<modulo>.help()");
+    sb.append("Ayuda detallada: println "+this.getName()+".<modulo>.help()");
     return sb.toString();
   }
 

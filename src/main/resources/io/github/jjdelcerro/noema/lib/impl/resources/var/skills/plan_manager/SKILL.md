@@ -1,14 +1,6 @@
 ---
 name: plan_manager
-description: >
-  Gestiona planes de trabajo persistentes en disco. Crea y mantiene
-  `.noema-agent/plans/<nombre>/` con `specs.md` (especificación), `tasks.md`
-  (lista numerada de tareas con estado) e `issues.md` (cuaderno de
-  incidencias). Úsala cuando el usuario pida planificar, estructurar o retomar
-  un proyecto que ocupe varios turnos o varios ficheros (migración, refactor
-  amplio, implementación de una feature con varios subcambios), o cuando
-  pregunte por el estado de tareas de un plan existente. NO la uses para
-  cambios de un solo turno, preguntas puntuales ni ediciones aisladas.
+description: Gestiona planes de trabajo persistentes en disco. Crea y mantiene `.noema-agent/plans/<nombre>/` con `specs.md` (especificación), `tasks.md`  (lista numerada de tareas con estado) e `issues.md` (cuaderno de incidencias). Úsala cuando el usuario pida planificar, estructurar o retomar un proyecto que ocupe varios turnos o varios ficheros (migración, refactor amplio, implementación de una feature con varios subcambios), o cuando pregunte por el estado de tareas de un plan existente. NO la uses para cambios de un solo turno, preguntas puntuales ni ediciones aisladas.
 version: 2.0.0
 ---
 
@@ -56,6 +48,8 @@ Invocación: `run_skill_script(name: "plan_manager", script: "<nombre>", args: [
 |---|---|---|
 | `createPlan` | `["nombre"]` | Crea el directorio y las plantillas. Deja el plan en `creating` y lo carga. Falla si ya existe. |
 | `setPlanState` | `["nombre", "estado"]` | Ejecuta la transición. Valida precondiciones. Registra o retira el aviso proyectado según destino. |
+| `addTask` | `["descripción", "Título sección A", ...]` | Añade una tarea a `tasks.md` con ID nuevo. Solo en `creating`. Las refs son opcionales (basta con `["descripción"]`). |
+| `setTaskState` | `["id", "~"\|"x"\|"-"\|" "]` | Cambia el estado de una tarea. Solo en `running`. Valida transiciones y el invariante "una sola `~`". |
 | `getCurrentPlanName` | — | Nombre y estado del plan cargado, o "no hay plan cargado". |
 | `getCurrentTasks` | — | Path a `tasks.md`, tarea en curso, siguiente, progreso. Con aviso según el estado del plan. |
 | `getCurrentPlanSpecifications` | — | Path a `specs.md`. |
@@ -76,8 +70,9 @@ correspondiente a su estado.
 ### `creating` — Borrador
 
 Facilita la conversación con el usuario sobre el plan. Cuando el usuario
-proponga o pida contenido para especificación, `specs.md`, persístelo. Cuando definais tareas,
-persístelas en `tasks.md` con el formato de abajo.
+proponga o pida contenido para la especificación, persístelo en `specs.md`.
+Cuando defina tareas, persístelas con `addTask`; el script asigna el ID y
+respeta el formato. No edites `tasks.md` a mano.
 
 No inventes contenido de la especificación ni propongas estructura por
 iniciativa propia salvo que el usuario lo pida. La decisión de qué contiene
@@ -92,9 +87,10 @@ Cuando el usuario pida abordar el plan: `setPlanState(nombre, "running")`.
 2. Antes de tocar nada, localiza en `specs.md` las secciones que la tarea
    cita en `refs:`. Léelas con `getSections` (ver más abajo). No leas
    `specs.md` completo.
-3. Marca la tarea actual `[~]` en `tasks.md` al empezarla.
-4. Al terminarla, verifica (ver "Verificación") y marca `[x]`. Si es
-   imposible, márcala `[-]` y anota el motivo en `issues.md` con `#N`.
+3. Marca la tarea actual `[~]` con `setTaskState(id, "~")` al empezarla.
+4. Al terminarla, verifica (ver "Verificación") y márcala `[x]` con
+   `setTaskState(id, "x")`. Si es imposible, márcala `[-]` con
+   `setTaskState(id, "-")` y anota el motivo en `issues.md` con `#N`.
 5. Pasa a la siguiente tarea. Una sola tarea en curso a la vez.
 6. Al terminar todas: `setPlanState(nombre, "done")`.
 
@@ -151,15 +147,19 @@ el mismo tema, `createPlan` con otro nombre.
 
 ## Formato de `tasks.md`
 
+El formato lo controlan los scripts `addTask` y `setTaskState`; este apartado
+es de referencia, para entender qué devuelven y cómo se referencian las
+tareas. No edites `tasks.md` a mano.
+
 Una tarea por línea. Formato exacto:
 
 ```
 N. [ ] descripción — refs: [Título sección A, Título sección B]
 ```
 
-- `N`: entero, ID inmutable y unico de la tarea. Se asigna al crearla y no cambia
-  aunque se reordene la lista. Se referencia como `#N` en `issues.md` y en
-  la conversación.
+- `N`: entero, ID inmutable y único de la tarea. Se asigna al crearla y no
+  cambia aunque se reordene la lista. Se referencia como `#N` en `issues.md`
+  y en la conversación.
 - `[ ]`: estado. Válidos: `[ ]` pendiente, `[~]` en curso, `[x]` terminada,
   `[-]` abortada.
 - `descripción`: qué hay que conseguir. Una línea.
@@ -173,9 +173,17 @@ Ejemplo:
 3. [ ] Migrar el esquema de la tabla `accounts` — refs: [Persistencia del estado, Contrato de componentes]
 ```
 
-El parser de `PlanCore` es estricto con el formato. Líneas que no encajen
-se ignoran. Si `setPlanState(_, "running")` falla con "no tiene tareas con
-formato", revisa que las líneas empiecen por `N. [`.
+Transiciones válidas de estado (las aplica `setTaskState`):
+
+| desde → hacia | `~` | `x` | `-` | ` ` |
+|---|---|---|---|---|
+| ` ` (pendiente) | sí (si no hay otra `~`) | no | sí | — |
+| `~`           | —   | sí  | sí  | sí  |
+| `x`           | no  | —   | no  | no  |
+| `-`           | no  | no  | —   | no  |
+
+Una tarea cerrada (`[x]`) o abortada (`[-]`) es terminal. Si hay que
+rehacer, vuelve a `creating` y añade una nueva.
 
 ## Formato de `issues.md`
 
@@ -242,3 +250,4 @@ anótalo en `issues.md` como pendiente de verificar antes de cerrar la fase.
 7. **No inventes contenido de la especificación.** Si falta, para y pregunta.
 8. **Los ficheros son la fuente de verdad.** Consulta, no asumas.
 9. **No reabras un plan `done`.** Crea uno nuevo si hace falta.
+10. **No edites `tasks.md` a mano.** Usa `addTask` (en `creating`) y `setTaskState` (en `running`).

@@ -46,6 +46,7 @@ import static io.github.jjdelcerro.noema.lib.api.services.sensors.SensorsService
 import io.github.jjdelcerro.noema.lib.api.memory.consolidate.ConsolidateMemory;
 import io.github.jjdelcerro.noema.lib.api.memory.projected.ContextZoning;
 import java.util.Iterator;
+import java.util.Objects;
 
 public class ProjectedMemoryImpl implements ProjectedMemory {
 
@@ -212,7 +213,7 @@ public class ProjectedMemoryImpl implements ProjectedMemory {
       if (notifications.size() > 1) {
         contentsBuilder.append(i + 1).append(". ");
       }
-      contentsBuilder.append(notifications.get(i));
+      contentsBuilder.append(String.valueOf(notifications.get(i)));
       if (i < notifications.size() - 1) {
         contentsBuilder.append("\n\n");
       }

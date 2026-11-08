@@ -1,3 +1,3 @@
 // scripts/getCurrentPlanSpecifications.groovy
 import lib.PlanCore
-return PlanCore.getCurrentPlanSpecifications(agent)
+return new PlanCore(agent,context).getCurrentPlanSpecifications()

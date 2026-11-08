@@ -17,41 +17,51 @@ class PlanCore {
   static final String TASK_PATTERN =
     /^(\d+)\.\s+\[([ ~x-])\]\s+(.+?)(?:\s+[—\-]+\s+refs:\s+\[([^\]]*)\])?\s*$/
 
+  private final def agent
+  private final def context
 
+  PlanCore(agent, context) {
+    if (agent == null || context == null) {
+      throw new IllegalArgumentException("PlanCore requiere agent y context")
+    }
+    this.agent = agent
+    this.context = context
+  }
+    
   // ============ Paths ============
-  static Path plansRoot(def agent)            { agent.getPaths().getWorkspaceFolder().resolve(PLANS_SUBDIR).normalize() }
-  static Path planDir(def agent, String n)    { plansRoot(agent).resolve(n).normalize() }
-  static Path statePath(def agent, String n)  { planDir(agent, n).resolve("state") }
-  static Path tasksPath(def agent, String n)  { planDir(agent, n).resolve("tasks.md") }
-  static Path specsPath(def agent, String n)  { planDir(agent, n).resolve("specs.md") }
-  static Path issuesPath(def agent, String n) { planDir(agent, n).resolve("issues.md") }
-  static Path resourcesRoot(def agent)        { agent.getPaths().getAgentFolder().resolve(RESOURCES_SUBDIR).normalize() }
+  Path plansRoot()            { agent.getPaths().getWorkspaceFolder().resolve(PLANS_SUBDIR).normalize() }
+  Path planDir(String n)    { plansRoot().resolve(n).normalize() }
+  Path statePath(String n)  { planDir(n).resolve("state") }
+  Path tasksPath(String n)  { planDir(n).resolve("tasks.md") }
+  Path specsPath(String n)  { planDir(n).resolve("specs.md") }
+  Path issuesPath(String n) { planDir(n).resolve("issues.md") }
+  Path resourcesRoot()        { agent.getPaths().getAgentFolder().resolve(RESOURCES_SUBDIR).normalize() }
 
   // ============ State I/O ============
-  static Map readState(def agent, String name) {
-    String p = statePath(agent, name).toString()
-    if (!agent.fs.exists(p)) return null
-    String text = agent.fs.lines(p).join('\n').trim()
+  Map readState(String name) {
+    String p = statePath(name).toString()
+    if (!context.fs.exists(p)) return null
+    String text = context.fs.lines(p).join('\n').trim()
     if (!text) return null
     try { return new JsonSlurper().parseText(text) as Map }
     catch (Exception e) { return null }
   }
 
-  static void writeState(def agent, String name, String state) {
-    agent.fs.write(statePath(agent, name).toString(), JsonOutput.toJson([state: state]))
+  void writeState(String name, String state) {
+    context.fs.write(statePath(name).toString(), JsonOutput.toJson([state: state]))
   }
 
-  static boolean planExists(def agent, String name) {
-    return readState(agent, name) != null
+  boolean planExists(String name) {
+    return readState(name) != null
   }
 
   // ============ Task parsing ============
 
-  static List<Map> parseTasks(def agent, String name) {
-    String p = tasksPath(agent, name).toString()
+  List<Map> parseTasks(String name) {
+    String p = tasksPath(name).toString()
     List<Map> result = []
-    if (!agent.fs.exists(p)) return result
-    agent.fs.forEachLine(p) { line, lineNum ->
+    if (!context.fs.exists(p)) return result
+    context.fs.forEachLine(p) { line, lineNum ->
       String t = line.trim()
       def m = (t =~ TASK_PATTERN)
       if (!m.matches()) return
@@ -62,7 +72,7 @@ class PlanCore {
       result << [
         id:    m.group(1),
         line:  lineNum,
-        state: m.group(2).trim(),
+        state: m.group(2),
         desc:  m.group(3),
         refs:  refs
       ]
@@ -72,40 +82,40 @@ class PlanCore {
   
   
   // ============ Lifecycle ============
-  static String createPlan(def agent, String name) {
+  String createPlan(String name) {
     String err = validateName(name); if (err) return err
-    if (planExists(agent, name)) {
-      Map s = readState(agent, name)
+    if (planExists( name)) {
+      Map s = readState(name)
       return "ERROR: el plan '${name}' ya existe (estado: ${s?.state ?: '?'}). Usa setPlanState('${name}', '<nuevo-estado>') para cambiarlo."
     }
-    Path res = resourcesRoot(agent)
+    Path res = resourcesRoot()
     for (String t : TEMPLATES) {
-      if (!agent.fs.exists(res.resolve(t).toString())) {
+      if (!context.fs.exists(res.resolve(t).toString())) {
         return "ERROR: falta la plantilla '${t}' en ${res}."
       }
     }
     for (String t : TEMPLATES) {
-      String content = agent.fs.lines(res.resolve(t).toString()).join('\n')
+      String content = context.fs.lines(res.resolve(t).toString()).join('\n')
       content = content.replace('{{PLAN_NAME}}', name)
-      agent.fs.write(planDir(agent, name).resolve(t).toString(), content)
+      context.fs.write(planDir(name).resolve(t).toString(), content)
     }
-    writeState(agent, name, "creating")
-    agent.state.currentPlan = name
+    writeState(name, "creating")
+    context.state.currentPlan = name
     return """Plan '${name}' creado como BORRADOR (estado: creating).
-- Especificación: ${specsPath(agent, name)}
-- Tareas:         ${tasksPath(agent, name)}
-- Incidencias:    ${issuesPath(agent, name)}
+- Especificación: ${specsPath(name)}
+- Tareas:         ${tasksPath(name)}
+- Incidencias:    ${issuesPath(name)}
 
 Rellena specs.md en orden (Análisis → Diseño → Fases) y después tasks.md.
 Cuando el usuario pida abordar el plan: setPlanState('${name}', 'running')."""
   }
 
-  static String setPlanState(def agent, String name, String target) {
+  String setPlanState(String name, String target) {
     String err = validateName(name); if (err) return err
     if (!(target in VALID_STATES)) {
       return "ERROR: estado '${target}' inválido. Válidos: ${VALID_STATES.join(', ')}."
     }
-    Map cur = readState(agent, name)
+    Map cur = readState(name)
     if (cur == null) {
       return "ERROR: el plan '${name}' no existe. Créalo con createPlan('${name}')."
     }
@@ -116,72 +126,73 @@ Cuando el usuario pida abordar el plan: setPlanState('${name}', 'running')."""
 
     switch (target) {
     case "creating":
-      if (from != "stopped")
-      return "ERROR: solo se puede volver a 'creating' desde 'stopped'. Actual: '${from}'."
+      if (!(from in ["running", "stopped", "creating"]))
+      return "ERROR: solo se puede volver a 'creating' desde 'stopped' o 'running'. Actual: '${from}'."
       break
     case "running":
-      if (!(from in ["creating", "stopped"]))
-      return "ERROR: no se puede pasar a 'running' desde '${from}'."
-      if (parseTasks(agent, name).isEmpty())
+      if (!(from in ["creating", "stopped", "running"]))
+      return "ERROR: no se puede pasar a '${target}' desde '${from}'."
+      if (parseTasks(name).isEmpty())
       return "ERROR: el plan '${name}' no tiene tareas con formato 'N. [ ] descripción' en tasks.md."
       // TODO (segunda vuelta): validar que no haya otro plan 'running'.
       break
     case "stopped":
-      if (from != "running")
-      return "ERROR: solo se puede parar un plan en 'running'. Actual: '${from}'."
+      if (!(from in ["creating", "stopped", "running"]))
+      return "ERROR: no se puede pasar a '${target}' desde '${from}'."
       break
     case "done":
-      if (from != "running")
-      return "ERROR: solo se puede cerrar un plan en 'running'. Actual: '${from}'."
-      def tasks      = parseTasks(agent, name)
-      def pending    = tasks.findAll { it.state == "" }
+      if (!(from in ["done", "stopped", "running"]))
+      return "ERROR: no se puede pasar a '${target}' desde '${from}'."
+      def tasks      = parseTasks(name)
+      def pending    = tasks.findAll { it.state == " " }
       def inProgress = tasks.findAll { it.state == "~" }
       if (!pending.isEmpty() || !inProgress.isEmpty())
       return "ERROR: quedan ${pending.size()} pendientes y ${inProgress.size()} en curso. Termínalas o cancélalas antes de cerrar."
       break
     }
 
-    writeState(agent, name, target)
+    writeState(name, target)
     switch (target) {
+    case "creating":
+      context.state.currentPlan = name
+      registerAwareness()
+      break
     case "running":
-      agent.state.currentPlan = name
-      registerAwareness(agent)
+      context.state.currentPlan = name
+      registerAwareness()
       break
     case "stopped":
     case "done":
-      removeAwareness(agent)
-      if (agent.state.currentPlan == name) agent.state.currentPlan = null
-      break
-    case "creating":
-      agent.state.currentPlan = name
+      removeAwareness()
+      if (context.state.currentPlan == name) context.state.currentPlan = null
       break
     }
     return "Plan '${name}' → ${target}."
   }
 
   // ============ Readers ============
-  static String getCurrentPlanName(def agent) {
-    String name = agent.state.currentPlan
+  String getCurrentPlanName() {
+    String name = context.state.currentPlan
     if (!name) return "No hay ningún plan cargado. Usa listPlans() para ver los disponibles."
-    Map s = readState(agent, name)
+    Map s = readState(name)
     if (s == null) {
-      agent.state.currentPlan = null
+      context.state.currentPlan = null
       return "ERROR: el plan cargado '${name}' no existe en disco. Limpiado de memoria."
     }
     return "Plan cargado: '${name}' (estado: ${s.state})."
   }
 
-  static String getCurrentTasks(def agent) {
-    String name = agent.state.currentPlan
+  String getCurrentTasks() {
+    String name = context.state.currentPlan
     if (!name) return "ERROR: no hay ningún plan cargado. Usa listPlans() primero."
-    Map s = readState(agent, name)
+    Map s = readState(name)
     if (s == null) return "ERROR: el plan '${name}' no existe en disco."
-    Path p = tasksPath(agent, name)
-    if (!agent.fs.exists(p.toString())) return "ERROR: tasks.md no existe para '${name}'."
+    Path p = tasksPath(name)
+    if (!context.fs.exists(p.toString())) return "ERROR: tasks.md no existe para '${name}'."
 
-    def tasks      = parseTasks(agent, name)
+    def tasks      = parseTasks(name)
     def inProgress = tasks.findAll { it.state == "~" }
-    def pending    = tasks.findAll { it.state == "" }
+    def pending    = tasks.findAll { it.state == " " }
     int completed  = tasks.count { it.state == "x" }
     int aborted    = tasks.count { it.state == "-" }
 
@@ -196,46 +207,46 @@ Cuando el usuario pida abordar el plan: setPlanState('${name}', 'running')."""
     if (inProgress.isEmpty()) {
       sb.append("En curso:  (ninguna)\n")
     } else {
-      inProgress.each { sb.append("En curso:  #${it.id}. ${it.desc}\n") }
+      inProgress.each { sb.append("En curso:  #${it.id}. ${it.desc} ${it.refs}\n") }
       if (inProgress.size() > 1)
       sb.append("AVISO: ${inProgress.size()} tareas en curso. Solo se permite una.\n")
     }
     if (pending.isEmpty()) {
       sb.append("Siguiente: (ninguna)\n")
     } else {
-      sb.append("Siguiente: #${pending[0].id}. ${pending[0].desc}\n")
+      sb.append("Siguiente: #${pending[0].id}. ${pending[0].desc} ${pending[0].refs}\n")
     }
     sb.append("Progreso:  ${completed}/${tasks.size()} completadas, ${aborted} abortadas")
     return sb.toString()
   }
 
-  static String getCurrentPlanSpecifications(def agent) {
-    String name = agent.state.currentPlan
+  String getCurrentPlanSpecifications() {
+    String name = context.state.currentPlan
     if (!name) return "ERROR: no hay ningún plan cargado. Usa listPlans() primero."
-    Path p = specsPath(agent, name)
-    return agent.fs.exists(p.toString()) ? p.toString() : "ERROR: specs.md no existe para '${name}'."
+    Path p = specsPath(name)
+    return context.fs.exists(p.toString()) ? p.toString() : "ERROR: specs.md no existe para '${name}'."
   }
 
-  static String getCurrentIssues(def agent) {
-    String name = agent.state.currentPlan
+  String getCurrentIssues() {
+    String name = context.state.currentPlan
     if (!name) return "ERROR: no hay ningún plan cargado. Usa listPlans() primero."
-    Path p = issuesPath(agent, name)
-    return agent.fs.exists(p.toString()) ? p.toString() : "ERROR: issues.md no existe para '${name}'."
+    Path p = issuesPath(name)
+    return context.fs.exists(p.toString()) ? p.toString() : "ERROR: issues.md no existe para '${name}'."
   }
 
-  static String listPlans(def agent) {
-    Path root = plansRoot(agent)
-    if (!agent.fs.exists(root.toString())) return "No hay planes. Crea uno con createPlan('nombre')."
+  String listPlans() {
+    Path root = plansRoot()
+    if (!context.fs.exists(root.toString())) return "No hay planes. Crea uno con createPlan('nombre')."
 
-    def stateFiles = agent.fs.find(root.toString(), "**/state").toList()
+    def stateFiles = context.fs.find(root.toString(), "**/state").toList()
     if (stateFiles.isEmpty()) return "No hay planes en disco."
 
-    String loaded = agent.state.currentPlan
+    String loaded = context.state.currentPlan
     def entries = []
     stateFiles.each { sf ->
       def sp = Paths.get(sf.toString())
       String planName = sp.getParent().getFileName().toString()
-      Map s = readState(agent, planName)
+      Map s = readState(planName)
       if (s == null) return
       entries << [name: planName, state: s.state, demoted: false]
     }
@@ -243,7 +254,7 @@ Cuando el usuario pida abordar el plan: setPlanState('${name}', 'running')."""
     // Demota running no cargados → stopped. No toca done ni creating.
     entries.each { e ->
       if (e.state == "running" && e.name != loaded) {
-        writeState(agent, e.name, "stopped")
+        writeState(e.name, "stopped")
         e.state   = "stopped"
         e.demoted = true
       }
@@ -262,14 +273,14 @@ Cuando el usuario pida abordar el plan: setPlanState('${name}', 'running')."""
     return sb.toString()
   }
 
-  static String getSections(def agent, List<String> titles) {
-    String name = agent.state.currentPlan
+  String getSections(List<String> titles) {
+    String name = context.state.currentPlan
     if (!name) return "ERROR: no hay ningún plan cargado. Usa listPlans() primero."
-    Path p = specsPath(agent, name)
-    if (!agent.fs.exists(p.toString())) return "ERROR: specs.md no existe para '${name}'."
+    Path p = specsPath(name)
+    if (!context.fs.exists(p.toString())) return "ERROR: specs.md no existe para '${name}'."
 
     List<String> lines = []
-    agent.fs.lines(p.toString()).each { lines << it }
+    context.fs.lines(p.toString()).each { lines << it }
     if (lines.isEmpty()) return "ERROR: specs.md está vacío para '${name}'."
 
     def headLevel = { String s ->
@@ -339,32 +350,191 @@ Cuando el usuario pida abordar el plan: setPlanState('${name}', 'running')."""
     return sb.toString()
   }  
   
+  String addTask(List<String> args) {
+    String name = context.state.currentPlan
+    if (!name) return "ERROR: no hay ningún plan cargado. Usa listPlans() primero."
+    Map s = readState(name)
+    if (s == null) return "ERROR: el plan '${name}' no existe en disco."
+    if (s.state != "creating") {
+      String hint = (s.state == "stopped") ? " Usa setPlanState('${name}', 'creating') para reabrirlo como borrador." : ""
+      return "ERROR: solo se pueden añadir tareas en 'creating'. Plan en '${s.state}'.${hint}"
+    }
+    if (!args || args.isEmpty())
+    return "ERROR: args = ['descripción', 'Título sección A', 'Título sección B', ...]"
+    String desc = args[0].toString().trim()
+    if (!desc) return "ERROR: la descripción de la tarea no puede estar vacía."
+    List<String> refs = (args.size() > 1)
+    ? args.subList(1, args.size()).collect { it.toString().trim() }.findAll { it }
+  : []
+
+    Path p = tasksPath(name)
+    def existing = context.fs.exists(p.toString()) ? parseTasks(name) : []
+    int nextId = existing.isEmpty() ? 1 : (existing.collect { it.id.toInteger() }.max() + 1)
+    String newId = nextId.toString()
+    String line  = formatTaskLine(newId, " ", desc, refs)
+
+    List<String> lines = []
+    if (context.fs.exists(p.toString())) {
+      context.fs.lines(p.toString()).each { lines << it }
+    } else {
+      lines << "# Tareas: ${name}"
+    }
+    if (!lines.isEmpty() && lines.last().trim() != "") lines << ""
+    lines << line
+    context.fs.write(p.toString(), lines)
+
+    // Aviso (no bloqueante) si las refs no aparecen aún en specs.md
+    List<String> missing = []
+    if (!refs.isEmpty()) {
+      Path specsP = specsPath(name)
+      if (context.fs.exists(specsP.toString())) {
+        String specText = context.fs.lines(specsP.toString()).join('\n')
+        refs.each { r -> if (!specText.contains(r)) missing << r }
+      } else {
+        missing = refs
+      }
+    }
+
+    def sb = new StringBuilder()
+    sb.append("Añadida tarea #${newId}:\n")
+    sb.append("  ${line}\n")
+    if (!missing.isEmpty()) {
+      sb.append("AVISO: refs no encontradas en specs.md: ${missing.join(', ')}. ")
+      sb.append("(si aún no has escrito esas secciones, ignora este aviso)")
+    }
+    return sb.toString()
+  }
+
+  String setTaskState(String taskId, String rawState) {
+    String name = context.state.currentPlan
+    if (!name) return "ERROR: no hay ningún plan cargado. Usa listPlans() primero."
+    Map s = readState(name)
+    if (s == null) return "ERROR: el plan '${name}' no existe en disco."
+    if (s.state != "running")
+    return "ERROR: solo se cambian estados de tareas en 'running'. Plan en '${s.state}'."
+    if (!taskId?.trim()) return "ERROR: falta el ID de la tarea."
+
+    // Normalizar el estado destino. Acepta " ", "" y "_" como "pendiente".
+    String to = (rawState == null) ? "" : rawState.toString()
+    if (to.trim().isEmpty() || to == "_") to = " "
+    if (!(to in ["~", "x", "-", " ",]))
+    return "ERROR: estado '${rawState}' inválido. Válidos: '~', 'x', '-', ' ' (espacio = pendiente)."
+
+    Path p = tasksPath(name)
+    if (!context.fs.exists(p.toString())) return "ERROR: tasks.md no existe para '${name}'."
+
+    def tasks = parseTasks(name)
+    String tid = taskId.trim()
+    def task = tasks.find { it.id == tid }
+    if (task == null) return "ERROR: no existe la tarea #${tid} en tasks.md."
+
+    String from = task.state
+    String err = validateTransition(from, to)
+    if (err) return err
+
+    if (to == "~") {
+      def others = tasks.findAll { it.state == "~" && it.id != task.id }
+      if (!others.isEmpty())
+      return "ERROR: ya hay una tarea en curso (#${others[0].id}). Ciérrala antes de abrir otra."
+    }
+
+    // Reescribir solo la línea afectada, por número de línea (no por texto).
+    List<String> lines = []
+    context.fs.lines(p.toString()).each { lines << it }
+    int idx = task.line - 1
+    lines[idx] = formatTaskLine(task.id, to, task.desc, task.refs)
+    context.fs.write(p.toString(), lines)
+
+    def after = parseTasks(name)
+    int completed = after.count { it.state == "x" }
+    int aborted   = after.count { it.state == "-" }
+    def inProgress = after.findAll { it.state == "~" }
+    def pending    = after.findAll { it.state == " " }
+
+    def sb = new StringBuilder()
+    sb.append("Tarea #${task.id} → [${to}]:")
+    sb.append(" ${lines[idx]}\n")
+        
+    if (inProgress.isEmpty()) {
+      sb.append("En curso:  (ninguna)\n")
+    } else {
+      inProgress.each { sb.append("En curso:  #${it.id}. ${it.desc} ${it.refs}\n") }
+    }
+    if (pending.isEmpty()) {
+      sb.append("Siguiente: (ninguna)\n")
+    } else {
+      sb.append("Siguiente: #${pending[0].id}. ${pending[0].desc} ${pending[0].refs}\n")
+    }    
+    
+    sb.append("Progreso: ${completed}/${after.size()} completadas, ${aborted} abortadas.")
+    if (after.every { it.state == "x" || it.state == "-" }) {
+      sb.append("\nTodas las tareas cerradas. Puedes cerrar el plan con setPlanState('${name}', 'done').")
+    }
+    return sb.toString()
+  }
+
+  private String validateTransition(String from, String to) {
+    if (from == to) return "ERROR: la tarea ya está en estado ${stateLabel(to)}."
+    switch (from) {
+    case " ":
+      if (to == "~" || to == "-") return null
+      if (to == "x") return "ERROR: no se puede cerrar una tarea sin haberla abierto. Pásala primero por '~'."
+      break
+    case "~":
+      return null
+    case "x":
+      return "ERROR: una tarea cerrada no se reabre. Si hay que rehacer, vuelve a 'creating' y añade una nueva."
+    case "-":
+      return "ERROR: una tarea abortada es terminal."
+    }
+    return "ERROR: transición no permitida de ${stateLabel(from)} a ${stateLabel(to)}."
+  }
+
+  private String stateLabel(String s) {
+    switch (s) {
+    case " ": return "[ ] pendiente"
+    case "~": return "[~] en curso"
+    case "x": return "[x] completada"
+    case "-": return "[-] abortada"
+    }
+    return "?"
+  }  
+  
   // ============ Helpers ============
-  static String validateName(String name) {
+  String validateName(String name) {
     if (!name || !name.trim()) return "ERROR: indica el nombre del plan."
     if (name == "." || name == ".." || name.contains("/") || name.contains("\\"))
     return "ERROR: nombre inválido (sin separadores de ruta ni '..')."
     return null
   }
 
-  static void registerAwareness(def agent) {
-    removeAwareness(agent)
-    agent.memory.registerProjectedOperation(AWARENESS_NAME, AWARENESS_PRIORITY) { mem, notifications ->
+  String formatTaskLine(String id, String state, String desc, List<String> refs) {
+    String d = (desc ?: "").trim()
+    String r = " — refs: [${(refs ?: []).join(', ')}]"
+    return "${id}. [${state}] ${d}${r}"
+  }
+
+  void registerAwareness() {
+    removeAwareness()
+    context.memory.registerProjectedOperation(AWARENESS_NAME, AWARENESS_PRIORITY) { mem, notifications ->
       try {
-        String name = agent.state.currentPlan
+        String name = context.state.currentPlan
         if (!name) return
-        Map s = readState(agent, name)
-        if (s == null || s.state != "running") return
-        notifications.add("""[PLAN EN EJECUCIÓN: "${name}"]
+        Map s = readState(name)
+        if (s != null && s.state == "running") 
+          return notifications.add("""[PLAN "${name}" EN EJECUCIÓN]
 Cuando termines la tarea en curso, actualiza tasks.md y pasa a la siguiente.""")
+        if (s == null || s.state == "creating") 
+          return notifications.add("""[PLAN "${name}" EN CONSTRUCCION]
+Plan en construcción apolla al usuario en la definición de las specificaciones y tareas del plan.""")
+        if (s != null ) 
+          return notifications.add("""[PLAN "${name}": ${s.state}]""")
       } catch (Exception ignored) {
       }
     }
   }
 
-  static void removeAwareness(def agent) {
-    while (agent.memory.removeOperation(AWARENESS_NAME)) {
-      // idempotente hasta vaciar duplicados
-    }
+  void removeAwareness() {
+    context.memory.removeOperation(AWARENESS_NAME)
   }
 }

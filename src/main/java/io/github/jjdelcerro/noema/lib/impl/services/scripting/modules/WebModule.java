@@ -60,14 +60,14 @@ public class WebModule extends AbstractScriptModule {
   @Override
   public String help() {
     return """
-[agent.web API]
+[{CONTEXT}.web API]
 • lines(url): Iterable<String> (lazy stream, HTML/PDF extraído limpio vía Tika)
-  -> agent.web.lines('https://example.org/doc.pdf').take(20).each { println it }
+  -> {CONTEXT}.web.lines('https://example.org/doc.pdf').take(20).each { println it }
 • search(query): Iterable<Map[title, url, content]> (búsqueda web)
-  -> agent.web.search('langchain4j').each { println "${it.title}: ${it.url}" }
+  -> {CONTEXT}.web.search('langchain4j').each { println "${it.title}: ${it.url}" }
 
 Todos los metodos aceptan un segundo parametro opcional con el timeout en segundos.
-""";
+""".replace("{CONTEXT}", context.getName());
   }
 
   public Iterable<String> lines(String url) {

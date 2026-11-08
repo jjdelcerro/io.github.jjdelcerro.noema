@@ -42,4 +42,8 @@ public class ScriptingServiceImpl
     return new ScriptEngineImpl(agent);
   }
 
+  public ScriptEngine createScriptEngine(Agent agent) {
+    return new ScriptEngineImpl(agent);
+  }
+
 }

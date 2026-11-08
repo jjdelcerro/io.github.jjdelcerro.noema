@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="100%" height="100%">
+  <defs>
+    <!-- Degradado con 4 bandas de color sólidas para la nube principal -->
+    <linearGradient id="cloudBands" x1="0%" y1="100%" x2="0%" y2="0%">
+      <!-- Banda 1 (Inferior - Azul oscuro) -->
+      <stop offset="0%" stop-color="#1E3F88" />
+      <stop offset="25%" stop-color="#1E3F88" />
+      
+      <!-- Banda 2 (Azul medio) -->
+      <stop offset="25%" stop-color="#3A64D8" />
+      <stop offset="50%" stop-color="#3A64D8" />
+      
+      <!-- Banda 3 (Azul claro) -->
+      <stop offset="50%" stop-color="#9CB8F5" />
+      <stop offset="75%" stop-color="#9CB8F5" />
+      
+      <!-- Banda 4 (Superior - Blanco) -->
+      <stop offset="75%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#FFFFFF" />
+    </linearGradient>
+  </defs>
+
+  <style>
+    .cloud-base {
+      stroke: #000000;
+      stroke-width: 8;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+    }
+    .main-cloud {
+      fill: url(#cloudBands);
+    }
+    .bubble {
+      fill: #1E3F88;
+    }
+    .cloud-text {
+      font-family: 'Comic Sans MS', 'Chalkboard SE', 'Arial Rounded MT Bold', sans-serif;
+      font-size: 270px;
+      font-weight: 900;
+      fill: #000000;
+      stroke: #000000;
+      stroke-width: 6px;
+      stroke-linejoin: round;
+      text-anchor: middle;
+      dominant-baseline: central;
+    }
+  </style>
+
+  <!-- Nube principal de pensamiento con las 4 bandas -->
+  <path class="cloud-base main-cloud" d="
+    M 280 360 
+    A 65 55 0 0 1 180 300 
+    A 60 50 0 0 1 140 210 
+    A 65 55 0 0 1 210 130 
+    A 75 65 0 0 1 310 90 
+    A 65 55 0 0 1 420 40 
+    A 65 55 0 0 1 520 70 
+    A 70 60 0 0 1 620 40 
+    A 70 60 0 0 1 700 110 
+    A 55 50 0 0 1 730 180 
+    A 55 50 0 0 1 700 260 
+    A 65 55 0 0 1 650 330 
+    A 75 65 0 0 1 530 365 
+    A 75 65 0 0 1 360 370 
+    Z" />
+
+  <!-- Letra N mayúscula ampliada -->
+  <text x="435" y="210" class="cloud-text">N</text>
+
+  <!-- Burbuja grande (más cercana a la nube) - Azul oscuro -->
+  <ellipse class="cloud-base bubble" cx="215" cy="400" rx="35" ry="22" transform="rotate(-20 215 400)" />
+
+  <!-- Burbuja mediana (centro) - Azul oscuro -->
+  <ellipse class="cloud-base bubble" cx="160" cy="440" rx="22" ry="15" transform="rotate(-25 160 440)" />
+
+  <!-- Burbuja pequeña (abajo del todo) - Azul oscuro -->
+  <ellipse class="cloud-base bubble" cx="120" cy="470" rx="14" ry="10" transform="rotate(-30 120 470)" />
+</svg>

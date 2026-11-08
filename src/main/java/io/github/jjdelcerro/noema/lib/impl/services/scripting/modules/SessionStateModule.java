@@ -22,16 +22,20 @@ public class SessionStateModule extends AbstractScriptModule {
   @Override
   public String help() {
     return """
-[agent.state API] (almacén volátil en memoria entre scripts dentro del mismo subcanal)
-• Propiedad dinámica: agent.state.clave = valor | def val = agent.state.clave
+{CONTEXT}.state API] (almacén volátil en memoria entre scripts dentro del mismo subcanal)
+• Propiedad dinámica: {CONTEXT}.state.clave = valor | def val = {CONTEXT}.state.clave
 • set(name, value): void
 • get(name): Object
-""";
+""".replace("{CONTEXT}", context.getName());
   }
 
   public void set(String name, Object value) {
     this.getTelemetry().increment("scripting.sessionstate.set");
-    this.sessionState.put(name, value);
+    if (value == null) {
+      this.sessionState.remove(name);
+    } else {
+      this.sessionState.put(name, value);
+    }    
   }
 
   public Object get(String name) {

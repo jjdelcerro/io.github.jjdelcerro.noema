@@ -3,10 +3,13 @@ package io.github.jjdelcerro.noema.lib.impl.services.skills.tools;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.jjdelcerro.noema.lib.api.Agent;
+import io.github.jjdelcerro.noema.lib.api.AgentAccessControl;
 import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptContext;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptEngine;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptingService;
+import io.github.jjdelcerro.noema.lib.impl.AgentDelegated;
+import io.github.jjdelcerro.noema.lib.impl.AgentImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptEngineImpl;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.modules.MemoryModule;
 import io.github.jjdelcerro.noema.lib.impl.tools.AbstractPaginatedAgentTool;
@@ -21,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.security.AccessController;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -142,8 +146,19 @@ public class RunSkillScriptTool extends AbstractPaginatedAgentTool {
 
     String scriptBody = skill.getScriptBody(scriptName);
 
-    try (ScriptEngine engine = service.createScriptEngine()) {
+    AgentAccessControl accessControl = this.agent.getAccessControl().clone();
+    accessControl.addAllowedPath(agent.getPaths().getAgentFolder());
+    accessControl.addAllowedPath(agent.getPaths().getAgentFolder().resolve("var"));
+    accessControl.addNonWritablePath(agent.getPaths().getAgentFolder().resolve("var"));
+    AgentDelegated localAgent = new AgentDelegated(agent) {
+      @Override
+      public AgentAccessControl getAccessControl() {
+        return accessControl;
+      }      
+    };
+    try (ScriptEngine engine = service.createScriptEngine(localAgent)) {
       engine.addClassPath(skill.getRootPath()); 
+      engine.setVariable("agent", localAgent);
       ScriptContext context = engine.getContext();
       engine.setVariable("args", scriptArgs);
       context.registerModule(new MemoryModule(context, agent));

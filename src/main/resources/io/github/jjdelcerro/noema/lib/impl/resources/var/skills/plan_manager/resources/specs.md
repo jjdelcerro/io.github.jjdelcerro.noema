@@ -1,4 +1,3 @@
-<!-- specs.md -->
 # Plan: {{PLAN_NAME}}
 
 ## 1. Análisis

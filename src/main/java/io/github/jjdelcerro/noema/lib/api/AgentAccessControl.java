@@ -8,13 +8,15 @@ import java.util.List;
  *
  * @author jjdelcerro
  */
-public interface AgentAccessControl {
+public interface AgentAccessControl extends Cloneable {
 
   public enum AccessMode {
     PATH_ACCESS_READ,
     PATH_ACCESS_WRITE
   }
 
+  public AgentAccessControl clone() throws CloneNotSupportedException;
+  
   public boolean isHumanConfirmationRequired();
 
   /**

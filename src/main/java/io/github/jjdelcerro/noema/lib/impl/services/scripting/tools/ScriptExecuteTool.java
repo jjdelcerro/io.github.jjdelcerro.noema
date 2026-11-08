@@ -7,7 +7,6 @@ import io.github.jjdelcerro.noema.lib.api.Agent;
 import io.github.jjdelcerro.noema.lib.api.AgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.AbstractPaginatedAgentTool;
 import io.github.jjdelcerro.noema.lib.impl.tools.ToolSpecificationBuilder;
-import static io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptContextImpl.CONTEXT_NAME;
 import io.github.jjdelcerro.noema.lib.impl.services.scripting.ScriptEngineImpl;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptEngine;
 import io.github.jjdelcerro.noema.lib.api.services.scripting.ScriptingService;
@@ -44,7 +43,7 @@ public class ScriptExecuteTool extends AbstractPaginatedAgentTool {
 
   private static final int MAX_INLINE_OUTPUT_CHARS = 2048;
   private static final long MAX_SCRIPT_FILE_BYTES = 512L * 1024L;
-  private static final List<String> RESERVED_VARIABLES = List.of(CONTEXT_NAME, "context", "out");
+  private static final List<String> RESERVED_VARIABLES = List.of("context", "out");
 
   private final Gson outputGson;
 
@@ -96,9 +95,10 @@ MUESTRA DE MÉTODOS PRINCIPALES (Catálogo parcial; consulta help() para funcion
 - ${CONTEXT_NAME}.annotation.add(origen, nota, [resId], [tipo]) : Guarda conocimiento o directivas directamente en memoria episódica
 - ${CONTEXT_NAME}.state.miVariable = valor : Almacena variables volátiles entre scripts de la misma sesión
 - ${CONTEXT_NAME}.subagents.run("receta", params) : Ejecuta un trabajador especializado de forma síncrona en su propio sandbox
+- ${CONTEXT_NAME}.git modulo de acceso a Git.
 
 Todas las funciones, mientras no indiquen lo contrario, aceptan solo rutas absolutas.
-""" + getShortPaginationInstruction(), "${CONTEXT_NAME}", CONTEXT_NAME))
+""" + getShortPaginationInstruction(), "${CONTEXT_NAME}", "context"))
             .addStringParameter("script", "Groovy code to execute. Mutually exclusive with 'scriptFile'.")
             .addStringParameter("scriptFile", "Absolute path to a '.groovy' file to execute instead of 'script'. Mutually exclusive with 'script'.")
             .addStringParameter("variables", "Optional JSON object with variables injected into the engine binding before execution. Keys must be valid Groovy identifiers. Reserved names: agent, context, out.");

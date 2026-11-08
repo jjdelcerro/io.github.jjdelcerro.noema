@@ -43,17 +43,17 @@ public class LlmModule extends AbstractScriptModule {
   @Override
   public String help() {
     return """
-[agent.llm API] (DISYUNTOR: máx. %d llamadas/script. Filtra primero con Groovy, NO iterar archivos masivos)
+[{CONTEXT}.llm API] (DISYUNTOR: máx. %d llamadas/script. Filtra primero con Groovy, NO iterar archivos masivos)
 • query(systemPrompt, message): String (modelo por defecto)
-  -> def res = agent.llm.query('Clasifica', texto)
+  -> def res = {CONTEXT}.llm.query('Clasifica', texto)
 • queryWithModel(modelId, systemPrompt, message): String
-  -> def res = agent.llm.queryWithModel('deepseek-chat', 'Resume', texto)
+  -> def res = {CONTEXT}.llm.queryWithModel('deepseek-chat', 'Resume', texto)
 • sml_query(prompt): String (modelo local ONNX Qwen3.5-0.8B, sin coste API ni red)
-  -> def tag = agent.llm.sml_query('Detecta tipo: ' + linea)
+  -> def tag = {CONTEXT}.llm.sml_query('Detecta tipo: ' + linea)
 • extractJson(systemPrompt, message): Map|List (parseo estructurado)
-  -> def json = agent.llm.extractJson('Devuelve JSON {name, age}', bio)
+  -> def json = {CONTEXT}.llm.extractJson('Devuelve JSON {name, age}', bio)
 • map(systemPrompt, Iterable<String>): Iterable<String> (solo lotes pequeños <20)
-""".formatted(MAX_LLM_CALLS_PER_SCRIPT);
+""".formatted(MAX_LLM_CALLS_PER_SCRIPT).replace("{CONTEXT}", context.getName());
   }
 
   /**
@@ -73,8 +73,8 @@ public class LlmModule extends AbstractScriptModule {
       throw new IllegalStateException(
               "Límite de seguridad alcanzado: se ha superado el máximo de " + MAX_LLM_CALLS_PER_SCRIPT
               + " subconsultas al LLM en este script. Está TERMINANTEMENTE PROHIBIDO iterar línea a línea "
-              + "con agent.llm.query(). Filtra primero los datos con código (regex, text.contains) o agrupa "
-              + "en bloques grandes antes de consultar al modelo."
+              + "con {CONTEXT}.llm.query(). Filtra primero los datos con código (regex, text.contains) o agrupa "
+              + "en bloques grandes antes de consultar al modelo.".replace("{CONTEXT}", context.getName())
       );
     }
     String result = agent.callChatModel(modelId, systemPrompt, message != null ? message : "");

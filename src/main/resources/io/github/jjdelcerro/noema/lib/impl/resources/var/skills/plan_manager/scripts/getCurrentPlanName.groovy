@@ -1,3 +1,3 @@
 // scripts/getCurrentPlanName.groovy
 import lib.PlanCore
-return PlanCore.getCurrentPlanName(agent)
+return new PlanCore(agent,context).getCurrentPlanName()

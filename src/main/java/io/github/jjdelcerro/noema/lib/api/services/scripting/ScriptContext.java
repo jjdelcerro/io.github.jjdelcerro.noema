@@ -9,7 +9,7 @@ import java.util.Map;
  */
 public interface ScriptContext extends AutoCloseable, ScriptModule {
 
-  public static final String CONTEXT_NAME = "agent";
+//  public static final String CONTEXT_NAME = "agent";
 
   public void registerModule(ScriptModule module);
 

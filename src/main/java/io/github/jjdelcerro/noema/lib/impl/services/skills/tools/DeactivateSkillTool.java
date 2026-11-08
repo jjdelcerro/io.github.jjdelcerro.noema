@@ -51,7 +51,7 @@ public class DeactivateSkillTool extends AbstractAgentTool {
 
       Skill skill = service.getSkill(this.agent, name);
       if (skill != null) {
-        skill.deactivate(this.agent.getCurrentSubchannel());
+        service.deactivateSkill(this.agent.getCurrentSubchannel(),name);
       }
 
       LOGGER.info("Desactivando skill: {}", name);

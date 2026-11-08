@@ -15,5 +15,9 @@ public interface SkillsService extends AgentService {
   public List<Skill> listSkills(Agent agent);
 
   public Skill getSkill(Agent agent, String name);
+  
+  public void deactivateSkill(String subchannel, String skillname);
+  
+  public boolean isActiveSkill(String subchannel, String skillname);
 
 }

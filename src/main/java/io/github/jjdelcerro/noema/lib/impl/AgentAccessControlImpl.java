@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
+import org.apache.commons.io.FilenameUtils;
 
 /**
  * Gestiona el acceso seguro al sistema de ficheros (Sandbox) y audita
@@ -43,9 +44,11 @@ public class AgentAccessControlImpl implements AgentAccessControl {
   private boolean humanConfirmationRequired;
 
   // Lista de rutas adicionales permitidas fuera del root (ej: carpetas temporales)
-  private final List<Path> allowedExternalPaths = new ArrayList<>();
-  private final List<Path> nomWritablePaths = new ArrayList<>();
-  private final List<Path> nomReadablePaths = new ArrayList<>();
+  private List<Path> allowedExternalPaths = new ArrayList<>();
+  private List<Path> nonWritablePaths = new ArrayList<>();
+  private List<Path> nonReadablePaths = new ArrayList<>();
+  private List<String> nonWritablePathWilcards = new ArrayList<>();
+  private List<String> nonNavigableURLsWilcards = new ArrayList<>();
   private boolean enableFirejail;
 
   public AgentAccessControlImpl(AgentSettings settings, AgentActions actions, Path rootPath) {
@@ -64,9 +67,25 @@ public class AgentAccessControlImpl implements AgentAccessControl {
         return true;
       }
     });
+    this.nonWritablePathWilcards.add("*,jv"); // FIXME: habria que afinar esto, probablemente usando AgentSettings
+    this.nonWritablePathWilcards.add("*/.git/*");
+
+    this.nonNavigableURLsWilcards.add("*://localhost:*"); // FIXME: habria que afinar esto, probablemente usando AgentSettings
+    this.nonNavigableURLsWilcards.add("*://127.0.0.1:*");
+    this.nonNavigableURLsWilcards.add("*://1192.168.*:*");
+
     loadConfig();
   }
 
+  @Override
+  public AgentAccessControl clone() throws CloneNotSupportedException {
+    AgentAccessControlImpl x = (AgentAccessControlImpl) super.clone();
+    x.allowedExternalPaths = new ArrayList<>(this.allowedExternalPaths);
+    x.nonWritablePaths = new ArrayList<>(this.nonWritablePaths);
+    x.nonReadablePaths = new ArrayList<>(this.nonReadablePaths);
+    return x;
+  }
+  
   @Override
   public List<Path> getAllowedPaths() {
     List<Path> paths = new ArrayList<>();
@@ -74,7 +93,31 @@ public class AgentAccessControlImpl implements AgentAccessControl {
     paths.addAll(this.allowedExternalPaths);
     return paths;
   }
+  
+  public List<String> getNonWritablePathWilcards() {
+    return Collections.unmodifiableList(nonWritablePathWilcards);
+  }
 
+  public List<Path> getEfectiveNonReadablePaths() {
+    List<Path> r = new ArrayList<>();
+    r.add(rootPath.resolve("." + AgentPaths.AGENT_FOLDER_NAME).resolve("var"));
+    for (Path nomReadablePath : this.nonReadablePaths) {
+      r.add(nomReadablePath);
+    }
+    return r;
+  }
+  
+  public List<Path> getEfectiveNonWritablePaths() {
+    List<Path> r = new ArrayList<>();
+    r.add(rootPath.resolve(".claude")); // skills
+    r.add(rootPath.resolve(".agent")); // skills
+    r.add(rootPath.resolve("." + AgentPaths.AGENT_FOLDER_NAME).resolve("var"));
+    for (Path nonWritablePath : this.nonWritablePaths) {
+      r.add(nonWritablePath);
+    }
+    return r;
+  }
+  
   @Override
   public void addAllowedPath(Path path) {
     this.allowedExternalPaths.add(path.toAbsolutePath().normalize());
@@ -82,12 +125,12 @@ public class AgentAccessControlImpl implements AgentAccessControl {
 
   @Override
   public void addNonWritablePath(Path path) {
-    this.nomWritablePaths.add(path.toAbsolutePath().normalize());
+    this.nonWritablePaths.add(path.toAbsolutePath().normalize());
   }
 
   @Override
   public void addNonReadablePath(Path path) {
-    this.nomReadablePaths.add(path.toAbsolutePath().normalize());
+    this.nonReadablePaths.add(path.toAbsolutePath().normalize());
   }
 
   /**
@@ -148,7 +191,7 @@ public class AgentAccessControlImpl implements AgentAccessControl {
   private boolean isHoleAllowed(Path target, Path deniedPrefix) {
     int deniedDepth = deniedPrefix.getNameCount();
     for (Path allowed : this.allowedExternalPaths) {
-      if (target.startsWith(allowed) && allowed.getNameCount() > deniedDepth) {
+      if (target.startsWith(allowed) && allowed.getNameCount() >= deniedDepth) {
         return true;
       }
     }
@@ -158,7 +201,7 @@ public class AgentAccessControlImpl implements AgentAccessControl {
   @Override
   public Path resolvePath(String rawPath, AccessMode mode) {
     if (rawPath == null || rawPath.isBlank()) {
-      throw new IllegalArgumentException("El path no puede estar vacio");
+      throw new IllegalArgumentException("The path cannot be empty");
     }
 
     // 1. Resolver ruta contra root si es relativa y obtener su ruta real canonica
@@ -168,27 +211,30 @@ public class AgentAccessControlImpl implements AgentAccessControl {
       Path resolved = inputPath.isAbsolute() ? inputPath : rootPath.resolve(inputPath);
       target = toRealPath(resolved);
     } catch (Exception e) {
-      throw new IllegalArgumentException("Path invalido: " + rawPath);
+      throw new IllegalArgumentException("invalid path: " + rawPath);
     }
     String target_s = target.toString();
     String targetPathString = target_s.replace("\\", "/");
 
-    // Invariante inmutable: la carpeta interna del agente nunca es accesible por el modelo
-    if (targetPathString.contains("/." + AgentPaths.AGENT_FOLDER_NAME + "/var/")
-            || targetPathString.endsWith("/." + AgentPaths.AGENT_FOLDER_NAME + "/var")) {
-      throw new SecurityException("ACCESO DENEGADO: La carpeta de control interno del agente no es accesible.");
-    }
+//    // Invariante inmutable: la carpeta interna del agente nunca es accesible por el modelo
+//    if (targetPathString.contains("/." + AgentPaths.AGENT_FOLDER_NAME + "/var/")
+//            || targetPathString.endsWith("/." + AgentPaths.AGENT_FOLDER_NAME + "/var")) {
+//      Path agentVarPrefix = rootPath.resolve("." + AgentPaths.AGENT_FOLDER_NAME).resolve("var");
+//      if (!isHoleAllowed(target, agentVarPrefix)) {
+//        throw new SecurityException("ACCESO DENEGADO: La carpeta de control interno del agente no es accesible.");
+//      }
+//    }
 
-    // 2. Validar restricciones de lectura con soporte de agujeros mas especificos
-    for (Path nonReadablePath : this.nomReadablePaths) {
+    // Validar restricciones de lectura con soporte de agujeros mas especificos
+    for (Path nonReadablePath : this.getEfectiveNonReadablePaths()) {
       if (target.startsWith(nonReadablePath)) {
         if (!isHoleAllowed(target, nonReadablePath)) {
-          throw new SecurityException("ACCESO DENEGADO: Ruta no permitida: " + rawPath);
+          throw new SecurityException("Path not found: " + rawPath);
         }
       }
     }
 
-    // 3. Comprobar si la ruta esta dentro del sandbox (rootPath o allowedExternalPaths)
+    // Comprobar si la ruta esta dentro del sandbox (rootPath o allowedExternalPaths)
     boolean isUnderRoot = target.startsWith(rootPath);
     boolean isWhitelisted = false;
 
@@ -202,32 +248,21 @@ public class AgentAccessControlImpl implements AgentAccessControl {
     }
 
     if (!isUnderRoot && !isWhitelisted) {
-      throw new SecurityException("ACCESO DENEGADO: La ruta intenta salir del sandbox: " + rawPath);
+      throw new SecurityException("Path not found: " + rawPath);
     }
 
-    // 4. Logica especifica para modo de escritura
+    // Logica especifica para modo de escritura
     if (mode == AccessMode.PATH_ACCESS_WRITE) {
-
-      // Invariante inmutable: copias de backup RCS
-      if (target_s.endsWith(",jv")) {
-        throw new SecurityException("ACCESO DENEGADO: No se permite escribir en archivos ',jv'");
+      for (String wildcardMatcher : this.getNonWritablePathWilcards()) {
+        if( FilenameUtils.wildcardMatch(target_s, wildcardMatcher) ) {
+            throw new SecurityException("Path not allowed for writing: " + rawPath);
+        }
       }
-
-      // Invariante inmutable: repositorio Git
-      if (target_s.contains("/.git/")) {
-        throw new SecurityException("ACCESO DENEGADO: No se permite escribir en la carpeta .git");
-      }
-
-      // Invariante inmutable: directivas operativas de skills
-      if (targetPathString.contains("/.claude/skills/") || targetPathString.endsWith("/.claude/skills")) {
-        throw new SecurityException("ACCESO DENEGADO: No se permite modificar archivos dentro de .claude/skills/");
-      }
-
       // Validar restricciones de no-escritura con soporte de agujeros mas especificos
-      for (Path nonWritablePath : this.nomWritablePaths) {
+      for (Path nonWritablePath : this.getEfectiveNonWritablePaths()) {
         if (target.startsWith(nonWritablePath)) {
           if (!isHoleAllowed(target, nonWritablePath)) {
-            throw new SecurityException("ACCESO DENEGADO: Ruta no permitida para escritura: " + rawPath);
+            throw new SecurityException("Path not allowed for writing: " + rawPath);
           }
         }
       }
@@ -261,13 +296,18 @@ public class AgentAccessControlImpl implements AgentAccessControl {
   }
 
   @Override
-  public boolean isAccessible(URI url) { // FIXME: habria que afinar esto, probablemente usando AgentSettings
+  public boolean isAccessible(URI url) { 
     if (!isAllowedInternetAccess()) {
       return false;
     }
     // habria que ver si es intersante restringir el protocolo.
-    String lower = url.toString().toLowerCase();
-    return !(lower.contains("localhost") || lower.contains("127.0.0.1") || lower.contains("192.168."));
+    String url_s = url.toString().toLowerCase();
+    for (String nonNavigableURLsWilcard : nonNavigableURLsWilcards) {
+      if( FilenameUtils.wildcardMatch(url_s, nonNavigableURLsWilcard) ) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /**
@@ -278,8 +318,8 @@ public class AgentAccessControlImpl implements AgentAccessControl {
 
     // Limpiar reglas actuales
     allowedExternalPaths.clear();
-    nomWritablePaths.clear();
-    nomReadablePaths.clear();
+    nonWritablePaths.clear();
+    nonReadablePaths.clear();
 
     // Cargar Whitelist (Rutas externas permitidas)
     List<Path> whitelist = settings.getPropertyAsPaths("access_control/allowed_external_paths");
@@ -290,13 +330,13 @@ public class AgentAccessControlImpl implements AgentAccessControl {
     // Cargar Blacklist de Escritura (Solo lectura)
     List<Path> readOnly = settings.getPropertyAsPaths("access_control/nom_writable_paths");
     for (Path p : readOnly) {
-      nomWritablePaths.add(p.toAbsolutePath().normalize());
+      nonWritablePaths.add(p.toAbsolutePath().normalize());
     }
 
     // Cargar Blacklist de Lectura (Prohibidas)
     List<Path> forbidden = settings.getPropertyAsPaths("access_control/nom_readable_paths");
     for (Path p : forbidden) {
-      nomReadablePaths.add(p.toAbsolutePath().normalize());
+      nonReadablePaths.add(p.toAbsolutePath().normalize());
     }
     this.allowDiskWrite = Boolean.parseBoolean(
             settings.getPropertyAsString("access_control/allow_disk_write", "true")
@@ -327,17 +367,17 @@ public class AgentAccessControlImpl implements AgentAccessControl {
    */
   private void validateRules() {
     // 1. Detectar rutas en nom_writable_paths fuera del workspace y no incluidas en allowed_external_paths
-    checkIsolatedRestrictedPaths(nomWritablePaths, "nom_writable_paths");
+    checkIsolatedRestrictedPaths(nonWritablePaths, "nom_writable_paths");
 
     // 2. Detectar rutas en nom_readable_paths fuera del workspace y no incluidas en allowed_external_paths
-    checkIsolatedRestrictedPaths(nomReadablePaths, "nom_readable_paths");
+    checkIsolatedRestrictedPaths(nonReadablePaths, "nom_readable_paths");
 
     // 3. Detectar rutas redundantes en allowed_external_paths:
     // Solo es redundante si esta dentro del workspace Y NO abre un agujero sobre una restriccion
     for (Path allowed : allowedExternalPaths) {
       if (allowed.startsWith(rootPath)) {
-        boolean isHoleInRestriction = nomWritablePaths.stream().anyMatch(allowed::startsWith)
-                || nomReadablePaths.stream().anyMatch(allowed::startsWith);
+        boolean isHoleInRestriction = nonWritablePaths.stream().anyMatch(allowed::startsWith)
+                || nonReadablePaths.stream().anyMatch(allowed::startsWith);
 
         if (!isHoleInRestriction) {
           reportIncongruency("La ruta '" + allowed + "' en 'allowed_external_paths' esta dentro del workspace, por lo que es redundante.");
@@ -346,8 +386,8 @@ public class AgentAccessControlImpl implements AgentAccessControl {
     }
 
     // 4. Detectar solapamientos directos entre lectura prohibida y solo-lectura
-    for (Path forbidden : nomReadablePaths) {
-      if (nomWritablePaths.contains(forbidden)) {
+    for (Path forbidden : nonReadablePaths) {
+      if (nonWritablePaths.contains(forbidden)) {
         reportIncongruency("La ruta '" + forbidden + "' esta en 'nom_readable_paths' y 'nom_writable_paths'. Prevalecera el bloqueo total de lectura.");
       }
     }
