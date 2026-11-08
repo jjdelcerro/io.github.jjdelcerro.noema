@@ -149,7 +149,11 @@ public class EpisodicMemoryImpl implements EpisodicMemory {
       if (vector == null) {
         String textToEmbed = turn.getContentForEmbedding();
         if( StringUtils.isNotBlank(textToEmbed) ) {
-          vector = embedding.embed(textToEmbed);
+          try {
+            vector = embedding.embed(textToEmbed);
+          } catch(Throwable t) {
+            LOGGER.warn("Can't create embedding for a turn!!!!\n\n"+textToEmbed+"\n\n"+turn.toCSVLine(), t);
+          }
         } else {
           LOGGER.warn("Can't create embedding for a turn, ContentForEmbedding is blank!!!!\n"+turn.toCSVLine());
         }
