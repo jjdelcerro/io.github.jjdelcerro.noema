@@ -1,6 +1,4 @@
-Aquí tienes el documento de diseño arquitectónico. Mantiene el tono formal, riguroso y directo de la identidad del proyecto, detallando tanto el cambio de paradigma conceptual como la implementación técnica y las trampas a evitar.
 
----
 
 # Documento de Diseño Técnico: Bifurcación Cognitiva y Herencia de Memoria en Subagentes (Memory Overlay)
 

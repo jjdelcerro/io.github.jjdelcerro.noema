@@ -73,16 +73,23 @@ Acompaña a cada uno de los servicios de un parrafo de descripcion.
 
 Incluye una descripcion detallada de los principales mecanismos:
 
-* Gestion de memoria. Como esta estratificada y por que. Asegurate de hacer mencion al pipeline de operaciones de la memoria proyectada y su naturaleza "registrable".
+* Gestion de memoria. Como esta estratificada y por que. Asegurate de hacer mencion a lasoperaciones de la memoria proyectada y su naturaleza "registrable".
 * Gestion de la identidad del agente
 * Gestion de habilidades (skills)
 * Gestion de eventos
 * Gestion de la seguridad:
   * restriccion de acceso al sistema de ficheros
   * confirmacion por el usuario de operaciones de escritura
-  * uso de CI automatico previo a modificaciones de archivos
 * Flujos en el reasoning service.
 * Subagentes
+
+Echa un vistazo a la clase Telemetry y donde y para que se usa. 
+No hace falta que la nombres como un mecanismo mas, pero si tenla 
+en cuenta de cara a sacar las conclusiones sobre el proyecto.
+
+Echa un vistazo detallado a la clase NeedleInHaystackE2ETest, no tienes que comentarla, 
+pero si tener en cuenta lo que se desprende de ella para la valoracion del proyecto y 
+las conclusiones del informe.
 
 
 ## 5. Herramientas
