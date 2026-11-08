@@ -112,6 +112,9 @@ public class EmbeddingsService extends AbstractAgentService {
             return null;
         }
         Embedding embedding = new Embedding(text, embeddingModel);
+        if (embedding.isEmpty()) {
+            return null;
+        }
         return embedding.getFloats();
     }
 
@@ -326,7 +329,10 @@ public class EmbeddingsService extends AbstractAgentService {
                     }
                 }
 
-                chunks.add(text.substring(start, end));
+                String chunk = text.substring(start, end).trim();
+                if (!chunk.isEmpty()) {
+                    chunks.add(chunk);
+                }
                 start = end;
             }
 
@@ -445,6 +451,17 @@ public class EmbeddingsService extends AbstractAgentService {
 
         public float[] getFloats() {
             return this.data;
+        }
+
+        /**
+         * A text with no embeddable chunks produces the minimal payload: only
+         * the two trailing metadata floats (modelId + dimension), with no
+         * vector data at all.
+         *
+         * @return true when there is no vector information to compare
+         */
+        public boolean isEmpty() {
+            return this.data.length == 2;
         }
 
         public double cosineSimilarity(Embedding other) {
