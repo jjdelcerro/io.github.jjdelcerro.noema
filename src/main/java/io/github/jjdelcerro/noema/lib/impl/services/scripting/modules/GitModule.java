@@ -9,6 +9,9 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.blame.BlameResult;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
+import org.eclipse.jgit.diff.Edit;
+import org.eclipse.jgit.lib.AbbreviatedObjectId;
+import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.PersonIdent;
@@ -16,9 +19,12 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.BranchTrackingStatus;
+import org.eclipse.jgit.patch.FileHeader;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.dircache.DirCacheIterator;
+import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.util.io.DisabledOutputStream;
 
@@ -52,6 +58,7 @@ public class GitModule extends AbstractScriptModule {
   private static final int DEFAULT_LOG_LIMIT = 10;
   private static final int MAX_LOG_LIMIT = 200;
   private static final int MAX_PATCH_BYTES = 256 * 1024; // 256 KB
+  private static final int MAX_STAT_FILES = 100;
 
   public static class GitScriptModuleFactory extends AbstractScriptModuleFactory {
 
@@ -79,20 +86,125 @@ public class GitModule extends AbstractScriptModule {
 [${CONTEXT}.git API] — Solo lectura. Rutas absolutas. Devuelve Maps/Listas, nunca porcelain.
 Objeto común: Commit(sha, shortSha, author, committer, parents, subject, body, refs)
 • repo([path]): info del repo, branch, head, ahead/behind, clean, lastCommit
-• status([path]): Map(branch, clean, staged[], modified[], deleted[], untracked[],
-  conflicted[], summary)
-• log([path], [n=10], [file], [author], [since], [until], [grep], [reverse]): List<Commit>
-• show(rev, [path], [includePatch=true], [maxBytes]): Map(commit, stat, patch, truncated)
-• diff([path], [staged=false], [from], [to], [includePatch=true]): Map(files, patch, truncated)
+• status([path]): Map(branch, clean, ahead, behind, stagedAdded[], stagedModified[],
+  stagedDeleted[], modified[], deleted[], renamed[{path,oldPath}], untracked[],
+  conflicted[], summary). modified/deleted = working tree; staged* = indice.
+• log([path], [n<=200], [file], [author], [since], [until], [grep], [reverse]):
+  List<Commit>. 'file' es relativo a la raiz del repo.
+• show(rev, [path], [includePatch=false], [maxBytes]): Map(commit, stat, patch, truncated)
+  stat.files se recorta a 100 entradas; ver stat.filesTotal y stat.statTruncated.
+  insertions/deletions son conteos reales de lineas (0/0 solo si el commit es
+  binario o vacio), aunque files este recortado.
+• diff([path], [staged=false], [from], [to], [includePatch=false], [maxBytes]):
+  Map(files, patch, truncated). staged=false: indice<->working tree, NO incluye
+  lo que ya esta staged; staged=true: HEAD<->indice. Siempre de repo completo,
+  nunca de un fichero.
 • fileLog(filePath, [n=20]): List<Commit> (con --follow)
 • blame(filePath, [start], [end]): List(Line(line, content, sha, shortSha, author, email, date))
 • whoTouched(filePath, start, end): List(Map(author, email, lines, commits))
-• pickaxe(text, [n=20]): List<Commit>   // log -S
-• resolve(rev): Map(sha, shortSha, type, exists)
-• branches([includeRemote]), tags([n]), remotes(), showFile(rev, path)
-Todas las funciones aceptan 'path' absoluto; error Map(error=...) si el path
-no está dentro de un repositorio.
+  start/end son numeros de linea del fichero, no fechas ni commits.
+• pickaxe([path], text, [n=20]): List<Commit>   // log -S
+  Matchea si el commit cambia el NUMERO de apariciones de text en algun
+  fichero que toca. Tocar un fichero que ya contenia el texto no cuenta.
+• resolve([path], rev): Map(sha, shortSha, type, exists). exists=false es una
+  respuesta valida, no un error.
+• branches([path], [includeRemote]), tags([path], [n]), remotes([path])
+• showFile(rev, filePath, [maxBytes])
+'n' esta acotado: log y fileLog a 200; pickaxe a 100; tags a 500.
+ERRORES: las funciones lanzan GitException cuando no pueden responder; nunca
+devuelven un valor de error. Codigos: not_a_repo, unknown_revision,
+path_outside_repo, file_not_found, empty_text, status_failed, show_failed,
+diff_failed, log_failed, fileLog_failed, blame_failed, branches_failed,
+tags_failed, remotes_failed, resolve_failed, pickaxe_failed, showFile_failed,
+git_error. El mensaje llega como 'codigo: mensaje', sin stack trace.
+Captura con: try { ... } catch (e) { println e.code }
+Vacio NO es error: log sin resultados, blame sin historia o repo sin ramas
+devuelven lista vacia.
+'path' es siempre la raiz de un repo; para ficheros usa filePath (blame,
+fileLog, whoTouched) o showFile.
+Si omites path en repo, status, log, show, diff, pickaxe, resolve, branches,
+tags o remotes, se usa el repo del directorio de trabajo por defecto, NO el de
+la ultima ruta usada en otra llamada. Pasa path siempre que no sea el cwd.
 """.formatted(context.getName());
+  }
+
+  // ------------------------------------------------------------------
+  // Convenience overloads. The long signatures stay available for
+  // scripts that need every knob; these apply the documented defaults
+  // so that help() does not advertise parameters that cannot be
+  // omitted. Without them, log(path, 10) threw MissingMethodException
+  // and aborted the whole script.
+  // ------------------------------------------------------------------
+
+  public Map<String, Object> repo() {
+    return repo(null);
+  }
+
+  public Map<String, Object> status() {
+    return status(null);
+  }
+
+  public List<Map<String, Object>> log(String path) {
+    return log(path, null, null, null, null, null, null, null);
+  }
+
+  public List<Map<String, Object>> log(String path, Integer n) {
+    return log(path, n, null, null, null, null, null, null);
+  }
+
+  public List<Map<String, Object>> log(String path, Integer n, String file) {
+    return log(path, n, file, null, null, null, null, null);
+  }
+
+  public Map<String, Object> show(String rev, String path) {
+    return show(rev, path, null, null);
+  }
+
+  public Map<String, Object> show(String rev, String path, Boolean includePatch) {
+    return show(rev, path, includePatch, null);
+  }
+
+  public Map<String, Object> diff(String path) {
+    return diff(path, null, null, null, null, null);
+  }
+
+  public Map<String, Object> diff(String path, Boolean staged) {
+    return diff(path, staged, null, null, null, null);
+  }
+
+  public Map<String, Object> diff(String path, Boolean staged, String from, String to) {
+    return diff(path, staged, from, to, null, null);
+  }
+
+  public List<Map<String, Object>> fileLog(String filePath) {
+    return fileLog(filePath, null);
+  }
+
+  public List<Map<String, Object>> blame(String filePath) {
+    return blame(filePath, null, null);
+  }
+
+  public List<Map<String, Object>> branches() {
+    return branches(null);
+  }
+
+  public List<Map<String, Object>> tags() {
+    return tags(null);
+  }
+
+  public List<Map<String, Object>> pickaxe(String text) {
+    return pickaxe(null, text, null);
+  }
+
+  /**
+   * Pickaxe sobre un repositorio concreto.
+   */
+  public List<Map<String, Object>> pickaxe(String path, String text) {
+    return pickaxe(path, text, null);
+  }
+
+  public Map<String, Object> showFile(String rev, String filePath) {
+    return showFile(rev, filePath, null);
   }
 
   /**
@@ -135,7 +247,7 @@ no está dentro de un repositorio.
     return withRepo(path, (repo, git) -> {
       Status st = callStatus(git);
       if (st == null) {
-        return Map.of("error", "status_failed");
+        throw new GitException("status_failed", "git status returned no information");
       }
 
       Map<String, Object> out = new LinkedHashMap<>();
@@ -146,17 +258,27 @@ no está dentro de un repositorio.
       out.put("ahead", tracking != null ? tracking.getAheadCount() : 0);
       out.put("behind", tracking != null ? tracking.getBehindCount() : 0);
 
-      out.put("staged", entries(st.getAdded(), "added"));
-      out.put("modified", entries(st.getChanged(), "changed"));
-      out.put("deleted", entries(st.getRemoved(), "removed"));
-      out.put("renamed", entries(st.getRemoved(), "renamed")); // JGit agrupa removed/changed; ver nota
+      List<Map<String, Object>> renamed = renamedEntries(repo);
+      int stagedCount = st.getAdded().size() + st.getChanged().size() + st.getRemoved().size();
+
+      // Working tree vs index vs HEAD are three different planes. Keep them apart.
+      out.put("stagedAdded", entries(st.getAdded(), "added"));
+      out.put("stagedModified", entries(st.getChanged(), "modified"));
+      out.put("stagedDeleted", entries(st.getRemoved(), "deleted"));
+      out.put("modified", entries(st.getModified(), "modified"));
+      out.put("deleted", entries(st.getMissing(), "deleted"));
+      out.put("renamed", renamed);
       out.put("untracked", entries(st.getUntracked(), "untracked"));
-      out.put("conflicted", entries(st.getConflicting(), "conflicting"));
+      out.put("conflicted", entries(st.getConflicting(), "conflicted"));
 
       Map<String, Object> summary = new LinkedHashMap<>();
-      summary.put("staged", st.getAdded().size());
-      summary.put("modified", st.getChanged().size());
-      summary.put("deleted", st.getRemoved().size());
+      summary.put("staged", stagedCount);
+      summary.put("stagedAdded", st.getAdded().size());
+      summary.put("stagedModified", st.getChanged().size());
+      summary.put("stagedDeleted", st.getRemoved().size());
+      summary.put("modified", st.getModified().size());
+      summary.put("deleted", st.getMissing().size());
+      summary.put("renamed", renamed.size());
       summary.put("untracked", st.getUntracked().size());
       summary.put("conflicted", st.getConflicting().size());
       out.put("summary", summary);
@@ -223,7 +345,7 @@ no está dentro de un repositorio.
         return out;
 
       } catch (Exception e) {
-        return List.of(Map.of("error", "log_failed", "message", e.getMessage()));
+        throw wrap("log_failed", e);
       }
     });
   }
@@ -238,7 +360,7 @@ no está dentro de un repositorio.
       try (RevWalk walk = new RevWalk(repo)) {
         ObjectId id = repo.resolve(rev);
         if (id == null) {
-          return Map.of("error", "unknown_revision", "rev", rev);
+          throw new GitException("unknown_revision", "cannot resolve revision: " + rev);
         }
 
         RevCommit commit = walk.parseCommit(id);
@@ -256,7 +378,7 @@ no está dentro de un repositorio.
         }
         return out;
       } catch (Exception e) {
-        return Map.of("error", "show_failed", "message", e.getMessage());
+        throw wrap("show_failed", e);
       }
     });
   }
@@ -279,10 +401,10 @@ no está dentro de un repositorio.
           ObjectId fromId = repo.resolve(from);
           ObjectId toId = repo.resolve(to);
           if (fromId == null) {
-            return Map.of("error", "unknown_revision", "rev", from);
+            throw new GitException("unknown_revision", "cannot resolve revision: " + from);
           }
           if (toId == null) {
-            return Map.of("error", "unknown_revision", "rev", to);
+            throw new GitException("unknown_revision", "cannot resolve revision: " + to);
           }
           // Para diff entre refs usamos DiffFormatter directamente
           return diffBetween(repo, fromId, toId, cap);
@@ -308,7 +430,7 @@ no está dentro de un repositorio.
         }
         return out;
       } catch (Exception e) {
-        return Map.of("error", "diff_failed", "message", e.getMessage());
+        throw wrap("diff_failed", e);
       }
     });
   }
@@ -322,7 +444,7 @@ no está dentro de un repositorio.
     return withRepo(filePath, (repo, git) -> {
       String rel = relativize(repo, filePath);
       if (rel == null) {
-        return List.of(Map.of("error", "path_outside_repo", "path", filePath));
+        throw new GitException("path_outside_repo", "file is not inside the working tree: " + filePath);
       }
       try (RevWalk walk = new RevWalk(repo)) {
         ObjectId head = repo.resolve(Constants.HEAD);
@@ -344,7 +466,7 @@ no está dentro de un repositorio.
         }
         return out;
       } catch (Exception e) {
-        return List.of(Map.of("error", "fileLog_failed", "message", e.getMessage()));
+        throw wrap("fileLog_failed", e);
       }
     });
   }
@@ -357,7 +479,7 @@ no está dentro de un repositorio.
     return withRepo(filePath, (repo, git) -> {
       String rel = relativize(repo, filePath);
       if (rel == null) {
-        return List.of(Map.of("error", "path_outside_repo", "path", filePath));
+        throw new GitException("path_outside_repo", "file is not inside the working tree: " + filePath);
       }
       try {
         BlameCommand blamer = new BlameCommand(repo);
@@ -396,7 +518,7 @@ no está dentro de un repositorio.
         }
         return out;
       } catch (Exception e) {
-        return List.of(Map.of("error", "blame_failed", "message", e.getMessage()));
+        throw wrap("blame_failed", e);
       }
     });
   }
@@ -438,7 +560,14 @@ no está dentro de un repositorio.
    * Lista de ramas.
    */
   public List<Map<String, Object>> branches(Boolean includeRemote) {
-    return withAnyRepo((repo, git) -> {
+    return branches(null, includeRemote);
+  }
+
+  /**
+   * Lista de ramas de un repositorio concreto.
+   */
+  public List<Map<String, Object>> branches(String path, Boolean includeRemote) {
+    return withRepo(path, (repo, git) -> {
       try {
         ListBranchCommand cmd = git.branchList();
         if (Boolean.TRUE.equals(includeRemote)) {
@@ -459,7 +588,7 @@ no está dentro de un repositorio.
         }
         return out;
       } catch (GitAPIException e) {
-        return List.of(Map.of("error", "branches_failed", "message", e.getMessage()));
+        throw wrap("branches_failed", e);
       }
     });
   }
@@ -468,8 +597,15 @@ no está dentro de un repositorio.
    * Lista de tags.
    */
   public List<Map<String, Object>> tags(Integer n) {
+    return tags(null, n);
+  }
+
+  /**
+   * Lista de tags de un repositorio concreto.
+   */
+  public List<Map<String, Object>> tags(String path, Integer n) {
     int limit = clamp(n, 50, 1, 500);
-    return withAnyRepo((repo, git) -> {
+    return withRepo(path, (repo, git) -> {
       try {
         List<Map<String, Object>> out = new ArrayList<>();
         List<Ref> refs = git.tagList().call();
@@ -502,7 +638,7 @@ no está dentro de un repositorio.
         }
         return out;
       } catch (GitAPIException e) {
-        return List.of(Map.of("error", "tags_failed", "message", e.getMessage()));
+        throw wrap("tags_failed", e);
       }
     });
   }
@@ -511,7 +647,14 @@ no está dentro de un repositorio.
    * Lista de remotos.
    */
   public List<Map<String, Object>> remotes() {
-    return withAnyRepo((repo, git) -> {
+    return remotes(null);
+  }
+
+  /**
+   * Lista de remotos de un repositorio concreto.
+   */
+  public List<Map<String, Object>> remotes(String path) {
+    return withRepo(path, (repo, git) -> {
       try {
         List<Map<String, Object>> out = new ArrayList<>();
         for (RemoteConfig rc : git.remoteList().call()) {
@@ -523,7 +666,7 @@ no está dentro de un repositorio.
         }
         return out;
       } catch (GitAPIException e) {
-        return List.of(Map.of("error", "remotes_failed", "message", e.getMessage()));
+        throw wrap("remotes_failed", e);
       }
     });
   }
@@ -532,7 +675,14 @@ no está dentro de un repositorio.
    * Resuelve una revisión (rama, tag, short SHA, HEAD~2...) a SHA.
    */
   public Map<String, Object> resolve(String rev) {
-    return withAnyRepo((repo, git) -> {
+    return resolve(null, rev);
+  }
+
+  /**
+   * Resuelve una revision en un repositorio concreto.
+   */
+  public Map<String, Object> resolve(String path, String rev) {
+    return withRepo(path, (repo, git) -> {
       try {
         ObjectId id = repo.resolve(rev);
         if (id == null) {
@@ -562,23 +712,38 @@ no está dentro de un repositorio.
         }
         return out;
       } catch (Exception e) {
-        return Map.of("error", "resolve_failed", "message", e.getMessage());
+        throw wrap("resolve_failed", e);
       }
     });
   }
 
   /**
    * Pickaxe: commits que añaden o eliminan el texto dado (git log -S).
-   * Implementación coste O(commits * diff); acotada por n.
+   * Implementación coste O(commits * diff); acotada por n. Los recursos de
+   * lectura se comparten durante todo el recorrido del historial.
    */
   public List<Map<String, Object>> pickaxe(String text, Integer n) {
+    return pickaxe(null, text, n);
+  }
+
+  /**
+   * Pickaxe sobre un repositorio concreto (git log -S).
+   */
+  public List<Map<String, Object>> pickaxe(String path, String text, Integer n) {
     int limit = clamp(n, 20, 1, 100);
     if (text == null || text.isEmpty()) {
-      return List.of(Map.of("error", "empty_text"));
+      throw new GitException("empty_text", "pickaxe needs a non-empty text to look for");
     }
 
-    return withAnyRepo((repo, git) -> {
-      try (RevWalk walk = new RevWalk(repo)) {
+    return withRepo(path, (repo, git) -> {
+      // One walk, one reader and one formatter for the whole scan, instead of
+      // reopening them for every commit. No measurable speedup was observed
+      // (the formatter keeps its own internal reader anyway); they are shared
+      // only so the resource lifecycle spans the whole query.
+      try (RevWalk walk = new RevWalk(repo);
+              ObjectReader reader = repo.newObjectReader();
+              DiffFormatter df = new DiffFormatter(DisabledOutputStream.INSTANCE)) {
+        df.setRepository(repo);
         ObjectId head = repo.resolve(Constants.HEAD);
         if (head == null) {
           return List.of();
@@ -590,13 +755,13 @@ no está dentro de un repositorio.
           if (out.size() >= limit) {
             break;
           }
-          if (containsTextInDiff(repo, commit, text)) {
+          if (containsTextInDiff(walk, df, reader, commit, text)) {
             out.add(toCommitMap(commit));
           }
         }
         return out;
       } catch (Exception e) {
-        return List.of(Map.of("error", "pickaxe_failed", "message", e.getMessage()));
+        throw wrap("pickaxe_failed", e);
       }
     });
   }
@@ -609,17 +774,18 @@ no está dentro de un repositorio.
     return withRepo(filePath, (repo, git) -> {
       String rel = relativize(repo, filePath);
       if (rel == null) {
-        return Map.of("error", "path_outside_repo", "path", filePath);
+        throw new GitException("path_outside_repo", "file is not inside the working tree: " + filePath);
       }
       try (RevWalk walk = new RevWalk(repo)) {
         ObjectId id = repo.resolve(rev);
         if (id == null) {
-          return Map.of("error", "unknown_revision", "rev", rev);
+          throw new GitException("unknown_revision", "cannot resolve revision: " + rev);
         }
         RevCommit commit = walk.parseCommit(id);
         try (TreeWalk tw = TreeWalk.forPath(repo, rel, commit.getTree())) {
           if (tw == null) {
-            return Map.of("error", "file_not_found", "path", rel, "rev", rev);
+            throw new GitException("file_not_found",
+                    "file " + rel + " does not exist in " + rev);
           }
           ObjectId blobId = tw.getObjectId(0);
           ObjectLoader loader = repo.open(blobId);
@@ -632,7 +798,7 @@ no está dentro de un repositorio.
           return out;
         }
       } catch (Exception e) {
-        return Map.of("error", "showFile_failed", "message", e.getMessage());
+        throw wrap("showFile_failed", e);
       }
     });
   }
@@ -640,6 +806,32 @@ no está dentro de un repositorio.
   // ---------------------------------------------------------------------
   // Infraestructura interna
   // ---------------------------------------------------------------------
+  /**
+   * Raised when the module cannot answer a request. It is never returned as a
+   * value: it aborts the calling script on purpose, so a failed call cannot be
+   * mistaken for an empty result.
+   * <p>
+   * Codes: not_a_repo, unknown_revision, path_outside_repo, file_not_found,
+   * empty_text, status_failed, show_failed, diff_failed, log_failed,
+   * fileLog_failed, blame_failed, branches_failed, tags_failed, remotes_failed,
+   * resolve_failed, pickaxe_failed, showFile_failed, git_error.
+   * <p>
+   * The stack trace is not filled on purpose: a script only needs the message.
+   */
+  public static class GitException extends RuntimeException {
+
+    private final String code;
+
+    public GitException(String code, String message) {
+      super(code + ": " + message, null, false, false);
+      this.code = code;
+    }
+
+    public String getCode() {
+      return code;
+    }
+  }
+
   @FunctionalInterface
   private interface RepoAction<T> {
 
@@ -651,12 +843,14 @@ no está dentro de un repositorio.
     try {
       repo = openRepo(path);
       if (repo == null) {
-        return (T) Map.of("error", "not_a_repo",
-                "path", path != null ? path : System.getProperty("user.dir"));
+        throw new GitException("not_a_repo",
+                "not a git working tree: " + pathOrUserDir(path));
       }
       return action.run(repo, new Git(repo));
+    } catch (GitException e) {
+      throw e;
     } catch (Exception e) {
-      return (T) Map.of("error", "git_error", "message", e.getMessage());
+      throw wrap("git_error", e);
     } finally {
       if (repo != null) {
         repo.close();
@@ -664,8 +858,26 @@ no está dentro de un repositorio.
     }
   }
 
-  private <T> T withAnyRepo(RepoAction<T> action) {
-    return withRepo(null, action);
+  /**
+   * Keeps the original GitException if the cause already is one, so that a
+   * specific code is not masked by the generic catch of the enclosing block.
+   */
+  private static GitException wrap(String code, Exception cause) {
+    if (cause instanceof GitException) {
+      return (GitException) cause;
+    }
+    String message = cause.getMessage();
+    if (message == null || message.isBlank()) {
+      message = cause.getClass().getSimpleName();
+    }
+    return new GitException(code, message);
+  }
+
+  private static String pathOrUserDir(String path) {
+    if (path != null && !path.isBlank()) {
+      return path;
+    }
+    return System.getProperty("user.dir");
   }
 
   private Repository openRepo(String path) throws IOException {
@@ -749,6 +961,48 @@ no está dentro de un repositorio.
     }
   }
 
+  /**
+   * Real renames, comparing HEAD against the index. Status.getRenamed() only
+   * returns a set of paths with no origin, so the pair has to come from
+   * DiffEntry with rename detection enabled.
+   *
+   * @param repo repository to inspect
+   * @return list of {path, oldPath, status}
+   */
+  private List<Map<String, Object>> renamedEntries(Repository repo) {
+    List<Map<String, Object>> out = new ArrayList<>();
+    try {
+      ObjectId headId = repo.resolve(Constants.HEAD);
+      if (headId == null) {
+        return out;
+      }
+      try (RevWalk walk = new RevWalk(repo);
+              ObjectReader reader = repo.newObjectReader()) {
+        RevCommit head = walk.parseCommit(headId);
+        CanonicalTreeParser oldTree = new CanonicalTreeParser(null, reader, head.getTree());
+        DirCacheIterator newTree = new DirCacheIterator(repo.readDirCache());
+        try (DiffFormatter df = new DiffFormatter(DisabledOutputStream.INSTANCE)) {
+          df.setRepository(repo);
+          df.setDetectRenames(true);
+          for (DiffEntry e : df.scan(oldTree, newTree)) {
+            if (e.getChangeType() != DiffEntry.ChangeType.RENAME) {
+              continue;
+            }
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("path", e.getNewPath());
+            m.put("oldPath", e.getOldPath());
+            m.put("status", "renamed");
+            out.add(m);
+          }
+        }
+      }
+    } catch (Exception e) {
+      // Empty repository, locked index or unreadable refs: no renames to report.
+      return new ArrayList<>();
+    }
+    return out;
+  }
+
   private List<Map<String, Object>> entries(Set<String> paths, String status) {
     List<Map<String, Object>> out = new ArrayList<>();
     if (paths == null) {
@@ -796,14 +1050,41 @@ no está dentro de un repositorio.
     return m;
   }
 
+  /**
+   * Returns the tree of the first parent, or null for a root commit.
+   *
+   * RevWalk.parseCommit() only parses the body of the commit that was asked
+   * for. The parents it links stay unparsed, and getTree() on an unparsed
+   * RevCommit returns null without raising. DiffFormatter.scan(null, tree)
+   * means "diff against the empty tree", so every entry would look like an
+   * ADD and deletions would always be zero. The parent must be parsed here
+   * before handing its tree to the formatter.
+   */
+  private static AnyObjectId parentTree(Repository repo, RevCommit commit) throws IOException {
+    try (RevWalk walk = new RevWalk(repo)) {
+      return parentTree(walk, commit);
+    }
+  }
+
+  /**
+   * Same as above, reusing a caller-owned walk instead of opening a new one per
+   * commit. The parent of commit N is usually the commit N+1 already parsed in
+   * the previous iteration, but no measurable speedup was observed; this exists
+   * so the caller keeps control over the walk lifecycle.
+   */
+  private static AnyObjectId parentTree(RevWalk walk, RevCommit commit) throws IOException {
+    if (commit.getParentCount() == 0) {
+      return null;
+    }
+    RevCommit parent = walk.parseCommit(commit.getParent(0).getId());
+    return parent.getTree().copy();
+  }
+
   private Map<String, Object> commitStat(Repository repo, RevCommit commit) throws IOException {
     Map<String, Object> stat = new LinkedHashMap<>();
-    RevCommit parent = commit.getParentCount() > 0 ? commit.getParent(0) : null;
     try (DiffFormatter df = new DiffFormatter(DisabledOutputStream.INSTANCE)) {
       df.setRepository(repo);
-      List<DiffEntry> entries = parent != null
-              ? df.scan(parent.getTree(), commit.getTree())
-              : df.scan(null, commit.getTree());
+      List<DiffEntry> entries = df.scan(parentTree(repo, commit), commit.getTree());
 
       int filesChanged = entries.size();
       int insertions = 0;
@@ -811,18 +1092,27 @@ no está dentro de un repositorio.
       List<Map<String, Object>> fileList = new ArrayList<>();
 
       for (DiffEntry e : entries) {
-        Map<String, Object> f = new LinkedHashMap<>();
-        String p = e.getNewPath().equals(DiffEntry.DEV_NULL) ? e.getOldPath() : e.getNewPath();
-        f.put("path", p);
-        f.put("changeType", e.getChangeType().name());
-        fileList.add(f);
+        // Line counts come from the edit ranges, there is no need to render
+        // the patch as text. Binary entries produce no edits and count 0/0.
+        FileHeader fh = df.toFileHeader(e);
+        for (Edit ed : fh.toEditList()) {
+          insertions += ed.getEndB() - ed.getBeginB();
+          deletions += ed.getEndA() - ed.getBeginA();
+        }
+        if (fileList.size() < MAX_STAT_FILES) {
+          Map<String, Object> f = new LinkedHashMap<>();
+          String p = e.getNewPath().equals(DiffEntry.DEV_NULL) ? e.getOldPath() : e.getNewPath();
+          f.put("path", p);
+          f.put("changeType", e.getChangeType().name());
+          fileList.add(f);
+        }
       }
-      // Para inserciones/deleciones exactas habría que formatear el patch;
-      // lo aproximamos con FileHeader si se necesita, pero dejamos el conteo de ficheros.
       stat.put("filesChanged", filesChanged);
-      stat.put("insertions", insertions); // ver nota abajo
+      stat.put("filesTotal", filesChanged);
+      stat.put("insertions", insertions);
       stat.put("deletions", deletions);
       stat.put("files", fileList);
+      stat.put("statTruncated", filesChanged > fileList.size());
     }
     return stat;
   }
@@ -839,12 +1129,9 @@ no está dentro de un repositorio.
   }
 
   private PatchResult patchOfCommit(Repository repo, RevCommit commit, int maxBytes) throws IOException {
-    RevCommit parent = commit.getParentCount() > 0 ? commit.getParent(0) : null;
     try (DiffFormatter df = new DiffFormatter(DisabledOutputStream.INSTANCE)) {
       df.setRepository(repo);
-      List<DiffEntry> entries = parent != null
-              ? df.scan(parent.getTree(), commit.getTree())
-              : df.scan(null, commit.getTree());
+      List<DiffEntry> entries = df.scan(parentTree(repo, commit), commit.getTree());
       return patchOfDiffEntries(repo, entries, maxBytes);
     }
   }
@@ -885,31 +1172,21 @@ no está dentro de un repositorio.
     }
   }
 
-  private boolean containsTextInDiff(Repository repo, RevCommit commit, String text) {
-    try (DiffFormatter df = new DiffFormatter(DisabledOutputStream.INSTANCE); ObjectReader reader = repo.newObjectReader()) {
+  /**
+   * True if the commit changes the number of occurrences of text in any of the
+   * files it touches. This is the semantics of git log -S (pickaxe): a commit
+   * matches only when it adds or removes occurrences, not when it merely
+   * touches a file that already contains the text somewhere else.
+   */
+  private boolean containsTextInDiff(RevWalk walk, DiffFormatter df, ObjectReader reader, RevCommit commit, String text) {
+    try {
 
-      df.setRepository(repo);
-
-      RevCommit parent = commit.getParentCount() > 0 ? commit.getParent(0) : null;
-      List<DiffEntry> entries = parent != null
-              ? df.scan(parent.getTree(), commit.getTree())
-              : df.scan(null, commit.getTree());
+      List<DiffEntry> entries = df.scan(parentTree(walk, commit), commit.getTree());
 
       for (DiffEntry e : entries) {
-        if (e.getChangeType() == DiffEntry.ChangeType.DELETE) {
-          continue;
-        }
-
-        // DiffEntry guarda AbbreviatedObjectId; resolve() devuelve una
-        // Collection con 0, 1 o varias coincidencias.
-        Collection<ObjectId> matches = reader.resolve(e.getNewId());
-        if (matches.size() != 1) {
-          continue;
-        }
-        ObjectId fullId = matches.iterator().next();
-
-        String content = extractNewContent(reader, fullId);
-        if (content != null && content.contains(text)) {
+        String before = readBlobText(reader, e.getOldId());
+        String after = readBlobText(reader, e.getNewId());
+        if (countOccurrences(before, text) != countOccurrences(after, text)) {
           return true;
         }
       }
@@ -920,7 +1197,41 @@ no está dentro de un repositorio.
     }
   }
 
-  private String extractNewContent(ObjectReader reader, ObjectId blobId) {
+  /**
+   * Text of the blob behind an AbbreviatedObjectId, or null when it cannot be
+   * resolved. The absent side of an ADD or a DELETE lands here as zero
+   * matches, which yields null and therefore zero occurrences.
+   */
+  private String readBlobText(ObjectReader reader, AbbreviatedObjectId abbrev) throws IOException {
+    if (abbrev == null) {
+      return null;
+    }
+    // DiffEntry guarda AbbreviatedObjectId; resolve() devuelve una
+    // Collection con 0, 1 o varias coincidencias.
+    Collection<ObjectId> matches = reader.resolve(abbrev);
+    if (matches == null || matches.size() != 1) {
+      return null;
+    }
+    return extractBlobText(reader, matches.iterator().next());
+  }
+
+  /**
+   * Counts non-overlapping occurrences of needle in haystack.
+   */
+  private static int countOccurrences(String haystack, String needle) {
+    if (haystack == null || needle == null || needle.isEmpty()) {
+      return 0;
+    }
+    int count = 0;
+    int idx = haystack.indexOf(needle);
+    while (idx >= 0) {
+      count++;
+      idx = haystack.indexOf(needle, idx + needle.length());
+    }
+    return count;
+  }
+
+  private String extractBlobText(ObjectReader reader, ObjectId blobId) {
     if (blobId == null || blobId.equals(ObjectId.zeroId())) {
       return null;
     }
