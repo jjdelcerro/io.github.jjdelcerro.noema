@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import io.github.jjdelcerro.noema.lib.api.memory.episodic.EpisodicMemory;
 import io.github.jjdelcerro.noema.lib.api.model.ChatModel;
+import io.github.jjdelcerro.noema.lib.api.services.reasoning.ReasoningService;
 
 @SuppressWarnings("unused")
 public class ReprojectionMemoryTest extends AbstractScriptedTest {
@@ -48,6 +49,8 @@ public class ReprojectionMemoryTest extends AbstractScriptedTest {
     paths.setupHierarchy();
 
     AgentSettings settings = new AgentSettingsImpl(paths);
+    settings.setProperty(ReasoningService.MEMORY_CONSOLIDATION_TURNS, "40");
+
     AgentActions actions = new AgentActionsImpl();
     AgentAccessControl accessControl = new AgentAccessControlImpl(settings, actions, workspaceDir);
     EpisodicMemory episodicMemory = new FakeEpisodicMemory();

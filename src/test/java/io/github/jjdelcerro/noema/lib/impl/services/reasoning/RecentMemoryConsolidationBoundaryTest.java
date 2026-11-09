@@ -160,7 +160,7 @@ public class RecentMemoryConsolidationBoundaryTest {
     }
 
     @Test
-    @DisplayName("Caso 4: Prueba de escala con 40 turnos (Umbral estandar de produccion)")
+    @DisplayName("Caso 4: Prueba de escala con los turnos por defecto (Umbral estandar de produccion)")
     public void testScaleWith40Turns() {
         // 40 turnos de chat = 80 mensajes (indices 0 al 79)
         for (int i = 1; i <= 40; i++) {

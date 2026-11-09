@@ -32,7 +32,7 @@ public class RecentMemoryImpl implements RecentMemory {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RecentMemoryImpl.class);
 
-  private static final int DEFAULT_CONSOLIDATION_THRESHOLD = 40;
+  private static final int DEFAULT_CONSOLIDATION_THRESHOLD = 90;
   private final String subchannel;
 
   private static class ChatMessageInfo {

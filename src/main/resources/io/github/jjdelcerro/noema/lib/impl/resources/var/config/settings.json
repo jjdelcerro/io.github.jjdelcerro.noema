@@ -15,7 +15,7 @@
     "address": "127.0.0.1"
   },
   "reasoning": {
-    "consolidation_turns": "40",
+    "consolidation_turns": "90",
     "provider": {
       "api_key": null,
       "model_id": "Qwen3-0.6B",

@@ -118,6 +118,8 @@ public class TargetedRetrievalE2ETest {
     AgentManager manager = AgentLocator.getAgentManager();
     AgentPaths paths = manager.createAgentPaths(workspaceDir);
     AgentSettings settings = manager.createSettings(paths);
+    
+    settings.setProperty(ReasoningService.MEMORY_CONSOLIDATION_TURNS, "40");
 
     settings.setupSettings();
     settings.load();
