@@ -201,8 +201,9 @@ public class NoemaWebServer {
     client.onClose(() -> {
       console.removeClient(client);
       if (console.isEmpty()) {
-        this.activeConsoles.remove(terminalId);
-        this.agent.setConsole(terminalId, null);
+        if (this.activeConsoles.remove(terminalId, console)) {
+          this.agent.setConsole(terminalId, null);
+        }
       }
     });
 
