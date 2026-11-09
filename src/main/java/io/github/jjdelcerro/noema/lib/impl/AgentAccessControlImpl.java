@@ -203,6 +203,9 @@ public class AgentAccessControlImpl implements AgentAccessControl {
     if (rawPath == null || rawPath.isBlank()) {
       throw new IllegalArgumentException("The path cannot be empty");
     }
+    if( mode == AccessMode.PATH_ACCESS_WRITE && !isAllowedDiskWrite() ) {
+      throw new SecurityException("Writing not allowed");
+    }
 
     // 1. Resolver ruta contra root si es relativa y obtener su ruta real canonica
     Path target;
@@ -215,15 +218,6 @@ public class AgentAccessControlImpl implements AgentAccessControl {
     }
     String target_s = target.toString();
     String targetPathString = target_s.replace("\\", "/");
-
-//    // Invariante inmutable: la carpeta interna del agente nunca es accesible por el modelo
-//    if (targetPathString.contains("/." + AgentPaths.AGENT_FOLDER_NAME + "/var/")
-//            || targetPathString.endsWith("/." + AgentPaths.AGENT_FOLDER_NAME + "/var")) {
-//      Path agentVarPrefix = rootPath.resolve("." + AgentPaths.AGENT_FOLDER_NAME).resolve("var");
-//      if (!isHoleAllowed(target, agentVarPrefix)) {
-//        throw new SecurityException("ACCESO DENEGADO: La carpeta de control interno del agente no es accesible.");
-//      }
-//    }
 
     // Validar restricciones de lectura con soporte de agujeros mas especificos
     for (Path nonReadablePath : this.getEfectiveNonReadablePaths()) {
